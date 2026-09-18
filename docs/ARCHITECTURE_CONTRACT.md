@@ -69,6 +69,39 @@ Config
 
 Pipeline 原則只能向前。Downstream 不得回頭修改 upstream decision，也不得在 upstream reject 後以 rescue、backfill 或 fallback 將其救回。
 
+## Entry Point Contract
+
+本章是對既有 Single Owner、UI Contract、GitHub Actions orchestration 與 shared core pipeline 的 documentation-only clarification，不新增 Domain Owner 或新的 Domain Rule。
+
+Production 可以有多個 entry point，但 Domain Logic 只能有一套：
+
+```text
+weekly.yml
+→ main.py
+→ shared production core workflow
+```
+
+以及：
+
+```text
+streamlit_app.py
+→ shared production core workflow
+```
+
+正式規則：
+
+1. Production 可以有多個 entry point，但 Domain Logic 只能有一套。
+2. `main.py` 是 GitHub Actions / automation 的正式程式入口，也是 CLI entry point。
+3. `streamlit_app.py` 是人工操作與展示入口，也是 interactive UI entry point。
+4. 兩個 entry point 必須呼叫同一套 shared production core workflow。
+5. 兩者不得各自實作或重新推導 Search、Evidence、Scope、Date、Event Dedup、Category、E&M Taxonomy、Reportability、MaiAgent workflow、Validation 或 Report Assembly。
+6. GitHub Actions 只負責 orchestration，不得持有 Domain Decision 或建立另一套 domain logic。
+7. Streamlit 只負責 UI / manual operations，不得持有 Domain Decision。
+8. 禁止 CLI-specific Domain Logic、Streamlit-specific Domain Logic、GitHub Actions-specific eligibility rules、UI-specific fallback 與 UI-specific rescue。
+9. 在相同 Run Config 與相同外部輸入條件下，`main.py` 與 `streamlit_app.py` 應透過 shared core workflow 得到相同 Domain Outcome。
+
+Entry point 可以不同，Production Domain Logic 只能有一套。任何 entry point-specific workaround 都不得成為第二個 owner 或第二套 source of truth。
+
 ## D. Run Identity
 
 每次執行必須分開：
@@ -800,6 +833,7 @@ Architecture baseline：
 ```text
 ARCHITECTURE_VERSION = v0.5
 ARCHITECTURE_STATUS = FINAL_LOCKED
+ENTRY_POINT_CLARIFICATION = APPLIED
 ```
 
 除非：

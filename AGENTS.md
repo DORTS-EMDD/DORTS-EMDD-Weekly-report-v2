@@ -257,6 +257,16 @@ Streamlit 只負責 Config、Progress、Result display、Download、Manual Email
 
 UI 不得持有任何 Domain Decision。
 
+### Entry Point Contract
+
+`main.py` 與 `streamlit_app.py` 必須共用同一 production core workflow；entry point 可以不同，但 Domain Logic 不得分叉。
+
+* `main.py` 為 automation / CLI entry point。
+* `streamlit_app.py` 為 interactive UI entry point。
+* 兩者不得各自實作或重新推導 Search、Evidence、Scope、Date、Event Dedup、Category、E&M Taxonomy、Reportability、MaiAgent workflow、Validation 或 Report Assembly。
+* GitHub Actions 只負責 orchestration，不得建立另一套 domain logic。
+* Streamlit 只負責 UI / manual operations，不得建立 UI-specific fallback、rescue、category 或 selection logic。
+
 ## 16. Golden / Tests
 
 V2 不整套搬 V1 tests。
@@ -333,4 +343,5 @@ AGENTS_VERSION = concise-v1
 ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
+ENTRY_POINT_CLARIFICATION = APPLIED
 ```
