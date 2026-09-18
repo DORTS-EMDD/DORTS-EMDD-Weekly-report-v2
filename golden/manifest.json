@@ -1,0 +1,135 @@
+{
+  "golden_version": "v1",
+  "architecture_baseline": "v0.5 FINAL_LOCKED",
+  "status": "LOCKED_BASELINE",
+  "live_search": false,
+  "case_count": 21,
+  "cases": [
+    {
+      "case_id": "G01",
+      "file": "cases/g01_title_only_evidence.json",
+      "case_class": "title_only_evidence",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G02",
+      "file": "cases/g02_wrong_landing_page.json",
+      "case_class": "wrong_landing_page",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G03",
+      "file": "cases/g03_valid_new_technology.json",
+      "case_class": "valid_new_technology",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G04",
+      "file": "cases/g04_valid_new_material.json",
+      "case_class": "valid_new_material",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G05",
+      "file": "cases/g05_valid_new_method.json",
+      "case_class": "valid_new_method",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G06",
+      "file": "cases/g06_major_urban_rail_technical_accident.json",
+      "case_class": "major_urban_rail_technical_accident",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G07",
+      "file": "cases/g07_low_value_accident.json",
+      "case_class": "low_value_accident",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G08",
+      "file": "cases/g08_operations_policy.json",
+      "case_class": "operations_policy",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G09",
+      "file": "cases/g09_operations_dispute.json",
+      "case_class": "operations_dispute",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G10",
+      "file": "cases/g10_standard_em_procurement.json",
+      "case_class": "standard_em_procurement",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G11",
+      "file": "cases/g11_innovative_procurement.json",
+      "case_class": "innovative_procurement",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G12",
+      "file": "cases/g12_duplicate_multilingual_event.json",
+      "case_class": "duplicate_multilingual_event",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G13",
+      "file": "cases/g13_similar_titles_different_events.json",
+      "case_class": "similar_titles_different_events",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G14",
+      "file": "cases/g14_non_urban_rail.json",
+      "case_class": "non_urban_rail",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G15",
+      "file": "cases/g15_out_of_range_source.json",
+      "case_class": "out_of_range_source",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G16",
+      "file": "cases/g16_conflicting_source_claims.json",
+      "case_class": "conflicting_source_claims",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G17",
+      "file": "cases/g17_non_seven_system_reportable.json",
+      "case_class": "non_seven_system_but_reportable",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G18",
+      "file": "cases/g18_search_navigation_shell.json",
+      "case_class": "search_navigation_shell",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G19",
+      "file": "cases/g19_below_usd_3m_innovative.json",
+      "case_class": "below_usd_3m_but_innovative",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G20",
+      "file": "cases/g20_amount_unknown.json",
+      "case_class": "amount_unknown",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G21",
+      "file": "cases/g21_no_reliable_currency_conversion.json",
+      "case_class": "no_reliable_currency_conversion",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    }
+  ]
+}

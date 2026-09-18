@@ -1,0 +1,42 @@
+{
+  "case_id": "G01",
+  "name": "title_only_evidence",
+  "description": "A plausible urban-rail title and snippet exist, but no source content is available.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro operator deploys a next-generation signalling controller",
+      "url": "https://fixtures.invalid/g01-title-only",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-15T08:00:00Z",
+      "discovery_intent": "technology",
+      "search_snippet": "The operator announced a next-generation signalling controller.",
+      "source_content": null
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_REJECTED",
+    "scope": "NOT_EVALUATED",
+    "date_valid": "NOT_EVALUATED",
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": "NOT_EVALUATED",
+    "primary_category": "NOT_EVALUATED",
+    "subtype": "NOT_EVALUATED",
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "reject_stage": "EVIDENCE",
+    "reject_reason": "TITLE_ONLY"
+  },
+  "contract_notes": [
+    "Title and search snippet cannot be formal evidence.",
+    "All downstream fields remain NOT_EVALUATED after evidence rejection."
+  ]
+}

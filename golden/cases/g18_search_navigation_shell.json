@@ -1,0 +1,42 @@
+{
+  "case_id": "G18",
+  "name": "search_navigation_shell",
+  "description": "The fetched text is long but consists of search results, menu items, and generic navigation rather than event substance.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Urban rail technology update",
+      "url": "https://fixtures.invalid/g18-search-shell",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-17T15:00:00Z",
+      "discovery_intent": "technology",
+      "search_snippet": "Search results for urban rail technology update.",
+      "source_content": "Synthetic search shell. Search results 1-20 of 20. Filters: date, region, topic. Menu: Home, News, Projects, About, Contact. Related searches: metro technology, rail systems, transit equipment. No event body, notice, project release, or factual event details are present."
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_REJECTED",
+    "scope": "NOT_EVALUATED",
+    "date_valid": "NOT_EVALUATED",
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": "NOT_EVALUATED",
+    "primary_category": "NOT_EVALUATED",
+    "subtype": "NOT_EVALUATED",
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "reject_stage": "EVIDENCE",
+    "reject_reason": "INSUFFICIENT_SUBSTANCE"
+  },
+  "contract_notes": [
+    "Long text and navigation density do not establish factual substance.",
+    "This fixture uses INSUFFICIENT_SUBSTANCE because the page is a search/navigation shell rather than a mismatched event page."
+  ]
+}

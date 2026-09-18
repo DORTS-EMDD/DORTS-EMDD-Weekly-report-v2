@@ -1,0 +1,42 @@
+{
+  "case_id": "G07",
+  "name": "low_value_accident",
+  "description": "An in-scope urban-rail passenger accident lacks system, technical, safety-system, or project significance.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Passenger receives minor injury after slipping on a metro stair",
+      "url": "https://fixtures.invalid/g07-low-value-accident",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-16T10:00:00Z",
+      "discovery_intent": "major incident",
+      "search_snippet": "A passenger received a minor injury after slipping on a station stair; service was unaffected.",
+      "source_content": "Synthetic station notice. A passenger slipped on a station stair and received a minor injury. No train, signalling, power, platform-door, evacuation, service, or project impact occurred."
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "primary_category": "重大事故",
+    "subtype": "low_value_accident",
+    "e&m_taxonomy": [],
+    "reportability": "NOT_REPORTABLE",
+    "reject_stage": "REPORTABILITY",
+    "reject_reason": "LOW_REPORTABILITY_VALUE"
+  },
+  "contract_notes": [
+    "In-scope status and the presence of an injury do not alone establish reportability.",
+    "The reportability decision is made after evidence, scope, date, and classification."
+  ]
+}

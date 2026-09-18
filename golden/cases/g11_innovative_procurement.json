@@ -1,0 +1,53 @@
+{
+  "case_id": "G11",
+  "name": "innovative_procurement",
+  "description": "A procurement notice's core value is an innovative urban-rail energy-storage pilot.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro procures a pilot wayside energy-storage system",
+      "url": "https://fixtures.invalid/g11-innovative-procurement",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-17T09:00:00Z",
+      "discovery_intent": "procurement",
+      "search_snippet": "The metro issued a procurement for a pilot wayside energy-storage system to recover braking energy.",
+      "source_content": "Synthetic pilot procurement notice. The metro issued a procurement for a pilot wayside energy-storage system that captures regenerative braking energy. The notice describes the storage chemistry, the wayside test site, trial objectives, measurement plan, and procurement action.",
+      "procurement": {
+        "action": "pilot procurement",
+        "amount": "USD 1.2M",
+        "currency": "USD",
+        "currency_conversion": "NOT_REQUIRED",
+        "usd_3m_signal": "BELOW_3M"
+      }
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "primary_category": "技術新知",
+    "subtype": "procurement",
+    "e&m_taxonomy": [
+      "供電"
+    ],
+    "reportability": "REPORTABLE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE",
+    "usd_3m_signal": "BELOW_3M"
+  },
+  "contract_notes": [
+    "Procurement discovery intent does not determine the formal category.",
+    "The factual core is a new method and pilot, so the category is 技術新知 with subtype procurement.",
+    "Being below USD 3M is not an eligibility gate."
+  ]
+}

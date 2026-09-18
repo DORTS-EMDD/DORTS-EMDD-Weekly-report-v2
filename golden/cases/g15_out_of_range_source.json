@@ -1,0 +1,42 @@
+{
+  "case_id": "G15",
+  "name": "out_of_range_source",
+  "description": "The source is substantive and in scope, but its publication date is before the report period.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro commissions platform-door diagnostic system",
+      "url": "https://fixtures.invalid/g15-out-of-range",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-01T08:00:00Z",
+      "discovery_intent": "technology",
+      "search_snippet": "The metro commissioned a platform-door diagnostic system on 1 September.",
+      "source_content": "Synthetic technical release. The metro commissioned a platform-door diagnostic system on 1 September 2026. The release describes the system, the station deployment, commissioning steps, and technical results."
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": false,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": "NOT_EVALUATED",
+    "primary_category": "NOT_EVALUATED",
+    "subtype": "NOT_EVALUATED",
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "reject_stage": "TEMPORAL",
+    "reject_reason": "OUT_OF_RANGE"
+  },
+  "contract_notes": [
+    "Temporal eligibility uses source publication or notice date by default.",
+    "An event date inside or near the period cannot rescue an out-of-range source."
+  ]
+}

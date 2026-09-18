@@ -1,0 +1,42 @@
+{
+  "case_id": "G09",
+  "name": "operations_dispute",
+  "description": "Substantive fixed content describes a consequential urban-rail operator and workforce dispute.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro operator and workforce union dispute staffing terms for automated line",
+      "url": "https://fixtures.invalid/g09-operations-dispute",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-16T12:00:00Z",
+      "discovery_intent": "operations",
+      "search_snippet": "The operator and workforce union dispute staffing terms affecting the automated metro line.",
+      "source_content": "Synthetic labour and operations notice. The metro operator and workforce union dispute staffing terms for an automated line. The dispute concerns control-room staffing, safety responsibilities, and the operating plan; the parties published their competing positions and next procedural step."
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "primary_category": "營運動態",
+    "subtype": "dispute",
+    "e&m_taxonomy": [],
+    "reportability": "REPORTABLE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "A dispute is reportable here because it has direct urban-rail operational and safety-governance significance.",
+    "A generic delay or passenger complaint would not satisfy this contract purpose."
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "case_id": "G02",
+  "name": "wrong_landing_page",
+  "description": "The fetch succeeds but resolves to a generic homepage rather than the candidate event page.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Urban rail operator commissions platform-door diagnostics",
+      "url": "https://fixtures.invalid/g02-wrong-landing-page",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-15T09:00:00Z",
+      "discovery_intent": "technology",
+      "search_snippet": "The operator commissions a new diagnostic capability.",
+      "source_content": "Synthetic transit website homepage. Menu: News, Projects, Careers, Contact. Featured services and generic navigation are shown; no page-specific event details are present."
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_REJECTED",
+    "scope": "NOT_EVALUATED",
+    "date_valid": "NOT_EVALUATED",
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": "NOT_EVALUATED",
+    "primary_category": "NOT_EVALUATED",
+    "subtype": "NOT_EVALUATED",
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "reject_stage": "EVIDENCE",
+    "reject_reason": "SOURCE_PAGE_MISMATCH"
+  },
+  "contract_notes": [
+    "An HTTP success or resolved domain does not establish Source-to-Candidate Match.",
+    "A homepage, category page, or navigation shell cannot be formal evidence."
+  ]
+}

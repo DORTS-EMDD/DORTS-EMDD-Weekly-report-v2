@@ -1,0 +1,43 @@
+{
+  "case_id": "G17",
+  "name": "non_seven_system_but_reportable",
+  "description": "A synthetic metro elevator modernization event has sufficient urban-rail safety and technology value but no seven-system mapping.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro stations pilot predictive elevator safety monitoring",
+      "url": "https://fixtures.invalid/g17-non-seven-system",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-17T14:00:00Z",
+      "discovery_intent": "technology",
+      "search_snippet": "The metro began a station-elevator safety monitoring pilot using vibration and door-cycle data.",
+      "source_content": "Synthetic metro engineering release. The metro began a predictive elevator safety-monitoring pilot at three stations. The release describes vibration sensing, door-cycle analysis, safety alerts, test results, and the operational decision process for station accessibility equipment."
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "primary_category": "技術新知",
+    "subtype": "technology",
+    "e&m_taxonomy": [],
+    "reportability": "REPORTABLE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "A non-seven-system urban-rail equipment event can be reportable when it has sufficient technical, safety, operational, or demonstration value.",
+    "The empty taxonomy array means no reasonable mapping to the seven fixed systems.",
+    "This synthetic fixture must not be represented as a historical TransLink elevator case."
+  ]
+}

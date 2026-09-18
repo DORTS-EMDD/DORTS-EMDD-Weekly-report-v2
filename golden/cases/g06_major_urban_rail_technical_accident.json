@@ -1,0 +1,44 @@
+{
+  "case_id": "G06",
+  "name": "major_urban_rail_technical_accident",
+  "description": "A complete fixed incident report describes a major urban-rail power failure and evacuation.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro traction-power fault causes smoke, suspension, and station evacuation",
+      "url": "https://fixtures.invalid/g06-major-accident",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-16T09:00:00Z",
+      "discovery_intent": "major incident",
+      "search_snippet": "A traction-power fault caused smoke at a metro station, suspended service, and triggered an evacuation.",
+      "source_content": "Synthetic incident notice. A traction-power equipment fault caused smoke in a metro station, suspended service on two lines, and led to an emergency evacuation. The notice identifies the affected substation, the protection action, the service impact, and the operator's investigation."
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "primary_category": "重大事故",
+    "subtype": "technical_accident",
+    "e&m_taxonomy": [
+      "供電"
+    ],
+    "reportability": "REPORTABLE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "Technical incident classification is based on the event facts and is not overridden by technology keywords.",
+    "This synthetic case is not a historical Tokyo or other named incident."
+  ]
+}

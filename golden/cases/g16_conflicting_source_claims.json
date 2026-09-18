@@ -1,0 +1,77 @@
+{
+  "case_id": "G16",
+  "name": "conflicting_source_claims",
+  "description": "Two credible fixed sources describe the same event but disagree on a factual detail.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro power fault temporarily closes the airport branch",
+      "url": "https://fixtures.invalid/g16-conflict-a",
+      "publisher": "Synthetic Contract Fixture A",
+      "published_at": "2026-09-17T13:00:00Z",
+      "discovery_intent": "major incident",
+      "search_snippet": "A power fault closed the airport branch for 42 minutes.",
+      "source_content": "Synthetic operator notice. A traction-power fault closed the airport branch for 42 minutes. The notice identifies the affected section, the protection action, and the restoration process.",
+      "claim": {
+        "field": "service_duration_minutes",
+        "value": 42
+      }
+    },
+    {
+      "candidate_id": "C2",
+      "title": "Airport branch power incident resolved after a longer interruption",
+      "url": "https://fixtures.invalid/g16-conflict-b",
+      "publisher": "Synthetic Contract Fixture B",
+      "published_at": "2026-09-17T13:20:00Z",
+      "discovery_intent": "major incident",
+      "search_snippet": "The same airport branch power incident lasted 47 minutes.",
+      "source_content": "Synthetic government notice. The same traction-power fault affected the airport branch and service resumed after 47 minutes. The notice identifies the same section and restoration event but gives a different duration.",
+      "claim": {
+        "field": "service_duration_minutes",
+        "value": 47
+      }
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "SAME_EVENT",
+    "event_count_after_dedup": 1,
+    "primary_category": "重大事故",
+    "subtype": "technical_accident",
+    "e&m_taxonomy": [
+      "供電"
+    ],
+    "reportability": "REPORTABLE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE",
+    "conflicting_claims": [
+      {
+        "field": "service_duration_minutes",
+        "values": [
+          42,
+          47
+        ],
+        "resolution": "UNRESOLVED"
+      }
+    ],
+    "authoritative_factual_claims": [
+      "The same traction-power event affected the airport branch and service was restored.",
+      "The exact service duration is not asserted."
+    ]
+  },
+  "contract_notes": [
+    "Event Identity may establish one event while a factual claim remains unresolved.",
+    "Both source-specific claims and provenance must be retained.",
+    "MaiAgent must omit the unresolved duration rather than choose a value."
+  ]
+}

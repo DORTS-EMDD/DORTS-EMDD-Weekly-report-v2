@@ -1,0 +1,42 @@
+{
+  "case_id": "G14",
+  "name": "non_urban_rail",
+  "description": "The source is substantive but describes a conventional intercity railway rather than an urban-rail system.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Conventional railway installs new overhead-line monitoring equipment",
+      "url": "https://fixtures.invalid/g14-non-urban-rail",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-17T12:00:00Z",
+      "discovery_intent": "technology",
+      "search_snippet": "An intercity railway installed overhead-line monitoring equipment on a conventional rail corridor.",
+      "source_content": "Synthetic railway technical release. An intercity conventional railway installed overhead-line monitoring equipment on a long-distance corridor. The release explains the equipment, installation, and monitoring results; no metro, MRT, subway, light rail, tram, AGT, monorail, or people-mover context is present."
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "OUT_OF_SCOPE",
+    "date_valid": "NOT_EVALUATED",
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": "NOT_EVALUATED",
+    "primary_category": "NOT_EVALUATED",
+    "subtype": "NOT_EVALUATED",
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "reject_stage": "SCOPE",
+    "reject_reason": "OUT_OF_SCOPE"
+  },
+  "contract_notes": [
+    "A substantive source can still be out of scope.",
+    "The word railway or train alone cannot establish formal urban-rail scope."
+  ]
+}

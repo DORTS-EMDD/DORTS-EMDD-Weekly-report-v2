@@ -1,0 +1,52 @@
+{
+  "case_id": "G20",
+  "name": "amount_unknown",
+  "description": "A substantive urban-rail equipment award has no disclosed contract amount but has clear system value.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro awards platform-door replacement for two stations",
+      "url": "https://fixtures.invalid/g20-amount-unknown",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-18T08:00:00Z",
+      "discovery_intent": "procurement",
+      "search_snippet": "The metro awarded a platform-door replacement package for two stations; the amount was not disclosed.",
+      "source_content": "Synthetic procurement notice. The metro awarded a contract to replace platform doors at two stations. The notice identifies the equipment scope, safety interface, delivery milestones, and awarded supplier, but does not disclose the contract amount.",
+      "procurement": {
+        "action": "award",
+        "amount": null,
+        "currency": null,
+        "currency_conversion": "NOT_APPLICABLE",
+        "usd_3m_signal": "UNKNOWN"
+      }
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "primary_category": "機電標案",
+    "subtype": "procurement",
+    "e&m_taxonomy": [
+      "月臺門"
+    ],
+    "reportability": "REPORTABLE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE",
+    "usd_3m_signal": "UNKNOWN"
+  },
+  "contract_notes": [
+    "Unknown amount does not automatically disqualify a procurement event.",
+    "Reportability is supported by the substantive platform-door safety and system scope."
+  ]
+}
