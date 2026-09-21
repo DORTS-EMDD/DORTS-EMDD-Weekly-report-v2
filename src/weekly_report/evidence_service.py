@@ -8,11 +8,14 @@ signals only; they do not create a second Evidence owner.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from html.parser import HTMLParser
+import codecs
+import ipaddress
 import re
+import socket
+from time import perf_counter
 from typing import Any
 from urllib.error import HTTPError
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import unquote_plus, urljoin, urlsplit, urlunsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from .contracts import (
@@ -22,286 +25,27 @@ from .contracts import (
     FetchedSource,
     RejectReason,
 )
+from .semantic_judge import (
+    JudgeMetadata,
+    InvalidSemanticJudgeResponse,
+    PrincipalBodySegment,
+    SemanticJudge,
+    SemanticJudgeInput,
+    SemanticRelation,
+    ValidatedSemanticJudgeResponse,
+    semantic_judge_input_hash,
+    validate_semantic_judge_response,
+)
+from .evidence_document import DocumentSegment, PrincipalDocumentStatus, assess_document
 
 
 Fetcher = Callable[[str], FetchedSource | Mapping[str, Any] | object]
 
-
-_STOPWORDS = {
-    "a",
-    "an",
-    "and",
-    "for",
-    "from",
-    "in",
-    "is",
-    "of",
-    "on",
-    "the",
-    "to",
-    "with",
-}
-
-_ACTION_TERMS = {
-    "announced",
-    "approved",
-    "awarded",
-    "awards",
-    "began",
-    "caused",
-    "causes",
-    "commissioned",
-    "commissions",
-    "completed",
-    "deployed",
-    "failed",
-    "introduced",
-    "installed",
-    "issued",
-    "launched",
-    "opened",
-    "procured",
-    "procure",
-    "procures",
-    "procurement",
-    "replaced",
-    "restored",
-    "signed",
-    "started",
-    "suspended",
-    "suspends",
-    "suspension",
-    "tested",
-    "trialled",
-    "trialed",
-    "事故",
-    "公告",
-    "啟用",
-    "完成",
-    "採購",
-    "故障",
-    "恢復",
-    "發生",
-    "簽約",
-    "部署",
-    "試驗",
-    "通車",
-}
-
-_GENERIC_IDENTITY_TERMS = {
-    "authority",
-    "equipment",
-    "line",
-    "metro",
-    "mrt",
-    "operator",
-    "project",
-    "rail",
-    "route",
-    "service",
-    "station",
-    "subway",
-    "system",
-    "train",
-    "transit",
-    "urban",
-    "network",
-    "platform",
-    "technology",
-    "transport",
-    "地鐵",
-    "捷運",
-    "列車",
-    "車站",
-    "路線",
-    "系統",
-    "服務",
-    "工程",
-    "專案",
-}
-
-_EVENT_CONTEXT_TERMS = {
-    "authority",
-    "contract",
-    "equipment",
-    "fault",
-    "line",
-    "metro",
-    "operator",
-    "package",
-    "power",
-    "project",
-    "rail",
-    "service",
-    "signalling",
-    "signal",
-    "station",
-    "subway",
-    "system",
-    "tender",
-    "train",
-    "urban",
-    "變電站",
-    "公告",
-    "列車",
-    "地鐵",
-    "契約",
-    "工程",
-    "捷運",
-    "系統",
-    "線",
-    "車站",
-    "設備",
-    "軌道",
-    "營運商",
-}
-
-_DETAIL_TERMS = {
-    "after",
-    "during",
-    "because",
-    "between",
-    "contractor",
-    "date",
-    "for",
-    "from",
-    "method",
-    "notice",
-    "pilot",
-    "result",
-    "testing",
-    "until",
-    "award",
-    "amount",
-    "期間",
-    "原因",
-    "測試",
-    "試點",
-    "金額",
-    "日期",
-}
-
-_PAGE_SHELL_SEGMENTS = {
-    "a-z",
-    "archive",
-    "archives",
-    "category",
-    "categories",
-    "home",
-    "index",
-    "navigation",
-    "results",
-    "search",
-    "search-results",
-    "tag",
-    "tags",
-    "topic",
-    "topics",
-}
-
-_SEARCH_SHELL_MARKERS = {
-    "search results",
-    "related searches",
-    "filters:",
-    "no event body",
-    "no page-specific event details",
-}
-
-_SKIPPED_TAGS = {
-    "aside",
-    "footer",
-    "head",
-    "header",
-    "link",
-    "meta",
-    "nav",
-    "noscript",
-    "script",
-    "style",
-    "svg",
-    "template",
-    "title",
-}
-
-_VOID_TAGS = {"br", "hr", "img", "input", "link", "meta"}
+_TRACKING_QUERY_NAMES = {"fbclid", "gclid"}
 
 
-class _DocumentParser(HTMLParser):
-    """Extract visible body text and canonical metadata without deciding readiness."""
-
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.parts: list[str] = []
-        self.canonical_values: list[str] = []
-        self.headline_values: list[str] = []
-        self.saw_title = False
-        self.saw_meta = False
-        self._skip_depth = 0
-        self._skip_tags: list[str] = []
-        self._headline_depth = 0
-        self._headline_parts: list[str] = []
-        self._title_depth = 0
-        self._title_parts: list[str] = []
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        tag = tag.casefold()
-        attributes = {key.casefold(): value or "" for key, value in attrs}
-        if tag == "title":
-            self.saw_title = True
-            self._title_depth += 1
-            self._title_parts = []
-        if tag in {"h1", "h2"} and self._skip_depth == 0:
-            self._headline_depth += 1
-            self._headline_parts = []
-        if tag == "meta":
-            self.saw_meta = True
-        if tag == "link" and "canonical" in attributes.get("rel", "").casefold():
-            if attributes.get("href"):
-                self.canonical_values.append(attributes["href"])
-        if tag == "meta":
-            property_name = (
-                attributes.get("property", "") or attributes.get("name", "")
-            ).casefold()
-            if property_name in {"og:url", "twitter:url"} and attributes.get("content"):
-                self.canonical_values.append(attributes["content"])
-            if property_name in {"og:title", "twitter:title"} and attributes.get("content"):
-                self.headline_values.append(attributes["content"])
-        if tag in _SKIPPED_TAGS and tag not in _VOID_TAGS:
-            self._skip_depth += 1
-            self._skip_tags.append(tag)
-
-    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        self.handle_starttag(tag, attrs)
-        if tag.casefold() in _SKIPPED_TAGS and tag.casefold() not in _VOID_TAGS and self._skip_depth:
-            self._skip_depth -= 1
-            self._skip_tags.pop()
-
-    def handle_endtag(self, tag: str) -> None:
-        tag = tag.casefold()
-        if tag == "title" and self._title_depth:
-            headline = " ".join(" ".join(self._title_parts).split())
-            if headline:
-                self.headline_values.append(headline)
-            self._title_depth = 0
-            self._title_parts = []
-        if tag in {"h1", "h2"} and self._headline_depth:
-            headline = " ".join(" ".join(self._headline_parts).split())
-            if headline:
-                self.headline_values.append(headline)
-            self._headline_depth = 0
-            self._headline_parts = []
-        if tag in _SKIPPED_TAGS and self._skip_depth:
-            self._skip_depth -= 1
-            if self._skip_tags:
-                self._skip_tags.pop()
-
-    def handle_data(self, data: str) -> None:
-        if self._title_depth:
-            self._title_parts.append(data)
-        if self._headline_depth:
-            self._headline_parts.append(data)
-        if self._skip_depth == 0 and self._headline_depth == 0 and data.strip():
-            self.parts.append(data)
+class _UnsafeDestinationError(RuntimeError):
+    """The default transport refused a non-public network destination."""
 
 
 def _candidate(value: CanonicalCandidate | Mapping[str, Any]) -> CanonicalCandidate:
@@ -317,105 +61,71 @@ def _normalise_url(value: str) -> str:
     parsed = urlsplit(raw)
     if parsed.scheme.casefold() not in {"http", "https"} or not parsed.netloc:
         return ""
-    return raw
+    try:
+        parsed.port
+    except ValueError:
+        return ""
+    query = _normalise_query(parsed.query)
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, query, ""))
 
 
-def _is_shell_url(value: str) -> bool:
-    parsed = urlsplit(value)
-    host = parsed.netloc.casefold().removeprefix("www.")
-    if host == "news.google.com":
+def _normalise_query(value: str) -> str:
+    if not value:
+        return ""
+    kept: list[str] = []
+    for component in value.split("&"):
+        raw_key = component.split("=", 1)[0]
+        key = unquote_plus(raw_key).casefold()
+        if key.startswith("utm_") or key in _TRACKING_QUERY_NAMES:
+            continue
+        kept.append(component)
+    return "&".join(kept)
+
+
+def _is_repeated_headline_only(content: str, references: list[str]) -> bool:
+    body_text = " ".join(str(content or "").split()).casefold()
+    if not body_text:
         return True
-    path_segments = {
-        segment.casefold()
-        for segment in parsed.path.split("/")
-        if segment
-    }
-    if not parsed.path or parsed.path == "/":
-        return True
-    if path_segments & _PAGE_SHELL_SEGMENTS:
-        return True
-    return parsed.query.casefold().startswith(("q=", "query=")) and "search" in parsed.path.casefold()
+    for reference in references:
+        reference_text = " ".join(str(reference or "").split()).casefold()
+        if reference_text and body_text == reference_text:
+            return True
+    return False
 
 
-def _tokenise(value: str) -> set[str]:
-    tokens = re.findall(r"[A-Za-z0-9]+|[\u3400-\u9fff]+", str(value or "").casefold())
-    return {
-        token
-        for token in tokens
-        if token not in _STOPWORDS and (len(token) >= 3 or any("\u3400" <= char <= "\u9fff" for char in token))
-    }
+def _raw_relation(raw_response: object) -> str:
+    if isinstance(raw_response, Mapping):
+        value = raw_response.get("relation", "")
+        return value if isinstance(value, str) else ""
+    return ""
 
 
-def _identity_tokens(title: str) -> set[str]:
-    return _tokenise(title) - _GENERIC_IDENTITY_TERMS - _ACTION_TERMS
+def _has_factual_substance(content: str, title: str, headlines: list[str]) -> bool:
+    """Check structural body availability without deciding event identity."""
+
+    if not content.strip():
+        return False
+    if _is_repeated_headline_only(content, [title, *headlines]):
+        return False
+    return True
 
 
-def _event_anchor_values(value: str) -> set[str]:
-    anchors = set(re.findall(r"\b\d+\b", str(value or "").casefold()))
-    for compound in re.findall(r"\b[A-Za-z0-9]+(?:[-/][A-Za-z0-9]+)+\b", str(value or "").casefold()):
-        anchors.add(re.sub(r"[-/]", "", compound))
-    return anchors
-
-
-def _normalise_headline(value: str) -> str:
-    tokens = re.findall(r"[A-Za-z0-9]+|[\u3400-\u9fff]+", str(value or "").casefold())
-    return " ".join(tokens)
-
-
-def _page_event_identity(
-    title: str,
-    content: str,
-    headlines: list[str],
-) -> tuple[bool, dict[str, Any]]:
-    """Return deterministic page/event identity signals, not a final decision."""
-
-    identity_tokens = _identity_tokens(title)
-    content_tokens = _tokenise(content)
-    headline_match = (
-        len(identity_tokens) >= 2
-        and any(_normalise_headline(title) == _normalise_headline(value) for value in headlines)
-    )
-    candidate_anchors = _event_anchor_values(title)
-    content_anchors = _event_anchor_values(content)
-    anchor_bundle_match = (
-        len(identity_tokens) >= 3
-        and identity_tokens.issubset(content_tokens)
-        and (
-            bool(candidate_anchors)
-            and candidate_anchors.issubset(content_anchors)
-            or not candidate_anchors
-        )
-    )
-    return headline_match or anchor_bundle_match, {
-        "headline_exact": headline_match,
-        "event_anchor_bundle": anchor_bundle_match,
-        "identity_token_count": len(identity_tokens),
-        "event_anchor_count": len(candidate_anchors),
-    }
-
-
-def _is_search_navigation_content(content: str) -> bool:
-    lowered = str(content or "").casefold()
-    return sum(marker in lowered for marker in _SEARCH_SHELL_MARKERS) >= 2
-
-
-def _has_factual_substance(content: str) -> bool:
-    lowered = content.casefold()
-    tokens = _tokenise(content)
-    has_action = bool(tokens & _ACTION_TERMS)
-    has_context = bool(tokens & _EVENT_CONTEXT_TERMS)
-    has_detail = bool(tokens & _DETAIL_TERMS) or bool(re.search(r"\d", content))
-    return has_action and has_context and has_detail
-
-
-def _resource_key(value: str) -> tuple[str, str] | None:
+def _resource_key(value: str) -> tuple[str, str, int | None, str, str] | None:
     normalised = _normalise_url(value)
     if not normalised:
         return None
     parsed = urlsplit(normalised)
-    host = parsed.netloc.casefold().removeprefix("www.")
-    path = parsed.path.rstrip("/") or "/"
-    return host, path.casefold()
+    try:
+        port = parsed.port
+    except ValueError:
+        return None
+    host = (parsed.hostname or "").casefold().removeprefix("www.")
+    if not host:
+        return None
+    default_port = 80 if parsed.scheme.casefold() == "http" else 443
+    effective_port = None if port in {None, default_port} else port
+    path = parsed.path or "/"
+    return parsed.scheme.casefold(), host, effective_port, path, _normalise_query(parsed.query)
 
 
 def _normalise_redirect_chain(values: tuple[str, ...]) -> list[str] | None:
@@ -467,22 +177,7 @@ def _canonical_is_related(
     chain = _normalise_redirect_chain(redirect_chain) or []
     if any(_resource_key(item) == canonical_key for item in chain):
         return True
-    return canonical_key[0] == resolved_key[0] and not _is_shell_url(canonical_url)
-
-
-def _extract_body(content: str) -> tuple[str, list[str], list[str], bool, bool]:
-    """Return body text and parser signals; no readiness decision is made."""
-
-    if "<" not in content or ">" not in content:
-        return " ".join(content.split()), [], [], False, False
-    parser = _DocumentParser()
-    try:
-        parser.feed(content)
-        parser.close()
-    except Exception:
-        return "", [], [], parser.saw_title, parser.saw_meta
-    visible = " ".join(" ".join(parser.parts).split())
-    return visible, parser.canonical_values, parser.headline_values, parser.saw_title, parser.saw_meta
+    return False
 
 
 def _coerce_source(value: FetchedSource | Mapping[str, Any] | object, request_url: str) -> FetchedSource:
@@ -521,17 +216,106 @@ def _coerce_source(value: FetchedSource | Mapping[str, Any] | object, request_ur
     )
 
 
+def _codec_name(value: str) -> str | None:
+    try:
+        return codecs.lookup(value.strip().strip("'\"")).name
+    except (LookupError, AttributeError):
+        return None
+
+
+def _declared_charset(content_type: str) -> str | None:
+    match = re.search(
+        r"(?:^|;)\s*charset\s*=\s*['\"]?([^;\s'\"]+)",
+        str(content_type or ""),
+        flags=re.IGNORECASE,
+    )
+    return _codec_name(match.group(1)) if match else None
+
+
+def _html_meta_charset(body: bytes) -> str | None:
+    # Inspect only the initial HTML declaration area; this is a deterministic
+    # transport decoding fallback, not language detection or content parsing.
+    sample = body[:8192].decode("ascii", errors="ignore")
+    patterns = (
+        r"<meta\b[^>]*\bcharset\s*=\s*['\"]?\s*([A-Za-z0-9._:-]+)",
+        r"<meta\b[^>]*\bcontent\s*=\s*['\"][^'\"]*?charset\s*=\s*([A-Za-z0-9._:-]+)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, sample, flags=re.IGNORECASE)
+        if match:
+            codec = _codec_name(match.group(1))
+            if codec:
+                return codec
+    return None
+
+
+def _decode_response_body(body: bytes, content_type: str) -> str:
+    """Decode HTTP bytes using declared charset, then HTML meta, then UTF-8."""
+
+    charset = _declared_charset(content_type) or _html_meta_charset(body) or "utf-8"
+    return body.decode(charset, errors="replace")
+
+
+def _is_public_ip(value: str) -> bool:
+    try:
+        address = ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    if address.version == 6 and address.ipv4_mapped is not None:
+        address = address.ipv4_mapped
+    return bool(
+        address.is_global
+        and not address.is_private
+        and not address.is_loopback
+        and not address.is_link_local
+        and not address.is_unspecified
+        and not address.is_multicast
+        and not address.is_reserved
+    )
+
+
+def _assert_safe_destination(url: str) -> None:
+    normalised = _normalise_url(url)
+    parsed = urlsplit(normalised)
+    host = parsed.hostname
+    if not host:
+        raise _UnsafeDestinationError("destination host is missing")
+    try:
+        port = parsed.port or (443 if parsed.scheme.casefold() == "https" else 80)
+    except ValueError as exc:
+        raise _UnsafeDestinationError("destination port is invalid") from exc
+
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        try:
+            addresses = {
+                info[4][0]
+                for info in socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)
+                if info[4]
+            }
+        except OSError as exc:
+            raise _UnsafeDestinationError("destination DNS resolution failed") from exc
+    else:
+        addresses = {host}
+
+    if not addresses or any(not _is_public_ip(address) for address in addresses):
+        raise _UnsafeDestinationError("destination is not public")
+
+
 class _RecordingRedirectHandler(HTTPRedirectHandler):
     def __init__(self) -> None:
         super().__init__()
         self.redirect_urls: list[str] = []
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):
+        _assert_safe_destination(newurl)
         self.redirect_urls.append(newurl)
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
 def _default_fetcher(url: str, timeout_seconds: float) -> FetchedSource:
+    _assert_safe_destination(url)
     request = Request(
         url,
         headers={
@@ -546,12 +330,17 @@ def _default_fetcher(url: str, timeout_seconds: float) -> FetchedSource:
             headers = getattr(response, "headers", {})
             content_type = headers.get("Content-Type", "") if hasattr(headers, "get") else ""
             resolved_url = str(response.geturl() or url)
+            _assert_safe_destination(resolved_url)
             redirect_chain = [url, *redirect_handler.redirect_urls]
             if not redirect_chain or redirect_chain[-1] != resolved_url:
                 redirect_chain.append(resolved_url)
             return FetchedSource(
                 url=resolved_url,
-                content=body.decode("utf-8", errors="replace") if isinstance(body, bytes) else str(body),
+                content=(
+                    _decode_response_body(body, str(content_type))
+                    if isinstance(body, bytes)
+                    else str(body)
+                ),
                 status_code=int(getattr(response, "status", 200) or 200),
                 content_type=str(content_type or "text/html"),
                 redirect_chain=tuple(redirect_chain),
@@ -563,11 +352,20 @@ def _default_fetcher(url: str, timeout_seconds: float) -> FetchedSource:
 class EvidenceService:
     """The sole authoritative owner of EVIDENCE_READY / EVIDENCE_REJECTED."""
 
-    def __init__(self, fetcher: Fetcher | None = None, *, timeout_seconds: float = 10.0) -> None:
+    def __init__(
+        self,
+        fetcher: Fetcher | None = None,
+        *,
+        timeout_seconds: float = 10.0,
+        semantic_judge: SemanticJudge | None = None,
+        judge_metadata: JudgeMetadata | None = None,
+    ) -> None:
         self._timeout_seconds = float(timeout_seconds)
         self._fetcher = fetcher or (
             lambda url: _default_fetcher(url, self._timeout_seconds)
         )
+        self._semantic_judge = semantic_judge
+        self._judge_metadata = judge_metadata
 
     def evaluate(self, candidate: CanonicalCandidate | Mapping[str, Any]) -> EvidenceResult:
         """Acquire and assess one Candidate without mutating the input."""
@@ -601,19 +399,17 @@ class EvidenceService:
                 {"resolved_url": resolved_url, "content_type": fetched.content_type},
                 canonical_source_url=resolved_url,
             )
-
-        body, canonical_values, headlines, saw_title, saw_meta = _extract_body(fetched.content)
-        canonical_url = self._canonical_url(canonical_values, resolved_url)
+        assessment = assess_document(
+            fetched.content,
+            fetched.content_type,
+            resource_url=resolved_url,
+        )
+        body = assessment.body_text
+        document_level_headlines = list(assessment.document_level_headlines)
+        canonical_url = self._canonical_url(list(assessment.canonical_values), resolved_url)
         source_url = canonical_url or resolved_url
         if not _normalise_url(source_url):
             return self._rejected(item, RejectReason.URL_UNRESOLVED, {})
-        if _is_shell_url(resolved_url) or _is_shell_url(source_url):
-            return self._rejected(
-                item,
-                RejectReason.SOURCE_PAGE_MISMATCH,
-                {"resolved_url": source_url, "page_kind": "shell"},
-                canonical_source_url=source_url,
-            )
 
         source_provenance, provenance_signals = _source_provenance(
             input_url,
@@ -638,43 +434,63 @@ class EvidenceService:
                 canonical_source_url=source_url,
             )
 
-        if not body:
-            reason = (
-                RejectReason.INSUFFICIENT_SUBSTANCE
-                if saw_meta
-                else RejectReason.TITLE_ONLY
-                if saw_title or item.title or item.search_snippet
-                else RejectReason.CONTENT_UNAVAILABLE
-            )
+        structural_provenance = assessment.as_provenance()
+        if assessment.principal_document_status is not PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_ESTABLISHED:
+            if assessment.reject_reason == "TITLE_ONLY":
+                reason = RejectReason.TITLE_ONLY
+            elif assessment.reject_reason == "INSUFFICIENT_SUBSTANCE":
+                reason = RejectReason.INSUFFICIENT_SUBSTANCE
+            elif assessment.reject_reason == "CONTENT_UNAVAILABLE":
+                reason = (
+                    RejectReason.TITLE_ONLY
+                    if item.title or item.search_snippet or assessment.document_level_headlines
+                    else RejectReason.CONTENT_UNAVAILABLE
+                )
+            else:
+                reason = RejectReason.SOURCE_PAGE_MISMATCH
+            parse_diagnostics = assessment.diagnostics.get("parse_diagnostics", [])
+            if (
+                "metadata_present" in parse_diagnostics
+                and not assessment.structural_conflict
+                and assessment.diagnostics.get("page_kind") != "search_shell"
+            ):
+                reason = RejectReason.INSUFFICIENT_SUBSTANCE
+            if assessment.diagnostics.get("page_kind") in {"landing_page", "search_shell"}:
+                reason = RejectReason.SOURCE_PAGE_MISMATCH
             return self._rejected(
                 item,
                 reason,
-                {"resolved_url": source_url, "body_text_available": False},
-                canonical_source_url=source_url,
-            )
-
-        matched, identity_signals = _page_event_identity(item.title, body, headlines)
-        if not matched:
-            reject_reason = (
-                RejectReason.INSUFFICIENT_SUBSTANCE
-                if _is_search_navigation_content(body)
-                else RejectReason.SOURCE_PAGE_MISMATCH
-            )
-            return self._rejected(
-                item,
-                reject_reason,
                 {
                     "resolved_url": source_url,
                     "source_provenance": True,
-                    "page_event_identity": False,
                     "source_to_candidate_match": False,
-                    **provenance_signals,
-                    **identity_signals,
+                    **structural_provenance,
                 },
                 canonical_source_url=source_url,
             )
 
-        factual = _has_factual_substance(body)
+        if not body:
+            reason = (
+                RejectReason(assessment.reject_reason)
+                if assessment.reject_reason in {item.value for item in RejectReason}
+                else RejectReason.INSUFFICIENT_SUBSTANCE
+            )
+            return self._rejected(
+                item,
+                reason,
+                {
+                    "resolved_url": source_url,
+                    "body_text_available": False,
+                    **structural_provenance,
+                },
+                canonical_source_url=source_url,
+            )
+
+        factual = _has_factual_substance(
+            body,
+            item.title,
+            document_level_headlines,
+        )
         if not factual:
             return self._rejected(
                 item,
@@ -682,14 +498,40 @@ class EvidenceService:
                 {
                     "resolved_url": source_url,
                     "source_provenance": True,
-                    "page_event_identity": True,
+                    "page_event_identity": False,
+                    "source_to_candidate_match": False,
                     "factual_substance": False,
                     **provenance_signals,
-                    **identity_signals,
+                    **structural_provenance,
                 },
                 canonical_source_url=source_url,
             )
 
+        semantic_result, semantic_signals = self._semantic_match(
+            item,
+            body,
+            document_level_headlines,
+            assessment.principal_body_segments,
+        )
+        if semantic_result is None or semantic_result.relation is not SemanticRelation.SAME_EVENT:
+            return self._rejected(
+                item,
+                RejectReason.SOURCE_PAGE_MISMATCH,
+                {
+                    "resolved_url": source_url,
+                    "source_provenance": True,
+                    "page_event_identity": False,
+                    "source_to_candidate_match": False,
+                    "factual_substance": True,
+                    **provenance_signals,
+                    **structural_provenance,
+                    **semantic_signals,
+                    "EvidenceService_final_decision": EvidenceState.REJECTED.value,
+                },
+                canonical_source_url=source_url,
+            )
+
+        semantic_signals["EvidenceService_final_decision"] = EvidenceState.READY.value
         return EvidenceResult(
             candidate_id=item.candidate_id,
             state=EvidenceState.READY,
@@ -706,9 +548,108 @@ class EvidenceService:
                 "source_to_candidate_match": True,
                 "factual_substance": True,
                 **provenance_signals,
-                **identity_signals,
+                **structural_provenance,
+                **semantic_signals,
             },
         )
+
+    def _semantic_match(
+        self,
+        candidate: CanonicalCandidate,
+        body: str,
+        headlines: list[str],
+        document_segments: tuple[DocumentSegment, ...] = (),
+    ) -> tuple[ValidatedSemanticJudgeResponse | None, dict[str, Any]]:
+        segments = tuple(
+            PrincipalBodySegment(segment_id=segment.segment_id, text=segment.text)
+            for segment in document_segments
+        ) or (PrincipalBodySegment(segment_id="body-0001", text=body),)
+        request = SemanticJudgeInput(
+            candidate_id=candidate.candidate_id,
+            candidate_title=candidate.title,
+            document_level_headlines=tuple(headlines),
+            principal_body_segments=segments,
+        )
+        signals = self._semantic_signals(request)
+        if self._semantic_judge is None:
+            signals.update(
+                {
+                    "response_validation_result": "not_configured",
+                    "error_type": "SemanticJudgeNotConfigured",
+                }
+            )
+            return None, signals
+
+        started = perf_counter()
+        try:
+            raw_response = self._semantic_judge(request)
+        except TimeoutError:
+            signals.update(
+                {
+                    "response_validation_result": "timeout",
+                    "error_type": "TimeoutError",
+                    "latency": perf_counter() - started,
+                }
+            )
+            return None, signals
+        except Exception as exc:
+            signals.update(
+                {
+                    "response_validation_result": "transport_error",
+                    "error_type": type(exc).__name__,
+                    "latency": perf_counter() - started,
+                }
+            )
+            return None, signals
+
+        signals["raw_relation"] = _raw_relation(raw_response)
+        try:
+            validated = validate_semantic_judge_response(raw_response, request)
+        except InvalidSemanticJudgeResponse as exc:
+            signals.update(
+                {
+                    "response_validation_result": "invalid",
+                    "error_type": type(exc).__name__,
+                    "latency": perf_counter() - started,
+                }
+            )
+            return None, signals
+
+        signals.update(
+            {
+                "raw_relation": validated.relation.value,
+                "validated_support_spans": [
+                    span.as_mapping() for span in validated.support_spans
+                ],
+                "validated_conflict_spans": [
+                    span.as_mapping() for span in validated.conflict_spans
+                ],
+                "response_validation_result": "valid",
+                "latency": perf_counter() - started,
+            }
+        )
+        return validated, signals
+
+    def _semantic_signals(self, request: SemanticJudgeInput) -> dict[str, Any]:
+        metadata = self._judge_metadata
+        if metadata is None and self._semantic_judge is not None:
+            candidate_metadata = getattr(self._semantic_judge, "metadata", None)
+            if isinstance(candidate_metadata, JudgeMetadata):
+                metadata = candidate_metadata
+        metadata = metadata or JudgeMetadata()
+        return {
+            "judge_input_hash": semantic_judge_input_hash(request),
+            "model_identifier": metadata.model_identifier,
+            "prompt_version": metadata.prompt_version,
+            "schema_version": metadata.schema_version,
+            "raw_relation": "",
+            "validated_support_spans": [],
+            "validated_conflict_spans": [],
+            "response_validation_result": "not_attempted",
+            "latency": 0.0,
+            "error_type": "",
+            "EvidenceService_final_decision": "",
+        }
 
     @staticmethod
     def _textual_content_type(content_type: str) -> bool:
@@ -719,7 +660,7 @@ class EvidenceService:
     def _canonical_url(values: list[str], base_url: str) -> str:
         for value in values:
             candidate = _normalise_url(urljoin(base_url, value.strip()))
-            if candidate and not _is_shell_url(candidate):
+            if candidate:
                 return candidate
         return ""
 

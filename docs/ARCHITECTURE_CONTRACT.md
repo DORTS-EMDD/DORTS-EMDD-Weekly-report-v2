@@ -273,6 +273,51 @@ Alternative source 只能由 Evidence Service 在同一 evidence acquisition res
 
 沒有可信且與事件相符的 substantive source content，不得進正式報告流程。
 
+### Evidence semantic match mechanism
+
+`EvidenceService` remains the sole authoritative owner of:
+
+```text
+EVIDENCE_READY
+EVIDENCE_REJECTED
+```
+
+EvidenceService may use a restricted Semantic Judge helper for the
+Source-to-Candidate Match decision. The helper is not a second owner and
+cannot create either Evidence terminal state.
+
+EvidenceService may reject a Candidate before invoking the helper when a
+deterministic structural Evidence gate fails, including unresolved or invalid
+resource provenance, a discovery feed, a homepage / listing / search shell,
+title-only content, missing principal substantive body content, or unusable
+content. A Candidate that passes these gates must use the single semantic
+judgment path. Exact H1, HTML title, URL, token overlap, numeric overlap,
+keyword match, or fuzzy lexical match cannot create a positive deterministic
+`EVIDENCE_READY` bypass.
+
+The Semantic Judge receives only EvidenceService-supplied Candidate and
+principal body material. It may return `SAME_EVENT`, `DIFFERENT_EVENT`, or
+`UNCERTAIN` with validated body support or conflict spans. It may not search,
+fetch, use external facts, decide Scope, Date, Category, E&M Taxonomy, or
+Reportability, and it may not take on MaiAgent's writing responsibility.
+
+EvidenceService validates the helper response and makes the final decision.
+`SAME_EVENT` is usable only when its support spans point to supplied body text
+and pass span validation. `DIFFERENT_EVENT`, `UNCERTAIN`, invalid or malformed
+responses, invalid support spans, timeout, and transport/provider failure are
+conservative Evidence rejection conditions. Phase 1 permits one semantic
+judge call per Candidate and no retry to obtain a different relation.
+
+The detailed input, output, validation, failure, versioning, and RunTrace
+requirements are authoritative in
+`docs/EVIDENCE_SEMANTIC_JUDGE.md`.
+
+The structural representation, principal-document boundary, principal-body
+extraction, ambiguity, and structural diagnostic requirements are
+authoritative in `docs/EVIDENCE_STRUCTURAL_DOCUMENT.md`. This subordinate
+implementation contract does not add a Domain Owner or change EvidenceService
+ownership of `EVIDENCE_READY` / `EVIDENCE_REJECTED`.
+
 ## I. Temporal
 
 正式期間 eligibility 預設使用：
