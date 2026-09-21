@@ -19,7 +19,8 @@
       "published_at": "2026-09-17T14:00:00Z",
       "discovery_intent": "technology",
       "search_snippet": "The metro began a station-elevator safety monitoring pilot using vibration and door-cycle data.",
-      "source_content": "Synthetic metro engineering release. The metro began a predictive elevator safety-monitoring pilot at three stations. The release describes vibration sensing, door-cycle analysis, safety alerts, test results, and the operational decision process for station accessibility equipment."
+      "source_content": "Synthetic metro engineering release. The metro began a predictive elevator safety-monitoring pilot at three stations. The release describes vibration sensing, door-cycle analysis, safety alerts, test results, and the operational decision process for station accessibility equipment.",
+      "source_date_facts": [{"raw_date_value":"2026-09-17T14:00:00Z","date_kind":"ORIGINAL_PUBLICATION","principal_document_association":"C1","source_node_or_field_provenance":"source_content.publication_date","explicit_timezone_or_offset":"Z"}]
     }
   ],
   "expected": {

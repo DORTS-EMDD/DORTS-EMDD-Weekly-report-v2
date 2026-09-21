@@ -8,7 +8,7 @@ Golden Corpus 不是 production code，也不是 executable Python test suite。
 
 每個 expected outcome 都以 docs/ARCHITECTURE_CONTRACT.md 的 v0.5 FINAL_LOCKED 為 authoritative source。V1 只提供 read-only case material、regression intent 與 historical lessons；V1 的 expected outcome 不會自動成為 V2 正確答案。
 
-本版 21 個 case 全部標示為 SYNTHETIC_CONTRACT_CASE。這是刻意的選擇：本次檢視到的 V1 regression tests 具有可用的 case intent，但沒有需要在 V2 中固化、且足以安全重建為 authoritative evidence snapshot 的完整歷史 fixture。未 materialize named historical cases，不以記憶杜撰新聞、官方公告或 source text。
+本版 48 個 case 全部標示為 SYNTHETIC_CONTRACT_CASE。這是刻意的選擇：本次檢視到的 V1 regression tests 具有可用的 case intent，但沒有需要在 V2 中固化、且足以安全重建為 authoritative evidence snapshot 的完整歷史 fixture。未 materialize named historical cases，不以記憶杜撰新聞、官方公告或 source text。
 
 本版沒有把 Bukit Gombak、TransLink elevator 或 Tokyo overhead-wire 等名稱假裝成 V2 historical fixture。若未來有合法、固定、可重現且不需大量複製受版權保護正文的 evidence snapshot，可新增 V1_HISTORICAL_FIXTURE 或 V1_REGRESSION_DERIVED case；否則應維持 synthetic case。
 
@@ -75,6 +75,43 @@ G10、G11、G19、G20、G21 覆蓋 standard procurement、innovative procurement
 | G19 | Below USD 3M but innovative | Synthetic |
 | G20 | Amount unknown | Synthetic |
 | G21 | No reliable currency conversion | Synthetic |
+| G22 | Streetcar / Tram equivalence | Synthetic |
+| G23 | Commuter rail without eligible-mode proof | Synthetic |
+| G24 | Commuter label with explicit Metro proof | Synthetic |
+| G25 | Airport Metro | Synthetic |
+| G26 | Airport AGT / People Mover | Synthetic |
+| G27 | Conventional airport express | Synthetic |
+| G28 | Funicular out of scope | Synthetic |
+| G29 | Cable railway out of scope | Synthetic |
+| G30 | Urban maglev | Synthetic |
+| G31 | Intercity / high-speed maglev | Synthetic |
+| G32 | Mixed Metro and mainline, resolvable | Synthetic |
+| G33 | Mixed Metro and mainline, unresolved | Synthetic |
+| G34 | Urban-rail operator with non-urban event | Synthetic |
+| G35 | Cross-language eligible Subway | Synthetic |
+| G36 | Exact period_start | Synthetic |
+| G37 | Exact period_end | Synthetic |
+| G38 | One day before period_start | Synthetic |
+| G39 | One day after period_end | Synthetic |
+| G40 | Explicit offset source calendar date | Synthetic |
+| G41 | Timezone-less source timestamp | Synthetic |
+| G42 | Date-only source | Synthetic |
+| G43 | Missing authoritative date | Synthetic |
+| G44 | Discovery-only date | Synthetic |
+| G45 | Publication versus modified date | Synthetic |
+| G46 | Publication versus Event date | Synthetic |
+| G47 | Conflicting publication facts | Synthetic |
+| G48 | Procurement deadline versus notice publication | Synthetic |
+
+## Source-associated date facts
+
+Fixtures that formally reach Temporal provide a `candidates[].source_date_facts`
+array. Each fact records the raw source value, its factual `date_kind`, the
+principal-document association, source field/node provenance, and explicit
+timezone or offset when present. `Candidate.published_at` remains discovery
+metadata and is never authoritative by itself. Multiple same-kind facts for
+one principal document are retained when they conflict so the expected
+`DATE_CONFLICT` outcome is explicit.
 
 ## V1 files inspected
 

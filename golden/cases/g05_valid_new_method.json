@@ -19,7 +19,8 @@
       "published_at": "2026-09-16T08:00:00Z",
       "discovery_intent": "technology",
       "search_snippet": "A metro depot introduced a sensor-assisted method for pantograph inspection between service cycles.",
-      "source_content": "Synthetic maintenance bulletin. A metro depot introduced a sensor-assisted condition-based inspection method for pantographs between service cycles. The bulletin explains the inspection sequence, measured indicators, test period, and maintenance decision."
+      "source_content": "Synthetic maintenance bulletin. A metro depot introduced a sensor-assisted condition-based inspection method for pantographs between service cycles. The bulletin explains the inspection sequence, measured indicators, test period, and maintenance decision.",
+      "source_date_facts": [{"raw_date_value":"2026-09-16T08:00:00Z","date_kind":"ORIGINAL_PUBLICATION","principal_document_association":"C1","source_node_or_field_provenance":"source_content.publication_date","explicit_timezone_or_offset":"Z"}]
     }
   ],
   "expected": {

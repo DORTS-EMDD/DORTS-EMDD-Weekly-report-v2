@@ -1,0 +1,20 @@
+{
+  "case_id": "G23",
+  "name": "commuter_rail_without_eligible_mode",
+  "description": "The substantive event concerns commuter rail only and supplies no eligible urban-rail mode proof.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {"report_type":"weekly","period_start":"2026-09-12","period_end":"2026-09-18","region_mode":"global"},
+  "candidates": [{
+    "candidate_id":"C1",
+    "title":"Commuter rail installs regional corridor monitoring equipment",
+    "url":"https://fixtures.invalid/g23-commuter-only",
+    "publisher":"Synthetic Contract Fixture",
+    "published_at":"2026-09-13T08:00:00Z",
+    "discovery_intent":"technology",
+    "search_snippet":"A commuter rail operator installed monitoring equipment on a regional corridor.",
+    "source_content":"Synthetic railway technical release. The commuter rail operator installed monitoring equipment on a suburban regional corridor. The source describes no Metro, MRT, Subway, Light Rail, Tram, AGT, Monorail, People Mover, or Urban Rail system."
+  }],
+  "expected": {"evidence_state":"EVIDENCE_READY","scope":"OUT_OF_SCOPE","scope_diagnostic":"NON_URBAN_RAIL","date_valid":"NOT_EVALUATED","event_identity_expectation":"NOT_EVALUATED","event_count_after_dedup":"NOT_EVALUATED","primary_category":"NOT_EVALUATED","subtype":"NOT_EVALUATED","e&m_taxonomy":"NOT_EVALUATED","reportability":"NOT_EVALUATED","reject_stage":"SCOPE","reject_reason":"OUT_OF_SCOPE"},
+  "contract_notes":["Commuter or regional rail terminology alone cannot establish eligible urban-rail Scope."]
+}

@@ -20,6 +20,7 @@
       "discovery_intent": "procurement",
       "search_snippet": "The metro awarded a platform-door replacement package for two stations; the amount was not disclosed.",
       "source_content": "Synthetic procurement notice. The metro awarded a contract to replace platform doors at two stations. The notice identifies the equipment scope, safety interface, delivery milestones, and awarded supplier, but does not disclose the contract amount.",
+      "source_date_facts": [{"raw_date_value":"2026-09-18T08:00:00Z","date_kind":"NOTICE_PUBLISHED","principal_document_association":"C1","source_node_or_field_provenance":"source_content.notice_publication_date","explicit_timezone_or_offset":"Z"}],
       "procurement": {
         "action": "award",
         "amount": null,

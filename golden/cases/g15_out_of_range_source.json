@@ -19,7 +19,8 @@
       "published_at": "2026-09-01T08:00:00Z",
       "discovery_intent": "technology",
       "search_snippet": "The metro commissioned a platform-door diagnostic system on 1 September.",
-      "source_content": "Synthetic technical release. The metro commissioned a platform-door diagnostic system on 1 September 2026. The release describes the system, the station deployment, commissioning steps, and technical results."
+      "source_content": "Synthetic technical release. The metro commissioned a platform-door diagnostic system on 1 September 2026. The release describes the system, the station deployment, commissioning steps, and technical results.",
+      "source_date_facts": [{"raw_date_value":"2026-09-01T08:00:00Z","date_kind":"ORIGINAL_PUBLICATION","principal_document_association":"C1","source_node_or_field_provenance":"source_content.publication_date","explicit_timezone_or_offset":"Z"}]
     }
   ],
   "expected": {

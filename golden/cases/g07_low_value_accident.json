@@ -19,7 +19,8 @@
       "published_at": "2026-09-16T10:00:00Z",
       "discovery_intent": "major incident",
       "search_snippet": "A passenger received a minor injury after slipping on a station stair; service was unaffected.",
-      "source_content": "Synthetic station notice. A passenger slipped on a station stair and received a minor injury. No train, signalling, power, platform-door, evacuation, service, or project impact occurred."
+      "source_content": "Synthetic station notice. A passenger slipped on a station stair and received a minor injury. No train, signalling, power, platform-door, evacuation, service, or project impact occurred.",
+      "source_date_facts": [{"raw_date_value":"2026-09-16T10:00:00Z","date_kind":"NOTICE_PUBLISHED","principal_document_association":"C1","source_node_or_field_provenance":"source_content.notice_publication_date","explicit_timezone_or_offset":"Z"}]
     }
   ],
   "expected": {

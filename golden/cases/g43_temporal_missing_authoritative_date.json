@@ -1,0 +1,11 @@
+{
+  "case_id":"G43",
+  "name":"temporal_missing_authoritative_date",
+  "description":"No source-associated controlling date is supplied.",
+  "origin_type":"SYNTHETIC_CONTRACT_CASE",
+  "origin_reference":null,
+  "run_context":{"report_type":"weekly","period_start":"2026-09-12","period_end":"2026-09-18","region_mode":"global"},
+  "candidates":[{"candidate_id":"C1","title":"Metro publishes a technical release without a date","url":"https://fixtures.invalid/g43-missing-date","publisher":"Synthetic Contract Fixture","discovery_intent":"technology","search_snippet":"The Metro published a technical release.","source_content":"Synthetic technical release. The substantive source describes a Metro diagnostic deployment but supplies no publication or notice date.","source_date_facts":[]}],
+  "expected":{"evidence_state":"EVIDENCE_READY","scope":"IN_SCOPE","scope_diagnostic":"NONE","date_valid":false,"temporal_diagnostic":"DATE_MISSING","event_identity_expectation":"NOT_EVALUATED","event_count_after_dedup":"NOT_EVALUATED","primary_category":"NOT_EVALUATED","subtype":"NOT_EVALUATED","e&m_taxonomy":"NOT_EVALUATED","reportability":"NOT_EVALUATED","reject_stage":"TEMPORAL","reject_reason":"DATE_MISSING"},
+  "contract_notes":["No Candidate discovery date exists to substitute, and no authoritative source-associated date is present."]
+}

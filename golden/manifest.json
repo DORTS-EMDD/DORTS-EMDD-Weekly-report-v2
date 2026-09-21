@@ -3,7 +3,7 @@
   "architecture_baseline": "v0.5 FINAL_LOCKED",
   "status": "LOCKED_BASELINE",
   "live_search": false,
-  "case_count": 21,
+  "case_count": 48,
   "cases": [
     {
       "case_id": "G01",
@@ -129,6 +129,168 @@
       "case_id": "G21",
       "file": "cases/g21_no_reliable_currency_conversion.json",
       "case_class": "no_reliable_currency_conversion",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G22",
+      "file": "cases/g22_streetcar_tram_equivalence.json",
+      "case_class": "streetcar_tram_equivalence",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G23",
+      "file": "cases/g23_commuter_rail_without_eligible_mode.json",
+      "case_class": "commuter_rail_without_eligible_mode",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G24",
+      "file": "cases/g24_commuter_label_with_metro_proof.json",
+      "case_class": "commuter_label_with_metro_proof",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G25",
+      "file": "cases/g25_airport_metro.json",
+      "case_class": "airport_metro",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G26",
+      "file": "cases/g26_airport_agt_people_mover.json",
+      "case_class": "airport_agt_people_mover",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G27",
+      "file": "cases/g27_conventional_airport_express.json",
+      "case_class": "conventional_airport_express",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G28",
+      "file": "cases/g28_funicular_out_of_scope.json",
+      "case_class": "funicular_out_of_scope",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G29",
+      "file": "cases/g29_cable_railway_out_of_scope.json",
+      "case_class": "cable_railway_out_of_scope",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G30",
+      "file": "cases/g30_urban_maglev.json",
+      "case_class": "urban_maglev",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G31",
+      "file": "cases/g31_intercity_high_speed_maglev.json",
+      "case_class": "intercity_high_speed_maglev",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G32",
+      "file": "cases/g32_mixed_metro_mainline_resolvable.json",
+      "case_class": "mixed_metro_mainline_resolvable",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G33",
+      "file": "cases/g33_mixed_metro_mainline_unresolved.json",
+      "case_class": "mixed_metro_mainline_unresolved",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G34",
+      "file": "cases/g34_operator_non_urban_event.json",
+      "case_class": "operator_non_urban_event",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G35",
+      "file": "cases/g35_cross_language_subway_scope.json",
+      "case_class": "cross_language_subway_scope",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G36",
+      "file": "cases/g36_temporal_exact_period_start.json",
+      "case_class": "temporal_exact_period_start",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G37",
+      "file": "cases/g37_temporal_exact_period_end.json",
+      "case_class": "temporal_exact_period_end",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G38",
+      "file": "cases/g38_temporal_before_period_start.json",
+      "case_class": "temporal_before_period_start",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G39",
+      "file": "cases/g39_temporal_after_period_end.json",
+      "case_class": "temporal_after_period_end",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G40",
+      "file": "cases/g40_temporal_explicit_offset_calendar_date.json",
+      "case_class": "temporal_explicit_offset_calendar_date",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G41",
+      "file": "cases/g41_temporal_timezone_less_timestamp.json",
+      "case_class": "temporal_timezone_less_timestamp",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G42",
+      "file": "cases/g42_temporal_date_only_source.json",
+      "case_class": "temporal_date_only_source",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G43",
+      "file": "cases/g43_temporal_missing_authoritative_date.json",
+      "case_class": "temporal_missing_authoritative_date",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G44",
+      "file": "cases/g44_temporal_discovery_only_date.json",
+      "case_class": "temporal_discovery_only_date",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G45",
+      "file": "cases/g45_temporal_modified_cannot_rescue.json",
+      "case_class": "temporal_modified_cannot_rescue",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G46",
+      "file": "cases/g46_temporal_event_date_cannot_rescue.json",
+      "case_class": "temporal_event_date_cannot_rescue",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G47",
+      "file": "cases/g47_temporal_conflicting_publication_facts.json",
+      "case_class": "temporal_conflicting_publication_facts",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+    },
+    {
+      "case_id": "G48",
+      "file": "cases/g48_temporal_deadline_cannot_rescue.json",
+      "case_class": "temporal_deadline_cannot_rescue",
       "origin_type": "SYNTHETIC_CONTRACT_CASE"
     }
   ]

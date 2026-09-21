@@ -1,0 +1,21 @@
+{
+  "case_id": "G33",
+  "name": "mixed_metro_mainline_unresolved",
+  "description": "The source mixes Metro and mainline systems but cannot tie the substantive action to either eligible or excluded portion.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {"report_type":"weekly","period_start":"2026-09-12","period_end":"2026-09-18","region_mode":"global"},
+  "candidates": [{
+    "candidate_id":"C1",
+    "title":"Rail operator upgrades shared corridor control equipment",
+    "url":"https://fixtures.invalid/g33-mixed-unresolved",
+    "publisher":"Synthetic Contract Fixture",
+    "published_at":"2026-09-15T09:00:00Z",
+    "discovery_intent":"technology",
+    "search_snippet":"A rail operator upgraded control equipment on a shared corridor.",
+    "source_content":"Synthetic mixed transport release. The corridor carries both Metro and conventional mainline services. The release describes one shared control-equipment upgrade but does not identify whether the action applies to the Metro portion, the mainline portion, or both.",
+    "source_date_facts":[]
+  }],
+  "expected": {"evidence_state":"EVIDENCE_READY","scope":"OUT_OF_SCOPE","scope_diagnostic":"SCOPE_NOT_ESTABLISHED","date_valid":"NOT_EVALUATED","event_identity_expectation":"NOT_EVALUATED","event_count_after_dedup":"NOT_EVALUATED","primary_category":"NOT_EVALUATED","subtype":"NOT_EVALUATED","e&m_taxonomy":"NOT_EVALUATED","reportability":"NOT_EVALUATED","reject_stage":"SCOPE","reject_reason":"OUT_OF_SCOPE"},
+  "contract_notes":["Unresolved mixed-mode ownership is conservatively OUT_OF_SCOPE with a diagnostic, not a third authoritative state."]
+}

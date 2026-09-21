@@ -19,7 +19,8 @@
       "published_at": "2026-09-17T10:00:00Z",
       "discovery_intent": "major incident",
       "search_snippet": "A traction substation fault suspended Line 2 during the morning peak.",
-      "source_content": "Synthetic English incident report. On 17 September 2026, a traction substation fault at Central Section suspended Metro Line 2 during the morning peak. The operator isolated the substation and restored service after inspection."
+      "source_content": "Synthetic English incident report. On 17 September 2026, a traction substation fault at Central Section suspended Metro Line 2 during the morning peak. The operator isolated the substation and restored service after inspection.",
+      "source_date_facts": [{"raw_date_value":"2026-09-17T10:00:00Z","date_kind":"ORIGINAL_PUBLICATION","principal_document_association":"C1","source_node_or_field_provenance":"source_content.publication_date","explicit_timezone_or_offset":"Z"}]
     },
     {
       "candidate_id": "C2",
@@ -29,7 +30,8 @@
       "published_at": "2026-09-17T10:20:00Z",
       "discovery_intent": "major incident",
       "search_snippet": "牽引變電站故障使二號線尖峰時段停駛，檢修後恢復服務。",
-      "source_content": "Synthetic Chinese incident report. 2026年9月17日，中央區段牽引變電站發生故障，造成地鐵二號線尖峰時段停駛；營運商隔離變電站並完成檢查後恢復服務。"
+      "source_content": "Synthetic Chinese incident report. 2026年9月17日，中央區段牽引變電站發生故障，造成地鐵二號線尖峰時段停駛；營運商隔離變電站並完成檢查後恢復服務。",
+      "source_date_facts": [{"raw_date_value":"2026-09-17T10:20:00Z","date_kind":"ORIGINAL_PUBLICATION","principal_document_association":"C2","source_node_or_field_provenance":"source_content.publication_date","explicit_timezone_or_offset":"Z"}]
     }
   ],
   "expected": {

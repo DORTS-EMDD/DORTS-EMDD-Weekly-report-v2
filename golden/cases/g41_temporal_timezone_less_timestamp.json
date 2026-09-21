@@ -1,0 +1,11 @@
+{
+  "case_id":"G41",
+  "name":"temporal_timezone_less_timestamp",
+  "description":"An authoritative offset-free source timestamp uses its expressed calendar date without an invented timezone.",
+  "origin_type":"SYNTHETIC_CONTRACT_CASE",
+  "origin_reference":null,
+  "run_context":{"report_type":"weekly","period_start":"2026-09-12","period_end":"2026-09-18","region_mode":"global"},
+  "candidates":[{"candidate_id":"C1","title":"Metro publishes an offset-free operations bulletin","url":"https://fixtures.invalid/g41-timezone-less","publisher":"Synthetic Contract Fixture","published_at":"2026-09-12T10:00:00","discovery_intent":"operations","search_snippet":"The Metro published an operations bulletin.","source_content":"Synthetic operations bulletin. The source explicitly supplies the publication timestamp 2026-09-12T10:00:00 without an offset.","source_date_facts":[{"raw_date_value":"2026-09-12T10:00:00","date_kind":"ORIGINAL_PUBLICATION","principal_document_association":"C1","source_node_or_field_provenance":"source_content.publication_timestamp","explicit_timezone_or_offset":null}]}],
+  "expected":{"evidence_state":"EVIDENCE_READY","scope":"IN_SCOPE","scope_diagnostic":"NONE","date_valid":true,"temporal_diagnostic":"NONE","event_identity_expectation":"NOT_EVALUATED","event_count_after_dedup":"NOT_EVALUATED","primary_category":"NOT_EVALUATED","subtype":"NOT_EVALUATED","e&m_taxonomy":"NOT_EVALUATED","reportability":"NOT_EVALUATED","reject_stage":"NONE","reject_reason":"NONE"},
+  "contract_notes":["No timezone is invented; the source-expressed calendar date is 2026-09-12."]
+}

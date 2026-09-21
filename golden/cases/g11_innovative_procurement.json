@@ -20,6 +20,7 @@
       "discovery_intent": "procurement",
       "search_snippet": "The metro issued a procurement for a pilot wayside energy-storage system to recover braking energy.",
       "source_content": "Synthetic pilot procurement notice. The metro issued a procurement for a pilot wayside energy-storage system that captures regenerative braking energy. The notice describes the storage chemistry, the wayside test site, trial objectives, measurement plan, and procurement action.",
+      "source_date_facts": [{"raw_date_value":"2026-09-17T09:00:00Z","date_kind":"NOTICE_ISSUED","principal_document_association":"C1","source_node_or_field_provenance":"source_content.procurement_notice_issued_at","explicit_timezone_or_offset":"Z"}],
       "procurement": {
         "action": "pilot procurement",
         "amount": "USD 1.2M",

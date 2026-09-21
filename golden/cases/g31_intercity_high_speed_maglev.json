@@ -1,0 +1,21 @@
+{
+  "case_id": "G31",
+  "name": "intercity_high_speed_maglev",
+  "description": "The source describes intercity high-speed maglev without eligible urban-rail mode proof.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {"report_type":"weekly","period_start":"2026-09-12","period_end":"2026-09-18","region_mode":"global"},
+  "candidates": [{
+    "candidate_id":"C1",
+    "title":"Intercity high-speed maglev completes corridor test",
+    "url":"https://fixtures.invalid/g31-intercity-maglev",
+    "publisher":"Synthetic Contract Fixture",
+    "published_at":"2026-09-14T12:00:00Z",
+    "discovery_intent":"technology",
+    "search_snippet":"An intercity high-speed maglev completed a corridor test.",
+    "source_content":"Synthetic high-speed railway release. An intercity high-speed maglev completed a test on a long-distance corridor between regions. The source establishes intercity service and does not establish Metro, MRT, Subway, Light Rail, Tram, AGT, Monorail, People Mover, or Urban Rail mode.",
+    "source_date_facts":[]
+  }],
+  "expected": {"evidence_state":"EVIDENCE_READY","scope":"OUT_OF_SCOPE","scope_diagnostic":"NON_URBAN_RAIL","date_valid":"NOT_EVALUATED","event_identity_expectation":"NOT_EVALUATED","event_count_after_dedup":"NOT_EVALUATED","primary_category":"NOT_EVALUATED","subtype":"NOT_EVALUATED","e&m_taxonomy":"NOT_EVALUATED","reportability":"NOT_EVALUATED","reject_stage":"SCOPE","reject_reason":"OUT_OF_SCOPE"},
+  "contract_notes":["Maglev alone is not Scope proof; intercity/high-speed service remains out of scope."]
+}

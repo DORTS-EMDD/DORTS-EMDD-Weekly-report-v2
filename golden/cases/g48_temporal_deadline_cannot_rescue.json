@@ -1,0 +1,11 @@
+{
+  "case_id":"G48",
+  "name":"temporal_deadline_cannot_rescue",
+  "description":"A procurement notice is published outside the period although its bid deadline falls inside the period.",
+  "origin_type":"SYNTHETIC_CONTRACT_CASE",
+  "origin_reference":null,
+  "run_context":{"report_type":"weekly","period_start":"2026-09-12","period_end":"2026-09-18","region_mode":"global"},
+  "candidates":[{"candidate_id":"C1","title":"Metro tender deadline follows an old procurement notice","url":"https://fixtures.invalid/g48-deadline","publisher":"Synthetic Contract Fixture","published_at":"2026-09-01T08:00:00Z","discovery_intent":"procurement","search_snippet":"A Metro tender has a bid deadline on 18 September.","source_content":"Synthetic procurement notice. The Metro published the tender on 2026-09-01 and set a bid deadline of 2026-09-18. The notice publication is outside the report period.","source_date_facts":[{"raw_date_value":"2026-09-01T08:00:00Z","date_kind":"NOTICE_PUBLISHED","principal_document_association":"C1","source_node_or_field_provenance":"source_content.notice_publication_date","explicit_timezone_or_offset":"Z"},{"raw_date_value":"2026-09-18","date_kind":"DEADLINE","principal_document_association":"C1","source_node_or_field_provenance":"source_content.bid_deadline","explicit_timezone_or_offset":null}]}],
+  "expected":{"evidence_state":"EVIDENCE_READY","scope":"IN_SCOPE","scope_diagnostic":"NONE","date_valid":false,"temporal_diagnostic":"OUT_OF_RANGE","event_identity_expectation":"NOT_EVALUATED","event_count_after_dedup":"NOT_EVALUATED","primary_category":"NOT_EVALUATED","subtype":"NOT_EVALUATED","e&m_taxonomy":"NOT_EVALUATED","reportability":"NOT_EVALUATED","reject_stage":"TEMPORAL","reject_reason":"OUT_OF_RANGE"},
+  "contract_notes":["Notice publication controls; bid deadline cannot rescue an out-of-range procurement notice."]
+}
