@@ -335,6 +335,12 @@ Temporal Rule 唯一負責：
 
 下游不得重新解讀 publication / notice date 或以其他日期將期間外來源救回。
 
+Controlling-date provenance、source-type precedence、calendar-date、timezone、
+inclusive period boundary、failure diagnostics 與 Evidence factual interface 的
+詳細規則，以 `docs/TEMPORAL_CONTRACT.md` 為 authoritative subordinate contract。
+該文件不新增 Domain Owner、pipeline stage 或 workflow lane，Temporal Rule 仍為
+`DATE_VALID` 的唯一 owner。
+
 ## J. Scope
 
 正式範圍包括：
@@ -352,6 +358,11 @@ Temporal Rule 唯一負責：
 一般鐵路、高鐵、公車、航空、旅遊不屬正式 scope。
 
 Scope 只由 Scope Classifier 判。
+
+Eligible mode family、boundary mode、mixed-mode、diagnostic 與 constrained
+semantic helper 的詳細規則，以 `docs/SCOPE_CONTRACT.md` 為 authoritative
+subordinate contract。該文件不新增 Domain Owner、pipeline stage 或 workflow
+lane，Scope Classifier 仍為 `IN_SCOPE` / `OUT_OF_SCOPE` 的唯一 owner。
 
 ## K. Event Dedup
 
