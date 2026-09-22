@@ -3,6 +3,8 @@
   "architecture_baseline": "v0.5 FINAL_LOCKED",
   "status": "LOCKED_BASELINE",
   "live_search": false,
+  "event_dedup_cases_file": "event_dedup_cases.json",
+  "event_dedup_case_count": 15,
   "case_count": 48,
   "cases": [
     {

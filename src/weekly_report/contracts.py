@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
+from types import MappingProxyType
 from typing import Any, Mapping
 
 
@@ -13,6 +14,167 @@ class EvidenceState(StrEnum):
 
     READY = "EVIDENCE_READY"
     REJECTED = "EVIDENCE_REJECTED"
+
+
+@dataclass(frozen=True, slots=True)
+class EventIdentityFacts:
+    """Evidence-backed facts that may participate in event identity."""
+
+    # Compatibility/debug corroboration only; Event Identity never treats
+    # this field as proof of SAME_EVENT.
+    event_key: str = ""
+    action: str = ""
+    lifecycle_step: str = ""
+    subject: str = ""
+    asset: str = ""
+    project: str = ""
+    package: str = ""
+    location: str = ""
+    occurrence_context: str = ""
+    occurrence_date: str = ""
+    non_identity_claims: Mapping[str, str] = field(default_factory=dict)
+    evidence_references: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        claims = {
+            str(key): str(value)
+            for key, value in dict(self.non_identity_claims).items()
+            if str(value).strip()
+        }
+        object.__setattr__(self, "non_identity_claims", MappingProxyType(claims))
+        object.__setattr__(
+            self,
+            "evidence_references",
+            tuple(str(value) for value in self.evidence_references if str(value)),
+        )
+
+    @classmethod
+    def from_mapping(cls, value: Mapping[str, Any]) -> "EventIdentityFacts":
+        claims = value.get("non_identity_claims", {})
+        references = value.get("evidence_references", ())
+        return cls(
+            event_key=str(value.get("event_key", "") or ""),
+            action=str(value.get("action", "") or ""),
+            lifecycle_step=str(value.get("lifecycle_step", "") or ""),
+            subject=str(value.get("subject", "") or ""),
+            asset=str(value.get("asset", "") or ""),
+            project=str(value.get("project", "") or ""),
+            package=str(value.get("package", "") or ""),
+            location=str(value.get("location", "") or ""),
+            occurrence_context=str(value.get("occurrence_context", "") or ""),
+            occurrence_date=str(value.get("occurrence_date", "") or ""),
+            non_identity_claims=claims if isinstance(claims, Mapping) else {},
+            evidence_references=tuple(references or ()),
+        )
+
+
+class EventIdentityRelation(StrEnum):
+    """Advisory pair relation; UNCERTAIN never becomes a group state."""
+
+    SAME_EVENT = "SAME_EVENT"
+    DISTINCT_EVENT = "DISTINCT_EVENT"
+    UNCERTAIN = "UNCERTAIN"
+
+
+@dataclass(frozen=True, slots=True)
+class EventIdentitySupportSpan:
+    candidate_id: str
+    role: str
+    start: int
+    end: int
+
+
+@dataclass(frozen=True, slots=True)
+class EventIdentitySemanticRequest:
+    left_candidate_id: str
+    right_candidate_id: str
+    left_headline: str
+    right_headline: str
+    left_body: str
+    right_body: str
+    left_source_url: str
+    right_source_url: str
+    left_source_type: str
+    right_source_type: str
+    left_identity_facts: EventIdentityFacts | None = None
+    right_identity_facts: EventIdentityFacts | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class EventIdentitySemanticDecision:
+    relation: EventIdentityRelation
+    support_spans: tuple[EventIdentitySupportSpan, ...] = ()
+    contradictions: tuple[str, ...] = ()
+    missing_support: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class EventIdentityRecord:
+    """One candidate after Evidence, Scope, and Temporal have run."""
+
+    candidate: "CanonicalCandidate"
+    evidence: "EvidenceResult"
+    scope: "ScopeResult"
+    temporal: "TemporalResult"
+
+    def __post_init__(self) -> None:
+        candidate_id = self.candidate.candidate_id
+        if not candidate_id:
+            raise ValueError("EventIdentityRecord requires candidate_id")
+        for value in (self.evidence, self.scope, self.temporal):
+            if value.candidate_id != candidate_id:
+                raise ValueError("all upstream results must use the candidate_id")
+
+    @property
+    def identity_facts(self) -> EventIdentityFacts | None:
+        return self.evidence.identity_facts
+
+
+@dataclass(frozen=True, slots=True)
+class EventIdentityBasis:
+    candidate_id: str
+    supported_fields: tuple[str, ...]
+    evidence_references: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class UnresolvedClaim:
+    claim_key: str
+    candidate_values: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class EventGroup:
+    """Immutable post-decision group; source bodies are never merged here."""
+
+    event_id: str
+    member_candidate_ids: tuple[str, ...]
+    canonical_candidate_id: str
+    identity_basis: tuple[EventIdentityBasis, ...]
+    unresolved_claims: tuple[UnresolvedClaim, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.event_id:
+            raise ValueError("EventGroup requires event_id")
+        if tuple(sorted(set(self.member_candidate_ids))) != self.member_candidate_ids:
+            raise ValueError("member_candidate_ids must be unique and sorted")
+        if not self.member_candidate_ids:
+            raise ValueError("EventGroup requires at least one member")
+        if self.canonical_candidate_id not in self.member_candidate_ids:
+            raise ValueError("canonical_candidate_id must belong to the group")
+
+
+@dataclass(frozen=True, slots=True)
+class EventIdentityDiagnostic:
+    candidate_ids: tuple[str, ...]
+    reason: str
+    detail: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class EventIdentityRun:
+    groups: tuple[EventGroup, ...]
+    diagnostics: tuple[EventIdentityDiagnostic, ...] = ()
 
 
 class RejectReason(StrEnum):
@@ -186,6 +348,7 @@ class EvidenceResult:
     provenance: Mapping[str, Any] = field(default_factory=dict)
     reject_reason: RejectReason | None = None
     source_date_facts: tuple[SourceDateFact, ...] = ()
+    identity_facts: EventIdentityFacts | None = None
 
     def __post_init__(self) -> None:
         facts: list[SourceDateFact] = []
@@ -197,6 +360,16 @@ class EvidenceResult:
             else:
                 raise TypeError("source_date_facts must contain SourceDateFact values")
         object.__setattr__(self, "source_date_facts", tuple(facts))
+        if isinstance(self.identity_facts, Mapping):
+            object.__setattr__(
+                self,
+                "identity_facts",
+                EventIdentityFacts.from_mapping(self.identity_facts),
+            )
+        elif self.identity_facts is not None and not isinstance(
+            self.identity_facts, EventIdentityFacts
+        ):
+            raise TypeError("identity_facts must contain EventIdentityFacts values")
         if self.state is EvidenceState.READY and self.reject_reason is not None:
             raise ValueError("EVIDENCE_READY cannot carry a reject reason")
         if self.state is EvidenceState.REJECTED and self.reject_reason is None:
