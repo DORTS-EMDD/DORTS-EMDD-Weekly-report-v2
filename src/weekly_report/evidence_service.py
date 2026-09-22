@@ -403,6 +403,12 @@ class EvidenceService:
             fetched.content,
             fetched.content_type,
             resource_url=resolved_url,
+            candidate_id=item.candidate_id,
+            resource_identity_checker=lambda value: _canonical_is_related(
+                value,
+                resolved_url,
+                fetched.redirect_chain,
+            ),
         )
         body = assessment.body_text
         document_level_headlines = list(assessment.document_level_headlines)
@@ -551,6 +557,7 @@ class EvidenceService:
                 **structural_provenance,
                 **semantic_signals,
             },
+            source_date_facts=assessment.source_date_facts,
         )
 
     def _semantic_match(

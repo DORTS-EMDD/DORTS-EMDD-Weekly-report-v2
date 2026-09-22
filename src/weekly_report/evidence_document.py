@@ -8,6 +8,9 @@ signal cannot quietly become a second terminal-decision owner.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+import json
+import re
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from typing import Any, Iterable
@@ -64,6 +67,7 @@ class StructuralAssessment:
     unsupported_structure: bool = False
     reject_reason: str = ""
     diagnostics: dict[str, Any] = field(default_factory=dict)
+    source_date_facts: tuple[dict[str, Any], ...] = ()
 
     @property
     def body_text(self) -> str:
@@ -143,6 +147,8 @@ def _ancestors(node: _Node) -> Iterable[_Node]:
 
 
 def _exclusion_reason(node: _Node) -> str | None:
+    if _is_comment_node(node):
+        return "comment_reply_region"
     if node.tag.casefold() in _EXCLUDED_TAGS:
         return _EXCLUDED_TAGS[node.tag.casefold()]
     role = _role(node)
@@ -192,11 +198,37 @@ def _has_text_outside_headlines(node: _Node) -> bool:
     """
 
     def visit(current: _Node) -> bool:
-        if current is not node and current.tag.casefold() in _HEADLINE_TAGS:
+        if current is not node and _is_excluded_region(current, node) is not None:
+            return False
+        if current is not node and _is_article_node(current):
+            return False
+        if current.tag.casefold() in _HEADLINE_TAGS:
+            return False
+        if _is_collection_node(current):
+            return False
+        if _direct_text(current):
+            return True
+        for child in current.children:
+            if visit(child):
+                return True
+            if _clean(child.tail_text):
+                return True
+        return False
+
+    return visit(node)
+
+
+def _has_owned_headline(node: _Node) -> bool:
+    """Return whether a unit owns a headline outside nested structures."""
+
+    def visit(current: _Node) -> bool:
+        if current is not node and _is_excluded_region(current, node) is not None:
+            return False
+        if current is not node and _is_article_node(current):
             return False
         if current is not node and _is_collection_node(current):
             return False
-        if current.tag.casefold() not in _HEADLINE_TAGS and _direct_text(current):
+        if current is not node and current.tag.casefold() in _HEADLINE_TAGS:
             return True
         return any(visit(child) for child in current.children)
 
@@ -212,17 +244,15 @@ def _is_explicit_collection_unit(node: _Node) -> bool:
     typed unit may establish its shape through its article semantics.
     """
 
+    if _is_excluded_region(node) is not None:
+        return False
     if not (
         node.tag.casefold() == "li"
         or _role(node) == "listitem"
         or _is_article_node(node)
     ):
         return False
-    has_headline = any(
-        child.tag.casefold() in _HEADLINE_TAGS
-        for child in _walk(node)
-        if child is not node
-    )
+    has_headline = _has_owned_headline(node)
     return bool(has_headline and _has_text_outside_headlines(node))
 
 
@@ -260,6 +290,27 @@ def _node_text(node: _Node) -> str:
                 parts.append(child.tail_text)
 
     visit(node)
+    return _clean(" ".join(parts))
+
+
+def _owned_headline_text(node: _Node) -> str:
+    """Return headline text while preserving only owned descendants."""
+
+    parts: list[str] = []
+
+    def visit(current: _Node, *, root: bool = False) -> None:
+        if not root:
+            if _is_excluded_region(current) is not None:
+                return
+            if _is_article_node(current) or _is_collection_node(current):
+                return
+        parts.extend(current.text_parts)
+        for child in current.children:
+            visit(child)
+            if child.tail_text:
+                parts.append(child.tail_text)
+
+    visit(node, root=True)
     return _clean(" ".join(parts))
 
 
@@ -303,7 +354,7 @@ def _collect_principal_body(
                 _is_article_node(boundary)
                 and _is_descendant(node, boundary)
             )
-            if _is_comment_node(node) or nested_in_principal:
+            if nested_in_principal:
                 excluded.append(f"{node.node_id}:subordinate_document")
                 return
         if node is not boundary and _is_interactive_only_node(node):
@@ -393,11 +444,7 @@ def _is_generic_document_shaped_div(node: _Node) -> bool:
         node.tag.casefold() == "div"
         and not _role(node)
         and not _is_article_node(node)
-        and any(
-            child.tag.casefold() in _HEADLINE_TAGS
-            for child in _walk(node)
-            if child is not node
-        )
+        and _has_owned_headline(node)
         and _has_text_outside_headlines(node)
     )
 
@@ -423,17 +470,80 @@ def _has_unresolved_generic_sibling_units(boundary: _Node) -> bool:
     return False
 
 
+def _resource_element(root: _Node) -> _Node | None:
+    return root.children[0] if len(root.children) == 1 else None
+
+
+def _metadata_head_owner(
+    head: _Node,
+    principal_boundary: _Node | None,
+    resource_element: _Node | None,
+) -> str | None:
+    if _is_excluded_region(head) is not None:
+        return None
+    if (
+        principal_boundary is not None
+        and _is_descendant(head, principal_boundary)
+    ):
+        if _has_ancestor(head, _is_article_node, principal_boundary):
+            return None
+        return "principal"
+    if resource_element is not None and head.parent is resource_element:
+        return "resource"
+    return None
+
+
+def _metadata_carrier_is_owned(
+    node: _Node,
+    principal_boundary: _Node | None,
+    resource_element: _Node | None,
+) -> bool:
+    if _is_comment_node(node) or _role(node) in _EXCLUDED_ROLES:
+        return False
+
+    head: _Node | None = None
+    current = node.parent
+    while current is not None:
+        if current.tag.casefold() == "head":
+            head = current
+            break
+        current = current.parent
+    if head is None:
+        if principal_boundary is None or not _is_descendant(node, principal_boundary):
+            return False
+        current = node.parent
+        while current is not None and current is not principal_boundary:
+            if _exclusion_reason(current) or _is_article_node(current):
+                return False
+            current = current.parent
+        return current is principal_boundary
+    if _metadata_head_owner(head, principal_boundary, resource_element) is None:
+        return False
+
+    current = node.parent
+    while current is not None and current is not head:
+        if _exclusion_reason(current) or _is_article_node(current):
+            return False
+        current = current.parent
+    return current is head
+
+
 def _headlines_for(boundary: _Node, root: _Node) -> tuple[tuple[str, ...], tuple[str, ...]]:
     primary: list[str] = []
     secondary: list[str] = []
-    # Metadata and <title> belong to the fetched resource, not to arbitrary
-    # related cards.  They are therefore collected from document head only.
+    resource_element = _resource_element(root)
+    # Metadata and <title> belong to the fetched resource or positively owned
+    # principal boundary, not to arbitrary related cards.
     for node in _walk(root):
         if node.tag.casefold() == "title":
-            value = _node_text(node)
+            if not _metadata_carrier_is_owned(node, boundary, resource_element):
+                continue
+            value = _owned_headline_text(node)
             if value:
                 primary.append(value)
         if node.tag.casefold() == "meta":
+            if not _metadata_carrier_is_owned(node, boundary, resource_element):
+                continue
             key = (node.attrs.get("property") or node.attrs.get("name") or "").casefold()
             value = _clean(node.attrs.get("content", ""))
             if value and key in {"og:title", "twitter:title"}:
@@ -441,9 +551,10 @@ def _headlines_for(boundary: _Node, root: _Node) -> tuple[tuple[str, ...], tuple
         if (
             node.tag.casefold() in _HEADLINE_TAGS
             and _is_descendant(node, boundary)
+            and _is_excluded_region(node, boundary) is None
             and not _has_ancestor(node, _is_article_node, boundary)
         ):
-            value = _node_text(node)
+            value = _owned_headline_text(node)
             if not value:
                 continue
             if node.tag.casefold() == "h1":
@@ -458,7 +569,9 @@ def _headlines_for(boundary: _Node, root: _Node) -> tuple[tuple[str, ...], tuple
         for sibling in boundary.parent.children:
             if sibling is boundary or sibling.tag.casefold() != "h1":
                 continue
-            value = _node_text(sibling)
+            if _is_excluded_region(sibling) is not None:
+                continue
+            value = _owned_headline_text(sibling)
             if value:
                 primary.append(value)
     return tuple(dict.fromkeys(primary)), tuple(dict.fromkeys(secondary))
@@ -474,32 +587,26 @@ def _headline_structure_conflict(
 ) -> tuple[bool, tuple[str, ...]]:
     """Return structural headline conflicts without comparing headline text."""
 
-    has_head = any(node.tag.casefold() == "head" for node in _walk(root))
+    resource_element = _resource_element(root)
     title_nodes: list[_Node] = []
     metadata_nodes: dict[str, list[_Node]] = {"og:title": [], "twitter:title": []}
     principal_h1_nodes: list[_Node] = []
-    detached_metadata = False
 
     for node in _walk(root):
         tag = node.tag.casefold()
         if tag == "title":
-            associated = not has_head or _has_ancestor_tag(node, "head")
-            if associated:
+            if _metadata_carrier_is_owned(node, boundary, resource_element):
                 title_nodes.append(node)
-            else:
-                detached_metadata = True
         elif tag == "meta":
             key = (node.attrs.get("property") or node.attrs.get("name") or "").casefold()
             if key not in metadata_nodes:
                 continue
-            associated = not has_head or _has_ancestor_tag(node, "head")
-            if associated:
+            if _metadata_carrier_is_owned(node, boundary, resource_element):
                 metadata_nodes[key].append(node)
-            else:
-                detached_metadata = True
         elif (
             tag == "h1"
             and _is_descendant(node, boundary)
+            and _is_excluded_region(node, boundary) is None
             and not _has_ancestor(node, _is_article_node, boundary)
         ):
             principal_h1_nodes.append(node)
@@ -512,14 +619,22 @@ def _headline_structure_conflict(
             reasons.append(f"duplicate_{key.replace(':', '_')}_metadata")
     if len(principal_h1_nodes) > 1:
         reasons.append("multiple_principal_h1")
-    if detached_metadata:
-        reasons.append("detached_headline_metadata")
     return bool(reasons), tuple(reasons)
 
 
-def _canonical_values(root: _Node) -> tuple[str, ...]:
+def _canonical_values(
+    root: _Node,
+    principal_boundary: _Node | None = None,
+) -> tuple[str, ...]:
     values: list[str] = []
+    resource_element = _resource_element(root)
     for node in _walk(root):
+        if not _metadata_carrier_is_owned(
+            node,
+            principal_boundary,
+            resource_element,
+        ):
+            continue
         if node.tag.casefold() == "link" and "canonical" in node.attrs.get("rel", "").casefold():
             if node.attrs.get("href"):
                 values.append(node.attrs["href"])
@@ -528,6 +643,234 @@ def _canonical_values(root: _Node) -> tuple[str, ...]:
             if key in {"og:url", "twitter:url"} and node.attrs.get("content"):
                 values.append(node.attrs["content"])
     return tuple(dict.fromkeys(values))
+
+
+_SOURCE_DATE_METADATA = {
+    "article:published_time": "ORIGINAL_PUBLICATION",
+    "article:modified_time": "MODIFIED",
+    "datepublished": "ORIGINAL_PUBLICATION",
+    "date_published": "ORIGINAL_PUBLICATION",
+    "datemodified": "MODIFIED",
+    "date_modified": "MODIFIED",
+}
+
+
+def _explicit_timezone_or_offset(raw_value: str) -> str | None:
+    value = str(raw_value or "").strip()
+    if value.endswith(("Z", "z")):
+        return "Z"
+    match = re.search(
+        r"(?:T|\s)\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?([+-]\d{2}(?::?\d{2})?)$",
+        value,
+    )
+    if match:
+        return match.group(1)
+    named = re.search(r"\[([^\]]+)\]$", value)
+    return named.group(1) if named else None
+
+
+def _date_fact(
+    *,
+    raw_value: object,
+    date_kind: str,
+    candidate_id: str,
+    provenance: str,
+) -> dict[str, Any] | None:
+    raw = str(raw_value or "").strip()
+    if not raw:
+        return None
+    return {
+        "raw_date_value": raw,
+        "date_kind": date_kind,
+        "principal_document_association": candidate_id,
+        "source_node_or_field_provenance": provenance,
+        "explicit_timezone_or_offset": _explicit_timezone_or_offset(raw),
+    }
+
+
+def _head_nodes(root: _Node) -> list[_Node]:
+    return [node for node in _walk(root) if node.tag.casefold() == "head"]
+
+
+def _principal_owned_date_node(node: _Node, boundary: _Node) -> bool:
+    if _is_excluded_region(node, boundary) is not None:
+        return False
+    if node is boundary:
+        return False
+    if _has_ancestor(node, _is_article_node, boundary):
+        return False
+    return True
+
+
+def _jsonld_entity_units(value: object, path: str = "") -> list[tuple[dict[str, Any], str]]:
+    if isinstance(value, dict):
+        graph = value.get("@graph")
+        if graph is not None:
+            if not isinstance(graph, list):
+                return []
+            return [
+                (item, f"{path}@graph[{index}]")
+                for index, item in enumerate(graph)
+                if isinstance(item, dict)
+            ]
+        return [(value, path)]
+    if isinstance(value, list):
+        return [
+            (item, f"{path}[{index}]")
+            for index, item in enumerate(value)
+            if isinstance(item, dict)
+        ]
+    return []
+
+
+def _jsonld_resource_identities(unit: dict[str, Any]) -> tuple[tuple[str, ...], bool]:
+    identities: list[str] = []
+    unsupported_explicit_identity = False
+    for key, value in unit.items():
+        if str(key).casefold() not in {"@id", "url", "mainentityofpage"}:
+            continue
+        if isinstance(value, str) and value.strip():
+            identities.append(value.strip())
+            continue
+        if isinstance(value, dict):
+            nested_identity_seen = False
+            for nested_key in ("@id", "url"):
+                if nested_key not in value:
+                    continue
+                nested_identity_seen = True
+                nested_value = value.get(nested_key)
+                if isinstance(nested_value, str) and nested_value.strip():
+                    identities.append(nested_value.strip())
+                else:
+                    unsupported_explicit_identity = True
+            if not nested_identity_seen:
+                unsupported_explicit_identity = True
+            continue
+        unsupported_explicit_identity = True
+    return tuple(dict.fromkeys(identities)), unsupported_explicit_identity
+
+
+def _jsonld_date_facts(
+    value: object,
+    *,
+    candidate_id: str,
+    provenance: str,
+    resource_identity_checker: Callable[[str], bool] | None,
+) -> list[dict[str, Any]]:
+    units = _jsonld_entity_units(value)
+    if not units or resource_identity_checker is None:
+        return []
+
+    facts: list[dict[str, Any]] = []
+    for unit, unit_path in units:
+        identities, unsupported_identity = _jsonld_resource_identities(unit)
+        if (
+            unsupported_identity
+            or not identities
+            or not all(resource_identity_checker(identity) for identity in identities)
+        ):
+            continue
+        for key, child in unit.items():
+            key_kind = {
+                "datepublished": "ORIGINAL_PUBLICATION",
+                "datemodified": "MODIFIED",
+            }.get(str(key).casefold())
+            if key_kind is None or not isinstance(child, (str, int, float)):
+                continue
+            field_path = f"{unit_path}.{key}" if unit_path else str(key)
+            fact = _date_fact(
+                raw_value=child,
+                date_kind=key_kind,
+                candidate_id=candidate_id,
+                provenance=f"{provenance}.{field_path}",
+            )
+            if fact is not None:
+                facts.append(fact)
+    return facts
+
+
+def _source_date_facts(
+    root: _Node,
+    boundary: _Node,
+    candidate_id: str,
+    resource_identity_checker: Callable[[str], bool] | None,
+) -> tuple[dict[str, Any], ...]:
+    """Extract only structurally named dates attached to the principal page."""
+
+    facts: list[dict[str, Any]] = []
+    jsonld_values: list[tuple[object, str]] = []
+    resource_element = _resource_element(root)
+    for head in _head_nodes(root):
+        for node in _walk(head):
+            if (
+                node is head
+                or not _metadata_carrier_is_owned(
+                    node,
+                    boundary,
+                    resource_element,
+                )
+            ):
+                continue
+            if node.tag.casefold() == "meta":
+                key = (
+                    node.attrs.get("property")
+                    or node.attrs.get("name")
+                    or node.attrs.get("itemprop")
+                    or ""
+                ).casefold()
+                date_kind = _SOURCE_DATE_METADATA.get(key)
+                if date_kind is None:
+                    continue
+                fact = _date_fact(
+                    raw_value=node.attrs.get("content", ""),
+                    date_kind=date_kind,
+                    candidate_id=candidate_id,
+                    provenance=f"meta[{node.node_id}].{key}",
+                )
+                if fact is not None:
+                    facts.append(fact)
+            elif node.tag.casefold() == "script":
+                script_type = node.attrs.get("type", "").casefold()
+                if script_type.split(";", 1)[0].strip() != "application/ld+json":
+                    continue
+                raw_json = "".join(node.text_parts).strip()
+                if not raw_json:
+                    continue
+                try:
+                    value = json.loads(raw_json)
+                except (TypeError, ValueError):
+                    continue
+                jsonld_values.append((value, f"jsonld[{node.node_id}]"))
+
+    for value, provenance in jsonld_values:
+        facts.extend(
+            _jsonld_date_facts(
+                value,
+                candidate_id=candidate_id,
+                provenance=provenance,
+                resource_identity_checker=resource_identity_checker,
+            )
+        )
+
+    for node in _walk(boundary):
+        if node.tag.casefold() != "time" or not _principal_owned_date_node(node, boundary):
+            continue
+        itemprop = node.attrs.get("itemprop", "").casefold()
+        if "pubdate" in node.attrs or itemprop == "datepublished":
+            date_kind = "ORIGINAL_PUBLICATION"
+        elif itemprop == "datemodified":
+            date_kind = "MODIFIED"
+        else:
+            continue
+        fact = _date_fact(
+            raw_value=node.attrs.get("datetime", ""),
+            date_kind=date_kind,
+            candidate_id=candidate_id,
+            provenance=f"principal[{node.node_id}].time[datetime]",
+        )
+        if fact is not None:
+            facts.append(fact)
+    return tuple(facts)
 
 
 def _assessment(
@@ -543,17 +886,26 @@ def _assessment(
     unsupported_structure: bool = False,
     reject_reason: str = "",
     diagnostics: dict[str, Any] | None = None,
+    candidate_id: str = "",
+    resource_identity_checker: Callable[[str], bool] | None = None,
 ) -> StructuralAssessment:
     principal_id = boundary.node_id if boundary is not None else ""
     body_segments: tuple[DocumentSegment, ...] = ()
     primary: tuple[str, ...] = ()
     secondary: tuple[str, ...] = ()
+    source_date_facts: tuple[dict[str, Any], ...] = ()
     effective_status = status
     if boundary is not None and status is PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_ESTABLISHED:
         body, has_noninteractive, has_any = _collect_principal_body(boundary, excluded)
         primary, secondary = _headlines_for(boundary, root)
         if body and has_any and has_noninteractive:
             body_segments = (DocumentSegment("body-0001", body),)
+            source_date_facts = _source_date_facts(
+                root,
+                boundary,
+                candidate_id,
+                resource_identity_checker,
+            )
         else:
             effective_status = PrincipalDocumentStatus.STRUCTURAL_FAILURE_ESTABLISHED
             body_segments = ()
@@ -578,6 +930,7 @@ def _assessment(
         unsupported_structure=unsupported_structure,
         reject_reason=reject_reason,
         diagnostics=diagnostics or {},
+        source_date_facts=source_date_facts,
     )
 
 
@@ -589,6 +942,8 @@ def _assess_tree(
     parse_diagnostics: list[str],
     canonical_values: tuple[str, ...],
     resource_url: str,
+    candidate_id: str = "",
+    resource_identity_checker: Callable[[str], bool] | None = None,
 ) -> StructuralAssessment:
     excluded: list[str] = [
         f"{node.node_id}:{reason}"
@@ -597,6 +952,7 @@ def _assess_tree(
         for reason in [_exclusion_reason(node)]
         if reason
     ]
+    canonical_values = _canonical_values(root, None) if format_name == "html" else ()
     mains = _find_main_nodes(root)
     if len(mains) > 1:
         return _assessment(
@@ -764,6 +1120,7 @@ def _assess_tree(
             elif _node_text(node):
                 excluded.append(f"{node.node_id}:outside_principal_boundary")
 
+    canonical_values = _canonical_values(root, boundary) if format_name == "html" else ()
     headline_conflict, headline_conflict_reasons = _headline_structure_conflict(boundary, root)
     if headline_conflict:
         return _assessment(
@@ -792,6 +1149,8 @@ def _assess_tree(
         canonical_values=canonical_values,
         excluded=excluded,
         diagnostics={"parse_diagnostics": parse_diagnostics},
+        candidate_id=candidate_id,
+        resource_identity_checker=resource_identity_checker,
     )
     if not assessment.principal_body_segments:
         reason = assessment.reject_reason or "INSUFFICIENT_SUBSTANCE"
@@ -821,9 +1180,9 @@ def _xml_to_tree(element: ElementTree.Element, parent: _Node, counter: list[int]
     if element.text:
         node.text_parts.append(element.text)
     for child in list(element):
-        _xml_to_tree(child, node, counter)
+        child_node = _xml_to_tree(child, node, counter)
         if child.tail:
-            node.text_parts.append(child.tail)
+            child_node.tail_text = child.tail
     return node
 
 
@@ -882,7 +1241,13 @@ def _looks_like_feed(root: _Node, content_type: str) -> bool:
     return False
 
 
-def _assess_xml(content: str, content_type: str, resource_url: str) -> StructuralAssessment:
+def _assess_xml(
+    content: str,
+    content_type: str,
+    resource_url: str,
+    candidate_id: str = "",
+    resource_identity_checker: Callable[[str], bool] | None = None,
+) -> StructuralAssessment:
     try:
         element = ElementTree.fromstring(content)
     except ElementTree.ParseError:
@@ -939,6 +1304,8 @@ def _assess_xml(content: str, content_type: str, resource_url: str) -> Structura
         parse_diagnostics=[],
         canonical_values=(),
         resource_url=resource_url,
+        candidate_id=candidate_id,
+        resource_identity_checker=resource_identity_checker,
     )
     return replace(assessment, diagnostics={**xml_facts, **assessment.diagnostics})
 
@@ -948,13 +1315,21 @@ def assess_document(
     content_type: str,
     *,
     resource_url: str = "",
+    candidate_id: str = "",
+    resource_identity_checker: Callable[[str], bool] | None = None,
 ) -> StructuralAssessment:
     """Parse one acquired source and return structural facts only."""
 
     media = str(content_type or "").split(";", 1)[0].strip().casefold()
     source = str(content or "")
     if "xml" in media or "rdf" in media or source.lstrip().startswith("<?xml"):
-        return _assess_xml(source, content_type, resource_url)
+        return _assess_xml(
+            source,
+            content_type,
+            resource_url,
+            candidate_id,
+            resource_identity_checker,
+        )
     if "<" not in source or ">" not in source:
         return StructuralAssessment(
             format="plain_text",
@@ -1002,6 +1377,8 @@ def assess_document(
             for node in _walk(root)
             if node.tag.casefold() == "meta"
         ],
-        canonical_values=_canonical_values(root),
+        canonical_values=(),
         resource_url=resource_url,
+        candidate_id=candidate_id,
+        resource_identity_checker=resource_identity_checker,
     )

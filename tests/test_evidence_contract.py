@@ -12,11 +12,16 @@ from src.weekly_report.contracts import (
     EvidenceState,
     FetchedSource,
     RejectReason,
+    SourceDateKind,
 )
 from src.weekly_report.evidence_service import (
     EvidenceService,
     _RecordingRedirectHandler,
     _UnsafeDestinationError,
+)
+from src.weekly_report.evidence_document import (
+    PrincipalDocumentStatus,
+    assess_document,
 )
 from src.weekly_report.semantic_judge import JudgeMetadata
 
@@ -926,6 +931,360 @@ class EvidenceContractTests(unittest.TestCase):
         self.assertEqual(judge.calls, 1)
         self.assertNotIn("Unrelated reply text", judge.requests[0].principal_body_segments[0].text)
 
+    def test_comment_and_reply_articles_cannot_become_principal_documents(self):
+        for attribute, relation in (
+            ("role='comment'", "comment"),
+            ("role='reply'", "reply"),
+            ("itemprop='comment'", "comment"),
+            ("aria-label='reply'", "reply"),
+        ):
+            with self.subTest(attribute=attribute):
+                html = (
+                    f"<html><body><article {attribute}><h1>{relation.title()} title</h1>"
+                    f"<p>{relation.title()}-only body.</p></article></body></html>"
+                )
+                assessment = assess_document(
+                    html,
+                    "text/html",
+                    resource_url="https://source.test/article/line-4-control",
+                    candidate_id="C1",
+                )
+                result = _service(html).evaluate(_candidate())
+
+                self.assertNotEqual(
+                    assessment.principal_document_status,
+                    PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_ESTABLISHED,
+                )
+                self.assertEqual(result.state, EvidenceState.REJECTED)
+                self.assertEqual(result.substantive_content, "")
+
+    def test_article_nested_inside_comment_cannot_become_principal_document(self):
+        html = (
+            "<html><body><p>Principal page text.</p>"
+            "<div role='comment'><article><h1>Comment article title</h1>"
+            "<p>Comment article body.</p></article></div></body></html>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_ESTABLISHED,
+        )
+        self.assertEqual(assessment.body_text, "Principal page text.")
+        self.assertNotIn("Comment article title", assessment.document_level_headlines)
+
+    def test_comment_headings_do_not_create_conflict_or_secondary_headlines(self):
+        html = (
+            "<article><h1>Main title</h1><p>Main authoritative body.</p>"
+            "<div role='comment'><h1>Comment title</h1><h2>Comment section</h2>"
+            "<p>Comment body.</p></div></article>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+        judge = _SameEventJudge()
+        result = _service(html, judge=judge).evaluate(_candidate())
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_ESTABLISHED,
+        )
+        self.assertEqual(assessment.document_level_headlines, ("Main title",))
+        self.assertEqual(assessment.secondary_headlines, ())
+        self.assertNotIn("headline_conflict", result.provenance)
+        self.assertEqual(judge.requests[0].document_level_headlines, ("Main title",))
+
+    def test_generic_units_do_not_obtain_body_from_comment_subtrees(self):
+        html = (
+            "<article><h1>Main</h1><p>Main body.</p>"
+            "<div><h2>Section A</h2><div role='comment'><p>comment body A</p>"
+            "</div></div><div><h2>Section B</h2><div role='comment'>"
+            "<p>comment body B</p></div></div></article>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_ESTABLISHED,
+        )
+        self.assertNotIn("unresolved_generic_sibling_units", assessment.diagnostics)
+        self.assertEqual(assessment.body_text, "Main body.")
+
+    def test_collection_units_do_not_obtain_body_from_comment_subtrees(self):
+        html = (
+            "<main role='list'><div role='listitem'><h2>Item A</h2>"
+            "<div role='comment'><p>comment A</p></div></div>"
+            "<div role='listitem'><h2>Item B</h2><div role='comment'>"
+            "<p>comment B</p></div></div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertNotEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_AMBIGUOUS,
+        )
+        self.assertNotIn("collection", assessment.diagnostics)
+
+    def test_generic_unit_comment_headline_does_not_qualify_unit_shape(self):
+        html = (
+            "<main><div><div role='comment'><h2>Comment headline</h2>"
+            "</div><p>Normal parent text.</p></div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_ESTABLISHED,
+        )
+        self.assertEqual(assessment.body_text, "Normal parent text.")
+        self.assertNotIn("unresolved_generic_sibling_units", assessment.diagnostics)
+
+    def test_collection_item_comment_headline_does_not_qualify_unit_shape(self):
+        html = (
+            "<main role='list'><div role='listitem'><div role='comment'>"
+            "<h2>Comment headline</h2></div><p>Normal item text.</p></div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertNotEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_AMBIGUOUS,
+        )
+        self.assertNotIn("collection", assessment.diagnostics)
+
+    def test_owned_generic_headline_and_body_still_qualify_unit_shape(self):
+        html = (
+            "<main><div><h2>Technical section</h2>"
+            "<p>Owned technical body.</p></div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_ESTABLISHED,
+        )
+        self.assertIn("Owned technical body.", assessment.body_text)
+
+    def test_owned_collection_units_remain_a_collection(self):
+        html = (
+            "<main role='list'><div role='listitem'><h2>Item A</h2>"
+            "<p>Owned body A.</p></div><div role='listitem'><h2>Item B</h2>"
+            "<p>Owned body B.</p></div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_AMBIGUOUS,
+        )
+        self.assertTrue(assessment.diagnostics["collection"])
+
+    def test_generic_sibling_headline_tails_remain_ambiguous(self):
+        html = (
+            "<main><div><h2>Event A</h2>Body A</div>"
+            "<div><h2>Event B</h2>Body B</div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_AMBIGUOUS,
+        )
+        self.assertTrue(assessment.diagnostics["unresolved_generic_sibling_units"])
+
+    def test_collection_headline_tails_remain_ambiguous(self):
+        html = (
+            "<main role='list'><div role='listitem'><h2>Item A</h2>Body A</div>"
+            "<div role='listitem'><h2>Item B</h2>Body B</div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_AMBIGUOUS,
+        )
+        self.assertTrue(assessment.diagnostics["collection"])
+
+    def test_generic_sibling_direct_text_remains_ambiguous(self):
+        html = (
+            "<main><div>Body A<h2>Event A</h2></div>"
+            "<div>Body B<h2>Event B</h2></div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_AMBIGUOUS,
+        )
+        self.assertTrue(assessment.diagnostics["unresolved_generic_sibling_units"])
+
+    def test_collection_direct_text_remains_ambiguous(self):
+        html = (
+            "<main role='list'><div role='listitem'>Body A<h2>Item A</h2></div>"
+            "<div role='listitem'>Body B<h2>Item B</h2></div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_AMBIGUOUS,
+        )
+        self.assertTrue(assessment.diagnostics["collection"])
+
+    def test_excluded_child_preserves_parent_owned_tail_body(self):
+        html = (
+            "<main><div><h2>Event A</h2><div role='comment'>Excluded comment."
+            "</div>Parent-owned body A.</div><div><h2>Event B</h2>"
+            "<div role='comment'>Excluded comment.</div>Parent-owned body B.</div>"
+            "</main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_AMBIGUOUS,
+        )
+        self.assertTrue(assessment.diagnostics["unresolved_generic_sibling_units"])
+
+    def test_comment_internal_tail_does_not_qualify_parent_unit(self):
+        html = (
+            "<main><div><h2>Section</h2><div role='comment'><span>Comment "
+            "fragment</span>Comment continuation</div></div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertNotEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_ESTABLISHED,
+        )
+        self.assertNotIn("Comment continuation", assessment.body_text)
+
+    def test_nested_collection_headlines_do_not_qualify_generic_units(self):
+        html = (
+            "<main><div>Outer body A<ul><li><h2>Nested A</h2>"
+            "<p>Nested body A</p></li></ul></div><div>Outer body B"
+            "<ul><li><h2>Nested B</h2><p>Nested body B</p></li></ul>"
+            "</div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertNotEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_AMBIGUOUS,
+        )
+        self.assertNotIn("unresolved_generic_sibling_units", assessment.diagnostics)
+
+    def test_nested_collection_headlines_do_not_qualify_list_items(self):
+        html = (
+            "<main role='list'><div role='listitem'>Outer body A<ul><li>"
+            "<h2>Nested A</h2><p>Nested body</p></li></ul></div>"
+            "<div role='listitem'>Outer body B<ul><li><h2>Nested B</h2>"
+            "<p>Nested body</p></li></ul></div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertNotEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_AMBIGUOUS,
+        )
+        self.assertNotIn("collection", assessment.diagnostics)
+
+    def test_owned_direct_headlines_still_qualify_generic_units(self):
+        html = (
+            "<main><div><h2>Outer A</h2><p>Body A</p></div>"
+            "<div><h2>Outer B</h2><p>Body B</p></div></main>"
+        )
+        assessment = assess_document(
+            html,
+            "text/html",
+            resource_url="https://source.test/article/line-4-control",
+            candidate_id="C1",
+        )
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_AMBIGUOUS,
+        )
+        self.assertTrue(assessment.diagnostics["unresolved_generic_sibling_units"])
+
     def test_s3_multiple_independent_sibling_documents_reject_before_judge(self):
         judge = _SameEventJudge()
         html = (
@@ -1603,6 +1962,755 @@ class EvidenceContractTests(unittest.TestCase):
         ).evaluate(_candidate(title="Line 4 opens", url="https://source.test/notice.rdf"))
 
         self.assertEqual(result.state, EvidenceState.READY)
+
+    def test_structured_original_publication_date_is_exposed_as_a_fact(self):
+        raw_value = "2026-09-15T10:00:00Z"
+        html = (
+            "<html><head><meta property='article:published_time' "
+            f"content='{raw_value}'></head><body><article><p>Metro operator "
+            "commissioned a control system after testing.</p></article></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(len(result.source_date_facts), 1)
+        fact = result.source_date_facts[0]
+        self.assertEqual(fact.date_kind, SourceDateKind.ORIGINAL_PUBLICATION)
+        self.assertEqual(fact.raw_date_value, raw_value)
+        self.assertEqual(fact.principal_document_association, "C1")
+        self.assertIn("meta[", fact.source_node_or_field_provenance)
+
+    def test_jsonld_publication_and_modified_dates_remain_distinct_facts(self):
+        html = (
+            "<html><head><script type='application/ld+json'>"
+            '{"@id":"https://source.test/article/line-4-control",'
+            '"@type":"NewsArticle","datePublished":"2026-09-15",'
+            '"dateModified":"2026-09-17"}'
+            "</script></head><body><article><p>Metro operator commissioned "
+            "a control system after testing.</p></article></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        facts = {fact.date_kind: fact.raw_date_value for fact in result.source_date_facts}
+        self.assertEqual(facts[SourceDateKind.ORIGINAL_PUBLICATION], "2026-09-15")
+        self.assertEqual(facts[SourceDateKind.MODIFIED], "2026-09-17")
+
+    def test_candidate_published_at_does_not_populate_source_date_facts(self):
+        html = (
+            "<html><body><article><p>Metro operator commissioned a control system "
+            "after testing.</p></article></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate(published_at="2026-09-15T10:00:00Z"))
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_detached_date_metadata_is_not_principal_document_fact(self):
+        html = (
+            "<html><body><main><article><p>Metro operator commissioned a control "
+            "system after testing.</p></article><aside><meta "
+            "property='article:published_time' content='2026-09-15'></aside>"
+            "</main></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_excluded_template_metadata_does_not_provide_source_date(self):
+        html = (
+            "<html><head><template><meta property='article:published_time' "
+            "content='2026-09-15'></template></head><body><article><p>Metro "
+            "operator commissioned a control system after testing.</p>"
+            "</article></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_direct_head_jsonld_remains_a_source_date_carrier(self):
+        html = (
+            "<html><head><script type='application/ld+json'>"
+            '{"@id":"https://source.test/article/line-4-control",'
+            '"@type":"NewsArticle","datePublished":"2026-09-15"}'
+            "</script></head><body><article><p>Metro operator commissioned "
+            "a control system after testing.</p></article></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(len(result.source_date_facts), 1)
+        self.assertEqual(
+            result.source_date_facts[0].date_kind,
+            SourceDateKind.ORIGINAL_PUBLICATION,
+        )
+
+    def test_excluded_template_jsonld_does_not_provide_source_date(self):
+        html = (
+            "<html><head><template><script type='application/ld+json'>"
+            '{"@id":"https://source.test/article/line-4-control",'
+            '"@type":"NewsArticle","datePublished":"2026-09-15"}'
+            "</script></template></head><body><article><p>Metro operator "
+            "commissioned a control system after testing.</p></article>"
+            "</body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_excluded_xml_comment_head_does_not_provide_source_date(self):
+        xml = (
+            "<notice><div role='comment'><head><meta "
+            "property='article:published_time' content='2026-09-15' />"
+            "</head></div><main><p>Metro operator commissioned a control "
+            "system after testing.</p></main></notice>"
+        )
+        source = FetchedSource(
+            url="https://source.test/article/line-4-control",
+            content=xml,
+            content_type="application/xml",
+        )
+        result = EvidenceService(
+            lambda _url: source,
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_excluded_xml_comment_jsonld_does_not_provide_source_date(self):
+        xml = (
+            "<notice><div role='comment'><head><script "
+            "type='application/ld+json'>{&quot;@id&quot;:"
+            "&quot;https://source.test/article/line-4-control&quot;,"
+            "&quot;datePublished&quot;:&quot;2026-09-15&quot;}</script>"
+            "</head></div><main><p>Metro operator commissioned a control "
+            "system after testing.</p></main></notice>"
+        )
+        source = FetchedSource(
+            url="https://source.test/article/line-4-control",
+            content=xml,
+            content_type="application/xml",
+        )
+        result = EvidenceService(
+            lambda _url: source,
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_subordinate_xml_head_meta_does_not_provide_source_date(self):
+        xml = (
+            "<notice><article><p>Metro operator commissioned Line 4 after "
+            "final testing.</p><article><head><meta "
+            "property='article:published_time' content='2026-09-15' />"
+            "</head><p>Subordinate event body.</p></article></article>"
+            "</notice>"
+        )
+        source = FetchedSource(
+            url="https://source.test/article/line-4-control",
+            content=xml,
+            content_type="application/xml",
+        )
+        result = EvidenceService(
+            lambda _url: source,
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertIn("Metro operator commissioned Line 4", result.substantive_content)
+        self.assertNotIn("Subordinate event body", result.substantive_content)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_subordinate_xml_head_jsonld_does_not_provide_source_date(self):
+        xml = (
+            "<notice><article><p>Metro operator commissioned Line 4 after "
+            "final testing.</p><article><head><script "
+            "type='application/ld+json'>{&quot;@id&quot;:"
+            "&quot;https://source.test/article/line-4-control&quot;,"
+            "&quot;datePublished&quot;:&quot;2026-09-15&quot;}</script>"
+            "</head><p>Subordinate event body.</p></article></article>"
+            "</notice>"
+        )
+        source = FetchedSource(
+            url="https://source.test/article/line-4-control",
+            content=xml,
+            content_type="application/xml",
+        )
+        result = EvidenceService(
+            lambda _url: source,
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_exact_principal_head_subordinate_meta_does_not_provide_source_date(self):
+        xml = (
+            "<notice><article><head><article><p>Subordinate content.</p><meta "
+            "property='article:published_time' content='2026-09-15' />"
+            "</article></head><p>Metro operator commissioned Line 4 after "
+            "final testing.</p></article></notice>"
+        )
+        source = FetchedSource(
+            url="https://source.test/article/line-4-control",
+            content=xml,
+            content_type="application/xml",
+        )
+        result = EvidenceService(
+            lambda _url: source,
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertIn("Metro operator commissioned Line 4", result.substantive_content)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_exact_principal_head_subordinate_jsonld_does_not_provide_source_date(self):
+        xml = (
+            "<notice><article><head><article><script "
+            "type='application/ld+json'>{&quot;@id&quot;:"
+            "&quot;https://source.test/article/line-4-control&quot;,"
+            "&quot;datePublished&quot;:&quot;2026-09-15&quot;}</script>"
+            "</article></head><p>Metro operator commissioned Line 4 after "
+            "final testing.</p></article></notice>"
+        )
+        source = FetchedSource(
+            url="https://source.test/article/line-4-control",
+            content=xml,
+            content_type="application/xml",
+        )
+        result = EvidenceService(
+            lambda _url: source,
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_exact_principal_and_subordinate_head_meta_keep_only_principal_date(self):
+        xml = (
+            "<notice><article><head><meta property='article:published_time' "
+            "content='2026-09-15' /><article><meta "
+            "property='article:published_time' content='2020-01-01' />"
+            "</article></head><p>Metro operator commissioned Line 4 after "
+            "final testing.</p></article></notice>"
+        )
+        source = FetchedSource(
+            url="https://source.test/article/line-4-control",
+            content=xml,
+            content_type="application/xml",
+        )
+        result = EvidenceService(
+            lambda _url: source,
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(
+            [(fact.raw_date_value, fact.date_kind) for fact in result.source_date_facts],
+            [("2026-09-15", SourceDateKind.ORIGINAL_PUBLICATION)],
+        )
+
+    def test_exact_principal_and_subordinate_head_jsonld_keep_only_principal_date(self):
+        xml = (
+            "<notice><article><head><script type='application/ld+json'>"
+            "{&quot;@id&quot;:&quot;https://source.test/article/line-4-control&quot;,"
+            "&quot;datePublished&quot;:&quot;2026-09-15&quot;}</script><article>"
+            "<script type='application/ld+json'>{&quot;@id&quot;:"
+            "&quot;https://source.test/article/line-4-control&quot;,"
+            "&quot;datePublished&quot;:&quot;2020-01-01&quot;}</script>"
+            "</article></head><p>Metro operator commissioned Line 4 after "
+            "final testing.</p></article></notice>"
+        )
+        source = FetchedSource(
+            url="https://source.test/article/line-4-control",
+            content=xml,
+            content_type="application/xml",
+        )
+        result = EvidenceService(
+            lambda _url: source,
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(
+            [(fact.raw_date_value, fact.date_kind) for fact in result.source_date_facts],
+            [("2026-09-15", SourceDateKind.ORIGINAL_PUBLICATION)],
+        )
+
+    def test_principal_and_subordinate_xml_meta_keep_only_principal_date(self):
+        xml = (
+            "<notice><head><meta property='article:published_time' "
+            "content='2026-09-15' /></head><article><p>Metro operator "
+            "commissioned Line 4 after final testing.</p><article><head>"
+            "<meta property='article:published_time' content='2020-01-01' />"
+            "</head><p>Subordinate event body.</p></article></article>"
+            "</notice>"
+        )
+        source = FetchedSource(
+            url="https://source.test/article/line-4-control",
+            content=xml,
+            content_type="application/xml",
+        )
+        result = EvidenceService(
+            lambda _url: source,
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(
+            [(fact.raw_date_value, fact.date_kind) for fact in result.source_date_facts],
+            [("2026-09-15", SourceDateKind.ORIGINAL_PUBLICATION)],
+        )
+
+    def test_principal_owned_xml_head_remains_a_source_date_carrier(self):
+        xml = (
+            "<notice><article><head><meta property='article:published_time' "
+            "content='2026-09-15' /></head><p>Metro operator commissioned "
+            "Line 4 after final testing.</p></article></notice>"
+        )
+        source = FetchedSource(
+            url="https://source.test/article/line-4-control",
+            content=xml,
+            content_type="application/xml",
+        )
+        result = EvidenceService(
+            lambda _url: source,
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(len(result.source_date_facts), 1)
+        self.assertEqual(
+            result.source_date_facts[0].raw_date_value,
+            "2026-09-15",
+        )
+
+    def test_subordinate_xml_time_does_not_provide_source_date(self):
+        xml = (
+            "<notice><article><p>Metro operator commissioned Line 4 after "
+            "final testing.</p><article><time itemprop='datePublished' "
+            "datetime='2020-01-01' /><p>Subordinate event body.</p>"
+            "</article></article></notice>"
+        )
+        source = FetchedSource(
+            url="https://source.test/article/line-4-control",
+            content=xml,
+            content_type="application/xml",
+        )
+        result = EvidenceService(
+            lambda _url: source,
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_source_timezone_offset_is_preserved_without_conversion(self):
+        raw_value = "2026-09-11T23:30:00-05:00"
+        html = (
+            "<html><head><meta property='article:published_time' "
+            f"content='{raw_value}'></head><body><article><p>Metro operator "
+            "issued a technical bulletin after testing.</p></article></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        fact = result.source_date_facts[0]
+        self.assertEqual(fact.raw_date_value, raw_value)
+        self.assertEqual(fact.explicit_timezone_or_offset, "-05:00")
+
+    def test_compact_source_timezone_offset_is_preserved_without_conversion(self):
+        raw_value = "2026-09-15T10:00:00+0900"
+        html = (
+            "<html><head><meta property='article:published_time' "
+            f"content='{raw_value}'></head><body><article><p>Metro operator "
+            "issued a technical bulletin after testing.</p></article></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts[0].raw_date_value, raw_value)
+        self.assertEqual(result.source_date_facts[0].explicit_timezone_or_offset, "+0900")
+
+    def test_hour_only_source_timezone_offset_is_preserved_without_conversion(self):
+        raw_value = "2026-09-15T10:00:00+09"
+        html = (
+            "<html><head><meta property='article:published_time' "
+            f"content='{raw_value}'></head><body><article><p>Metro operator "
+            "issued a technical bulletin after testing.</p></article></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts[0].raw_date_value, raw_value)
+        self.assertEqual(result.source_date_facts[0].explicit_timezone_or_offset, "+09")
+
+    def test_unparseable_structured_date_is_preserved_for_temporal(self):
+        raw_value = "September ?? 2026"
+        html = (
+            "<html><head><meta property='article:published_time' "
+            f"content='{raw_value}'></head><body><article><p>Metro operator "
+            "issued a technical bulletin after testing.</p></article></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts[0].raw_date_value, raw_value)
+        self.assertEqual(
+            result.source_date_facts[0].date_kind,
+            SourceDateKind.ORIGINAL_PUBLICATION,
+        )
+
+    def test_comment_time_is_not_principal_source_date(self):
+        html = (
+            "<html><body><article><p>Metro operator commissioned a control system "
+            "after testing.</p><div role='comment'><time itemprop='datePublished' "
+            "datetime='2020-01-01'>January 1, 2020</time></div></article></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_comment_and_reply_subtrees_are_excluded_from_principal_body(self):
+        for relation in ("comment", "reply"):
+            with self.subTest(relation=relation):
+                html = (
+                    "<html><body><article><h1>Line 4 opens</h1>"
+                    "<p>The operator opened Line 4 after final testing.</p>"
+                    f"<div role='{relation}'><p>Another unrelated event occurred "
+                    "on Line 2.</p></div></article></body></html>"
+                )
+
+                result = _service(html).evaluate(_candidate())
+
+                self.assertEqual(result.state, EvidenceState.READY)
+                self.assertIn("Line 4 after final testing", result.substantive_content)
+                self.assertNotIn("Another unrelated event occurred on Line 2", result.substantive_content)
+
+    def test_normal_principal_div_remains_in_evidence_body(self):
+        html = (
+            "<html><body><article><p>Metro operator commissioned a control system "
+            "after testing.</p><div><p>Principal technical details remain "
+            "available.</p></div></article></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertIn("Principal technical details remain available", result.substantive_content)
+
+    def test_principal_owned_time_is_exposed_as_original_publication(self):
+        raw_value = "2026-09-15"
+        html = (
+            "<html><body><article><time itemprop='datePublished' "
+            f"datetime='{raw_value}'>September 15, 2026</time><p>Metro operator "
+            "commissioned a control system after testing.</p></article></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(len(result.source_date_facts), 1)
+        self.assertEqual(
+            result.source_date_facts[0].date_kind,
+            SourceDateKind.ORIGINAL_PUBLICATION,
+        )
+        self.assertEqual(result.source_date_facts[0].raw_date_value, raw_value)
+
+    def test_rejected_evidence_does_not_expose_source_date_facts(self):
+        html = (
+            "<html><head><meta property='article:published_time' "
+            "content='2026-09-15'></head><body></body></html>"
+        )
+
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_p01_detached_xml_head_meta_does_not_provide_source_date(self):
+        xml = (
+            "<notice><section><head><meta property='article:published_time' "
+            "content='2026-09-15' /></head></section><article><p>Principal "
+            "metro event body.</p></article></notice>"
+        )
+        result = _service(xml, content_type="application/xml").evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_p01_detached_xml_head_jsonld_does_not_provide_source_date(self):
+        xml = (
+            "<notice><section><head><script type='application/ld+json'>"
+            "{&quot;@id&quot;:&quot;https://source.test/article/line-4-control&quot;,"
+            "&quot;datePublished&quot;:&quot;2026-09-15&quot;}</script>"
+            "</head></section><article><p>Principal metro event body."
+            "</p></article></notice>"
+        )
+        result = _service(xml, content_type="application/xml").evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
+
+    def test_p02_excluded_canonical_does_not_replace_resource_identity(self):
+        for excluded_region in ("aside", "template"):
+            with self.subTest(excluded_region=excluded_region):
+                html = (
+                    f"<html><body><{excluded_region}><link rel='canonical' "
+                    "href='https://source.test/unrelated' /></"
+                    f"{excluded_region}><article><h1>Principal event</h1>"
+                    "<p>Principal substantive metro event body.</p></article>"
+                    "</body></html>"
+                )
+                result = _service(html).evaluate(_candidate())
+
+                self.assertEqual(result.state, EvidenceState.READY)
+                self.assertEqual(
+                    result.canonical_source_url,
+                    "https://source.test/article/line-4-control",
+                )
+
+    def test_p03_subordinate_og_title_is_not_principal_headline_metadata(self):
+        xml = (
+            "<notice><article><head><meta property='og:title' "
+            "content='Line 4 opens' /><article><meta property='og:title' "
+            "content='Other event' /></article></head><p>Principal metro "
+            "event body.</p></article></notice>"
+        )
+        judge = _SameEventJudge()
+        result = _service(
+            xml,
+            content_type="application/xml",
+            judge=judge,
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(judge.requests[0].document_level_headlines, ("Line 4 opens",))
+
+    def test_p03_subordinate_only_og_title_has_no_principal_authority(self):
+        xml = (
+            "<notice><article><head><article><meta property='og:title' "
+            "content='Other event' /></article></head><p>Principal metro "
+            "event body.</p></article></notice>"
+        )
+        judge = _SameEventJudge()
+        result = _service(
+            xml,
+            content_type="application/xml",
+            judge=judge,
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(judge.requests[0].document_level_headlines, ())
+
+    def test_p04_outer_wrappers_do_not_borrow_subordinate_units(self):
+        html = (
+            "<html><body><article><h1>Principal event</h1><p>Principal "
+            "metro event body.</p><div><article><h2>Other event A</h2>"
+            "<p>Other event body A.</p></article></div><div><article>"
+            "<h2>Other event B</h2><p>Other event body B.</p></article>"
+            "</div></article></body></html>"
+        )
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertIn("Principal metro event body.", result.substantive_content)
+        self.assertNotIn("Other event body A.", result.substantive_content)
+        self.assertNotIn("Other event body B.", result.substantive_content)
+
+    def test_p05_xml_tail_text_preserves_source_order_for_semantic_judge(self):
+        fixtures = (
+            (
+                "<notice><article><p>First event fact.</p> Middle event "
+                "fact. <p>Last event fact.</p></article></notice>",
+                "First event fact. Middle event fact. Last event fact.",
+            ),
+            (
+                "<notice><article><p>First event fact.</p> Middle event "
+                "fact. <p>Second event fact.</p> Tail event fact. "
+                "<p>Last event fact.</p></article></notice>",
+                "First event fact. Middle event fact. Second event fact. "
+                "Tail event fact. Last event fact.",
+            ),
+        )
+        for xml, expected_body in fixtures:
+            with self.subTest(expected_body=expected_body):
+                judge = _SameEventJudge()
+                result = _service(
+                    xml,
+                    content_type="application/xml",
+                    judge=judge,
+                ).evaluate(_candidate())
+
+                self.assertEqual(result.state, EvidenceState.READY)
+                self.assertEqual(result.substantive_content, expected_body)
+                self.assertEqual(
+                    judge.requests[0].principal_body_segments[0].text,
+                    expected_body,
+                )
+
+    def test_p06_excluded_headline_descendants_do_not_enter_headline_text(self):
+        fixtures = (
+            (
+                "text/html",
+                "<html><body><article><h1>Principal headline "
+                "<span role='comment'>Excluded words</span></h1><p>"
+                "Principal metro event body.</p></article></body></html>",
+            ),
+            (
+                "application/xml",
+                "<notice><article><h1>Principal headline <span "
+                "role='comment'>Excluded words</span></h1><p>Principal "
+                "metro event body.</p></article></notice>",
+            ),
+        )
+        for content_type, source in fixtures:
+            with self.subTest(content_type=content_type):
+                judge = _SameEventJudge()
+                result = _service(
+                    source,
+                    content_type=content_type,
+                    judge=judge,
+                ).evaluate(_candidate())
+
+                self.assertEqual(result.state, EvidenceState.READY)
+                self.assertEqual(
+                    judge.requests[0].document_level_headlines,
+                    ("Principal headline",),
+                )
+
+    def test_p06_inline_headline_descendant_text_remains_owned(self):
+        judge = _SameEventJudge()
+        html = (
+            "<html><body><article><h1>Metro <span>opens Line 4</span>"
+            "</h1><p>Principal metro event body.</p></article></body></html>"
+        )
+        result = _service(html, judge=judge).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(
+            judge.requests[0].document_level_headlines,
+            ("Metro opens Line 4",),
+        )
+
+    def test_headless_principal_og_title_is_owned_only_inside_principal(self):
+        html = (
+            "<html><body><main><meta property='og:title' "
+            "content='Line 4 opens'><p>Principal metro event body.</p>"
+            "</main></body></html>"
+        )
+        judge = _SameEventJudge()
+        result = _service(
+            html,
+            judge=judge,
+        ).evaluate(_candidate(title="Line 4 opens"))
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(
+            judge.requests[0].document_level_headlines,
+            ("Line 4 opens",),
+        )
+
+    def test_detached_headless_og_title_has_no_principal_authority(self):
+        html = (
+            "<html><body><section><meta property='og:title' "
+            "content='Detached title'></section><main><p>Principal metro "
+            "event body.</p></main></body></html>"
+        )
+        judge = _SameEventJudge()
+        result = _service(html, judge=judge).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(judge.requests[0].document_level_headlines, ())
+
+    def test_xml_canonical_values_remain_empty(self):
+        xml = (
+            "<notice><head><link rel='canonical' "
+            "href='https://source.test/other' /></head><article><p>"
+            "Principal metro event body.</p></article></notice>"
+        )
+        assessment = assess_document(
+            xml,
+            "application/xml",
+            resource_url="https://source.test/article/line-4-control",
+        )
+
+        self.assertEqual(
+            assessment.principal_document_status,
+            PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_ESTABLISHED,
+        )
+        self.assertEqual(assessment.canonical_values, ())
+
+    def test_self_comment_head_og_title_has_no_principal_authority(self):
+        html = (
+            "<html><head><meta property='og:title' content='Comment title' "
+            "role='comment'></head><body><article><p>Principal metro event "
+            "body.</p></article></body></html>"
+        )
+        judge = _SameEventJudge()
+        result = _service(html, judge=judge).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(judge.requests[0].document_level_headlines, ())
+
+    def test_self_reply_headless_og_title_has_no_principal_authority(self):
+        html = (
+            "<html><body><main><meta property='og:title' "
+            "content='Reply title' role='reply'><p>Principal metro event "
+            "body.</p></main></body></html>"
+        )
+        judge = _SameEventJudge()
+        result = _service(html, judge=judge).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(judge.requests[0].document_level_headlines, ())
+
+    def test_self_comment_canonical_has_no_authority(self):
+        html = (
+            "<html><head><link rel='canonical' "
+            "href='https://source.test/unrelated' role='comment'></head>"
+            "<body><article><p>Principal metro event body.</p></article>"
+            "</body></html>"
+        )
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(
+            result.canonical_source_url,
+            "https://source.test/article/line-4-control",
+        )
+
+    def test_self_comment_jsonld_has_no_source_date(self):
+        html = (
+            "<html><head><script type='application/ld+json' role='comment'>"
+            '{"@id":"https://source.test/article/line-4-control",'
+            '"datePublished":"2026-09-15"}'
+            "</script></head><body><article><p>Principal metro event "
+            "body.</p></article></body></html>"
+        )
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.source_date_facts, ())
 
 
 if __name__ == "__main__":
