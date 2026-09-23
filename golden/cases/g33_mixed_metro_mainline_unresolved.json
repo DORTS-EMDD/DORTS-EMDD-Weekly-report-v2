@@ -16,6 +16,6 @@
     "source_content":"Synthetic mixed transport release. The corridor carries both Metro and conventional mainline services. The release describes one shared control-equipment upgrade but does not identify whether the action applies to the Metro portion, the mainline portion, or both.",
     "source_date_facts":[]
   }],
-  "expected": {"evidence_state":"EVIDENCE_READY","scope":"OUT_OF_SCOPE","scope_diagnostic":"SCOPE_NOT_ESTABLISHED","date_valid":"NOT_EVALUATED","event_identity_expectation":"NOT_EVALUATED","event_count_after_dedup":"NOT_EVALUATED","primary_category":"NOT_EVALUATED","subtype":"NOT_EVALUATED","e&m_taxonomy":"NOT_EVALUATED","reportability":"NOT_EVALUATED","reject_stage":"SCOPE","reject_reason":"OUT_OF_SCOPE"},
+  "expected": {"evidence_state":"EVIDENCE_READY","scope":"OUT_OF_SCOPE","scope_diagnostic":"SCOPE_NOT_ESTABLISHED","date_valid":"NOT_EVALUATED","event_identity_expectation":"NOT_EVALUATED","event_count_after_dedup":"NOT_EVALUATED","category_state":"NOT_EVALUATED","primary_category_id":"NOT_EVALUATED","classification_reason":"NOT_EVALUATED","category_resolution_reason":"NOT_EVALUATED","primary_category":"NOT_EVALUATED","subtype":"NOT_EVALUATED","e&m_taxonomy":"NOT_EVALUATED","reportability":"NOT_EVALUATED","reject_stage":"SCOPE","reject_reason":"OUT_OF_SCOPE"},
   "contract_notes":["Unresolved mixed-mode ownership is conservatively OUT_OF_SCOPE with a diagnostic, not a third authoritative state."]
 }

@@ -20,7 +20,15 @@
       "discovery_intent": "operations",
       "search_snippet": "The metro authority approved an integrated fare policy and revised operating hours.",
       "source_content": "Synthetic authority decision. The metro authority approved a new integrated fare policy and revised operating hours for its subway network. The effective date, affected ticket products, and operating rules are specified.",
-      "source_date_facts": [{"raw_date_value":"2026-09-16T11:00:00Z","date_kind":"NOTICE_ISSUED","principal_document_association":"C1","source_node_or_field_provenance":"source_content.decision_issued_at","explicit_timezone_or_offset":"Z"}]
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-16T11:00:00Z",
+          "date_kind": "NOTICE_ISSUED",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.decision_issued_at",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
     }
   ],
   "expected": {
@@ -34,7 +42,11 @@
     "e&m_taxonomy": [],
     "reportability": "REPORTABLE",
     "reject_stage": "NONE",
-    "reject_reason": "NONE"
+    "reject_reason": "NONE",
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "OPERATIONAL_CHANGE",
+    "classification_reason": "PRINCIPAL_ACTION_OPERATIONAL_CHANGE",
+    "category_resolution_reason": "NONE"
   },
   "contract_notes": [
     "Operations policy is a valid category when the source describes an actual policy or制度 change.",

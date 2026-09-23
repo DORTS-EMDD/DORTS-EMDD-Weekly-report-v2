@@ -20,7 +20,15 @@
       "discovery_intent": "technology",
       "search_snippet": "The light-rail operator approved a lower-mass fire-resistant interior panel for fleet refurbishment.",
       "source_content": "Synthetic engineering release. The light-rail operator qualified a lower-mass fire-resistant composite interior panel for fleet refurbishment. Test results, fire-performance requirements, installation scope, and fleet application are described.",
-      "source_date_facts": [{"raw_date_value":"2026-09-15T11:00:00Z","date_kind":"ORIGINAL_PUBLICATION","principal_document_association":"C1","source_node_or_field_provenance":"source_content.publication_date","explicit_timezone_or_offset":"Z"}]
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-15T11:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
     }
   ],
   "expected": {
@@ -36,7 +44,11 @@
     ],
     "reportability": "REPORTABLE",
     "reject_stage": "NONE",
-    "reject_reason": "NONE"
+    "reject_reason": "NONE",
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "TECHNICAL_DEVELOPMENT",
+    "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+    "category_resolution_reason": "NONE"
   },
   "contract_notes": [
     "The source explains the material, use, qualification, and urban-rail application.",

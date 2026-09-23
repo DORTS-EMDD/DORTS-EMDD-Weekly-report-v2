@@ -1,0 +1,84 @@
+{
+  "case_id": "G81",
+  "name": "conflicting_category_defining_source_claims",
+  "description": "Synthetic Category contract case: conflicting category defining source claims.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Operator reports signalling trial",
+      "url": "https://fixtures.invalid/g81-conflicting_category_defining_source_claims-1",
+      "publisher": "Synthetic Authoritative Source",
+      "published_at": "2026-09-16T10:00:00Z",
+      "discovery_intent": "technology",
+      "search_snippet": "The operator's substantive notice says the signalling system entered technical trial.",
+      "source_content": "The operator's substantive notice says the signalling system entered technical trial. The operator's notice is attached to the same project record.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-16T10:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    },
+    {
+      "candidate_id": "C2",
+      "title": "Regulator reports supplier award",
+      "url": "https://fixtures.invalid/g81-conflicting_category_defining_source_claims-2",
+      "publisher": "Synthetic Authoritative Source",
+      "published_at": "2026-09-16T10:00:00Z",
+      "discovery_intent": "technology",
+      "search_snippet": "The regulator's substantive record says the notice concerned a supplier award and that no technical trial began.",
+      "source_content": "The regulator's substantive record says the notice concerned a supplier award and that no technical trial began. The regulator record is attached to the same project.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-16T10:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C2",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "SAME_EVENT",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_UNRESOLVED",
+    "primary_category_id": null,
+    "primary_category": null,
+    "subtype": null,
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "classification_reason": "CATEGORY_UNRESOLVED",
+    "category_resolution_reason": "CONFLICTING_CATEGORY_DEFINING_CLAIMS",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "Category follows the supported principal action in substantive source content.",
+    "Search intent, source title, technical novelty, taxonomy, and Reportability are not Category authorities."
+  ],
+  "category_claims": [
+    {
+      "source": "operator_notice",
+      "claim": "technical trial began"
+    },
+    {
+      "source": "regulator_record",
+      "claim": "supplier award only; no trial began"
+    }
+  ]
+}

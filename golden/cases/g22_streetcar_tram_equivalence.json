@@ -16,6 +16,6 @@
     "source_content":"Synthetic transport technology release. The city streetcar system is a tram network, and the operator commissioned a new signalling controller on the central route.",
     "source_date_facts":[{"raw_date_value":"2026-09-12T08:00:00Z","date_kind":"ORIGINAL_PUBLICATION","principal_document_association":"C1","source_node_or_field_provenance":"source_content.publication_date","explicit_timezone_or_offset":"Z"}]
   }],
-  "expected": {"evidence_state":"EVIDENCE_READY","scope":"IN_SCOPE","scope_diagnostic":"NONE","date_valid":true,"event_identity_expectation":"NOT_EVALUATED","event_count_after_dedup":"NOT_EVALUATED","primary_category":"NOT_EVALUATED","subtype":"NOT_EVALUATED","e&m_taxonomy":"NOT_EVALUATED","reportability":"NOT_EVALUATED","reject_stage":"NONE","reject_reason":"NONE"},
+  "expected": {"evidence_state":"EVIDENCE_READY","scope":"IN_SCOPE","scope_diagnostic":"NONE","date_valid":true,"event_identity_expectation":"NOT_EVALUATED","event_count_after_dedup":"NOT_EVALUATED","category_state":"NOT_EVALUATED","primary_category_id":"NOT_EVALUATED","classification_reason":"NOT_EVALUATED","category_resolution_reason":"NOT_EVALUATED","primary_category":"NOT_EVALUATED","subtype":"NOT_EVALUATED","e&m_taxonomy":"NOT_EVALUATED","reportability":"NOT_EVALUATED","reject_stage":"NONE","reject_reason":"NONE"},
   "contract_notes":["Streetcar is accepted as a Tram semantic equivalent when the authoritative source establishes that mode."]
 }

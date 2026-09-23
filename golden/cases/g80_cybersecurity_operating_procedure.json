@@ -1,0 +1,55 @@
+{
+  "case_id": "G80",
+  "name": "cybersecurity_operating_procedure",
+  "description": "Synthetic Category contract case: cybersecurity operating procedure.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Operator puts revised account-security procedure into effect",
+      "url": "https://fixtures.invalid/g80-cybersecurity_operating_procedure-1",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-15T10:00:00Z",
+      "discovery_intent": "technology",
+      "search_snippet": "The metro operator implemented a new account-security procedure for staff and contractors, including access reviews and mandatory incident escalation.",
+      "source_content": "The metro operator implemented a new account-security procedure for staff and contractors, including access reviews and mandatory incident escalation. The directive changes current operating practice; it reports no breach and does not create an external rule.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-15T10:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "OPERATIONAL_CHANGE",
+    "primary_category": "營運動態",
+    "subtype": "operating_practice_change",
+    "e&m_taxonomy": [],
+    "reportability": "REPORTABLE",
+    "classification_reason": "PRINCIPAL_ACTION_OPERATIONAL_CHANGE",
+    "category_resolution_reason": "NONE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "Category follows the supported principal action in substantive source content.",
+    "Search intent, source title, technical novelty, taxonomy, and Reportability are not Category authorities."
+  ]
+}

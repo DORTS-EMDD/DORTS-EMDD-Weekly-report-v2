@@ -20,7 +20,15 @@
       "discovery_intent": "procurement",
       "search_snippet": "The urban rail operator awarded a communications maintenance contract denominated in local currency.",
       "source_content": "Synthetic award notice. The urban rail operator awarded a communications maintenance contract for a defined network segment. The notice reports the original amount as KRW 2,800,000,000 and describes the equipment scope, service term, and award action; it gives no reliable exchange-rate basis.",
-      "source_date_facts": [{"raw_date_value":"2026-09-18T09:00:00Z","date_kind":"NOTICE_PUBLISHED","principal_document_association":"C1","source_node_or_field_provenance":"source_content.notice_publication_date","explicit_timezone_or_offset":"Z"}],
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-18T09:00:00Z",
+          "date_kind": "NOTICE_PUBLISHED",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.notice_publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ],
       "procurement": {
         "action": "award",
         "amount": "KRW 2,800,000,000",
@@ -36,7 +44,7 @@
     "date_valid": true,
     "event_identity_expectation": "NOT_EVALUATED",
     "event_count_after_dedup": 1,
-    "primary_category": "機電標案",
+    "primary_category": "採購事件",
     "subtype": "procurement",
     "e&m_taxonomy": [
       "通訊"
@@ -45,7 +53,11 @@
     "reject_stage": "NONE",
     "reject_reason": "NONE",
     "original_amount": "KRW 2,800,000,000",
-    "usd_3m_signal": "UNKNOWN"
+    "usd_3m_signal": "UNKNOWN",
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "PROCUREMENT",
+    "classification_reason": "PRINCIPAL_ACTION_PROCUREMENT",
+    "category_resolution_reason": "NONE"
   },
   "contract_notes": [
     "The original-currency amount is retained.",

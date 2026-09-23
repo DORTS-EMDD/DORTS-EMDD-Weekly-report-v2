@@ -1,299 +1,608 @@
 {
-  "golden_version": "v1",
+  "golden_version": "v2-category-lock",
   "architecture_baseline": "v0.5 FINAL_LOCKED",
   "status": "LOCKED_BASELINE",
   "live_search": false,
   "event_dedup_cases_file": "event_dedup_cases.json",
   "event_dedup_case_count": 15,
-  "case_count": 48,
+  "case_count": 85,
   "cases": [
     {
       "case_id": "G01",
       "file": "cases/g01_title_only_evidence.json",
       "case_class": "title_only_evidence",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G02",
       "file": "cases/g02_wrong_landing_page.json",
       "case_class": "wrong_landing_page",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G03",
       "file": "cases/g03_valid_new_technology.json",
       "case_class": "valid_new_technology",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "TECHNICAL_DEVELOPMENT"
     },
     {
       "case_id": "G04",
       "file": "cases/g04_valid_new_material.json",
       "case_class": "valid_new_material",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "TECHNICAL_DEVELOPMENT"
     },
     {
       "case_id": "G05",
       "file": "cases/g05_valid_new_method.json",
       "case_class": "valid_new_method",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "TECHNICAL_DEVELOPMENT"
     },
     {
       "case_id": "G06",
       "file": "cases/g06_major_urban_rail_technical_accident.json",
       "case_class": "major_urban_rail_technical_accident",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "INCIDENT"
     },
     {
       "case_id": "G07",
       "file": "cases/g07_low_value_accident.json",
       "case_class": "low_value_accident",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "INCIDENT"
     },
     {
       "case_id": "G08",
       "file": "cases/g08_operations_policy.json",
       "case_class": "operations_policy",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "OPERATIONAL_CHANGE"
     },
     {
       "case_id": "G09",
       "file": "cases/g09_operations_dispute.json",
       "case_class": "operations_dispute",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "OPERATIONAL_CHANGE"
     },
     {
       "case_id": "G10",
       "file": "cases/g10_standard_em_procurement.json",
       "case_class": "standard_em_procurement",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
     },
     {
       "case_id": "G11",
       "file": "cases/g11_innovative_procurement.json",
       "case_class": "innovative_procurement",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
     },
     {
       "case_id": "G12",
       "file": "cases/g12_duplicate_multilingual_event.json",
       "case_class": "duplicate_multilingual_event",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "INCIDENT"
     },
     {
       "case_id": "G13",
       "file": "cases/g13_similar_titles_different_events.json",
       "case_class": "similar_titles_different_events",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
     },
     {
       "case_id": "G14",
       "file": "cases/g14_non_urban_rail.json",
       "case_class": "non_urban_rail",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G15",
       "file": "cases/g15_out_of_range_source.json",
       "case_class": "out_of_range_source",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G16",
       "file": "cases/g16_conflicting_source_claims.json",
       "case_class": "conflicting_source_claims",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "INCIDENT"
     },
     {
       "case_id": "G17",
       "file": "cases/g17_non_seven_system_reportable.json",
       "case_class": "non_seven_system_but_reportable",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "TECHNICAL_DEVELOPMENT"
     },
     {
       "case_id": "G18",
       "file": "cases/g18_search_navigation_shell.json",
       "case_class": "search_navigation_shell",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G19",
       "file": "cases/g19_below_usd_3m_innovative.json",
       "case_class": "below_usd_3m_but_innovative",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
     },
     {
       "case_id": "G20",
       "file": "cases/g20_amount_unknown.json",
       "case_class": "amount_unknown",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
     },
     {
       "case_id": "G21",
       "file": "cases/g21_no_reliable_currency_conversion.json",
       "case_class": "no_reliable_currency_conversion",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
     },
     {
       "case_id": "G22",
       "file": "cases/g22_streetcar_tram_equivalence.json",
       "case_class": "streetcar_tram_equivalence",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G23",
       "file": "cases/g23_commuter_rail_without_eligible_mode.json",
       "case_class": "commuter_rail_without_eligible_mode",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G24",
       "file": "cases/g24_commuter_label_with_metro_proof.json",
       "case_class": "commuter_label_with_metro_proof",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G25",
       "file": "cases/g25_airport_metro.json",
       "case_class": "airport_metro",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G26",
       "file": "cases/g26_airport_agt_people_mover.json",
       "case_class": "airport_agt_people_mover",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G27",
       "file": "cases/g27_conventional_airport_express.json",
       "case_class": "conventional_airport_express",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G28",
       "file": "cases/g28_funicular_out_of_scope.json",
       "case_class": "funicular_out_of_scope",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G29",
       "file": "cases/g29_cable_railway_out_of_scope.json",
       "case_class": "cable_railway_out_of_scope",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G30",
       "file": "cases/g30_urban_maglev.json",
       "case_class": "urban_maglev",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G31",
       "file": "cases/g31_intercity_high_speed_maglev.json",
       "case_class": "intercity_high_speed_maglev",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G32",
       "file": "cases/g32_mixed_metro_mainline_resolvable.json",
       "case_class": "mixed_metro_mainline_resolvable",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G33",
       "file": "cases/g33_mixed_metro_mainline_unresolved.json",
       "case_class": "mixed_metro_mainline_unresolved",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G34",
       "file": "cases/g34_operator_non_urban_event.json",
       "case_class": "operator_non_urban_event",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G35",
       "file": "cases/g35_cross_language_subway_scope.json",
       "case_class": "cross_language_subway_scope",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G36",
       "file": "cases/g36_temporal_exact_period_start.json",
       "case_class": "temporal_exact_period_start",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G37",
       "file": "cases/g37_temporal_exact_period_end.json",
       "case_class": "temporal_exact_period_end",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G38",
       "file": "cases/g38_temporal_before_period_start.json",
       "case_class": "temporal_before_period_start",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G39",
       "file": "cases/g39_temporal_after_period_end.json",
       "case_class": "temporal_after_period_end",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G40",
       "file": "cases/g40_temporal_explicit_offset_calendar_date.json",
       "case_class": "temporal_explicit_offset_calendar_date",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G41",
       "file": "cases/g41_temporal_timezone_less_timestamp.json",
       "case_class": "temporal_timezone_less_timestamp",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G42",
       "file": "cases/g42_temporal_date_only_source.json",
       "case_class": "temporal_date_only_source",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G43",
       "file": "cases/g43_temporal_missing_authoritative_date.json",
       "case_class": "temporal_missing_authoritative_date",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G44",
       "file": "cases/g44_temporal_discovery_only_date.json",
       "case_class": "temporal_discovery_only_date",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G45",
       "file": "cases/g45_temporal_modified_cannot_rescue.json",
       "case_class": "temporal_modified_cannot_rescue",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G46",
       "file": "cases/g46_temporal_event_date_cannot_rescue.json",
       "case_class": "temporal_event_date_cannot_rescue",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G47",
       "file": "cases/g47_temporal_conflicting_publication_facts.json",
       "case_class": "temporal_conflicting_publication_facts",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
     },
     {
       "case_id": "G48",
       "file": "cases/g48_temporal_deadline_cannot_rescue.json",
       "case_class": "temporal_deadline_cannot_rescue",
-      "origin_type": "SYNTHETIC_CONTRACT_CASE"
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
+    },
+    {
+      "case_id": "G49",
+      "file": "cases/g49_technical_pilot_start.json",
+      "case_class": "technical_pilot_start",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "TECHNICAL_DEVELOPMENT"
+    },
+    {
+      "case_id": "G50",
+      "file": "cases/g50_substantive_research_result.json",
+      "case_class": "substantive_research_result",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "TECHNICAL_DEVELOPMENT"
+    },
+    {
+      "case_id": "G51",
+      "file": "cases/g51_system_name_without_category_action.json",
+      "case_class": "system_name_without_category_action",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G52",
+      "file": "cases/g52_fatal_urban_rail_collision.json",
+      "case_class": "fatal_urban_rail_collision",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "INCIDENT"
+    },
+    {
+      "case_id": "G53",
+      "file": "cases/g53_cybersecurity_breach.json",
+      "case_class": "cybersecurity_breach",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "INCIDENT"
+    },
+    {
+      "case_id": "G54",
+      "file": "cases/g54_incident_investigation_report.json",
+      "case_class": "incident_investigation_report",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "OPERATIONAL_CHANGE"
+    },
+    {
+      "case_id": "G55",
+      "file": "cases/g55_corrective_safety_action.json",
+      "case_class": "corrective_safety_action",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "OPERATIONAL_CHANGE"
+    },
+    {
+      "case_id": "G56",
+      "file": "cases/g56_formal_tender_notice.json",
+      "case_class": "formal_tender_notice",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
+    },
+    {
+      "case_id": "G57",
+      "file": "cases/g57_bid_invitation.json",
+      "case_class": "bid_invitation",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
+    },
+    {
+      "case_id": "G58",
+      "file": "cases/g58_supplier_selection.json",
+      "case_class": "supplier_selection",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
+    },
+    {
+      "case_id": "G59",
+      "file": "cases/g59_procurement_option_exercise.json",
+      "case_class": "procurement_option_exercise",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
+    },
+    {
+      "case_id": "G60",
+      "file": "cases/g60_cbtc_contract_award.json",
+      "case_class": "cbtc_contract_award",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
+    },
+    {
+      "case_id": "G61",
+      "file": "cases/g61_innovative_signalling_procurement.json",
+      "case_class": "innovative_signalling_procurement",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
+    },
+    {
+      "case_id": "G62",
+      "file": "cases/g62_ai_predictive_maintenance_procurement.json",
+      "case_class": "ai_predictive_maintenance_procurement",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
+    },
+    {
+      "case_id": "G63",
+      "file": "cases/g63_cybersecurity_audit_procurement.json",
+      "case_class": "cybersecurity_audit_procurement",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
+    },
+    {
+      "case_id": "G64",
+      "file": "cases/g64_cbtc_pilot_deployment.json",
+      "case_class": "cbtc_pilot_deployment",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "TECHNICAL_DEVELOPMENT"
+    },
+    {
+      "case_id": "G65",
+      "file": "cases/g65_passenger_opening_new_rolling_stock.json",
+      "case_class": "passenger_opening_new_rolling_stock",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "OPERATIONAL_CHANGE"
+    },
+    {
+      "case_id": "G66",
+      "file": "cases/g66_timetable_service_change.json",
+      "case_class": "timetable_service_change",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "OPERATIONAL_CHANGE"
+    },
+    {
+      "case_id": "G67",
+      "file": "cases/g67_operating_practice_change.json",
+      "case_class": "operating_practice_change",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "OPERATIONAL_CHANGE"
+    },
+    {
+      "case_id": "G68",
+      "file": "cases/g68_ordinary_passenger_complaint.json",
+      "case_class": "ordinary_passenger_complaint",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G69",
+      "file": "cases/g69_enacted_cybersecurity_regulation.json",
+      "case_class": "enacted_cybersecurity_regulation",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NORMATIVE_CHANGE"
+    },
+    {
+      "case_id": "G70",
+      "file": "cases/g70_mandatory_technical_rule.json",
+      "case_class": "mandatory_technical_rule",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NORMATIVE_CHANGE"
+    },
+    {
+      "case_id": "G71",
+      "file": "cases/g71_industry_standard_revision.json",
+      "case_class": "industry_standard_revision",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NORMATIVE_CHANGE"
+    },
+    {
+      "case_id": "G72",
+      "file": "cases/g72_formal_applicable_guidance.json",
+      "case_class": "formal_applicable_guidance",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NORMATIVE_CHANGE"
+    },
+    {
+      "case_id": "G73",
+      "file": "cases/g73_operator_wide_specification_revision.json",
+      "case_class": "operator_wide_specification_revision",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NORMATIVE_CHANGE"
+    },
+    {
+      "case_id": "G74",
+      "file": "cases/g74_formal_standard_draft_consultation.json",
+      "case_class": "formal_standard_draft_consultation",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NORMATIVE_CHANGE"
+    },
+    {
+      "case_id": "G75",
+      "file": "cases/g75_ordinary_recommendation.json",
+      "case_class": "ordinary_recommendation",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G76",
+      "file": "cases/g76_researcher_recommendation.json",
+      "case_class": "researcher_recommendation",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G77",
+      "file": "cases/g77_procurement_only_specification.json",
+      "case_class": "procurement_only_specification",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
+    },
+    {
+      "case_id": "G78",
+      "file": "cases/g78_deployed_system_citing_existing_standard.json",
+      "case_class": "deployed_system_citing_existing_standard",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "TECHNICAL_DEVELOPMENT"
+    },
+    {
+      "case_id": "G79",
+      "file": "cases/g79_cybersecurity_technology_pilot.json",
+      "case_class": "cybersecurity_technology_pilot",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "TECHNICAL_DEVELOPMENT"
+    },
+    {
+      "case_id": "G80",
+      "file": "cases/g80_cybersecurity_operating_procedure.json",
+      "case_class": "cybersecurity_operating_procedure",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "OPERATIONAL_CHANGE"
+    },
+    {
+      "case_id": "G81",
+      "file": "cases/g81_conflicting_category_defining_source_claims.json",
+      "case_class": "conflicting_category_defining_source_claims",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G82",
+      "file": "cases/g82_no_unique_principal_mixed_actions.json",
+      "case_class": "no_unique_principal_mixed_actions",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G83",
+      "file": "cases/g83_procurement_headline_without_body_support.json",
+      "case_class": "procurement_headline_without_body_support",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "NOT_EVALUATED"
+    },
+    {
+      "case_id": "G84",
+      "file": "cases/g84_cross_system_technical_deployment.json",
+      "case_class": "cross_system_technical_deployment",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "TECHNICAL_DEVELOPMENT"
+    },
+    {
+      "case_id": "G85",
+      "file": "cases/g85_low_value_procurement.json",
+      "case_class": "low_value_procurement",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "PROCUREMENT"
     }
-  ]
+  ],
+  "category_contract": "L FINAL_LOCKED",
+  "category_case_count": 52
 }

@@ -1,0 +1,66 @@
+{
+  "case_id": "G85",
+  "name": "low_value_procurement",
+  "description": "Synthetic Category contract case: low value procurement.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro awards small contract for station fare readers",
+      "url": "https://fixtures.invalid/g85-low_value_procurement-1",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-16T10:00:00Z",
+      "discovery_intent": "procurement",
+      "search_snippet": "The operator awarded a formal contract for replacement fare readers at two stations.",
+      "source_content": "The operator awarded a formal contract for replacement fare readers at two stations. The notice confirms the supplier and a USD 180,000 amount. The small amount affects Reportability independently and does not change the procurement category.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-16T10:00:00Z",
+          "date_kind": "NOTICE_ISSUED",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ],
+      "procurement": {
+        "action": "award",
+        "amount": "USD 180,000",
+        "currency": "USD",
+        "currency_conversion": "NOT_REQUIRED",
+        "usd_3m_signal": "BELOW_3M"
+      }
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "PROCUREMENT",
+    "primary_category": "採購事件",
+    "subtype": "award",
+    "e&m_taxonomy": [
+      "自動收費"
+    ],
+    "reportability": "NOT_REPORTABLE",
+    "classification_reason": "PRINCIPAL_ACTION_PROCUREMENT",
+    "category_resolution_reason": "NONE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE",
+    "usd_3m_signal": "BELOW_3M"
+  },
+  "contract_notes": [
+    "The formal supplier award determines PROCUREMENT even though the amount is below USD 3M.",
+    "Reportability independently returns NOT_REPORTABLE for this low-value event.",
+    "Category and Reportability remain separate owner decisions."
+  ]
+}

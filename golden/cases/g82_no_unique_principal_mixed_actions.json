@@ -1,0 +1,84 @@
+{
+  "case_id": "G82",
+  "name": "no_unique_principal_mixed_actions",
+  "description": "Synthetic Category contract case: no unique principal mixed actions.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro announces equal pilot and passenger-service launches",
+      "url": "https://fixtures.invalid/g82-no_unique_principal_mixed_actions-1",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-17T10:00:00Z",
+      "discovery_intent": "operations",
+      "search_snippet": "One integrated operator announcement reports two coequal actions on the same opening date: a signalling technology pilot on one corridor and a passenger service launch with new trains on another.",
+      "source_content": "One integrated operator announcement reports two coequal actions on the same opening date: a signalling technology pilot on one corridor and a passenger service launch with new trains on another. The source gives neither action priority and the actions cannot be reduced to one principal action.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-17T10:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    },
+    {
+      "candidate_id": "C2",
+      "title": "Metro announces equal pilot and passenger-service launches",
+      "url": "https://fixtures.invalid/g82-no_unique_principal_mixed_actions-2",
+      "publisher": "Synthetic Secondary Contract Fixture",
+      "published_at": "2026-09-17T10:00:00Z",
+      "discovery_intent": "operations",
+      "search_snippet": "One integrated operator announcement reports two coequal actions on the same opening date: a signalling technology pilot on one corridor and a passenger service launch with new trains on another.",
+      "source_content": "One integrated operator announcement reports two coequal actions on the same opening date: a signalling technology pilot on one corridor and a passenger service launch with new trains on another. The source gives neither action priority and the actions cannot be reduced to one principal action.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-17T10:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C2",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "SAME_EVENT",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_UNRESOLVED",
+    "primary_category_id": null,
+    "primary_category": null,
+    "subtype": null,
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "classification_reason": "CATEGORY_UNRESOLVED",
+    "category_resolution_reason": "NO_UNIQUE_PRINCIPAL_ACTION",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "Category follows the supported principal action in substantive source content.",
+    "Search intent, source title, technical novelty, taxonomy, and Reportability are not Category authorities."
+  ],
+  "category_claims": [
+    {
+      "source": "operator_announcement",
+      "claim": "technical signalling pilot began"
+    },
+    {
+      "source": "operator_announcement",
+      "claim": "passenger service with new trains began"
+    }
+  ]
+}

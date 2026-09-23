@@ -20,7 +20,15 @@
       "discovery_intent": "major incident",
       "search_snippet": "A traction-power fault caused smoke at a metro station, suspended service, and triggered an evacuation.",
       "source_content": "Synthetic incident notice. A traction-power equipment fault caused smoke in a metro station, suspended service on two lines, and led to an emergency evacuation. The notice identifies the affected substation, the protection action, the service impact, and the operator's investigation.",
-      "source_date_facts": [{"raw_date_value":"2026-09-16T09:00:00Z","date_kind":"NOTICE_PUBLISHED","principal_document_association":"C1","source_node_or_field_provenance":"source_content.notice_publication_date","explicit_timezone_or_offset":"Z"}]
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-16T09:00:00Z",
+          "date_kind": "NOTICE_PUBLISHED",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.notice_publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
     }
   ],
   "expected": {
@@ -29,14 +37,18 @@
     "date_valid": true,
     "event_identity_expectation": "NOT_EVALUATED",
     "event_count_after_dedup": 1,
-    "primary_category": "重大事故",
+    "primary_category": "事故事件",
     "subtype": "technical_accident",
     "e&m_taxonomy": [
       "供電"
     ],
     "reportability": "REPORTABLE",
     "reject_stage": "NONE",
-    "reject_reason": "NONE"
+    "reject_reason": "NONE",
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "INCIDENT",
+    "classification_reason": "PRINCIPAL_ACTION_INCIDENT",
+    "category_resolution_reason": "NONE"
   },
   "contract_notes": [
     "Technical incident classification is based on the event facts and is not overridden by technology keywords.",

@@ -1,7 +1,7 @@
 {
   "case_id": "G19",
   "name": "below_usd_3m_but_innovative",
-  "description": "An innovative urban-rail material pilot is below the USD 3M signal threshold.",
+  "description": "A formal procurement action concerns a novel pilot, but its novelty does not change the procurement category.",
   "origin_type": "SYNTHETIC_CONTRACT_CASE",
   "origin_reference": null,
   "run_context": {
@@ -20,7 +20,15 @@
       "discovery_intent": "procurement",
       "search_snippet": "The metro procured a small pilot of recyclable platform panels.",
       "source_content": "Synthetic pilot award notice. The metro procured a pilot installation of recyclable platform panels at one station. The notice describes the material composition, safety tests, installation method, monitoring plan, and trial objectives.",
-      "source_date_facts": [{"raw_date_value":"2026-09-17T16:00:00Z","date_kind":"NOTICE_PUBLISHED","principal_document_association":"C1","source_node_or_field_provenance":"source_content.notice_publication_date","explicit_timezone_or_offset":"Z"}],
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-17T16:00:00Z",
+          "date_kind": "NOTICE_PUBLISHED",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.notice_publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ],
       "procurement": {
         "action": "pilot award",
         "amount": "USD 0.6M",
@@ -36,7 +44,7 @@
     "date_valid": true,
     "event_identity_expectation": "NOT_EVALUATED",
     "event_count_after_dedup": 1,
-    "primary_category": "技術新知",
+    "primary_category": "採購事件",
     "subtype": "procurement",
     "e&m_taxonomy": [
       "月臺門"
@@ -44,10 +52,15 @@
     "reportability": "REPORTABLE",
     "reject_stage": "NONE",
     "reject_reason": "NONE",
-    "usd_3m_signal": "BELOW_3M"
+    "usd_3m_signal": "BELOW_3M",
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "PROCUREMENT",
+    "classification_reason": "PRINCIPAL_ACTION_PROCUREMENT",
+    "category_resolution_reason": "NONE"
   },
   "contract_notes": [
-    "A below-USD-3M amount is an importance signal only and is not an eligibility gate.",
-    "The innovative material and pilot facts drive the category and reportability."
+    "The source substantiates a formal procurement action; that action determines Category.",
+    "Pilot purpose, technical novelty, and the USD 3M importance signal do not override PROCUREMENT.",
+    "The E&M taxonomy and Reportability remain independent outcomes."
   ]
 }

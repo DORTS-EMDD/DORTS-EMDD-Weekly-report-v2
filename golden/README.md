@@ -1,4 +1,4 @@
-# V2 Golden Acceptance Corpus v1
+# V2 Golden Acceptance Corpus v2 — Category Lock
 
 Golden Corpus 是 V2 production implementation 開始前的 authoritative acceptance baseline。它用固定的 input facts 與 expected domain outcome，先定義代表性輸入應經過哪些 pipeline boundary，以及正確結果應為何。
 
@@ -6,9 +6,9 @@ Golden Corpus 不是 production code，也不是 executable Python test suite。
 
 ## Authority and provenance
 
-每個 expected outcome 都以 docs/ARCHITECTURE_CONTRACT.md 的 v0.5 FINAL_LOCKED 為 authoritative source。V1 只提供 read-only case material、regression intent 與 historical lessons；V1 的 expected outcome 不會自動成為 V2 正確答案。
+每個 expected outcome 都以 docs/ARCHITECTURE_CONTRACT.md 的 v0.5 FINAL_LOCKED（含 Category §L）為 authoritative source。Category Golden Lock 固定五個 canonical category IDs 及其繁體中文 display labels。V1 只提供 read-only case material、regression intent 與 historical lessons；V1 的 expected outcome 不會自動成為 V2 正確答案。
 
-本版 48 個 case 全部標示為 SYNTHETIC_CONTRACT_CASE。這是刻意的選擇：本次檢視到的 V1 regression tests 具有可用的 case intent，但沒有需要在 V2 中固化、且足以安全重建為 authoritative evidence snapshot 的完整歷史 fixture。未 materialize named historical cases，不以記憶杜撰新聞、官方公告或 source text。
+本版 85 個 case 全部標示為 SYNTHETIC_CONTRACT_CASE。這是刻意的選擇：本次檢視到的 V1 regression tests 具有可用的 case intent，但沒有需要在 V2 中固化、且足以安全重建為 authoritative evidence snapshot 的完整歷史 fixture。未 materialize named historical cases，不以記憶杜撰新聞、官方公告或 source text。
 
 本版沒有把 Bukit Gombak、TransLink elevator 或 Tokyo overhead-wire 等名稱假裝成 V2 historical fixture。若未來有合法、固定、可重現且不需大量複製受版權保護正文的 evidence snapshot，可新增 V1_HISTORICAL_FIXTURE 或 V1_REGRESSION_DERIVED case；否則應維持 synthetic case。
 
@@ -34,7 +34,25 @@ source_content 是 fixture 的最小必要固定片段，不是新聞全文資�
 
 ### Procurement
 
-G10、G11、G19、G20、G21 覆蓋 standard procurement、innovative procurement、below USD 3M、amount unknown 與無可靠匯率換算。原幣金額應保留；USD 3M 是 importance signal，不是 eligibility gate；不得猜匯率。
+G10、G11、G19、G20、G21 覆蓋 standard procurement、innovative procurement、below USD 3M、amount unknown 與無可靠匯率換算。這些正式採購 action 均分類為 `PROCUREMENT`；新穎性、試點目的及金額不得覆寫 Category。G56–G63、G77、G85 擴充 tender、投標邀請、supplier selection、award、option exercise、資安採購及低金額採購。原幣金額應保留；USD 3M 是 importance signal，不是 eligibility gate；不得猜匯率。
+
+### Category coverage
+
+Category definitions and boundaries have one authority: `docs/ARCHITECTURE_CONTRACT.md` §L. This table repeats the canonical IDs and labels only to summarize fixture coverage; it does not define category rules.
+
+| Canonical ID | Display label | Assigned cases |
+| --- | --- | ---: |
+| `TECHNICAL_DEVELOPMENT` | 技術新知 | 10 |
+| `INCIDENT` | 事故事件 | 6 |
+| `OPERATIONAL_CHANGE` | 營運動態 | 8 |
+| `PROCUREMENT` | 採購事件 | 16 |
+| `NORMATIVE_CHANGE` | 規範變動 | 6 |
+
+每個 fixture 的 `expected.category_state` 必須明確為 `NOT_EVALUATED`、`CATEGORY_ASSIGNED` 或 `CATEGORY_UNRESOLVED`。Assigned case 同時鎖定 `primary_category_id`、display label、subtype 與 `classification_reason`。`NOT_EVALUATED` 保留 upstream stage 沒有到達 Category 的事實。`CATEGORY_UNRESOLVED` 是有效 terminal outcome：`primary_category_id`、display label 及 subtype 為 null，Taxonomy 與 Reportability 為 `NOT_EVALUATED`，且不記為 rejection。85 個 case 中有 52 個到達 Category（46 assigned、6 unresolved）；其餘 33 個在 upstream boundary 停止或被 Evidence 拒絕。
+
+G49、G53、G60、G62–G64、G69、G79 記錄 misleading discovery context，測試 §L 的 Search non-authority boundary。G51、G68、G75、G76、G81、G82 鎖定 contract-defined `CATEGORY_UNRESOLVED` outcome。G49 記錄同一 factual Event 在 7 日與 365 日期間的 expected Category。
+
+部分 fixture 的 `category_fixture_context` 記錄刻意誤導的 discovery query；這是 Golden 測試背景欄位，不是 Candidate authority 或 runtime schema。
 
 ### E&M taxonomy
 
@@ -59,22 +77,22 @@ G10、G11、G19、G20、G21 覆蓋 standard procurement、innovative procurement
 | G03 | Valid new technology | Synthetic |
 | G04 | Valid new material | Synthetic |
 | G05 | Valid new method | Synthetic |
-| G06 | Major urban-rail technical accident | Synthetic |
-| G07 | Low-value in-scope accident | Synthetic |
+| G06 | Urban-rail incident classified independently of severity | Synthetic |
+| G07 | Low-value incident assigned INCIDENT and rejected by Reportability | Synthetic |
 | G08 | Operations policy | Synthetic |
 | G09 | Operations dispute | Synthetic |
-| G10 | Standard E&M procurement | Synthetic |
-| G11 | Innovative procurement | Synthetic |
-| G12 | Duplicate multilingual event | Synthetic |
-| G13 | Similar titles, different events | Synthetic |
+| G10 | Standard E&M procurement classified PROCUREMENT | Synthetic |
+| G11 | Innovative pilot procurement remains PROCUREMENT | Synthetic |
+| G12 | Duplicate multilingual incident | Synthetic |
+| G13 | Similar procurement titles, different events | Synthetic |
 | G14 | Non-urban rail scope rejection | Synthetic |
 | G15 | Out-of-range source rejection | Synthetic |
-| G16 | Conflicting source claims | Synthetic |
+| G16 | Incident with unresolved duration claim | Synthetic |
 | G17 | Non-seven-system but reportable | Synthetic |
 | G18 | Search/navigation shell rejection | Synthetic |
-| G19 | Below USD 3M but innovative | Synthetic |
-| G20 | Amount unknown | Synthetic |
-| G21 | No reliable currency conversion | Synthetic |
+| G19 | Below USD 3M innovative procurement remains PROCUREMENT | Synthetic |
+| G20 | Procurement with amount unknown | Synthetic |
+| G21 | Procurement without reliable currency conversion | Synthetic |
 | G22 | Streetcar / Tram equivalence | Synthetic |
 | G23 | Commuter rail without eligible-mode proof | Synthetic |
 | G24 | Commuter label with explicit Metro proof | Synthetic |
@@ -102,6 +120,43 @@ G10、G11、G19、G20、G21 覆蓋 standard procurement、innovative procurement
 | G46 | Publication versus Event date | Synthetic |
 | G47 | Conflicting publication facts | Synthetic |
 | G48 | Procurement deadline versus notice publication | Synthetic |
+| G49 | Technical pilot and weekly/annual Category invariance | Synthetic |
+| G50 | Substantive research result | Synthetic |
+| G51 | System name without a category-defining action | Synthetic |
+| G52 | Fatal urban-rail collision | Synthetic |
+| G53 | Cybersecurity breach incident | Synthetic |
+| G54 | Incident investigation without a new rule | Synthetic |
+| G55 | Operational corrective safety action | Synthetic |
+| G56 | Formal tender notice | Synthetic |
+| G57 | Bid invitation | Synthetic |
+| G58 | Supplier selection | Synthetic |
+| G59 | Procurement option exercise | Synthetic |
+| G60 | CBTC contract award versus later deployment | Synthetic |
+| G61 | Innovative signalling procurement remains PROCUREMENT | Synthetic |
+| G62 | AI predictive-maintenance procurement | Synthetic |
+| G63 | Cybersecurity audit procurement | Synthetic |
+| G64 | CBTC technical pilot deployment | Synthetic |
+| G65 | New rolling stock enters passenger service | Synthetic |
+| G66 | Timetable change | Synthetic |
+| G67 | Operating-practice change | Synthetic |
+| G68 | Ordinary passenger complaint unresolved | Synthetic |
+| G69 | Enacted cybersecurity regulation | Synthetic |
+| G70 | Mandatory technical rule | Synthetic |
+| G71 | Industry standard revision | Synthetic |
+| G72 | Formal applicable guidance | Synthetic |
+| G73 | Operator-wide specification revision | Synthetic |
+| G74 | Formal draft consultation | Synthetic |
+| G75 | Ordinary recommendation unresolved | Synthetic |
+| G76 | Researcher recommendation unresolved | Synthetic |
+| G77 | Procurement-only specification remains PROCUREMENT | Synthetic |
+| G78 | Deployment citing an existing standard | Synthetic |
+| G79 | Cybersecurity technology pilot | Synthetic |
+| G80 | Cybersecurity operating-practice change | Synthetic |
+| G81 | Conflicting category-defining source claims unresolved | Synthetic |
+| G82 | Mixed actions without a unique principal action | Synthetic |
+| G83 | Unsupported procurement headline rejected at Evidence | Synthetic |
+| G84 | Cross-system technical deployment | Synthetic |
+| G85 | Low-value procurement category independent of Reportability | Synthetic |
 
 ## Source-associated date facts
 

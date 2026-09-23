@@ -20,7 +20,15 @@
       "discovery_intent": "major incident",
       "search_snippet": "A power fault closed the airport branch for 42 minutes.",
       "source_content": "Synthetic operator notice. A traction-power fault closed the airport branch for 42 minutes. The notice identifies the affected section, the protection action, and the restoration process.",
-      "source_date_facts": [{"raw_date_value":"2026-09-17T13:00:00Z","date_kind":"NOTICE_PUBLISHED","principal_document_association":"C1","source_node_or_field_provenance":"source_content.notice_publication_date","explicit_timezone_or_offset":"Z"}],
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-17T13:00:00Z",
+          "date_kind": "NOTICE_PUBLISHED",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.notice_publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ],
       "claim": {
         "field": "service_duration_minutes",
         "value": 42
@@ -35,7 +43,15 @@
       "discovery_intent": "major incident",
       "search_snippet": "The same airport branch power incident lasted 47 minutes.",
       "source_content": "Synthetic government notice. The same traction-power fault affected the airport branch and service resumed after 47 minutes. The notice identifies the same section and restoration event but gives a different duration.",
-      "source_date_facts": [{"raw_date_value":"2026-09-17T13:20:00Z","date_kind":"NOTICE_PUBLISHED","principal_document_association":"C2","source_node_or_field_provenance":"source_content.notice_publication_date","explicit_timezone_or_offset":"Z"}],
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-17T13:20:00Z",
+          "date_kind": "NOTICE_PUBLISHED",
+          "principal_document_association": "C2",
+          "source_node_or_field_provenance": "source_content.notice_publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ],
       "claim": {
         "field": "service_duration_minutes",
         "value": 47
@@ -48,7 +64,7 @@
     "date_valid": true,
     "event_identity_expectation": "SAME_EVENT",
     "event_count_after_dedup": 1,
-    "primary_category": "重大事故",
+    "primary_category": "事故事件",
     "subtype": "technical_accident",
     "e&m_taxonomy": [
       "供電"
@@ -69,7 +85,11 @@
     "authoritative_factual_claims": [
       "The same traction-power event affected the airport branch and service was restored.",
       "The exact service duration is not asserted."
-    ]
+    ],
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "INCIDENT",
+    "classification_reason": "PRINCIPAL_ACTION_INCIDENT",
+    "category_resolution_reason": "NONE"
   },
   "contract_notes": [
     "Event Identity may establish one event while a factual claim remains unresolved.",

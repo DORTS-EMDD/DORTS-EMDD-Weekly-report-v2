@@ -1,0 +1,65 @@
+{
+  "case_id": "G58",
+  "name": "supplier_selection",
+  "description": "Synthetic Category contract case: supplier selection.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro selects preferred supplier for fare-gate replacement",
+      "url": "https://fixtures.invalid/g58-supplier_selection-1",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-17T10:00:00Z",
+      "discovery_intent": "procurement",
+      "search_snippet": "After evaluating submitted bids, the metro announced its formal selection of a preferred supplier for a fare-gate replacement package.",
+      "source_content": "After evaluating submitted bids, the metro announced its formal selection of a preferred supplier for a fare-gate replacement package. The procurement notice names the selected bidder and states that contract finalization remains pending.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-17T10:00:00Z",
+          "date_kind": "NOTICE_ISSUED",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ],
+      "procurement": {
+        "action": "supplier selection",
+        "amount": "TWD 420M",
+        "currency": "TWD",
+        "currency_conversion": "NOT_AVAILABLE",
+        "usd_3m_signal": "UNKNOWN"
+      }
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "PROCUREMENT",
+    "primary_category": "採購事件",
+    "subtype": "supplier_selection",
+    "e&m_taxonomy": [
+      "自動收費"
+    ],
+    "reportability": "REPORTABLE",
+    "classification_reason": "PRINCIPAL_ACTION_PROCUREMENT",
+    "category_resolution_reason": "NONE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE",
+    "usd_3m_signal": "UNKNOWN"
+  },
+  "contract_notes": [
+    "Category follows the supported principal action in substantive source content.",
+    "Search intent, source title, technical novelty, taxonomy, and Reportability are not Category authorities."
+  ]
+}

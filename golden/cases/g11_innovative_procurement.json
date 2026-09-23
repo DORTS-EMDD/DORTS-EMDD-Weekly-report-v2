@@ -1,7 +1,7 @@
 {
   "case_id": "G11",
   "name": "innovative_procurement",
-  "description": "A procurement notice's core value is an innovative urban-rail energy-storage pilot.",
+  "description": "A formal procurement action concerns a novel pilot, but its novelty does not change the procurement category.",
   "origin_type": "SYNTHETIC_CONTRACT_CASE",
   "origin_reference": null,
   "run_context": {
@@ -20,7 +20,15 @@
       "discovery_intent": "procurement",
       "search_snippet": "The metro issued a procurement for a pilot wayside energy-storage system to recover braking energy.",
       "source_content": "Synthetic pilot procurement notice. The metro issued a procurement for a pilot wayside energy-storage system that captures regenerative braking energy. The notice describes the storage chemistry, the wayside test site, trial objectives, measurement plan, and procurement action.",
-      "source_date_facts": [{"raw_date_value":"2026-09-17T09:00:00Z","date_kind":"NOTICE_ISSUED","principal_document_association":"C1","source_node_or_field_provenance":"source_content.procurement_notice_issued_at","explicit_timezone_or_offset":"Z"}],
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-17T09:00:00Z",
+          "date_kind": "NOTICE_ISSUED",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.procurement_notice_issued_at",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ],
       "procurement": {
         "action": "pilot procurement",
         "amount": "USD 1.2M",
@@ -36,7 +44,7 @@
     "date_valid": true,
     "event_identity_expectation": "NOT_EVALUATED",
     "event_count_after_dedup": 1,
-    "primary_category": "技術新知",
+    "primary_category": "採購事件",
     "subtype": "procurement",
     "e&m_taxonomy": [
       "供電"
@@ -44,11 +52,15 @@
     "reportability": "REPORTABLE",
     "reject_stage": "NONE",
     "reject_reason": "NONE",
-    "usd_3m_signal": "BELOW_3M"
+    "usd_3m_signal": "BELOW_3M",
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "PROCUREMENT",
+    "classification_reason": "PRINCIPAL_ACTION_PROCUREMENT",
+    "category_resolution_reason": "NONE"
   },
   "contract_notes": [
-    "Procurement discovery intent does not determine the formal category.",
-    "The factual core is a new method and pilot, so the category is 技術新知 with subtype procurement.",
-    "Being below USD 3M is not an eligibility gate."
+    "The source substantiates a formal procurement action; that action determines Category.",
+    "Pilot purpose, technical novelty, and the USD 3M importance signal do not override PROCUREMENT.",
+    "The E&M taxonomy and Reportability remain independent outcomes."
   ]
 }

@@ -15,6 +15,6 @@
     "search_snippet":"A commuter rail operator installed monitoring equipment on a regional corridor.",
     "source_content":"Synthetic railway technical release. The commuter rail operator installed monitoring equipment on a suburban regional corridor. The source describes no Metro, MRT, Subway, Light Rail, Tram, AGT, Monorail, People Mover, or Urban Rail system."
   }],
-  "expected": {"evidence_state":"EVIDENCE_READY","scope":"OUT_OF_SCOPE","scope_diagnostic":"NON_URBAN_RAIL","date_valid":"NOT_EVALUATED","event_identity_expectation":"NOT_EVALUATED","event_count_after_dedup":"NOT_EVALUATED","primary_category":"NOT_EVALUATED","subtype":"NOT_EVALUATED","e&m_taxonomy":"NOT_EVALUATED","reportability":"NOT_EVALUATED","reject_stage":"SCOPE","reject_reason":"OUT_OF_SCOPE"},
+  "expected": {"evidence_state":"EVIDENCE_READY","scope":"OUT_OF_SCOPE","scope_diagnostic":"NON_URBAN_RAIL","date_valid":"NOT_EVALUATED","event_identity_expectation":"NOT_EVALUATED","event_count_after_dedup":"NOT_EVALUATED","category_state":"NOT_EVALUATED","primary_category_id":"NOT_EVALUATED","classification_reason":"NOT_EVALUATED","category_resolution_reason":"NOT_EVALUATED","primary_category":"NOT_EVALUATED","subtype":"NOT_EVALUATED","e&m_taxonomy":"NOT_EVALUATED","reportability":"NOT_EVALUATED","reject_stage":"SCOPE","reject_reason":"OUT_OF_SCOPE"},
   "contract_notes":["Commuter or regional rail terminology alone cannot establish eligible urban-rail Scope."]
 }
