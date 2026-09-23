@@ -118,23 +118,9 @@ Event Dedup 後：
 
 ## 8. Category
 
-Primary Category 固定為：
-
-* 技術新知
-* 重大事故
-* 營運動態
-* 機電標案
-
-Subtype 不得形成新的 workflow lane。
-
-事件若透過採購發生，但主要價值是新技術、新材料、新方式，可歸為：
-
-```text
-primary_category = 技術新知
-subtype = procurement
-```
-
-Downstream 不得再建立第二套 category conflict resolver。
+Category 的唯一權威規則位於 `docs/ARCHITECTURE_CONTRACT.md` 第 L 節。
+Classifier 是唯一 Category owner；Search、Taxonomy、Selector 與 MaiAgent
+不得決定或重新分類 Category。Subtype 不得形成新的 workflow lane。
 
 ## 9. E&M Taxonomy
 

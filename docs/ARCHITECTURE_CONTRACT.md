@@ -199,6 +199,13 @@ Search early rejection 只允許：
 
 Search 不得因缺乏 snippet、標題相似度、來源 domain 或單一 provider 結果而正式決定 Evidence、Scope、Date、Category 或 Reportability。
 
+Search keyword、discovery intent、query family、搜尋語言與搜尋結果都不是
+Category authority：
+
+```text
+SEARCH_KEYWORDS_CATEGORY_AUTHORITY = NO
+```
+
 ## G. Procurement
 
 Procurement discovery 可來自：
@@ -401,51 +408,151 @@ Event Identity 只在 Evidence、Scope、Date 完成後負責 Candidate-to-Candi
 
 ## L. Category
 
-Primary Category 只有：
-
-* 技術新知
-* 重大事故
-* 營運動態
-* 機電標案
-
-Classifier 唯一負責：
+Classifier 是唯一 Category owner，且只對已完成 Evidence、Scope、Temporal
+及 Event Identity / Dedup 的 authoritative Event Group 作出一次 Category
+決定。Category 表示來源證實的 event/action factual type。
 
 ```text
-primary_category
-subtype
-classification_reason
+CATEGORY_AUTHORITATIVE_OWNER = Classifier
+CATEGORY_AUTHORITATIVE_OWNER_COUNT = 1
+CATEGORY_DECISION_UNIT = one authoritative Event Group after Event Identity / Dedup
 ```
 
-Subtype 不形成 workflow lane。
+正式 primary Category set：
 
-若 procurement 的主要價值為新技術、新材料、新方式：
+| Canonical ID | 顯示名稱 |
+| --- | --- |
+| `TECHNICAL_DEVELOPMENT` | 技術新知 |
+| `INCIDENT` | 事故事件 |
+| `OPERATIONAL_CHANGE` | 營運動態 |
+| `PROCUREMENT` | 採購事件 |
+| `NORMATIVE_CHANGE` | 規範變動 |
+
+Category 輸出及基數：
 
 ```text
-primary_category = 技術新知
-subtype = procurement
+CATEGORY_CARDINALITY = exactly one primary Category when assigned
+PEER_SECONDARY_CATEGORY = NO
+OPTIONAL_DESCRIPTIVE_SUBTYPE = YES
 ```
 
-若主要 factual action 是一般 tender / award / procurement / replacement，且核心價值為採購本身：
+Classifier 唯一負責 `primary_category`、`subtype` 及 `classification_reason`。
+Subtype 只描述已分類事件的性質，不形成新的 workflow lane 或第二個 Category。
+
+輸出狀態為：
 
 ```text
-primary_category = 機電標案
+NOT_EVALUATED
+CATEGORY_ASSIGNED
+CATEGORY_UNRESOLVED
 ```
 
-重大事故不得因有技術名詞而被改成技術新知。
+`NOT_EVALUATED` 表示 Category stage 未執行，例如上游 prerequisite 未滿足。
+`CATEGORY_ASSIGNED` 表示 Classifier 有足夠 authoritative Evidence 支持唯一
+primary Category。`CATEGORY_UNRESOLVED` 表示 Classifier 已執行，但 evidence
+不足、定義類別的 action 不明、來源間該 action 有重大衝突，或 Event Group
+包含兩個同等獨立的類別定義 action 而無可辯護的 principal action。
 
-營運動態可包含：
+`CATEGORY_UNRESOLVED` 是 Category stage 的合法終止結果。Classifier 擁有
+該決定；orchestrator 只依該狀態終止此 Event Group，不成為另一個 Category
+owner。該 Event Group 不進 Reportability、MaiAgent 或 Delivery。Selector 不得
+補 Category，亦不得把此狀態改成 `NOT_REPORTABLE`。
 
-* policy
-* dispute
-* opening
-* service change
-* fare / ticketing
-* operating method
-* management change
+Category 只分類已證明的 principal current action / lifecycle action。不得用
+Category precedence、數值排名、關鍵字數量、新聞價值、importance score、來源
+優先級或「core value」解決衝突。同一 Event Group 中若確有多個同等獨立的
+category-defining actions，且無唯一 principal action，必須回
+`CATEGORY_UNRESOLVED`；Category 不得 merge 或 split events。
 
-不得建立第二套 category conflict resolver。
+### Category meanings and boundaries
 
-Category decision 由 Classifier 唯一負責；downstream 不得重新分類或以另一套規則解決 category conflict。
+* **`TECHNICAL_DEVELOPMENT` / 技術新知**：principal action 是具體研究成果、
+  原型、試驗、應用技術測試、技術部署或實質技術發展。系統名稱、採購、供應商
+  決標或設備交付本身不等於技術發展。
+* **`INCIDENT` / 事故事件**：已實際發生的都市軌道事故、非預期故障或安全／
+  資安事件。事故嚴重程度不是 Category threshold。死亡、受傷、服務中斷、火災、
+  碰撞、損害及營運後果是來源支持的事實；是否值得報導由 Reportability 判定。
+* **`OPERATIONAL_CHANGE` / 營運動態**：實際客運／營收服務啟用、服務或班表
+  變更、票價或營運方式改變、已證實的營運爭議，以及營運性治理 action。一般
+  客訴或負面報導本身不構成爭議。正式發布的法規或規範變動歸
+  `NORMATIVE_CHANGE`，不得為了沿用舊分類而塞入本類。
+* **`PROCUREMENT` / 採購事件**：來源證明 principal action 是正式 tender、
+  bid invitation、supplier selection、award、exercised option 或其他正式採購
+  action。採購標的是否為七大 E&M 系統由獨立 Taxonomy 表示。技術新穎性、AI、
+  CBTC、資安或 first-of-kind 不會把採購事件改成技術發展。
+* **`NORMATIVE_CHANGE` / 規範變動**：來源證明法規發布／修訂、強制技術規則、
+  產業或技術標準修訂、有明確適用對象與規範內容的正式指引、營運者通用規格
+  修訂，或正式草案／徵詢程序。需保留文件的拘束力及程序狀態。單一採購案規格、
+  引用既有標準、研究者建議、傳聞中的未來規則、普通建議，或沒有明確規範變動
+  的內容均不屬此類。
+
+```text
+SEVERITY_IS_CATEGORY_AUTHORITY = NO
+INNOVATION_CAN_OVERRIDE_PROCUREMENT = NO
+```
+
+事故後發布的新強制規則屬 `NORMATIVE_CHANGE`，不是原事故。只發布有實質調查
+發現的事故調查報告，而未制定新規範時，按其調查／安全治理 action 分類為
+`OPERATIONAL_CHANGE`；報告中的建議不等於已採納規則。對票價、班表或服務安排
+的實際決定屬 `OPERATIONAL_CHANGE`，即使透過政策公告發布。
+
+### Procurement and technical lifecycle
+
+Category 由 Event Group 已證明的 principal action 決定，不由「主要價值」或
+新穎性覆寫。Formal procurement action 一律為 `PROCUREMENT`，即使採購內容新穎、
+first-of-kind、有試點目的或描述新技術。技術新穎性可以保留為 Evidence fact、
+technical descriptor、Taxonomy input 或 Reportability consideration，但不是
+Category override。
+
+先發生的 tender／award 與其後開始的 pilot／deployment，依 Event Identity
+已確立的 lifecycle action 分別分類。Category 不自行拆 Event Group。列車開始
+載客屬 `OPERATIONAL_CHANGE`；CBTC pilot 開始屬 `TECHNICAL_DEVELOPMENT`；若同一
+正確 Event Group 中有兩個同等獨立 action 且無唯一 principal action，回
+`CATEGORY_UNRESOLVED`。
+
+### Authority boundaries
+
+Category 可使用 Event Group 內保留來源歸屬的 authoritative claims、principal
+source substantive content、由該內容支持的 event identity/action facts，以及
+source metadata 作 provenance。Owned headline 只能作上下文，不能取代 substantive
+Evidence。來源間若 category-defining factual claims 衝突且無法裁決，回
+`CATEGORY_UNRESOLVED`；不得合併來源正文或編造調和敘事。
+
+Category 不得以 search query、search snippet、Google News proxy title、RSS-only
+tag、publisher/domain alone、URL tokens、discovery keyword、candidate
+`published_at`、fetch time、report wording、MaiAgent output 或 downstream
+Reportability 作 authority。不得有 site-specific、publisher-specific、language-
+specific 或 report-period-specific Category branch。
+
+Category 不得決定 Scope、Evidence、Date、Event Identity、E&M Taxonomy 或
+Reportability；不得 merge、split、drop、score importance、套用 quota 或 rescue。
+E&M Taxonomy 說明涉及哪些都市軌道機電系統／技術；系統名稱本身不決定 Category，
+Taxonomy 不得更改 Category。Selector 只決定 `REPORTABLE` / `NOT_REPORTABLE`
+與 deterministic ordering，不得分類或重新分類。MaiAgent 不得決定或修改 Category。
+
+同一 factual Event Group 在 7、30、90、180 或 365 天報告期間必須有相同 Category。
+Source iteration order、publisher priority、canonical-source position 及報告期間
+均不得決定 Category。
+
+```text
+SEARCH_KEYWORDS_CATEGORY_AUTHORITY = NO
+REPORT_PERIOD_SPECIFIC_CATEGORY_RULE = NO
+CATEGORY_IS_REPORTABILITY_OWNER = NO
+CATEGORY_CAN_DROP_EVENT = NO
+CATEGORY_CAN_SCORE_IMPORTANCE = NO
+CATEGORY_CAN_USE_REPORT_QUOTA = NO
+CATEGORY_CAN_MERGE_EVENTS = NO
+CATEGORY_CAN_SPLIT_EVENTS = NO
+CATEGORY_CAN_ASSIGN_EM_SYSTEM = NO
+TAXONOMY_CAN_CHANGE_CATEGORY = NO
+CATEGORY_UNRESOLVED_IS_VALID_TERMINAL_STATE = YES
+CATEGORY_UNRESOLVED_REACHES_REPORTABILITY = NO
+CATEGORY_UNRESOLVED_REACHES_MAIAGENT = NO
+CATEGORY_UNRESOLVED_REACHES_DELIVERY = NO
+```
+
+Classifier 是 Category 唯一 source of truth。不得新增 fallback、rescue、backfill、
+default forced category、第二套 conflict resolver 或 downstream reclassification。
 
 ## M. E&M Taxonomy
 
@@ -463,7 +570,8 @@ Category decision 由 Classifier 唯一負責；downstream 不得重新分類或
 
 七大系統不得作 Candidate survival gate。
 
-跨系統新興技術仍可成為技術新知。
+E&M Taxonomy 描述系統，不決定 Category。跨系統或新興系統的分類仍依 Section L
+所定義的 principal event/action；Taxonomy 結果不得覆寫該 Category。
 
 電梯、電扶梯、通風空調等非七大主系統設備，如事件本身具有足夠都市軌道技術、安全、營運或示範價值仍可成報。
 
@@ -488,7 +596,7 @@ EVIDENCE_READY
 IN_SCOPE
 DATE_VALID
 DEDUPED
-CLASSIFIED
+CATEGORY_ASSIGNED
 ```
 
 Selector 不得：
@@ -521,7 +629,7 @@ Ordering 採 deterministic lexicographic priority：
 2. 都市軌道機電技術關聯度
 3. 系統、安全或專案影響程度
 4. 臺北捷運實質參考價值
-5. 機電標案重大性
+5. 採購案重大性
 6. 來源品質
 7. 時效性
 8. stable identity
@@ -732,12 +840,16 @@ Event lifecycle：
 
 ```text
 CREATED
-→ CLASSIFIED
+→ CATEGORY_ASSIGNED
 → REPORTABLE
 → GENERATED
 → VALIDATED
 → DELIVERED
 ```
+
+若 Category owner 回傳 `CATEGORY_UNRESOLVED`，該 Event Group 在 Category stage
+終止，不進入後續 Event lifecycle stages。`CATEGORY_ASSIGNED` 是 Selector 的
+分類前置條件。
 
 Debug state 永遠不得控制：
 
@@ -780,12 +892,18 @@ Golden Corpus 至少涵蓋 case classes：
 * valid new technology
 * valid new material
 * valid new method
-* major urban-rail technical accident
-* low-value accident
+* urban-rail incident, including technical failure and severity consequences
+* low-value incident that is assigned `INCIDENT` and independently rejected by Reportability
 * operations policy
 * operations dispute
-* valid E&M procurement
-* innovative procurement
+* formal procurement action, including innovative procurement that remains `PROCUREMENT`
+* technical pilot/deployment as a distinct lifecycle action
+* enacted regulation and mandatory technical rule
+* industry/technical standard revision and formal guidance
+* normative change versus ordinary recommendation and procurement-only specification
+* `CATEGORY_UNRESOLVED` terminal disposition
+* mixed independent category-defining actions with no principal action
+* cybersecurity procurement, incident, and regulation as distinct event types
 * duplicate multilingual event
 * different events with similar titles
 * title-only evidence
