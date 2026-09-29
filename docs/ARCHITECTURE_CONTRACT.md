@@ -554,6 +554,92 @@ CATEGORY_UNRESOLVED_REACHES_DELIVERY = NO
 Classifier 是 Category 唯一 source of truth。不得新增 fallback、rescue、backfill、
 default forced category、第二套 conflict resolver 或 downstream reclassification。
 
+### Category v4 Final Seal acceptance
+
+Category live acceptance 使用固定 population：85 個 Golden fixtures，其中 52 個
+fixtures 進入 Category，經 Event Identity 後形成 53 個 Event Groups。每一個
+Event Group 在每一 round 只取得一個 live proposal。
+
+Final Seal batch 必須在執行前固定如下：
+
+```text
+FINAL_SEAL_ROUNDS = 3
+GROUPS_PER_ROUND = 53
+TOTAL_PLANNED_LIVE_CALLS = 159
+```
+
+每一 round 必須個別同時符合：
+
+```text
+LIVE_CALL_COUNT = 53
+HTTP_200_COUNT = 53
+CLASSIFIER_ACCEPTED_COUNT = 53
+CLASSIFIER_INVALID_COUNT = 0
+CATEGORY_STATE_MISMATCH_COUNT = 0
+PRIMARY_CATEGORY_MISMATCH_COUNT = 0
+RESOLUTION_REASON_MISMATCH_COUNT = 0
+EXACT_CATEGORY_MATCH_COUNT = 53
+```
+
+三個 round 必須全部通過。不得平均、majority vote、挑選最佳 round、替換失敗
+call、重試單一 Event Group、移除失敗 case，或忽略 unresolved reason mismatch。
+任一失敗表示該 frozen configuration 不可封存，且不得為了取得 PASS 追加 round。
+
+執行前必須以 canonical deterministic serialization 建立 repository-controlled
+configuration fingerprint。Fingerprint 至少涵蓋唯一 Category guidance、完整權威
+response schema、機械投影的 provider schema、provider message construction version、
+schema/provider/helper versions、53 個準備完成的 request payloads、53-group Golden
+oracle mapping，以及 evaluation harness version。不得只使用 Git HEAD，也不得納入
+timestamp、random value、cache、output 或無關 debug artifact。
+
+同一 batch 的三個 round 必須使用相同 acceptance version 與 configuration
+fingerprint。每一 round 必須明確指定 index 並獨立保存完整結果；harness 不得隱藏
+迴圈執行多輪。
+
+Final Seal deployment provenance 使用唯一版本化的
+`category-deployment-snapshot-v1` content-addressed snapshot。Snapshot 必須來自
+MaiAgent management UI / platform read-back；Repository 宣告值不能冒充 deployment
+evidence。Snapshot 必須保存：
+
+* 實際 provider identity、stable chatbot instance ID 與 exact model label；chatbot
+  instance ID 是 deployment instance identity，不是 configuration revision。
+* exact deployed role instruction content。Role content 是行為相關 deployment
+  artifact，必須可稽核；可另外計算 hash，但 hash 不取代內容。
+* exact deployed Structured Output JSON Schema content。Repository 的
+  `_CATEGORY_RESPONSE_SCHEMA`、provider projection 或 schema version 不能代替
+  平台 read-back。
+* 可觀測的 answer mode、knowledge-base state、selected skills/tools、generation
+  settings 與會影響 context、memory、history、system/tool context 或 conversation
+  state 的 settings。只保存平台實際顯示的欄位和值，不推測 hidden defaults。
+* explicit、排序穩定的 unavailable platform facts list。未暴露的 configuration
+  revision、schema ID/version 或完整 generation parameter set 必須誠實列出，不能用
+  `unknown`、`N/A`、`UNAVAILABLE`、chatbot ID 或 Repository version 代替。
+
+若平台額外暴露 configuration revision、schema identity 或 schema version，可以作為
+optional platform metadata；未暴露並不構成必須捏造的欄位。`RAG QA`、knowledge-base
+attachment、skills/tools 與 context/memory toggles 的 read-back 只證明可觀測設定已被
+凍結，不證明未揭露的 MaiAgent server-side state 不存在。`conversation=null` 也不單獨
+證明所有 vector/global memory 已停用。
+
+Snapshot 必須以 canonical deterministic serialization 建立唯一 deployment fingerprint：
+JSON object key order 不影響 hash，selected skills/tools 與 unavailable fact identifiers
+依 contract 排序；role free text 不 trim 或改寫，schema JSON 不重寫。capture timestamp、
+screenshot filename、local path、operator note 等 audit metadata 不得進 fingerprint。
+合法 snapshot 的 provenance status 是 `OBSERVED_AND_FROZEN`。Fingerprint 是
+observation/freeze evidence，沒有 Category decision authority；它不宣稱 MaiAgent
+未揭露的 server-side state 已被驗證。
+
+Repository 無法驗證 hidden platform state 時，應記錄
+`DEPLOYMENT_PROVENANCE_UNAVAILABLE` 或該 snapshot 的 explicit unavailable facts；不得
+用 Repository schema/version 或假造 platform revision 通過 preflight。三個 round 之間不得
+修改 deployment。三個 round 必須使用相同 acceptance version、repository configuration
+fingerprint 與 deployment fingerprint；deployment snapshot malformed 時必須在 transport
+前停止，不得自動修復、fallback 或 placeholder substitution。
+
+Final Seal batch 失敗後必須停止並保留全部 evidence。只有通過 review 的通用變更
+可以建立新的 acceptance version 與新的預先固定 batch；歷史失敗不得刪除或由後續
+成功 round 取代。
+
 ## M. E&M Taxonomy
 
 ### Authority, decision unit, and input
@@ -702,6 +788,27 @@ event action 與 system function／object 的關係時，才可映射到 parent 
 Subsystem 只能映射至 evidence-supported parent，不得成為新 top-level ID。若 evidence
 合法支持多個 parents，保留全部 canonical IDs；若不足以判定 parent，回
 `TAXONOMY_UNRESOLVED`，不得猜測或以 keyword default。
+
+### Maintenance software and platforms
+
+維修軟體／平台依 authoritative evidence 所證明的 monitored、diagnosed、inspected、
+maintained 或 predicted technical object 及其 canonical parent 分類。Evidence 必須
+同時支持軟體與該 object 的維修關係及 object 的 system 歸屬；不得從使用者、部署
+地點、Category 或孤立零件名稱推定 parent。此 maintained-object precedence 不因
+軟體具有維修用途而改歸 `DEPOT_MAINTENANCE_EQUIPMENT`。
+
+只有 evidence 證明軟體本身構成、參與、控制、操作或協調具體 depot／workshop
+maintenance equipment 的技術功能時，才支持 `DEPOT_MAINTENANCE_EQUIPMENT`；
+僅管理 maintenance workflow 不足。若另有被維修 object 的 canonical parent 也具
+system-specific support，依既有 multi-label 規則保留，不以 precedence 排除有效
+support。維修、predictive maintenance、AI、analytics、depot、排程、work order 或
+asset management 等名稱，以及機廠人員使用、機廠部署、分析維修資料、預測故障、
+排程或工單管理本身，均不建立 system mapping，也不新增軟體／AI top-level system。
+
+無法建立上述 mapping 時沿用既有 state semantics：確認沒有合理七系統映射才回
+evaluated empty；無法可靠確定 parent 時回 `TAXONOMY_UNRESOLVED` /
+`INSUFFICIENT_SYSTEM_EVIDENCE`，保留 member IDs 與 diagnostic；衝突仍依既有
+conflicting-evidence 規則處理，不以 empty、keyword default 或補值取代。
 
 ### Downstream boundaries
 
