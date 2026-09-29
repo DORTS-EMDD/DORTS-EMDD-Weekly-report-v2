@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
@@ -14,6 +15,52 @@ class EvidenceState(StrEnum):
 
     READY = "EVIDENCE_READY"
     REJECTED = "EVIDENCE_REJECTED"
+
+
+class CategoryState(StrEnum):
+    """Classifier output state; NOT_EVALUATED means the owner was not invoked."""
+
+    NOT_EVALUATED = "NOT_EVALUATED"
+    CATEGORY_ASSIGNED = "CATEGORY_ASSIGNED"
+    CATEGORY_UNRESOLVED = "CATEGORY_UNRESOLVED"
+
+
+class CategoryId(StrEnum):
+    """The canonical primary Category IDs locked by Architecture Contract §L."""
+
+    TECHNICAL_DEVELOPMENT = "TECHNICAL_DEVELOPMENT"
+    INCIDENT = "INCIDENT"
+    OPERATIONAL_CHANGE = "OPERATIONAL_CHANGE"
+    PROCUREMENT = "PROCUREMENT"
+    NORMATIVE_CHANGE = "NORMATIVE_CHANGE"
+
+    @property
+    def display_label(self) -> str:
+        return _CATEGORY_DISPLAY_LABELS[self]
+
+
+_CATEGORY_DISPLAY_LABELS = MappingProxyType(
+    {
+        CategoryId.TECHNICAL_DEVELOPMENT: "技術新知",
+        CategoryId.INCIDENT: "事故事件",
+        CategoryId.OPERATIONAL_CHANGE: "營運動態",
+        CategoryId.PROCUREMENT: "採購事件",
+        CategoryId.NORMATIVE_CHANGE: "規範變動",
+    }
+)
+
+
+class CategoryResolutionReason(StrEnum):
+    """Why one Event Group did not receive a unique primary Category."""
+
+    NO_CATEGORY_DEFINING_ACTION = "NO_CATEGORY_DEFINING_ACTION"
+    RECOMMENDATION_WITHOUT_ADOPTED_ACTION = "RECOMMENDATION_WITHOUT_ADOPTED_ACTION"
+    CONFLICTING_CATEGORY_DEFINING_CLAIMS = "CONFLICTING_CATEGORY_DEFINING_CLAIMS"
+    NO_UNIQUE_PRINCIPAL_ACTION = "NO_UNIQUE_PRINCIPAL_ACTION"
+    INSUFFICIENT_CATEGORY_EVIDENCE = "INSUFFICIENT_CATEGORY_EVIDENCE"
+    SEMANTIC_HELPER_UNAVAILABLE = "SEMANTIC_HELPER_UNAVAILABLE"
+    SEMANTIC_HELPER_FAILURE = "SEMANTIC_HELPER_FAILURE"
+    SEMANTIC_HELPER_INVALID_RESPONSE = "SEMANTIC_HELPER_INVALID_RESPONSE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -378,3 +425,421 @@ class EvidenceResult:
             raise ValueError("EVIDENCE_READY requires substantive_content")
         if self.state is EvidenceState.REJECTED and self.substantive_content:
             raise ValueError("Rejected evidence cannot expose authoritative content")
+
+
+@dataclass(frozen=True, slots=True)
+class CategoryResult:
+    """Immutable authoritative Category outcome for one Event Group.
+
+    Reportability and downstream workflow state intentionally do not belong
+    to this result. An unresolved Category is terminal for the Event Group.
+    """
+
+    category_state: CategoryState
+    event_id: str = ""
+    primary_category_id: CategoryId | None = None
+    primary_category: str | None = None
+    subtype: str | None = None
+    classification_reason: str | None = None
+    category_resolution_reason: CategoryResolutionReason | None = None
+    provenance: Mapping[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        try:
+            state = CategoryState(self.category_state)
+        except ValueError as exc:
+            raise ValueError("CategoryResult requires a valid CategoryState") from exc
+        object.__setattr__(self, "category_state", state)
+
+        category_id = self.primary_category_id
+        if category_id is not None:
+            try:
+                category_id = CategoryId(category_id)
+            except ValueError as exc:
+                raise ValueError("primary_category_id is not a canonical CategoryId") from exc
+            object.__setattr__(self, "primary_category_id", category_id)
+
+        resolution_reason = self.category_resolution_reason
+        if resolution_reason is not None:
+            try:
+                resolution_reason = CategoryResolutionReason(resolution_reason)
+            except ValueError as exc:
+                raise ValueError("category_resolution_reason is not a valid reason") from exc
+            object.__setattr__(self, "category_resolution_reason", resolution_reason)
+
+        if not isinstance(self.provenance, Mapping):
+            raise TypeError("CategoryResult provenance must be a mapping")
+        object.__setattr__(self, "provenance", MappingProxyType(dict(self.provenance)))
+
+        if state is CategoryState.CATEGORY_ASSIGNED:
+            if not self.event_id.strip():
+                raise ValueError("CATEGORY_ASSIGNED requires event_id")
+            if category_id is None:
+                raise ValueError("CATEGORY_ASSIGNED requires primary_category_id")
+            if self.primary_category != category_id.display_label:
+                raise ValueError("primary_category must match the canonical display label")
+            if self.subtype is not None and (
+                not isinstance(self.subtype, str)
+                or not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", self.subtype)
+            ):
+                raise ValueError(
+                    "CATEGORY_ASSIGNED subtype must be snake_case when present"
+                )
+            if self.classification_reason != f"PRINCIPAL_ACTION_{category_id.value}":
+                raise ValueError("classification_reason must identify the principal action")
+            if resolution_reason is not None:
+                raise ValueError("CATEGORY_ASSIGNED cannot carry a resolution reason")
+        elif state is CategoryState.CATEGORY_UNRESOLVED:
+            if not self.event_id.strip():
+                raise ValueError("CATEGORY_UNRESOLVED requires event_id")
+            if any(
+                value is not None
+                for value in (
+                    category_id,
+                    self.primary_category,
+                    self.subtype,
+                )
+            ):
+                raise ValueError("CATEGORY_UNRESOLVED cannot expose an assigned Category")
+            if self.classification_reason != CategoryState.CATEGORY_UNRESOLVED.value:
+                raise ValueError("CATEGORY_UNRESOLVED requires its terminal classification reason")
+            if resolution_reason is None:
+                raise ValueError("CATEGORY_UNRESOLVED requires a meaningful reason")
+        else:
+            if any(
+                value is not None
+                for value in (
+                    category_id,
+                    self.primary_category,
+                    self.subtype,
+                    self.classification_reason,
+                    resolution_reason,
+                )
+            ):
+                raise ValueError("NOT_EVALUATED cannot carry a Classifier decision")
+
+    @classmethod
+    def not_evaluated(
+        cls,
+        *,
+        event_id: str = "",
+        provenance: Mapping[str, Any] | None = None,
+    ) -> "CategoryResult":
+        """Represent an upstream stop without claiming a Classifier decision."""
+
+        return cls(
+            category_state=CategoryState.NOT_EVALUATED,
+            event_id=event_id,
+            provenance=provenance or {},
+        )
+
+    def as_mapping(self) -> dict[str, Any]:
+        return {
+            "event_id": self.event_id,
+            "category_state": self.category_state.value,
+            "primary_category_id": (
+                self.primary_category_id.value if self.primary_category_id else None
+            ),
+            "primary_category": self.primary_category,
+            "subtype": self.subtype,
+            "classification_reason": self.classification_reason,
+            "category_resolution_reason": (
+                self.category_resolution_reason.value
+                if self.category_resolution_reason
+                else None
+            ),
+            "provenance": dict(self.provenance),
+        }
+
+
+class EMSystemId(StrEnum):
+    """Canonical machine IDs owned by the E&M Taxonomy stage."""
+
+    ROLLING_STOCK = "ROLLING_STOCK"
+    SIGNALLING = "SIGNALLING"
+    POWER_SUPPLY = "POWER_SUPPLY"
+    COMMUNICATIONS = "COMMUNICATIONS"
+    AUTOMATIC_FARE_COLLECTION = "AUTOMATIC_FARE_COLLECTION"
+    DEPOT_MAINTENANCE_EQUIPMENT = "DEPOT_MAINTENANCE_EQUIPMENT"
+    PLATFORM_SCREEN_DOORS = "PLATFORM_SCREEN_DOORS"
+
+    @property
+    def display_label(self) -> str:
+        return EM_SYSTEM_DISPLAY_LABELS[self]
+
+
+# Mapping insertion order is the one canonical serialization order.  Consumers
+# must derive their ordered IDs from this mapping rather than maintain another
+# system registry or label list.
+EM_SYSTEM_DISPLAY_LABELS = MappingProxyType(
+    {
+        EMSystemId.ROLLING_STOCK: "電聯車",
+        EMSystemId.SIGNALLING: "號誌",
+        EMSystemId.POWER_SUPPLY: "供電",
+        EMSystemId.COMMUNICATIONS: "通訊",
+        EMSystemId.AUTOMATIC_FARE_COLLECTION: "自動收費",
+        EMSystemId.DEPOT_MAINTENANCE_EQUIPMENT: "機廠維修設備",
+        EMSystemId.PLATFORM_SCREEN_DOORS: "月臺門",
+    }
+)
+
+
+def canonical_em_system_ids() -> tuple[EMSystemId, ...]:
+    """Return the canonical machine-ID order from the sole registry."""
+
+    return tuple(EM_SYSTEM_DISPLAY_LABELS)
+
+
+class TaxonomyState(StrEnum):
+    """Terminal state vocabulary owned by the E&M Taxonomy stage."""
+
+    TAXONOMY_EVALUATED = "TAXONOMY_EVALUATED"
+    TAXONOMY_UNRESOLVED = "TAXONOMY_UNRESOLVED"
+    NOT_EVALUATED = "NOT_EVALUATED"
+
+
+class TaxonomyResolutionReason(StrEnum):
+    """Why an executed taxonomy stage could not reach a reliable result."""
+
+    INSUFFICIENT_SYSTEM_EVIDENCE = "INSUFFICIENT_SYSTEM_EVIDENCE"
+    CONFLICTING_SYSTEM_EVIDENCE = "CONFLICTING_SYSTEM_EVIDENCE"
+
+
+@dataclass(frozen=True, slots=True)
+class TaxonomySupportSpan:
+    """An exact source-preserving evidence span for one canonical E&M system.
+
+    It may support a finalized assignment or participate in unresolved or
+    conflicting provenance; the span itself does not establish assignment.
+    Source content is intentionally not copied into this contract object.
+    """
+
+    system_id: EMSystemId
+    candidate_id: str
+    start: int
+    end: int
+
+    def __post_init__(self) -> None:
+        try:
+            system_id = EMSystemId(self.system_id)
+        except ValueError as exc:
+            raise ValueError("TaxonomySupportSpan requires a canonical EMSystemId") from exc
+        object.__setattr__(self, "system_id", system_id)
+
+        if not isinstance(self.candidate_id, str) or not self.candidate_id.strip():
+            raise ValueError("TaxonomySupportSpan requires candidate_id")
+        if isinstance(self.start, bool) or not isinstance(self.start, int):
+            raise TypeError("TaxonomySupportSpan start must be an integer")
+        if isinstance(self.end, bool) or not isinstance(self.end, int):
+            raise TypeError("TaxonomySupportSpan end must be an integer")
+        if self.start < 0 or self.end <= self.start:
+            raise ValueError("TaxonomySupportSpan requires a non-empty [start, end) span")
+
+
+@dataclass(frozen=True, slots=True)
+class TaxonomyInsufficientEvidenceProvenance:
+    """Non-authoritative diagnostic provenance for insufficient evidence."""
+
+    member_candidate_ids: tuple[str, ...]
+    diagnostic: str
+
+    def __post_init__(self) -> None:
+        try:
+            member_candidate_ids = tuple(self.member_candidate_ids)
+        except TypeError as exc:
+            raise TypeError("member_candidate_ids must be iterable") from exc
+        if not member_candidate_ids or any(
+            not isinstance(candidate_id, str) or not candidate_id.strip()
+            for candidate_id in member_candidate_ids
+        ):
+            raise ValueError("insufficient evidence provenance requires member candidate IDs")
+        object.__setattr__(self, "member_candidate_ids", member_candidate_ids)
+
+        if not isinstance(self.diagnostic, str) or not self.diagnostic.strip():
+            raise ValueError("insufficient evidence provenance requires a diagnostic")
+
+
+@dataclass(frozen=True, slots=True)
+class TaxonomyConflictEvidenceProvenance:
+    """Source-preserving spans identifying conflicting system evidence."""
+
+    conflict_spans: tuple[TaxonomySupportSpan, ...]
+
+    def __post_init__(self) -> None:
+        try:
+            conflict_spans = tuple(self.conflict_spans)
+        except TypeError as exc:
+            raise TypeError("conflict_spans must be iterable") from exc
+        if not conflict_spans:
+            raise ValueError("conflicting evidence provenance requires conflict spans")
+        if any(not isinstance(span, TaxonomySupportSpan) for span in conflict_spans):
+            raise TypeError("conflict_spans must contain TaxonomySupportSpan values")
+        object.__setattr__(self, "conflict_spans", conflict_spans)
+
+
+TaxonomyProvenance = (
+    TaxonomyInsufficientEvidenceProvenance | TaxonomyConflictEvidenceProvenance
+)
+
+
+def _taxonomy_systems_in_canonical_order(value: object) -> tuple[EMSystemId, ...]:
+    if value is None:
+        raw_values: tuple[object, ...] = ()
+    elif isinstance(value, (str, EMSystemId)):
+        raw_values = (value,)
+    else:
+        try:
+            raw_values = tuple(value)  # type: ignore[arg-type]
+        except TypeError as exc:
+            raise TypeError("TaxonomyResult systems must be an iterable") from exc
+
+    systems: list[EMSystemId] = []
+    for raw_value in raw_values:
+        try:
+            system_id = EMSystemId(raw_value)
+        except ValueError as exc:
+            raise ValueError("TaxonomyResult systems must use canonical EMSystemId values") from exc
+        if system_id in systems:
+            raise ValueError("TaxonomyResult systems must not contain duplicates")
+        systems.append(system_id)
+
+    system_set = set(systems)
+    return tuple(system_id for system_id in canonical_em_system_ids() if system_id in system_set)
+
+
+@dataclass(frozen=True, slots=True)
+class TaxonomyResult:
+    """Immutable authoritative result returned by the E&M Taxonomy stage."""
+
+    taxonomy_state: TaxonomyState
+    event_id: str = ""
+    systems: tuple[EMSystemId, ...] = ()
+    taxonomy_resolution_reason: TaxonomyResolutionReason | None = None
+    support_spans: tuple[TaxonomySupportSpan, ...] = ()
+    provenance: TaxonomyProvenance | None = None
+
+    def __post_init__(self) -> None:
+        try:
+            state = TaxonomyState(self.taxonomy_state)
+        except ValueError as exc:
+            raise ValueError("TaxonomyResult requires a valid TaxonomyState") from exc
+        object.__setattr__(self, "taxonomy_state", state)
+
+        if not isinstance(self.event_id, str):
+            raise TypeError("TaxonomyResult event_id must be a string")
+        if state is not TaxonomyState.NOT_EVALUATED and not self.event_id.strip():
+            raise ValueError("evaluated taxonomy results require event_id")
+
+        systems = _taxonomy_systems_in_canonical_order(self.systems)
+        object.__setattr__(self, "systems", systems)
+
+        reason = self.taxonomy_resolution_reason
+        if reason is not None:
+            try:
+                reason = TaxonomyResolutionReason(reason)
+            except ValueError as exc:
+                raise ValueError("TaxonomyResult has an invalid resolution reason") from exc
+        object.__setattr__(self, "taxonomy_resolution_reason", reason)
+
+        if self.support_spans is None:
+            support_spans: tuple[TaxonomySupportSpan, ...] = ()
+        else:
+            try:
+                support_spans = tuple(self.support_spans)
+            except TypeError as exc:
+                raise TypeError("TaxonomyResult support_spans must be iterable") from exc
+        if any(not isinstance(span, TaxonomySupportSpan) for span in support_spans):
+            raise TypeError("TaxonomyResult support_spans must contain TaxonomySupportSpan values")
+        object.__setattr__(self, "support_spans", support_spans)
+
+        if self.provenance is not None and not isinstance(
+            self.provenance,
+            (TaxonomyInsufficientEvidenceProvenance, TaxonomyConflictEvidenceProvenance),
+        ):
+            raise TypeError("TaxonomyResult provenance must use a typed provenance value")
+
+        support_systems = {span.system_id for span in support_spans}
+
+        if state is TaxonomyState.TAXONOMY_EVALUATED:
+            if reason is not None:
+                raise ValueError("TAXONOMY_EVALUATED cannot carry a resolution reason")
+            if self.provenance is not None:
+                raise ValueError("TAXONOMY_EVALUATED cannot carry unresolved provenance")
+            if not support_systems.issubset(set(systems)):
+                raise ValueError("support_spans cannot refer to a system absent from systems")
+            if systems and support_systems != set(systems):
+                raise ValueError("each assigned system requires system-specific support")
+            if not systems and support_spans:
+                raise ValueError("evaluated empty systems cannot carry support spans")
+        elif state is TaxonomyState.TAXONOMY_UNRESOLVED:
+            if systems:
+                raise ValueError("TAXONOMY_UNRESOLVED requires empty systems")
+            if reason is None:
+                raise ValueError("TAXONOMY_UNRESOLVED requires a resolution reason")
+            if support_spans:
+                raise ValueError("TAXONOMY_UNRESOLVED cannot carry assigned-system support")
+            if reason is TaxonomyResolutionReason.INSUFFICIENT_SYSTEM_EVIDENCE:
+                if not isinstance(self.provenance, TaxonomyInsufficientEvidenceProvenance):
+                    raise ValueError(
+                        "INSUFFICIENT_SYSTEM_EVIDENCE requires typed insufficiency provenance"
+                    )
+            elif not isinstance(self.provenance, TaxonomyConflictEvidenceProvenance):
+                raise ValueError(
+                    "CONFLICTING_SYSTEM_EVIDENCE requires typed conflict provenance"
+                )
+        else:
+            if systems:
+                raise ValueError("NOT_EVALUATED requires empty systems")
+            if reason is not None:
+                raise ValueError("NOT_EVALUATED cannot carry a resolution reason")
+            if support_spans:
+                raise ValueError("NOT_EVALUATED cannot carry taxonomy support")
+            if self.provenance is not None:
+                raise ValueError("NOT_EVALUATED cannot carry taxonomy decision provenance")
+
+    @classmethod
+    def not_evaluated(cls, *, event_id: str = "") -> "TaxonomyResult":
+        """Represent a taxonomy stage that was never reached."""
+
+        return cls(taxonomy_state=TaxonomyState.NOT_EVALUATED, event_id=event_id)
+
+    def as_mapping(self) -> dict[str, Any]:
+        return {
+            "event_id": self.event_id,
+            "taxonomy_state": self.taxonomy_state.value,
+            "systems": [system_id.value for system_id in self.systems],
+            "taxonomy_resolution_reason": (
+                self.taxonomy_resolution_reason.value
+                if self.taxonomy_resolution_reason
+                else None
+            ),
+            "support_spans": [
+                {
+                    "system_id": span.system_id.value,
+                    "candidate_id": span.candidate_id,
+                    "start": span.start,
+                    "end": span.end,
+                }
+                for span in self.support_spans
+            ],
+            "provenance": (
+                {
+                    "member_candidate_ids": list(self.provenance.member_candidate_ids),
+                    "diagnostic": self.provenance.diagnostic,
+                }
+                if isinstance(self.provenance, TaxonomyInsufficientEvidenceProvenance)
+                else {
+                    "conflict_spans": [
+                        {
+                            "system_id": span.system_id.value,
+                            "candidate_id": span.candidate_id,
+                            "start": span.start,
+                            "end": span.end,
+                        }
+                        for span in self.provenance.conflict_spans
+                    ]
+                    if isinstance(self.provenance, TaxonomyConflictEvidenceProvenance)
+                    else None
+                }
+            ),
+        }
