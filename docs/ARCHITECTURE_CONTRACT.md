@@ -556,28 +556,202 @@ default forced category、第二套 conflict resolver 或 downstream reclassific
 
 ## M. E&M Taxonomy
 
-固定七大主系統：
+### Authority, decision unit, and input
 
-* 電聯車
-* 號誌
-* 供電
-* 通訊
-* 自動收費
-* 機廠維修設備
-* 月臺門
+Python E&M Taxonomy 是 E&M Taxonomy decision 的唯一 authoritative owner。
+Decision unit 是完成 Evidence、Scope、Temporal 與 Event Identity／Dedup 後的一個
+`EventGroup`，不是 Candidate，也不是已通過 Reportability 的 report item。
 
-子系統不得自行升格。
+實作時應建立最小 immutable request，直接引用既有 authoritative typed values：
 
-七大系統不得作 Candidate survival gate。
+* 一個 `EventGroup`；
+* 該 group member 對應的 `EventIdentityRecord` values，其中保留各自的
+  `EvidenceResult.substantive_content` 與 source provenance，不合併來源正文；
+* 同一 `event_id` 的 `CategoryResult`，只供 stage eligibility 驗證。
 
-E&M Taxonomy 描述系統，不決定 Category。跨系統或新興系統的分類仍依 Section L
-所定義的 principal event/action；Taxonomy 結果不得覆寫該 Category。
+Request 不得複製、重寫或合成新的 authoritative evidence source。所有 record 必須對應
+`EventGroup.member_candidate_ids`，並已具有 `EVIDENCE_READY`、`IN_SCOPE` 與
+`DATE_VALID` upstream outcome。
 
-電梯、電扶梯、通風空調等非七大主系統設備，如事件本身具有足夠都市軌道技術、安全、營運或示範價值仍可成報。
+只有 `CATEGORY_ASSIGNED` Event Group 進入 taxonomy evaluation。
+`CATEGORY_UNRESOLVED` 或 upstream `NOT_EVALUATED` 對應 taxonomy
+`NOT_EVALUATED`。Category primary ID、display label、subtype、classification reason
+及 resolution reason 不得作 system evidence，不得決定、修復、覆寫或製造 systems。
+Taxonomy 也不得修改 Category。
 
-但不得硬映射至七大主系統。
+### Canonical registry
 
-E&M Taxonomy 只負責相關主系統與 taxonomy 結果，不負責 Candidate survival、Category、Scope 或 Reportability。
+固定 registry 如下；machine ID 是 authoritative value，中文名稱只作 display metadata：
+
+| Machine ID | Display label |
+| --- | --- |
+| `ROLLING_STOCK` | 電聯車 |
+| `SIGNALLING` | 號誌 |
+| `POWER_SUPPLY` | 供電 |
+| `COMMUNICATIONS` | 通訊 |
+| `AUTOMATIC_FARE_COLLECTION` | 自動收費 |
+| `DEPOT_MAINTENANCE_EQUIPMENT` | 機廠維修設備 |
+| `PLATFORM_SCREEN_DOORS` | 月臺門 |
+
+Implementation 必須由 `src/weekly_report/contracts.py` 中的一個 `EMSystemId`
+registry 及其 display-label mapping 作唯一 runtime source of truth。Classifier、
+Selector、Writer、report formatter、tests 與 Golden validation 只能引用或驗證該
+registry，不得各自保存另一份 runtime system list 或 mapping。
+
+子系統、技術主題與設施不得自行升格。V1 的「垂直運輸設備」與「通風空調系統」
+不是 V2 top-level system。電梯、電扶梯、通風空調等非七大系統事件仍可成報，但
+不得硬映射至七大系統。
+
+### Result and state model
+
+Implementation 應建立 immutable `TaxonomyResult`，至少包含：
+
+```text
+event_id
+taxonomy_state
+systems
+taxonomy_resolution_reason
+support_spans
+conflict_spans
+provenance
+```
+
+合法 states 只有：
+
+1. `TAXONOMY_EVALUATED`
+   * taxonomy stage 已成功執行；
+   * `systems` 是零個或多個 canonical `EMSystemId`；
+   * `taxonomy_resolution_reason` 必須為 null。
+2. `TAXONOMY_UNRESOLVED`
+   * stage 已執行，但 authoritative evidence 不能形成可靠 system conclusion；
+   * `systems` 必須為空；
+   * reason 必須為 `INSUFFICIENT_SYSTEM_EVIDENCE` 或
+     `CONFLICTING_SYSTEM_EVIDENCE`。
+3. `NOT_EVALUATED`
+   * taxonomy stage 未到達；
+   * 不得攜帶 systems、resolution reason 或 taxonomy decision provenance。
+
+`TAXONOMY_EVALUATED` 且 `systems = []` 表示已評估並確認沒有合理的七大系統映射。
+它與 `TAXONOMY_UNRESOLVED` 及 `NOT_EVALUATED` 是三種不同語意。不得新增
+`TAXONOMY_NOT_APPLICABLE` 來重複空的 evaluated result，也不得以空結果掩蓋
+insufficient 或 conflicting evidence。
+
+### Multi-label and determinism
+
+Taxonomy 是 top-level system set，不設 primary、secondary、ranking 或權重。一個
+Event Group 可以同時屬於多個 systems。每個 system 最多出現一次；serialized
+`systems` 必須依 canonical registry table 順序排列，不得依 source、Candidate、
+support span 或 helper output 順序。Candidate iteration order 與來源優先順序不得改變
+semantic result。
+
+跨系統整合事件應保存所有具有效 support 的 top-level systems。例如號誌與供電整合
+事件輸出順序固定為 `SIGNALLING, POWER_SUPPLY`，不得選一個 primary system，也不得
+以「系統整合」建立第八個 system。
+
+### Support and provenance
+
+每一個 assigned `EMSystemId` 必須至少具有一個 system-specific support span，內容至少
+包含 `system_id`、`candidate_id`、`start` 與 `end`。Owner 必須驗證：
+
+* candidate 屬於該 Event Group；
+* span 位於該 candidate 的 authoritative `substantive_content` bounds 內；
+* span text 與原始 authoritative content 完全一致；
+* support 確實說明受影響、部署、採購、測試、規範或其他 event action 所涉及的 system
+  function／object，而非只有孤立名詞。
+
+Title、search snippet、query、URL token、publisher、Category、Reportability、Writer
+output、synthetic quote、fuzzy reconstruction 或跨來源合成文字都不是 support。
+
+`CONFLICTING_SYSTEM_EVIDENCE` 必須保存足以識別衝突來源的 source-preserving conflict
+spans。`INSUFFICIENT_SYSTEM_EVIDENCE` 必須記錄已檢視的 Event Group member IDs 與
+insufficiency diagnostic，但不得合成 support。Debug／RunTrace 可以觀察 provenance，
+不得重新計算 taxonomy。
+
+### Contextual and subsystem rules
+
+Contextual term 本身不自動建立 mapping。只有 authoritative event evidence 同時證明
+event action 與 system function／object 的關係時，才可映射到 parent system：
+
+* interlocking、ATP、ATO、ATS、CBTC 或列車控制可映射 `SIGNALLING`；
+* traction power、traction substation、third rail 或 overhead power supply 可映射
+  `POWER_SUPPLY`；
+* radio、telecom、fiber/data transmission 或 passenger information system 可映射
+  `COMMUNICATIONS`；
+* fare gate、ticketing、validator 或 fare collection equipment 可映射
+  `AUTOMATIC_FARE_COLLECTION`；
+* platform screen/platform door system 可映射 `PLATFORM_SCREEN_DOORS`；
+* wheel lathe、train washer、lifting／inspection／workshop maintenance equipment 等
+  具體機廠維修功能可映射 `DEPOT_MAINTENANCE_EQUIPMENT`；
+* propulsion、braking、bogie、wheelset、coupler、vehicle control 或其他明確車載車輛
+  equipment 可映射 `ROLLING_STOCK`；車載 signalling 或 radio 仍依其 function 映射
+  `SIGNALLING` 或 `COMMUNICATIONS`，並可在證據支持時形成 multi-label result。
+
+以下限制固定：
+
+* SCADA 不自動等於 `POWER_SUPPLY` 或 `COMMUNICATIONS`；必須由 evidence 證明其
+  controlled／monitored system function。
+* OCC／operations control center 不是 top-level system；只按 evidence 明確支持的
+  signalling、communications、power 或其他七大 system functions 分類。
+* cybersecurity 不是第八個 system；只有受保護、受攻擊、部署或稽核的 technical
+  object 已被 evidence 證明屬於七大系統時才映射，否則是 evaluated empty result。
+* depot location 本身不等於 `DEPOT_MAINTENANCE_EQUIPMENT`。
+* generic train mention 本身不等於 `ROLLING_STOCK`。
+* generic network mention 本身不等於 `COMMUNICATIONS`。
+* platform／station／system／equipment 等泛稱本身不建立任何 mapping。
+
+Subsystem 只能映射至 evidence-supported parent，不得成為新 top-level ID。若 evidence
+合法支持多個 parents，保留全部 canonical IDs；若不足以判定 parent，回
+`TAXONOMY_UNRESOLVED`，不得猜測或以 keyword default。
+
+### Downstream boundaries
+
+E&M Taxonomy 只負責相關 top-level systems 與 taxonomy state，不負責 Candidate
+survival、Category、Scope、Date、Event Identity、Reportability 或 Ordering。七大系統
+不得作 Candidate survival gate。
+
+Reportability 可以唯讀 consume finalized `TaxonomyResult` 作 system-relevance context，
+但不得增刪 systems、填補 empty result、resolve unresolved taxonomy，或由
+Reportability outcome 反推 taxonomy。`systems = []` 不自動表示 `NOT_REPORTABLE`；
+non-empty systems 也不自動表示 `REPORTABLE`。Golden G17 的 empty／REPORTABLE 與
+G85 的 AFC／NOT_REPORTABLE semantics 必須保留。
+
+MaiAgent 在 Taxonomy decision 中沒有角色。Writer 只能由 finalized systems 的 machine
+IDs 透過 authoritative registry 顯示 labels；不得新增、移除、替換、normalize、推測或
+修復 taxonomy，也不得處理 `TAXONOMY_UNRESOLVED`。任何未來 semantic helper 提案都
+必須先經新的 architecture decision，且只能 proposal-only，由 Python owner 驗證；本
+contract 未授權建立該 helper。
+
+### Golden contract requirements
+
+未來 Taxonomy Golden／owner tests 至少必須涵蓋：
+
+* 七個 canonical IDs 與唯一 display-label mapping；
+* contract-relevant multi-label events、canonical ordering、authoritative set construction
+  的 duplicate elimination、result-boundary duplicate rejection 與 source-order
+  invariance，不要求所有數學組合；
+* evaluated empty result、`NOT_EVALUATED`、insufficient unresolved 與 conflicting
+  unresolved；
+* subsystem-to-parent mapping 及 SCADA、OCC、cybersecurity contextual boundaries；
+* depot location vs depot equipment、generic network vs communications、generic train
+  vs rolling-stock evidence；
+* Category independence、Reportability independence 與 Writer non-override；
+* support candidate membership、bounds、exact text mapping、per-system coverage 及
+  multi-source conflict provenance。
+
+Golden expected outcome 不得為了配合 implementation 修改。既有中文 taxonomy values
+是上述 registry 的 display labels；typed implementation 與 Golden validation 必須由唯一
+registry 驗證其一對一 mapping，不得建立第二份 label list。
+
+### V1 selective reuse boundary
+
+V1 的低階 exact matching／negation helper、report-label projection pattern，以及
+depot-location、generic-network、authoritative-empty、Writer non-override 等 test intent，
+只有在符合本 contract 且不成為 decision authority 時才可選擇性重用。
+
+不得移植 V1 九系統 registry、Candidate title/snippet keyword classifier、Selector
+taxonomy fallback、taxonomy-based survival/procurement gate、postprocessor taxonomy
+inference／repair、Writer prose normalization，或任何垂直運輸／通風空調 top-level
+system。不得以 V1 compatibility path 建立第二個 V2 owner。
 
 ## N. Reportability / Ordering
 
