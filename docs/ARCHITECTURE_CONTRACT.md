@@ -102,6 +102,20 @@ streamlit_app.py
 
 Entry point 可以不同，Production Domain Logic 只能有一套。任何 entry point-specific workaround 都不得成為第二個 owner 或第二套 source of truth。
 
+### Shared production workflow
+
+既有 shared production core workflow 的具體實作邊界固定為
+`src/weekly_report/report_workflow.py` 的 `ReportWorkflow` service，其公開
+lifecycle method 為 `ReportWorkflow.run`。這是既有 workflow authority 的具體
+實作，不新增 authoritative orchestration owner。`main.py`、`streamlit_app.py`、
+GitHub Actions 與未來 entry point 都只能呼叫這一個 shared workflow。
+
+同一模組的 `build_report_workflow` 是 production composition boundary。它只負責
+接收／建立 workflow dependencies，並把 proposal-only semantic dependencies 注入
+各自的 authoritative owner；它不得決定 E&M semantics、推導 systems、擁有
+Category／Taxonomy semantics，或加入 provider-specific business rules。Taxonomy
+provider backend 維持 `DEFERRED`，MaiAgent 在 Taxonomy decision 中維持 `NONE`。
+
 ## D. Run Identity
 
 每次執行必須分開：
@@ -906,6 +920,69 @@ IDs 透過 authoritative registry 顯示 labels；不得新增、移除、替換
 provider 只能依本節的 proposal-only seam 提供未信任提案，由 Python owner 驗證；
 不得建立第二個 semantic judge 或任何 MaiAgent Taxonomy role。
 
+### Workflow integration and typed handoff
+
+Production workflow 必須依序完成 Category，再完成 E&M Taxonomy，之後才可進入
+Reportability／Ordering、MaiAgent Writer、Validation、Report Assembly 與 Delivery。
+對每一個到達 Category→Taxonomy seam 的 EventGroup，workflow 一律呼叫：
+
+```text
+Taxonomy.evaluate(event_group, member_records, category_result)
+```
+
+workflow 不得複製 Category→Taxonomy reachability branch；`Taxonomy.evaluate` 是
+該規則的唯一 owner。`CATEGORY_ASSIGNED` 進入一般 Taxonomy evaluation；
+`CATEGORY_UNRESOLVED` 與 Category `NOT_EVALUATED` 由 owner 產生同 event_id 的
+Taxonomy `NOT_EVALUATED`，provider 不得被呼叫，且該 EventGroup 在 Reportability
+之前終止。
+
+Workflow 使用一個最小 immutable typed handoff `EventDecisionRecord`，定義於
+`src/weekly_report/contracts.py`，欄位只引用既有 typed values：
+
+```text
+event_group: EventGroup
+member_records: tuple[EventIdentityRecord, ...]
+category_result: CategoryResult
+taxonomy_result: TaxonomyResult
+```
+
+它不得複製 systems、taxonomy state、provenance、Category identifiers、member IDs
+或 evidence content。所有 values 必須為正確 typed values，event_id 必須一致，member
+records 必須無重複且恰好對應 EventGroup membership；不得重新計算或修復 semantic
+decision。`ReportWorkflow` 只在 `Taxonomy.evaluate` 成功返回 `TaxonomyResult`
+後建構此 handoff。
+
+只有 `TAXONOMY_EVALUATED` 的 handoff 可交給 Reportability。這包含 `systems = []`；
+empty systems 不自動表示 `NOT_REPORTABLE`，non-empty systems 也不自動表示
+`REPORTABLE`。`TAXONOMY_UNRESOLVED` 是保留 reason／provenance 的合法 terminal
+domain outcome，不轉成 `NOT_REPORTABLE`，不進 Reportability、Writer 或 Delivery，
+也不 retry、fallback、rescue、backfill 或 downstream repair。`NOT_EVALUATED` 是
+合法 typed stage disposition，同樣不轉成 `NOT_REPORTABLE`，不進 Reportability、
+Writer 或 Delivery，並可由 Debug 觀察。
+
+`TaxonomyStageFailure` 是 technical execution failure，不是任何 domain outcome。
+它不產生 `TaxonomyResult` 或 `EventDecisionRecord`。該 EventGroup 不得進入
+Reportability 或 Writer。任一 EventGroup 發生此 failure 時，正式 run 採
+`ABORT_FORMAL_REPORT_RUN`：不允許部分正式報告發布，不組裝成功 formal artifact，
+不交付 PDF，也不寄送 Email。先前結果只能保留供 diagnostics；technical failure
+不得轉為「零篇成功」。這是 population-level logical stage barrier，不要求 database
+transaction：整批 Category／Taxonomy 完成且沒有 blocking technical failure 後，才可
+進入 Reportability／Ordering 與後續 Writer progression。
+
+Reportability 只 consumer-only read `EventDecisionRecord` 的 finalized
+`TaxonomyResult`，其 domain contract 另行鎖定為 `SEPARATE_FUTURE_LOCK`；它不得
+rerun、infer、alter 或 repair Taxonomy。Writer 為 `RENDER_ONLY`，只接收已通過
+Category、`TAXONOMY_EVALUATED` 與 Reportability 的 event，system labels 必須來自
+`EM_SYSTEM_DISPLAY_LABELS`。Writer 不得接收 unresolved、not-evaluated 或 technical
+failure，也不得推導、修復、增刪 systems。Debug／Engineering Summary 僅
+`OBSERVATION_ONLY`，可記錄 state、systems、provenance、failure event_id 與安全
+diagnostic，但不得影響 production decision；Validation 不得成為第二個 E&M semantic
+judge。
+
+上述 workflow integration 不增加 domain owner、Taxonomy source of truth 或
+reachability branch；workflow、Reportability、Writer、Validator 與 Debug 均不得
+重新推導 systems。Retry、fallback、rescue 與 backfill 均為 `NO`。
+
 ### Golden contract requirements
 
 未來 Taxonomy Golden／owner tests 至少必須涵蓋：
@@ -988,6 +1065,7 @@ IN_SCOPE
 DATE_VALID
 DEDUPED
 CATEGORY_ASSIGNED
+TAXONOMY_EVALUATED
 ```
 
 Selector 不得：
