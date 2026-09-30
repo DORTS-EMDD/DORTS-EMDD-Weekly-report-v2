@@ -23,6 +23,18 @@ from .scope_classifier import (
     ScopeSupportSpan,
 )
 from .temporal_rule import TemporalRule
+from .taxonomy import (
+    EXACT_TEXT_UNIQUE_RESOLUTION,
+    EMTaxonomy,
+    Taxonomy,
+    TaxonomyOwner,
+    TaxonomySemanticCitation,
+    TaxonomySemanticMember,
+    TaxonomySemanticProposal,
+    TaxonomySemanticProposalProvider,
+    TaxonomySemanticRequest,
+    TaxonomyStageFailure,
+)
 
 __all__ = [
     "CanonicalCandidate",
@@ -44,4 +56,14 @@ __all__ = [
     "TemporalDiagnostic",
     "TemporalResult",
     "TemporalRule",
+    "EXACT_TEXT_UNIQUE_RESOLUTION",
+    "EMTaxonomy",
+    "Taxonomy",
+    "TaxonomyOwner",
+    "TaxonomySemanticCitation",
+    "TaxonomySemanticMember",
+    "TaxonomySemanticProposal",
+    "TaxonomySemanticProposalProvider",
+    "TaxonomySemanticRequest",
+    "TaxonomyStageFailure",
 ]
