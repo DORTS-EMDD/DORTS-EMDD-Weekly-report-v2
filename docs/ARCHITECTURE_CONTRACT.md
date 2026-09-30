@@ -753,6 +753,84 @@ spans。`INSUFFICIENT_SYSTEM_EVIDENCE` 必須記錄已檢視的 Event Group memb
 insufficiency diagnostic，但不得合成 support。Debug／RunTrace 可以觀察 provenance，
 不得重新計算 taxonomy。
 
+### Semantic proposal seam
+
+Python E&M Taxonomy remains the sole authoritative owner. It may receive one
+injected, narrow `Taxonomy Semantic Proposal Provider` dependency whose role is
+`PROPOSAL_ONLY`:
+
+```text
+Python E&M Taxonomy owner
+→ injected proposal provider
+→ untrusted semantic proposal
+→ Python validation + exact quote localization
+→ TaxonomyResult or technical stage failure
+```
+
+The provider request is immutable and contains only the stable `event_id` and
+the EventGroup members, deterministically ordered by `candidate_id`. Each
+member contains its `candidate_id` and authoritative
+`substantive_content`. Category controls reachability before this seam, but
+Category label, subtype, and other Category values are not provider input.
+Search/discovery metadata, title-only evidence, feed snippets, Reportability,
+Writer text, Golden expected values, and synthetic or reconstructed evidence
+are also excluded.
+
+The provider may propose only `TAXONOMY_EVALUATED` or
+`TAXONOMY_UNRESOLVED`. It must not propose `NOT_EVALUATED`, which is owned by
+Python upstream reachability. An evaluated proposal contains zero or more
+legal canonical system IDs, a null resolution reason, and one or more
+system-specific support citations for every assigned system. An unresolved
+proposal contains empty systems, one legal unresolved reason, and the required
+reason-specific provenance. Systems are a set; provider order has no semantic
+priority and Python serializes accepted systems in canonical registry order.
+
+Each support or conflict citation contains a canonical `system_id`, a member
+`candidate_id`, and an exact quote copied from that member's authoritative
+`substantive_content`. The support location model is
+`EXACT_TEXT_UNIQUE_RESOLUTION`: Python resolves a quote to `[start, end)` only
+when it occurs exactly once in the named candidate content. Missing, repeated,
+fuzzy, approximate, rewritten, paraphrased, synthetic, title/snippet, or
+cross-source quotes are technical failures. Python must not choose among
+repeated occurrences, guess offsets, search another candidate, or borrow an
+EventGroup's evidence.
+
+Before constructing `TaxonomyResult`, Python validates reachability and matching
+`event_id`, exact EventGroup membership, sealed upstream member invariants,
+legal states and IDs, duplicate systems, state/reason cardinality, unresolved
+provenance, per-system support, candidate membership, exact quote occurrence,
+span bounds and exact source slicing. Conflict provenance must contain at least
+two distinct competing canonical hypotheses and only EventGroup members.
+Insufficient provenance must identify all examined EventGroup member IDs and
+contain a non-empty diagnostic. Python may parse typed enums, localize one
+unique exact quote, build immutable structures, and canonicalize serialization
+order. It must not add, remove, replace, guess, drop, synthesize, repair, or
+convert semantic outcomes.
+
+The provider performs the semantic interpretation of the bounded authoritative
+evidence, but Python alone accepts or rejects the complete proposal and builds
+the final `TaxonomyResult`. No second semantic judge is required. `TAXONOMY_EVALUATED`
+with `systems = []` remains an explicit provider conclusion that no reasonable
+seven-system mapping applies; Python must not infer it from a failed proposal.
+`TAXONOMY_UNRESOLVED` with `INSUFFICIENT_SYSTEM_EVIDENCE` or
+`CONFLICTING_SYSTEM_EVIDENCE` remains a legitimate domain result only when the
+provider's authoritative-evidence interpretation supports that state.
+
+Provider unavailability, provider exceptions, malformed responses, invalid
+states or IDs, duplicate systems, missing or non-member support, invalid or
+ambiguous quotes, invalid provenance, and every other proposal contract
+violation are typed technical stage failures. They produce no `TaxonomyResult`
+and do not authorize downstream Reportability, Writer, or Delivery processing
+for that failed EventGroup. No `TAXONOMY_ERROR` state is added. Taxonomy-specific
+retry, malformed-response retry, fallback, rescue, and backfill are prohibited;
+no generic retry policy is currently reused by this seam.
+
+The proposal provider is not a second classifier owner, Category authority,
+Reportability authority, Writer role, MaiAgent role, runtime Golden lookup, or
+keyword authority. Keywords and search terms such as SCADA, train, depot,
+network, and cybersecurity may occur in evidence but do not determine
+taxonomy by themselves.
+
 ### Contextual and subsystem rules
 
 Contextual term 本身不自動建立 mapping。只有 authoritative event evidence 同時證明
@@ -824,9 +902,9 @@ G85 的 AFC／NOT_REPORTABLE semantics 必須保留。
 
 MaiAgent 在 Taxonomy decision 中沒有角色。Writer 只能由 finalized systems 的 machine
 IDs 透過 authoritative registry 顯示 labels；不得新增、移除、替換、normalize、推測或
-修復 taxonomy，也不得處理 `TAXONOMY_UNRESOLVED`。任何未來 semantic helper 提案都
-必須先經新的 architecture decision，且只能 proposal-only，由 Python owner 驗證；本
-contract 未授權建立該 helper。
+修復 taxonomy，也不得處理 `TAXONOMY_UNRESOLVED`。Taxonomy semantic proposal
+provider 只能依本節的 proposal-only seam 提供未信任提案，由 Python owner 驗證；
+不得建立第二個 semantic judge 或任何 MaiAgent Taxonomy role。
 
 ### Golden contract requirements
 
