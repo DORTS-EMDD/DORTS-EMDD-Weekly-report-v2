@@ -6,6 +6,16 @@ import json
 import unittest
 from pathlib import Path
 
+from src.weekly_report.contracts import (
+    EMSystemId,
+    TaxonomyConflictEvidenceProvenance,
+    TaxonomyInsufficientEvidenceProvenance,
+    TaxonomyResolutionReason,
+    TaxonomyState,
+    TaxonomySupportSpan,
+    canonical_em_system_ids,
+)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = ROOT / "golden"
@@ -13,6 +23,7 @@ CASES = GOLDEN / "cases"
 
 
 class GoldenContractTests(unittest.TestCase):
+    TAXONOMY_EXTENSION_IDS = frozenset({f"G{i:02d}" for i in range(86, 92)})
     CATEGORY_LABELS = {
         "TECHNICAL_DEVELOPMENT": "技術新知",
         "INCIDENT": "事故事件",
@@ -31,6 +42,15 @@ class GoldenContractTests(unittest.TestCase):
             )
             for entry in cls.entries
         }
+        cls.taxonomy_manifest = json.loads(
+            (GOLDEN / "taxonomy_manifest.json").read_text(encoding="utf-8")
+        )
+        cls.taxonomy_fixtures = {
+            entry["case_id"]: json.loads(
+                (GOLDEN / entry["file"]).read_text(encoding="utf-8")
+            )
+            for entry in cls.taxonomy_manifest["cases"]
+        }
 
     def test_manifest_is_sequential_and_complete(self):
         case_count = self.manifest["case_count"]
@@ -43,6 +63,23 @@ class GoldenContractTests(unittest.TestCase):
         for entry in self.entries:
             self.assertTrue((GOLDEN / entry["file"]).is_file())
             self.assertEqual(self.fixtures[entry["case_id"]]["case_id"], entry["case_id"])
+
+    def test_taxonomy_manifest_is_explicitly_isolated(self):
+        category_ids = [entry["case_id"] for entry in self.entries]
+        taxonomy_ids = [entry["case_id"] for entry in self.taxonomy_manifest["cases"]]
+
+        self.assertEqual(len(category_ids), len(set(category_ids)))
+        self.assertEqual(len(taxonomy_ids), len(set(taxonomy_ids)))
+        self.assertTrue(self.taxonomy_manifest["category_acceptance_population_excluded"])
+        self.assertEqual(self.taxonomy_manifest["case_count"], len(taxonomy_ids))
+        self.assertEqual(set(taxonomy_ids), self.TAXONOMY_EXTENSION_IDS)
+        self.assertTrue(set(category_ids).isdisjoint(taxonomy_ids))
+
+        for entry in self.taxonomy_manifest["cases"]:
+            fixture_path = GOLDEN / entry["file"]
+            self.assertTrue(fixture_path.is_file(), entry["case_id"])
+            fixture = self.taxonomy_fixtures[entry["case_id"]]
+            self.assertEqual(fixture["case_id"], entry["case_id"])
 
     def test_category_states_are_explicit_and_terminal_rules_hold(self):
         assigned = unresolved = not_evaluated = 0
@@ -241,6 +278,239 @@ class GoldenContractTests(unittest.TestCase):
             if expected["evidence_state"] == "EVIDENCE_REJECTED":
                 self.assertEqual(expected["scope"], "NOT_EVALUATED", fixture["case_id"])
                 self.assertEqual(expected["date_valid"], "NOT_EVALUATED", fixture["case_id"])
+
+    def test_taxonomy_projection_representation_is_consistent(self):
+        all_taxonomy_fixtures = {**self.fixtures, **self.taxonomy_fixtures}
+        for case_id, fixture in all_taxonomy_fixtures.items():
+            expected = fixture["expected"]
+            raw_systems = expected["e&m_taxonomy"]
+            explicit_state = expected.get("taxonomy_state")
+            reason = expected.get("taxonomy_resolution_reason")
+
+            if raw_systems == "NOT_EVALUATED":
+                if explicit_state is not None:
+                    self.assertEqual(explicit_state, TaxonomyState.NOT_EVALUATED.value, case_id)
+                self.assertIsNone(reason, case_id)
+                self.assertNotIn("taxonomy_support_spans", expected, case_id)
+                self.assertNotIn("taxonomy_provenance", expected, case_id)
+                continue
+
+            self.assertIsInstance(raw_systems, list, case_id)
+            self.assertNotEqual(explicit_state, TaxonomyState.NOT_EVALUATED.value, case_id)
+            state = TaxonomyState(explicit_state or TaxonomyState.TAXONOMY_EVALUATED.value)
+
+            if state is TaxonomyState.TAXONOMY_EVALUATED:
+                self.assertIsNone(reason, case_id)
+                self.assertNotIn("taxonomy_provenance", expected, case_id)
+                if not raw_systems:
+                    self.assertNotIn("taxonomy_support_spans", expected, case_id)
+            else:
+                self.assertEqual(state, TaxonomyState.TAXONOMY_UNRESOLVED, case_id)
+                self.assertEqual(raw_systems, [], case_id)
+                self.assertIn(reason, {item.value for item in TaxonomyResolutionReason}, case_id)
+                self.assertIsInstance(expected.get("taxonomy_provenance"), dict, case_id)
+
+    def test_designated_taxonomy_provenance_is_required(self):
+        display_to_id = {
+            system_id.display_label: system_id.value for system_id in canonical_em_system_ids()
+        }
+
+        for case_id in ("G52", "G86", "G88"):
+            expected = ({**self.fixtures, **self.taxonomy_fixtures})[case_id]["expected"]
+            self.assertEqual(expected.get("taxonomy_state"), TaxonomyState.TAXONOMY_EVALUATED.value)
+            assigned = {display_to_id[label] for label in expected["e&m_taxonomy"]}
+            spans = expected.get("taxonomy_support_spans")
+            self.assertIsInstance(spans, list, case_id)
+            self.assertTrue(spans, case_id)
+            span_systems = {span["system_id"] for span in spans}
+            self.assertEqual(span_systems, assigned, case_id)
+            candidate_ids = {
+                candidate["candidate_id"]
+                for candidate in ({**self.fixtures, **self.taxonomy_fixtures})[case_id]["candidates"]
+            }
+            for span in spans:
+                self.assertIn(span["candidate_id"], candidate_ids, case_id)
+
+        all_fixtures = {**self.fixtures, **self.taxonomy_fixtures}
+        for case_id in ("G19", "G62"):
+            expected = all_fixtures[case_id]["expected"]
+            self.assertEqual(expected.get("taxonomy_state"), TaxonomyState.TAXONOMY_UNRESOLVED.value)
+            self.assertEqual(
+                expected.get("taxonomy_resolution_reason"),
+                TaxonomyResolutionReason.INSUFFICIENT_SYSTEM_EVIDENCE.value,
+                case_id,
+            )
+            provenance = expected.get("taxonomy_provenance")
+            self.assertIsInstance(provenance, dict, case_id)
+            self.assertTrue(provenance.get("member_candidate_ids"), case_id)
+            self.assertTrue(provenance.get("diagnostic"), case_id)
+
+        conflict = all_fixtures["G87"]["expected"]
+        self.assertEqual(
+            conflict.get("taxonomy_state"), TaxonomyState.TAXONOMY_UNRESOLVED.value
+        )
+        self.assertEqual(
+            conflict.get("taxonomy_resolution_reason"),
+            TaxonomyResolutionReason.CONFLICTING_SYSTEM_EVIDENCE.value,
+        )
+        conflict_spans = conflict.get("taxonomy_provenance", {}).get("conflict_spans")
+        self.assertIsInstance(conflict_spans, list)
+        self.assertEqual(
+            {span["system_id"] for span in conflict_spans},
+            {EMSystemId.SIGNALLING.value, EMSystemId.POWER_SUPPLY.value},
+        )
+        candidate_ids = {candidate["candidate_id"] for candidate in all_fixtures["G87"]["candidates"]}
+        self.assertTrue(all(span["candidate_id"] in candidate_ids for span in conflict_spans))
+
+    def test_taxonomy_values_follow_typed_contract_and_provenance_shape(self):
+        display_to_id = {
+            system_id.display_label: system_id for system_id in canonical_em_system_ids()
+        }
+        canonical_order = list(canonical_em_system_ids())
+
+        all_taxonomy_fixtures = {**self.fixtures, **self.taxonomy_fixtures}
+        for case_id, fixture in all_taxonomy_fixtures.items():
+            expected = fixture["expected"]
+            candidates_by_id = {
+                candidate["candidate_id"]: candidate for candidate in fixture["candidates"]
+            }
+
+            def assert_span_is_member_and_bounded(span: TaxonomySupportSpan) -> None:
+                self.assertIn(span.candidate_id, candidates_by_id, case_id)
+                source_content = candidates_by_id[span.candidate_id]["source_content"]
+                self.assertLessEqual(span.end, len(source_content), case_id)
+                self.assertTrue(source_content[span.start : span.end], case_id)
+
+            raw_systems = expected["e&m_taxonomy"]
+            explicit_state = expected.get("taxonomy_state")
+            if explicit_state is None:
+                state = (
+                    TaxonomyState.NOT_EVALUATED
+                    if raw_systems == "NOT_EVALUATED"
+                    else TaxonomyState.TAXONOMY_EVALUATED
+                )
+            else:
+                state = TaxonomyState(explicit_state)
+
+            if state is TaxonomyState.NOT_EVALUATED:
+                self.assertEqual(raw_systems, "NOT_EVALUATED", case_id)
+                self.assertNotIn("taxonomy_support_spans", expected, case_id)
+                self.assertNotIn("taxonomy_provenance", expected, case_id)
+                continue
+
+            self.assertIsInstance(raw_systems, list, case_id)
+            system_ids = [display_to_id[label] for label in raw_systems]
+            self.assertEqual(len(system_ids), len(set(system_ids)), case_id)
+            self.assertEqual(
+                system_ids,
+                [system_id for system_id in canonical_order if system_id in system_ids],
+                case_id,
+            )
+
+            reason_value = expected.get("taxonomy_resolution_reason")
+            if state is TaxonomyState.TAXONOMY_EVALUATED:
+                self.assertIsNone(reason_value, case_id)
+                if not system_ids:
+                    self.assertNotIn("taxonomy_support_spans", expected, case_id)
+            else:
+                reason = TaxonomyResolutionReason(reason_value)
+                self.assertEqual(system_ids, [], case_id)
+                provenance = expected.get("taxonomy_provenance")
+                self.assertIsInstance(provenance, dict, case_id)
+                if reason is TaxonomyResolutionReason.INSUFFICIENT_SYSTEM_EVIDENCE:
+                    typed = TaxonomyInsufficientEvidenceProvenance(
+                        tuple(provenance["member_candidate_ids"]),
+                        provenance["diagnostic"],
+                    )
+                    self.assertTrue(typed.member_candidate_ids, case_id)
+                    member_ids = {
+                        candidate["candidate_id"] for candidate in fixture["candidates"]
+                    }
+                    self.assertTrue(
+                        set(typed.member_candidate_ids).issubset(member_ids), case_id
+                    )
+                else:
+                    typed_spans = tuple(
+                        TaxonomySupportSpan(
+                            EMSystemId(span["system_id"]),
+                            span["candidate_id"],
+                            span["start"],
+                            span["end"],
+                        )
+                        for span in provenance["conflict_spans"]
+                    )
+                    for typed_span in typed_spans:
+                        assert_span_is_member_and_bounded(typed_span)
+                    self.assertIsInstance(
+                        TaxonomyConflictEvidenceProvenance(typed_spans),
+                        TaxonomyConflictEvidenceProvenance,
+                    )
+
+            for span in expected.get("taxonomy_support_spans", ()):
+                typed_span = TaxonomySupportSpan(
+                    EMSystemId(span["system_id"]),
+                    span["candidate_id"],
+                    span["start"],
+                    span["end"],
+                )
+                self.assertIn(typed_span.system_id, system_ids, case_id)
+                assert_span_is_member_and_bounded(typed_span)
+
+    def test_taxonomy_coverage_and_contextual_boundaries_are_locked(self):
+        display_to_id = {
+            system_id.display_label: system_id for system_id in canonical_em_system_ids()
+        }
+        counts = {system_id: 0 for system_id in canonical_em_system_ids()}
+        state_counts = {state: 0 for state in TaxonomyState}
+        multi_label_groups = 0
+        total_groups = reached_groups = not_evaluated_groups = 0
+
+        all_taxonomy_fixtures = {**self.fixtures, **self.taxonomy_fixtures}
+        for fixture in all_taxonomy_fixtures.values():
+            expected = fixture["expected"]
+            group_count = expected["event_count_after_dedup"]
+            if not isinstance(group_count, int):
+                continue
+            total_groups += group_count
+            raw_systems = expected["e&m_taxonomy"]
+            state = TaxonomyState(
+                expected.get(
+                    "taxonomy_state",
+                    "NOT_EVALUATED" if raw_systems == "NOT_EVALUATED" else "TAXONOMY_EVALUATED",
+                )
+            )
+            state_counts[state] += group_count
+            if state is TaxonomyState.NOT_EVALUATED:
+                not_evaluated_groups += group_count
+                continue
+            reached_groups += group_count
+            if state is TaxonomyState.TAXONOMY_EVALUATED:
+                system_ids = [display_to_id[label] for label in raw_systems]
+                for system_id in system_ids:
+                    counts[system_id] += group_count
+                if len(system_ids) > 1:
+                    multi_label_groups += group_count
+
+        self.assertEqual(total_groups, 59)
+        self.assertEqual(reached_groups, 53)
+        self.assertEqual(not_evaluated_groups, 6)
+        self.assertEqual(state_counts[TaxonomyState.TAXONOMY_EVALUATED], 50)
+        self.assertEqual(state_counts[TaxonomyState.TAXONOMY_UNRESOLVED], 3)
+        self.assertEqual(counts[EMSystemId.ROLLING_STOCK], 6)
+        self.assertEqual(counts[EMSystemId.SIGNALLING], 11)
+        self.assertEqual(counts[EMSystemId.POWER_SUPPLY], 9)
+        self.assertEqual(counts[EMSystemId.COMMUNICATIONS], 4)
+        self.assertEqual(counts[EMSystemId.AUTOMATIC_FARE_COLLECTION], 2)
+        self.assertEqual(counts[EMSystemId.DEPOT_MAINTENANCE_EQUIPMENT], 1)
+        self.assertEqual(counts[EMSystemId.PLATFORM_SCREEN_DOORS], 3)
+        self.assertEqual(multi_label_groups, 1)
+
+        self.assertEqual(
+            self.taxonomy_fixtures["G88"]["expected"]["e&m_taxonomy"], ["供電"]
+        )
+        self.assertEqual(self.taxonomy_fixtures["G89"]["expected"]["e&m_taxonomy"], [])
+        self.assertEqual(self.taxonomy_fixtures["G90"]["expected"]["e&m_taxonomy"], [])
+        self.assertEqual(self.taxonomy_fixtures["G91"]["expected"]["e&m_taxonomy"], [])
 
 
 if __name__ == "__main__":

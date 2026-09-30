@@ -849,6 +849,38 @@ Golden expected outcome 不得為了配合 implementation 修改。既有中文 
 是上述 registry 的 display labels；typed implementation 與 Golden validation 必須由唯一
 registry 驗證其一對一 mapping，不得建立第二份 label list。
 
+### Golden semantic projection and runtime acceptance
+
+Golden Taxonomy 是 implementation-independent semantic projection。它權威鎖定
+taxonomy stage 是否到達、taxonomy state、canonical systems、unresolved reason 與
+reason-specific unresolved provenance；它不必為每一個 legacy positive fixture 固定唯一
+的 positive support slice。不同 exact authoritative spans 可以支持同一 semantic outcome，
+而且 fixture-level projection 可能涵蓋多個結果相同的 EventGroup。
+
+這項 projection 不等同於 production 的 per-EventGroup `TaxonomyResult`。Python E&M
+Taxonomy 仍是唯一 runtime decision owner；每一個正向 runtime `TaxonomyResult` 仍必須
+具備每個 assigned system 的完整、system-specific、authoritative support，並通過
+candidate membership、substantive-content bounds、exact text mapping 與 semantic
+support 驗證。Golden 不得從 expected labels 合成 runtime support。
+
+正式 E&M owner acceptance 必須同時通過：
+
+1. runtime semantic result 與 Golden projection parity；以及
+2. runtime `TaxonomyResult` 的完整 provenance 與 state invariants。
+
+Golden semantic parity 單獨不足以通過 production acceptance。Category Classifier tests
+不屬於 E&M Taxonomy runtime provenance validation。`TAXONOMY_UNRESOLVED` 的
+member IDs、diagnostic 或 conflict spans 是 unresolved semantic result 的一部分，因而
+在 Golden 中必須存在並依 reason 驗證；指定的 provenance fixtures 可以另外鎖定固定
+positive support 或 conflict 邊界，但不得把該要求推廣成所有 legacy positive fixtures
+都必須保存同一組 support spans。
+
+若一個 fixture 涵蓋多個 EventGroup，fixture-level semantic expectation 只有在每個
+resulting group 的 outcome 相同且 applicability 明確時才能共用。不得比較 systems
+聯集、依 group ordinal 指派、或讓一個 group 的 support 支持另一個 group。若未來
+不同 groups 需要不同 outcome，必須以 member identity 明確表達，而且只能保留一個
+authoritative expected representation。
+
 ### V1 selective reuse boundary
 
 V1 的低階 exact matching／negation helper、report-label projection pattern，以及

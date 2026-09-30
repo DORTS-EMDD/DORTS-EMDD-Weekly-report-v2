@@ -41,9 +41,9 @@
     "primary_category_id": "TECHNICAL_DEVELOPMENT",
     "primary_category": "技術新知",
     "subtype": "cybersecurity_technology_pilot",
-    "e&m_taxonomy": [
-      "通訊"
-    ],
+    "e&m_taxonomy": [],
+    "taxonomy_state": "TAXONOMY_EVALUATED",
+    "taxonomy_resolution_reason": null,
     "reportability": "REPORTABLE",
     "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
     "category_resolution_reason": "NONE",

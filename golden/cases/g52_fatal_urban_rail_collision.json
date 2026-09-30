@@ -42,8 +42,17 @@
     "primary_category": "事故事件",
     "subtype": "fatal_accident",
     "e&m_taxonomy": [
-      "電聯車",
-      "號誌"
+      "電聯車"
+    ],
+    "taxonomy_state": "TAXONOMY_EVALUATED",
+    "taxonomy_resolution_reason": null,
+    "taxonomy_support_spans": [
+      {
+        "system_id": "ROLLING_STOCK",
+        "candidate_id": "C1",
+        "start": 138,
+        "end": 159
+      }
     ],
     "reportability": "REPORTABLE",
     "classification_reason": "PRINCIPAL_ACTION_INCIDENT",

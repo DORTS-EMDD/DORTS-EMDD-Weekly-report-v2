@@ -8,7 +8,7 @@ Golden Corpus 不是 production code，也不是 executable Python test suite。
 
 每個 expected outcome 都以 docs/ARCHITECTURE_CONTRACT.md 的 v0.5 FINAL_LOCKED（含 Category §L）為 authoritative source。Category Golden Lock 固定五個 canonical category IDs 及其繁體中文 display labels。V1 只提供 read-only case material、regression intent 與 historical lessons；V1 的 expected outcome 不會自動成為 V2 正確答案。
 
-本版 85 個 case 全部標示為 SYNTHETIC_CONTRACT_CASE。這是刻意的選擇：本次檢視到的 V1 regression tests 具有可用的 case intent，但沒有需要在 V2 中固化、且足以安全重建為 authoritative evidence snapshot 的完整歷史 fixture。未 materialize named historical cases，不以記憶杜撰新聞、官方公告或 source text。
+本版 85 個 Category case 全部標示為 SYNTHETIC_CONTRACT_CASE；另有六個只供 E&M Taxonomy coverage 的 extension cases，列於 `taxonomy_manifest.json`，不加入已封存的 Category acceptance population。這是刻意的選擇：本次檢視到的 V1 regression tests 具有可用的 case intent，但沒有需要在 V2 中固化、且足以安全重建為 authoritative evidence snapshot 的完整歷史 fixture。未 materialize named historical cases，不以記憶杜撰新聞、官方公告或 source text。
 
 本版沒有把 Bukit Gombak、TransLink elevator 或 Tokyo overhead-wire 等名稱假裝成 V2 historical fixture。若未來有合法、固定、可重現且不需大量複製受版權保護正文的 evidence snapshot，可新增 V1_HISTORICAL_FIXTURE 或 V1_REGRESSION_DERIVED case；否則應維持 synthetic case。
 
@@ -48,7 +48,7 @@ Category definitions and boundaries have one authority: `docs/ARCHITECTURE_CONTR
 | `PROCUREMENT` | 採購事件 | 16 |
 | `NORMATIVE_CHANGE` | 規範變動 | 6 |
 
-每個 fixture 的 `expected.category_state` 必須明確為 `NOT_EVALUATED`、`CATEGORY_ASSIGNED` 或 `CATEGORY_UNRESOLVED`。Assigned case 同時鎖定 `primary_category_id`、display label、subtype 與 `classification_reason`。`NOT_EVALUATED` 保留 upstream stage 沒有到達 Category 的事實。`CATEGORY_UNRESOLVED` 是有效 terminal outcome：`primary_category_id`、display label 及 subtype 為 null，Taxonomy 與 Reportability 為 `NOT_EVALUATED`，且不記為 rejection。85 個 case 中有 52 個到達 Category（46 assigned、6 unresolved）；其餘 33 個在 upstream boundary 停止或被 Evidence 拒絕。
+每個 fixture 的 `expected.category_state` 必須明確為 `NOT_EVALUATED`、`CATEGORY_ASSIGNED` 或 `CATEGORY_UNRESOLVED`。Assigned case 同時鎖定 `primary_category_id`、display label、subtype 與 `classification_reason`。`NOT_EVALUATED` 保留 upstream stage 沒有到達 Category 的事實。`CATEGORY_UNRESOLVED` 是有效 terminal outcome：`primary_category_id`、display label 及 subtype 為 null，Taxonomy 與 Reportability 為 `NOT_EVALUATED`，且不記為 rejection。85 個 Category case 中有 52 個到達 Category（46 assigned、6 unresolved）；其餘 33 個在 upstream boundary 停止或被 Evidence 拒絕。E&M extension cases 不改變這個 sealed Category population。
 
 G49、G53、G60、G62–G64、G69、G79 記錄 misleading discovery context，測試 §L 的 Search non-authority boundary。G51、G68、G75、G76、G81、G82 鎖定 contract-defined `CATEGORY_UNRESOLVED` outcome。G49 記錄同一 factual Event 在 7 日與 365 日期間的 expected Category。
 
@@ -66,7 +66,65 @@ G49、G53、G60、G62–G64、G69、G79 記錄 misleading discovery context，�
 * 機廠維修設備
 * 月臺門
 
-[] 表示事件可成報，但沒有合理的七大主系統對應。G17 的 elevator case 因此保持空陣列，不建立「垂直運輸設備」或「通風空調系統」等第二套 registry。
+[] 表示事件可成報，但沒有合理的七大主系統對應。G17 的 elevator case 因此保持空陣列，不建立「垂直運輸設備」或「通風空調系統」等第二套 registry。E&M extension cases G86–G91 鎖定具體 depot/workshop inspection equipment、canonical parent conflict、明確受控供電對象的 SCADA，以及 OCC、depot location 與 generic train 的非自動 mapping 邊界。
+
+E&M extension cases are stored in `taxonomy_manifest.json` so the sealed
+Category acceptance population remains 85 fixtures / 53 Event Groups. They
+share the same fixture schema and are consumed only by E&M Golden contract
+tests. The extension manifest is routing/membership metadata, not a second
+taxonomy result oracle; each case JSON remains the sole expected-outcome
+source for that case.
+
+### Golden taxonomy representation
+
+Golden Taxonomy is an implementation-independent semantic projection. For a
+taxonomy-reached outcome, the expected data locks the state, canonical system
+labels, and resolution reason. Production E&M Taxonomy still has the stricter
+runtime `TaxonomyResult` contract: every assigned system needs complete,
+system-specific authoritative support. Golden semantic matching does not create
+or repair that runtime support.
+
+The existing fixture convention is:
+
+* `e&m_taxonomy = "NOT_EVALUATED"` means the taxonomy stage was not reached.
+* A legal taxonomy label array without an explicit `taxonomy_state` means
+  `TAXONOMY_EVALUATED`.
+* Evaluated outcomes have a null or omitted `taxonomy_resolution_reason`.
+* `TAXONOMY_UNRESOLVED` must explicitly contain `taxonomy_state`, a legal
+  `taxonomy_resolution_reason`, and reason-specific `taxonomy_provenance`.
+
+Explicit state fields and shorthand must agree. Contradictory combinations are
+invalid and must be rejected; Golden validation does not auto-repair them.
+This decoding convention applies only to expected Golden data and must never
+fill missing runtime fields.
+
+Positive support spans are required in designated provenance fixtures rather
+than every legacy semantic projection. The designated cases are G52, G86 and
+G88 for assigned-system support; G19 and G62 for insufficient provenance; and
+G87 for conflicting provenance. Unresolved provenance is mandatory because it
+is part of the unresolved semantic outcome.
+
+### Golden manifest routing
+
+`golden/manifest.json` is the sealed Category acceptance population and
+currently contains exactly G01–G85. A Category case may enter it only through
+explicit Category population/version governance.
+
+`golden/taxonomy_manifest.json` is the E&M-only extension membership list. Its
+`category_acceptance_population_excluded` flag must remain true; its case count
+must match its entries; and its IDs must be unique and disjoint from the main
+manifest. It is not a second expected-result source.
+
+Category consumers read only `manifest.json`. E&M Golden consumers may read the
+main manifest plus `taxonomy_manifest.json` when taxonomy coverage requires the
+extensions. Do not discover Category cases with a filesystem wildcard.
+
+G13 is a multi-event fixture. Its fixture-level taxonomy expectation may be
+shared because both resulting EventGroups have the same semantic outcome. Do
+not compare only a union of systems, assign by group ordinal, or let one
+group's support serve another group. If future groups from one fixture have
+different taxonomy outcomes, the expected data must distinguish them by member
+identity while retaining one authoritative representation.
 
 ## Case index
 
@@ -189,12 +247,16 @@ To add a case:
 
 1. Start from the common schema used by the existing JSON fixtures.
 2. Separate candidates input facts from the expected domain outcome.
-3. Assign a new stable case_id and update golden/manifest.json.
-4. Set origin_type explicitly to V1_HISTORICAL_FIXTURE, V1_REGRESSION_DERIVED, or SYNTHETIC_CONTRACT_CASE.
-5. Use only fixed source content or a minimal synthetic fragment; do not use live search or current fetches.
-6. Derive expected values from the locked Architecture Contract.
-7. Set downstream fields to NOT_EVALUATED whenever an upstream owner rejects the candidate.
-8. Keep Candidate lifecycle and Event lifecycle separate.
+3. Route the case explicitly: Category cases require Category population/version
+   governance before entering `manifest.json`; taxonomy-only extensions belong
+   in `taxonomy_manifest.json` and remain excluded from Category acceptance.
+4. Assign a new stable case_id in the selected manifest and keep IDs unique
+   and disjoint between manifests.
+5. Set origin_type explicitly to V1_HISTORICAL_FIXTURE, V1_REGRESSION_DERIVED, or SYNTHETIC_CONTRACT_CASE.
+6. Use only fixed source content or a minimal synthetic fragment; do not use live search or current fetches.
+7. Derive expected values from the locked Architecture Contract.
+8. Set downstream fields to NOT_EVALUATED whenever an upstream owner rejects the candidate.
+9. Keep Candidate lifecycle and Event lifecycle separate.
 
 既有 expected outcome 只有在下列情況之一成立時才可修改：
 

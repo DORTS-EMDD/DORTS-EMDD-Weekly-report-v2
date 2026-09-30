@@ -1,0 +1,38 @@
+{
+  "golden_version": "em-taxonomy-v1",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "category_acceptance_population_excluded": true,
+  "case_count": 6,
+  "cases": [
+    {
+      "case_id": "G86",
+      "file": "cases/g86_depot_underfloor_inspection_equipment.json",
+      "case_class": "depot_underfloor_inspection_equipment"
+    },
+    {
+      "case_id": "G87",
+      "file": "cases/g87_conflicting_taxonomy_parents.json",
+      "case_class": "conflicting_taxonomy_parents"
+    },
+    {
+      "case_id": "G88",
+      "file": "cases/g88_scada_traction_power_monitoring.json",
+      "case_class": "scada_traction_power_monitoring"
+    },
+    {
+      "case_id": "G89",
+      "file": "cases/g89_occ_operating_procedure_only.json",
+      "case_class": "occ_operating_procedure_only"
+    },
+    {
+      "case_id": "G90",
+      "file": "cases/g90_depot_location_without_equipment.json",
+      "case_class": "depot_location_without_equipment"
+    },
+    {
+      "case_id": "G91",
+      "file": "cases/g91_generic_train_service_without_equipment.json",
+      "case_class": "generic_train_service_without_equipment"
+    }
+  ]
+}

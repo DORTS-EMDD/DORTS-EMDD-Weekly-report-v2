@@ -46,9 +46,13 @@
     "event_count_after_dedup": 1,
     "primary_category": "採購事件",
     "subtype": "procurement",
-    "e&m_taxonomy": [
-      "月臺門"
-    ],
+    "e&m_taxonomy": [],
+    "taxonomy_state": "TAXONOMY_UNRESOLVED",
+    "taxonomy_resolution_reason": "INSUFFICIENT_SYSTEM_EVIDENCE",
+    "taxonomy_provenance": {
+      "member_candidate_ids": ["C1"],
+      "diagnostic": "Platform panels are described, but their canonical E&M system membership is not established."
+    },
     "reportability": "REPORTABLE",
     "reject_stage": "NONE",
     "reject_reason": "NONE",

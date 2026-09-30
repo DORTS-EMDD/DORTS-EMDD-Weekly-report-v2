@@ -1,0 +1,61 @@
+{
+  "case_id": "G88",
+  "name": "scada_traction_power_monitoring",
+  "description": "SCADA maps to power supply only because the controlled technical object is explicit.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro deploys SCADA traction-power monitoring upgrade",
+      "url": "https://fixtures.invalid/g88-scada-traction-power-monitoring",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-17T10:00:00Z",
+      "discovery_intent": "technology",
+      "search_snippet": "A SCADA upgrade monitors traction substations and controls third-rail breakers.",
+      "source_content": "The operator deployed a SCADA upgrade that monitors traction substations and controls third-rail power breakers on the metro line. The release describes telemetry and breaker-control tests for the traction-power equipment.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-17T10:00:00Z",
+          "date_kind": "NOTICE_ISSUED",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "primary_category": "技術新知",
+    "subtype": "technology",
+    "e&m_taxonomy": ["供電"],
+    "taxonomy_state": "TAXONOMY_EVALUATED",
+    "taxonomy_resolution_reason": null,
+    "taxonomy_support_spans": [
+      {
+        "system_id": "POWER_SUPPLY",
+        "candidate_id": "C1",
+        "start": 24,
+        "end": 111
+      }
+    ],
+    "reportability": "REPORTABLE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE",
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "TECHNICAL_DEVELOPMENT",
+    "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+    "category_resolution_reason": "NONE"
+  }
+}

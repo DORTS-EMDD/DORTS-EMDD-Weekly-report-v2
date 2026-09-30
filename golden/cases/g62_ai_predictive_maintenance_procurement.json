@@ -48,9 +48,13 @@
     "primary_category_id": "PROCUREMENT",
     "primary_category": "採購事件",
     "subtype": "award",
-    "e&m_taxonomy": [
-      "機廠維修設備"
-    ],
+    "e&m_taxonomy": [],
+    "taxonomy_state": "TAXONOMY_UNRESOLVED",
+    "taxonomy_resolution_reason": "INSUFFICIENT_SYSTEM_EVIDENCE",
+    "taxonomy_provenance": {
+      "member_candidate_ids": ["C1"],
+      "diagnostic": "Wheel and bearing are named, but their canonical E&M system membership is not established."
+    },
     "reportability": "REPORTABLE",
     "classification_reason": "PRINCIPAL_ACTION_PROCUREMENT",
     "category_resolution_reason": "NONE",
