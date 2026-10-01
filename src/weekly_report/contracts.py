@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Any, Mapping
+from typing import Any, Mapping, Protocol
 
 
 class EvidenceState(StrEnum):
@@ -843,6 +843,263 @@ class TaxonomyResult:
                 }
             ),
         }
+
+
+class ReportabilityState(StrEnum):
+    """The only authoritative terminal states owned by Reportability."""
+
+    REPORTABLE = "REPORTABLE"
+    NOT_REPORTABLE = "NOT_REPORTABLE"
+
+
+class ReportabilityReason(StrEnum):
+    """The only authoritative negative Reportability reason."""
+
+    LOW_REPORTABILITY_VALUE = "LOW_REPORTABILITY_VALUE"
+
+
+@dataclass(frozen=True, slots=True)
+class ReportabilitySupportSpan:
+    """Immutable source span resolved by the future Reportability owner."""
+
+    candidate_id: str
+    start: int
+    end: int
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.candidate_id, str) or not self.candidate_id.strip():
+            raise ValueError("ReportabilitySupportSpan requires candidate_id")
+        if isinstance(self.start, bool) or not isinstance(self.start, int):
+            raise TypeError("ReportabilitySupportSpan start must be an integer")
+        if isinstance(self.end, bool) or not isinstance(self.end, int):
+            raise TypeError("ReportabilitySupportSpan end must be an integer")
+        if self.start < 0 or self.start >= self.end:
+            raise ValueError("ReportabilitySupportSpan requires a non-empty [start, end) span")
+
+
+@dataclass(frozen=True, slots=True)
+class ReportabilityEvidenceProvenance:
+    """Immutable evidence provenance for one Reportability result."""
+
+    examined_candidate_ids: tuple[str, ...]
+    support_spans: tuple[ReportabilitySupportSpan, ...]
+    rationale: str
+
+    def __post_init__(self) -> None:
+        if isinstance(self.examined_candidate_ids, (str, bytes, bytearray)):
+            raise TypeError("examined_candidate_ids must be an iterable of IDs")
+        try:
+            candidate_ids = tuple(self.examined_candidate_ids)
+        except TypeError as exc:
+            raise TypeError("examined_candidate_ids must be an iterable of IDs") from exc
+        if not candidate_ids:
+            raise ValueError("Reportability provenance requires examined candidate IDs")
+        if any(not isinstance(candidate_id, str) or not candidate_id.strip() for candidate_id in candidate_ids):
+            raise ValueError("Reportability provenance requires non-empty candidate IDs")
+        if len(candidate_ids) != len(set(candidate_ids)):
+            raise ValueError("Reportability provenance examined candidate IDs must be unique")
+        object.__setattr__(self, "examined_candidate_ids", candidate_ids)
+
+        if isinstance(self.support_spans, (str, bytes, bytearray)):
+            raise TypeError("support_spans must contain ReportabilitySupportSpan values")
+        try:
+            support_spans = tuple(self.support_spans)
+        except TypeError as exc:
+            raise TypeError("support_spans must contain ReportabilitySupportSpan values") from exc
+        if any(not isinstance(span, ReportabilitySupportSpan) for span in support_spans):
+            raise TypeError("support_spans must contain ReportabilitySupportSpan values")
+        if any(span.candidate_id not in candidate_ids for span in support_spans):
+            raise ValueError("support span candidate IDs must be examined")
+        object.__setattr__(self, "support_spans", support_spans)
+
+        if not isinstance(self.rationale, str) or not self.rationale.strip():
+            raise ValueError("Reportability provenance requires rationale")
+
+
+@dataclass(frozen=True, slots=True)
+class ReportabilityResult:
+    """Immutable authoritative Reportability result."""
+
+    event_id: str
+    reportability_state: ReportabilityState
+    reportability_reason: ReportabilityReason | None
+    provenance: ReportabilityEvidenceProvenance
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.event_id, str) or not self.event_id.strip():
+            raise ValueError("ReportabilityResult requires event_id")
+        try:
+            state = ReportabilityState(self.reportability_state)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("ReportabilityResult requires a valid ReportabilityState") from exc
+        object.__setattr__(self, "reportability_state", state)
+
+        reason = self.reportability_reason
+        if reason is not None:
+            try:
+                reason = ReportabilityReason(reason)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("ReportabilityResult has an invalid reason") from exc
+        object.__setattr__(self, "reportability_reason", reason)
+
+        if not isinstance(self.provenance, ReportabilityEvidenceProvenance):
+            raise TypeError("ReportabilityResult requires typed evidence provenance")
+
+        if state is ReportabilityState.REPORTABLE:
+            if reason is not None:
+                raise ValueError("REPORTABLE cannot carry a Reportability reason")
+            if not self.provenance.support_spans:
+                raise ValueError("REPORTABLE requires support spans")
+        else:
+            if reason is not ReportabilityReason.LOW_REPORTABILITY_VALUE:
+                raise ValueError(
+                    "NOT_REPORTABLE requires LOW_REPORTABILITY_VALUE"
+                )
+            if self.provenance.support_spans:
+                raise ValueError("NOT_REPORTABLE cannot carry support spans")
+
+
+@dataclass(frozen=True, slots=True)
+class ReportabilitySemanticMember:
+    """One complete EventGroup evidence member exposed to a provider."""
+
+    candidate_id: str
+    substantive_content: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.candidate_id, str) or not self.candidate_id.strip():
+            raise ValueError("Reportability provider member requires candidate_id")
+        if not isinstance(self.substantive_content, str):
+            raise TypeError("Reportability provider member requires substantive_content")
+
+    def as_mapping(self) -> dict[str, str]:
+        return {
+            "candidate_id": self.candidate_id,
+            "substantive_content": self.substantive_content,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class ReportabilitySemanticRequest:
+    """Immutable, deterministically ordered proposal-provider input."""
+
+    event_id: str
+    members: tuple[ReportabilitySemanticMember, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.event_id, str) or not self.event_id.strip():
+            raise ValueError("Reportability provider request requires event_id")
+        if isinstance(self.members, (str, bytes, bytearray)):
+            raise TypeError("Reportability provider request members must be typed values")
+        try:
+            members = tuple(self.members)
+        except TypeError as exc:
+            raise TypeError("Reportability provider request members must be typed values") from exc
+        if not members:
+            raise ValueError("Reportability provider request requires members")
+        if any(not isinstance(member, ReportabilitySemanticMember) for member in members):
+            raise TypeError("Reportability provider request members must be typed values")
+        candidate_ids = tuple(member.candidate_id for member in members)
+        if len(candidate_ids) != len(set(candidate_ids)):
+            raise ValueError("Reportability provider request requires unique candidate IDs")
+        if candidate_ids != tuple(sorted(candidate_ids)):
+            raise ValueError("Reportability provider request members must be lexical candidate order")
+        object.__setattr__(self, "members", members)
+
+    @property
+    def member_candidate_ids(self) -> tuple[str, ...]:
+        return tuple(member.candidate_id for member in self.members)
+
+    def as_payload(self) -> dict[str, Any]:
+        return {
+            "event_id": self.event_id,
+            "members": [member.as_mapping() for member in self.members],
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class ReportabilitySemanticCitation:
+    """Untrusted exact quote citation returned by a semantic provider."""
+
+    candidate_id: str
+    exact_quote: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.candidate_id, str) or not self.candidate_id.strip():
+            raise ValueError("Reportability citation requires candidate_id")
+        if not isinstance(self.exact_quote, str) or not self.exact_quote.strip():
+            raise ValueError("Reportability citation requires exact_quote")
+
+
+@dataclass(frozen=True, slots=True)
+class ReportabilitySemanticProposal:
+    """Complete untrusted proposal returned by the semantic provider."""
+
+    event_id: str
+    proposed_state: ReportabilityState
+    examined_candidate_ids: tuple[str, ...]
+    support_citations: tuple[ReportabilitySemanticCitation, ...]
+    rationale: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.event_id, str) or not self.event_id.strip():
+            raise ValueError("Reportability proposal requires event_id")
+        try:
+            state = ReportabilityState(self.proposed_state)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Reportability proposal requires a valid state") from exc
+        object.__setattr__(self, "proposed_state", state)
+
+        if isinstance(self.examined_candidate_ids, (str, bytes, bytearray)):
+            raise TypeError("Reportability proposal examined IDs must be an iterable")
+        try:
+            examined_ids = tuple(self.examined_candidate_ids)
+        except TypeError as exc:
+            raise TypeError("Reportability proposal examined IDs must be an iterable") from exc
+        if not examined_ids:
+            raise ValueError("Reportability proposal requires examined candidate IDs")
+        if any(not isinstance(candidate_id, str) or not candidate_id.strip() for candidate_id in examined_ids):
+            raise ValueError("Reportability proposal requires non-empty candidate IDs")
+        if len(examined_ids) != len(set(examined_ids)):
+            raise ValueError("Reportability proposal examined candidate IDs must be unique")
+        object.__setattr__(self, "examined_candidate_ids", examined_ids)
+
+        if isinstance(self.support_citations, (str, bytes, bytearray)):
+            raise TypeError("support_citations must contain ReportabilitySemanticCitation values")
+        try:
+            citations = tuple(self.support_citations)
+        except TypeError as exc:
+            raise TypeError("support_citations must contain ReportabilitySemanticCitation values") from exc
+        if any(not isinstance(citation, ReportabilitySemanticCitation) for citation in citations):
+            raise TypeError("support_citations must contain ReportabilitySemanticCitation values")
+        object.__setattr__(self, "support_citations", citations)
+
+        if not isinstance(self.rationale, str) or not self.rationale.strip():
+            raise ValueError("Reportability proposal requires rationale")
+        if state is ReportabilityState.REPORTABLE and not citations:
+            raise ValueError("REPORTABLE proposal requires support citations")
+        if state is ReportabilityState.NOT_REPORTABLE and citations:
+            raise ValueError("NOT_REPORTABLE proposal cannot carry support citations")
+
+
+class ReportabilitySemanticProposalProvider(Protocol):
+    """Narrow proposal-only semantic provider interface."""
+
+    def __call__(self, request: ReportabilitySemanticRequest) -> ReportabilitySemanticProposal:
+        """Return one untrusted semantic proposal for the bounded request."""
+
+
+class ReportabilityStageFailure(RuntimeError):
+    """Typed technical failure; no :class:`ReportabilityResult` exists."""
+
+    def __init__(self, reason: str, *, event_id: str = "") -> None:
+        if not isinstance(reason, str) or not reason.strip():
+            reason = "reportability stage failed"
+        if not isinstance(event_id, str):
+            raise TypeError("ReportabilityStageFailure event_id must be a string")
+        self.reason = reason
+        self.event_id = event_id
+        super().__init__(reason)
 
 
 @dataclass(frozen=True, slots=True)
