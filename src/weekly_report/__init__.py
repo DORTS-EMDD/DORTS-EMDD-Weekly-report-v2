@@ -2,6 +2,10 @@
 
 from .contracts import (
     CanonicalCandidate,
+    CategoryId,
+    CategoryResolutionReason,
+    CategoryResult,
+    CategoryState,
     EventDecisionRecord,
     EvidenceResult,
     EvidenceState,
@@ -25,6 +29,27 @@ from .contracts import (
     SourceDateKind,
     TemporalDiagnostic,
     TemporalResult,
+)
+from .classifier import (
+    CategoryCitation,
+    CategoryEvidenceSpan,
+    CategorySemanticHelper,
+    CategorySemanticHelperResult,
+    CategorySemanticRequest,
+    CategorySemanticResponse,
+    Classifier,
+)
+from .category_semantic_provider import (
+    CATEGORY_SEMANTIC_HELPER_VERSION,
+    CATEGORY_SEMANTIC_PROMPT_VERSION,
+    CATEGORY_SEMANTIC_SCHEMA_VERSION,
+    MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION,
+    MaiAgentCategorySemanticProvider,
+    MaiAgentCategorySemanticProviderConfig,
+    CategorySemanticProvider,
+    CategorySemanticProviderConfig,
+    build_maiagent_category_classifier,
+    build_category_classifier,
 )
 from .evidence_service import EvidenceService
 from .scope_classifier import (
@@ -52,6 +77,26 @@ from .reportability import Reportability
 
 __all__ = [
     "CanonicalCandidate",
+    "CategoryCitation",
+    "CategoryEvidenceSpan",
+    "CategoryId",
+    "CategoryResolutionReason",
+    "CategoryResult",
+    "CategorySemanticHelper",
+    "CategorySemanticHelperResult",
+    "CategorySemanticProvider",
+    "CategorySemanticProviderConfig",
+    "CategorySemanticRequest",
+    "CategorySemanticResponse",
+    "CategoryState",
+    "EventDecisionRecord",
+    "Classifier",
+    "CATEGORY_SEMANTIC_HELPER_VERSION",
+    "CATEGORY_SEMANTIC_PROMPT_VERSION",
+    "CATEGORY_SEMANTIC_SCHEMA_VERSION",
+    "MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION",
+    "MaiAgentCategorySemanticProvider",
+    "MaiAgentCategorySemanticProviderConfig",
     "EvidenceResult",
     "EvidenceService",
     "EvidenceState",
@@ -95,4 +140,6 @@ __all__ = [
     "build_report_workflow",
     "TaxonomySemanticRequest",
     "TaxonomyStageFailure",
+    "build_maiagent_category_classifier",
+    "build_category_classifier",
 ]
