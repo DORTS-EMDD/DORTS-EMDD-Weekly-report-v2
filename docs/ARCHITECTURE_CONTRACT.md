@@ -1049,6 +1049,210 @@ system。不得以 V1 compatibility path 建立第二個 V2 owner。
 
 ## N. Reportability / Ordering
 
+### Authoritative owner and domain result
+
+`src/weekly_report/reportability.py::Reportability` is the sole
+authoritative Reportability owner. Its authoritative input is the immutable
+`EventDecisionRecord` produced after Evidence, Scope, Date, Event Identity,
+Category and E&M Taxonomy have completed. Reportability does not rerun,
+infer, alter or repair any upstream decision.
+
+The Reportability domain has exactly two states:
+
+```text
+REPORTABLE
+NOT_REPORTABLE
+```
+
+There is no `REPORTABILITY_UNRESOLVED` state. `REPORTABLE` means that the
+authoritative EventGroup evidence positively supports at least one accepted
+substantive urban-rail reporting-value path. `NOT_REPORTABLE` means that
+Reportability successfully evaluated the complete EventGroup, but the
+supplied authoritative evidence does not positively support such value. Its
+only domain reason is `LOW_REPORTABILITY_VALUE`. This is a semantic result,
+not a technical failure or a claim that the event has no value in every
+context.
+
+Only `TAXONOMY_EVALUATED` EventDecisionRecords reach Reportability,
+including `systems = []`. `TAXONOMY_UNRESOLVED` and `NOT_EVALUATED` remain
+upstream terminal dispositions and do not receive a ReportabilityResult.
+Empty taxonomy systems do not automatically reject an event, and non-empty
+systems do not automatically approve one. Reportability may read finalized
+Taxonomy context but may not add, remove, normalize, resolve or substitute
+systems. Category and Taxonomy remain independent upstream owners.
+
+Reportability value is established from the event's authoritative evidence,
+not from discovery labels or a system proxy. Accepted value paths include
+substantive technical research, testing, pilots or deployments; concrete
+system renewal, integration or engineering intervention; consequential
+safety, failure, service-impact or corrective investigation; concrete
+service, fare, operating-practice, safety-governance or policy change;
+substantive operational controversy; substantive normative action or formal
+guidance; and procurement, demonstration or trial activity with concrete
+engineering, system, test, update or operational significance. No path
+requires novelty, a non-empty E&M taxonomy, a severity threshold or a
+monetary threshold. Ordinary administrative, corporate, promotional,
+workflow-only or unsupported events remain negative when the evidence does
+not establish one of these paths. A Taipei reference alone cannot rescue a
+low-value event.
+
+Source quality and evidence readiness remain owned by EvidenceService.
+Reportability uses only the complete authoritative substantive content of
+the EventGroup members. It does not use title-only evidence, snippets,
+discovery intent, search queries, keywords, unaccepted metadata, Golden
+expected values or Writer text as decision authority.
+
+### Semantic proposal seam
+
+The current typed upstream fields do not encode all free-text concepts in the
+Reportability value rules. Reportability therefore has one injected
+`ReportabilitySemanticProposalProvider` dependency. This dependency executes
+semantic interpretation under this contract and returns one untrusted,
+proposal-only value. It is not an additional owner and cannot create a
+`ReportabilityResult`, directly admit or drop an EventGroup, invoke Ordering
+or Writer, or modify an upstream result. There is exactly one authoritative
+Reportability owner, one injected proposal seam and zero additional
+authoritative semantic owners. The concrete provider backend is deferred.
+
+The execution boundary is:
+
+```text
+Reportability owner
+→ bounded immutable request
+→ one injected proposal provider
+→ untrusted semantic proposal
+→ Python structural validation + exact evidence resolution
+→ ReportabilityResult or ReportabilityStageFailure
+```
+
+The provider request is the complete EventGroup population, deterministically
+ordered by `candidate_id`:
+
+```text
+ReportabilitySemanticMember:
+    candidate_id: str
+    substantive_content: str
+
+ReportabilitySemanticRequest:
+    event_id: str
+    members: tuple[ReportabilitySemanticMember, ...]
+```
+
+Each member must be a unique, exact EventGroup member and must contain the
+complete unchanged `EvidenceResult.substantive_content`. The request must not
+contain CategoryResult, TaxonomyResult, separate source metadata, temporal
+facts, discovery metadata, an independent title, search snippets, search or
+query keywords, ordering or ranking scores, Golden expected values or Writer
+text. CategoryResult and TaxonomyResult remain Python-owner inputs for
+reachability and upstream validation only. The provider must not fetch
+external information.
+
+The provider proposal is deliberately smaller than the production result:
+
+```text
+ReportabilitySemanticCitation:
+    candidate_id: str
+    exact_quote: str
+
+ReportabilitySemanticProposal:
+    event_id: str
+    proposed_state: REPORTABLE | NOT_REPORTABLE
+    examined_candidate_ids: tuple[str, ...]
+    support_citations: tuple[ReportabilitySemanticCitation, ...]
+    rationale: str
+```
+
+These are the complete proposal fields. The provider does not return a
+ReportabilityResult, proposed reason, confidence score, ranking score or
+other decision field. Python derives `reason = null` for `REPORTABLE` and
+`reason = LOW_REPORTABILITY_VALUE` for `NOT_REPORTABLE`; this fixed mapping
+does not repair or reinterpret the proposed state.
+
+Both proposal states must match the current event identity and examine every
+member exactly once. The rationale must be non-empty and grounded in the
+supplied evidence. A `REPORTABLE` proposal requires at least one exact
+positive citation that supports an accepted value path and must account for
+relevant counterevidence. Non-essential factual conflicts do not invalidate
+an independent positive value. A `NOT_REPORTABLE` proposal has no support
+citation and explains why the complete supplied evidence does not positively
+support an accepted path. It must not fabricate a negative citation proving
+absence and must never stand in for provider inability or technical failure.
+
+`REPORTABILITY_EVIDENCE_RESOLUTION` is
+`EXACT_TEXT_UNIQUE_RESOLUTION`. Every provider quote must be non-empty,
+unchanged, belong to a named EventGroup member, and occur exactly once in
+that member's authoritative substantive content. Python resolves it to a
+canonical `[start, end)` span and verifies candidate membership, bounds and
+exact source slicing. Zero occurrences and repeated occurrences are invalid
+proposals. Fuzzy matching, whitespace or quote repair, normalization,
+offset guessing, arbitrary repeated-occurrence selection, cross-source
+borrowing, synthetic merged evidence and title/snippet support are forbidden.
+
+Python validates the current identity and prerequisites, complete request
+membership, proposal fields and types, legal state, complete examined-member
+IDs, rationale, positive/negative citation cardinality, candidate membership,
+unique exact occurrences, bounds, source slicing, and the resulting
+state/reason/provenance invariants before constructing the authoritative
+result. It may canonicalize serialization order, but it must not salvage a
+subset, change the proposed state, manufacture citations or turn an invalid
+proposal into `NOT_REPORTABLE`.
+
+Structural validation is not an independent semantic proof. Exact quote
+existence and complete examined-member IDs do not prove that the provider's
+semantic conclusion is correct. An accepted result explicitly relies on the
+provider's interpretation after it passes the Python acceptance contract.
+A structurally valid but semantically incorrect proposal is a defect at the
+semantic execution boundary and must not be repaired downstream. No second
+keyword judge, hidden model judge, confidence gate, score threshold,
+provider-specific admission rule or runtime Golden lookup is allowed.
+
+Provider unavailability, exceptions, timeouts, malformed responses, invalid
+fields or state, missing or duplicate examined members, invalid candidate
+IDs, missing positive support, absent or ambiguous quotes, invalid source
+support and every other proposal violation produce one
+`ReportabilityStageFailure`. The failure is owner-controlled, stable and
+safe; raw payloads, exception strings, secrets and unsafe exception chains
+must not escape. A failure produces no ReportabilityResult and is not
+converted to `REPORTABLE`, `NOT_REPORTABLE`, `NOT_EVALUATED` or zero-event
+success.
+
+There is one proposal attempt per eligible EventGroup. Retry, alternate
+provider, fallback, rescue, backfill, keyword backup, default state and
+Writer rescue are prohibited. Any `ReportabilityStageFailure` triggers
+`ABORT_FORMAL_REPORT_RUN`: all eligible Reportability decisions must finish
+before Ordering or Writer begins, and no partial formal artifact, PDF or
+Email may be produced. Earlier results may remain diagnostic evidence only.
+
+MaiAgent has no Reportability role. A future backend, if selected, is merely
+an infrastructure dependency behind this proposal protocol and must be
+validated separately for semantic conformance and structural acceptance.
+
+### Procurement and Golden governance boundary
+
+Procurement reportability is based on substantive engineering, system, test,
+update or operational significance supported by authoritative evidence.
+USD 3M equivalent is not an eligibility threshold. Unknown amount, low
+amount or unavailable reliable FX conversion does not automatically reject;
+high amount does not automatically approve.
+
+The current Golden corpus requires a separate explicit governance phase after
+this contract checkpoint. The adjudicated findings are:
+
+```text
+G19 = CONFIRMED_STALE
+G62 = CONFIRMED_STALE
+G87 = CONFIRMED_STALE
+G90 = CONFIRMED_STALE
+G85 = CURRENT_CORRECT
+```
+
+G19, G62 and G87 do not reach Reportability because Taxonomy is unresolved;
+their future expected Reportability projection must be `NOT_EVALUATED`.
+G90's administrative office move does not establish substantive reporting
+value. G85 remains `NOT_REPORTABLE`; no USD 3M rejection reason is invented
+because that reason is not present in the fixture. Golden files are not
+changed by this contract checkpoint and are never exposed to the provider.
+
 Selection 正式責任只有：
 
 ```text
