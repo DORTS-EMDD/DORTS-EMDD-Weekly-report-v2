@@ -22,8 +22,18 @@ from src.weekly_report.contracts import (
     TaxonomyState,
     TaxonomySupportSpan,
     TemporalResult,
+    ReportabilityStageFailure,
+    ReportabilityEvidenceProvenance,
+    ReportabilityReason,
+    ReportabilityResult,
+    ReportabilityState,
 )
-from src.weekly_report.report_workflow import ReportWorkflow, build_report_workflow
+from src.weekly_report.report_workflow import (
+    ReportWorkflow,
+    ReportWorkflowResult,
+    build_report_workflow,
+)
+from src.weekly_report.reportability import Reportability
 from src.weekly_report.taxonomy import TaxonomyStageFailure
 
 
@@ -120,6 +130,41 @@ class _Provider:
     def __call__(self, request):
         self.calls.append(request)
         return None
+
+
+class _ReportabilityProvider:
+    def __init__(self, states=None, failures=()):
+        self.calls = []
+        self.states = states or {}
+        self.failures = set(failures)
+
+    def __call__(self, request):
+        self.calls.append(request)
+        if request.event_id in self.failures:
+            raise RuntimeError("provider failure")
+        state = self.states.get(request.event_id, ReportabilityState.NOT_REPORTABLE)
+        if state is ReportabilityState.REPORTABLE:
+            member = request.members[0]
+            quote = member.substantive_content[:4]
+            return {
+                "event_id": request.event_id,
+                "proposed_state": state,
+                "examined_candidate_ids": request.member_candidate_ids,
+                "support_citations": [{"candidate_id": member.candidate_id, "exact_quote": quote}],
+                "rationale": "authoritative evidence supports the event",
+            }
+        return {
+            "event_id": request.event_id,
+            "proposed_state": state,
+            "examined_candidate_ids": request.member_candidate_ids,
+            "support_citations": [],
+            "rationale": "authoritative evidence does not support reporting value",
+        }
+
+
+def _workflow_reportability(*, states=None, failures=()):
+    provider = _ReportabilityProvider(states=states, failures=failures)
+    return provider, Reportability(provider)
 
 
 class EventDecisionRecordTests(unittest.TestCase):
@@ -247,15 +292,248 @@ class ReportWorkflowTests(unittest.TestCase):
         self.assertEqual([record.candidate.candidate_id for record in owner.calls[0][1]], ["B", "A"])
 
     def test_build_factory_injects_provider_without_calling_it(self):
-        provider = _Provider()
-        workflow = build_report_workflow(taxonomy_proposal_provider=provider)
-        self.assertIs(workflow.taxonomy._proposal_provider, provider)
-        self.assertEqual(provider.calls, [])
+        taxonomy_provider = _Provider()
+        reportability_provider = _ReportabilityProvider()
+        workflow = build_report_workflow(
+            taxonomy_proposal_provider=taxonomy_provider,
+            reportability_proposal_provider=reportability_provider,
+        )
+        self.assertIs(workflow.taxonomy._proposal_provider, taxonomy_provider)
+        self.assertIsInstance(workflow.reportability, Reportability)
+        self.assertEqual(taxonomy_provider.calls, [])
+        self.assertEqual(reportability_provider.calls, [])
 
     def test_invalid_input_is_rejected_without_semantic_fallback(self):
         owner = _RecordingTaxonomy()
         with self.assertRaises(TypeError):
             ReportWorkflow(owner).run(("not an EventGroup",), {}, {})
+
+
+class ReportabilityWorkflowIntegrationTests(unittest.TestCase):
+    def _run(self, groups, categories, taxonomy_results, *, states=None, failures=()):
+        taxonomy = _RecordingTaxonomy(
+            outcomes={group.event_id: taxonomy_results[group.event_id] for group in groups}
+        )
+        provider, reportability = _workflow_reportability(states=states, failures=failures)
+        workflow = ReportWorkflow(taxonomy, reportability=reportability)
+        records = {
+            group.event_id: tuple(_record(candidate_id, f"body for {candidate_id}") for candidate_id in group.member_candidate_ids)
+            for group in groups
+        }
+        categories_by_id = {
+            group.event_id: categories[group.event_id](group)
+            if callable(categories[group.event_id])
+            else categories[group.event_id]
+            for group in groups
+        }
+        return workflow.run(groups, records, categories_by_id), provider
+
+    def test_assigned_and_evaluated_reaches_reportability(self):
+        group = _group("A")
+        result, provider = self._run(
+            (group,), {"E1": _assigned}, {"E1": _evaluated(group)},
+        )
+        self.assertIsInstance(result[0], ReportWorkflowResult)
+        self.assertEqual(len(provider.calls), 1)
+        self.assertIsNotNone(result[0].reportability_result)
+
+    def test_evaluated_empty_taxonomy_still_reaches_reportability(self):
+        group = _group("A")
+        result, provider = self._run(
+            (group,), {"E1": _assigned}, {"E1": _evaluated(group)},
+        )
+        self.assertEqual(result[0].taxonomy_result.systems, ())
+        self.assertEqual(len(provider.calls), 1)
+
+    def test_category_unresolved_does_not_call_reportability(self):
+        group = _group("A")
+        result, provider = self._run(
+            (group,), {"E1": _unresolved}, {"E1": TaxonomyResult.not_evaluated(event_id="E1")},
+        )
+        self.assertEqual(provider.calls, [])
+        self.assertIsNone(result[0].reportability_result)
+        self.assertEqual(result[0].reportability_state, "NOT_EVALUATED")
+
+    def test_taxonomy_unresolved_does_not_call_reportability(self):
+        group = _group("A")
+        result, provider = self._run(
+            (group,), {"E1": _assigned}, {"E1": _unresolved_taxonomy(group)},
+        )
+        self.assertEqual(provider.calls, [])
+        self.assertIs(result[0].reportability_result, None)
+
+    def test_reportable_is_downstream_eligible(self):
+        group = _group("A")
+        result, _ = self._run(
+            (group,), {"E1": _assigned}, {"E1": _evaluated(group)},
+            states={"E1": ReportabilityState.REPORTABLE},
+        )
+        self.assertTrue(result[0].downstream_eligible)
+        self.assertIs(result[0].reportability_state, ReportabilityState.REPORTABLE)
+
+    def test_not_reportable_is_terminal_before_downstream(self):
+        group = _group("A")
+        result, _ = self._run(
+            (group,), {"E1": _assigned}, {"E1": _evaluated(group)},
+            states={"E1": ReportabilityState.NOT_REPORTABLE},
+        )
+        self.assertFalse(result[0].downstream_eligible)
+        self.assertIs(result[0].reportability_state, ReportabilityState.NOT_REPORTABLE)
+
+    def test_upstream_terminal_has_projection_without_result(self):
+        groups = (_group("A", event_id="E1"), _group("B", event_id="E2"))
+        result, provider = self._run(
+            groups,
+            {"E1": _unresolved, "E2": _not_evaluated},
+            {"E1": TaxonomyResult.not_evaluated(event_id="E1"), "E2": TaxonomyResult.not_evaluated(event_id="E2")},
+        )
+        self.assertEqual(len(result), 2)
+        self.assertTrue(all(item.reportability_result is None for item in result))
+        self.assertEqual(provider.calls, [])
+
+    def test_owner_is_called_once_for_each_reached_event(self):
+        groups = (_group("A", event_id="E1"), _group("B", event_id="E2"))
+        result, provider = self._run(
+            groups,
+            {"E1": _assigned, "E2": _assigned},
+            {"E1": _evaluated(groups[0]), "E2": _evaluated(groups[1])},
+        )
+        self.assertEqual([request.event_id for request in provider.calls], ["E1", "E2"])
+        self.assertEqual(len(result), 2)
+
+    def test_complete_reached_population_is_evaluated_before_return(self):
+        groups = tuple(_group(candidate, event_id=f"E{index}") for index, candidate in enumerate(("A", "B", "C"), 1))
+        result, provider = self._run(
+            groups,
+            {group.event_id: _assigned for group in groups},
+            {group.event_id: _evaluated(group) for group in groups},
+        )
+        self.assertEqual(len(provider.calls), 3)
+        self.assertEqual(len(result), 3)
+
+    def test_reportability_failure_aborts_formal_workflow(self):
+        groups = (_group("A", event_id="E1"), _group("B", event_id="E2"))
+        taxonomy = _RecordingTaxonomy({"E1": _evaluated(groups[0]), "E2": _evaluated(groups[1])})
+        provider, reportability = _workflow_reportability(failures={"E2"})
+        workflow = ReportWorkflow(taxonomy, reportability=reportability)
+        records = {group.event_id: (_record(group.member_candidate_ids[0], "body"),) for group in groups}
+        categories = {group.event_id: _assigned(group) for group in groups}
+        with self.assertRaises(ReportabilityStageFailure):
+            workflow.run(groups, records, categories)
+        self.assertEqual([request.event_id for request in provider.calls], ["E1", "E2"])
+
+    def test_no_partial_downstream_population_escapes_after_failure(self):
+        group = _group("A")
+        taxonomy = _RecordingTaxonomy({"E1": _evaluated(group)})
+        _, reportability = _workflow_reportability(failures={"E1"})
+        workflow = ReportWorkflow(taxonomy, reportability=reportability)
+        with self.assertRaises(ReportabilityStageFailure):
+            workflow.run((group,), {"E1": (_record("A", "body"),)}, {"E1": _assigned(group)})
+
+    def test_zero_reportable_events_is_valid(self):
+        groups = (_group("A", event_id="E1"), _group("B", event_id="E2"))
+        result, _ = self._run(
+            groups,
+            {"E1": _assigned, "E2": _assigned},
+            {"E1": _evaluated(groups[0]), "E2": _evaluated(groups[1])},
+            states={"E1": ReportabilityState.NOT_REPORTABLE, "E2": ReportabilityState.NOT_REPORTABLE},
+        )
+        self.assertEqual(sum(item.downstream_eligible for item in result), 0)
+
+    def test_no_minimum_count_policy_is_applied(self):
+        group = _group("A")
+        result, _ = self._run(
+            (group,), {"E1": _assigned}, {"E1": _evaluated(group)},
+            states={"E1": ReportabilityState.REPORTABLE},
+        )
+        self.assertEqual(len(result), 1)
+
+    def test_no_top_n_quota_balance_or_backfill_is_applied(self):
+        groups = (_group("A", event_id="E1"), _group("B", event_id="E2"))
+        result, _ = self._run(
+            groups,
+            {"E1": _assigned, "E2": _assigned},
+            {"E1": _evaluated(groups[0]), "E2": _evaluated(groups[1])},
+            states={"E1": ReportabilityState.REPORTABLE, "E2": ReportabilityState.REPORTABLE},
+        )
+        self.assertEqual(len(result), 2)
+        self.assertTrue(all(item.downstream_eligible for item in result))
+
+    def test_taxonomy_system_count_does_not_infer_reportability(self):
+        group = _group("A")
+        result, provider = self._run(
+            (group,), {"E1": _assigned}, {"E1": _evaluated(group, system=EMSystemId.POWER_SUPPLY)},
+            states={"E1": ReportabilityState.NOT_REPORTABLE},
+        )
+        self.assertEqual(len(provider.calls), 1)
+        self.assertIs(result[0].reportability_state, ReportabilityState.NOT_REPORTABLE)
+
+    def test_category_does_not_infer_reportability(self):
+        group = _group("A")
+        result, provider = self._run(
+            (group,), {"E1": _assigned}, {"E1": _evaluated(group)},
+            states={"E1": ReportabilityState.NOT_REPORTABLE},
+        )
+        self.assertEqual(len(provider.calls), 1)
+        self.assertIs(result[0].reportability_state, ReportabilityState.NOT_REPORTABLE)
+
+    def test_keyword_or_procurement_amount_does_not_infer_reportability(self):
+        group = _group("A")
+        provider, reportability = _workflow_reportability(states={"E1": ReportabilityState.NOT_REPORTABLE})
+        taxonomy = _RecordingTaxonomy({"E1": _evaluated(group)})
+        workflow = ReportWorkflow(taxonomy, reportability=reportability)
+        workflow.run(
+            (group,), {"E1": (_record("A", "procurement amount USD 3000000 maintenance"),)}, {"E1": _assigned(group)}
+        )
+        self.assertEqual(len(provider.calls), 1)
+
+    def test_category_and_taxonomy_are_not_mutated(self):
+        group = _group("A")
+        category = _assigned(group)
+        taxonomy_result = _evaluated(group, system=EMSystemId.POWER_SUPPLY)
+        result, _ = self._run(
+            (group,), {"E1": category}, {"E1": taxonomy_result},
+            states={"E1": ReportabilityState.NOT_REPORTABLE},
+        )
+        self.assertIs(result[0].category_result, category)
+        self.assertIs(result[0].taxonomy_result, taxonomy_result)
+
+    def test_authoritative_reportability_result_is_preserved_unchanged(self):
+        group = _group("A")
+        expected = ReportabilityResult(
+            event_id="E1",
+            reportability_state=ReportabilityState.NOT_REPORTABLE,
+            reportability_reason=ReportabilityReason.LOW_REPORTABILITY_VALUE,
+            provenance=ReportabilityEvidenceProvenance(
+                examined_candidate_ids=("A",), support_spans=(), rationale="fixed result"
+            ),
+        )
+
+        class Owner:
+            def evaluate(self, record):
+                return expected
+
+        taxonomy = _RecordingTaxonomy({"E1": _evaluated(group)})
+        result = ReportWorkflow(taxonomy, reportability=Owner()).run(
+            (group,), {"E1": (_record("A"),)}, {"E1": _assigned(group)}
+        )
+        self.assertIs(result[0].reportability_result, expected)
+
+    def test_reached_order_and_member_order_are_deterministic(self):
+        groups = (_group("B", "A", event_id="E1"), _group("C", event_id="E2"))
+        result, provider = self._run(
+            groups,
+            {"E1": _assigned, "E2": _assigned},
+            {"E1": _evaluated(groups[0]), "E2": _evaluated(groups[1])},
+        )
+        self.assertEqual([item.event_group.event_id for item in result], ["E1", "E2"])
+        self.assertEqual(provider.calls[0].member_candidate_ids, ("A", "B"))
+
+    def test_build_factory_injects_reportability_provider_without_eager_call(self):
+        provider = _ReportabilityProvider()
+        workflow = build_report_workflow(reportability_proposal_provider=provider)
+        self.assertIsInstance(workflow.reportability, Reportability)
+        self.assertEqual(provider.calls, [])
 
 
 if __name__ == "__main__":

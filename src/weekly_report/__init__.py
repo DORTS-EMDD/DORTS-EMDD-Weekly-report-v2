@@ -47,7 +47,7 @@ from .taxonomy import (
     TaxonomySemanticRequest,
     TaxonomyStageFailure,
 )
-from .report_workflow import ReportWorkflow, build_report_workflow
+from .report_workflow import ReportWorkflow, ReportWorkflowResult, build_report_workflow
 from .reportability import Reportability
 
 __all__ = [
@@ -91,6 +91,7 @@ __all__ = [
     "TaxonomySemanticProposal",
     "TaxonomySemanticProposalProvider",
     "ReportWorkflow",
+    "ReportWorkflowResult",
     "build_report_workflow",
     "TaxonomySemanticRequest",
     "TaxonomyStageFailure",
