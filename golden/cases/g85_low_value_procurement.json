@@ -54,8 +54,8 @@
     "reportability": "NOT_REPORTABLE",
     "classification_reason": "PRINCIPAL_ACTION_PROCUREMENT",
     "category_resolution_reason": "NONE",
-    "reject_stage": "NONE",
-    "reject_reason": "NONE",
+    "reject_stage": "REPORTABILITY",
+    "reject_reason": "LOW_REPORTABILITY_VALUE",
     "usd_3m_signal": "BELOW_3M"
   },
   "contract_notes": [

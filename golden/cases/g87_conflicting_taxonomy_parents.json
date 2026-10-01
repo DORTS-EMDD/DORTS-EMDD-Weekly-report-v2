@@ -77,7 +77,7 @@
         }
       ]
     },
-    "reportability": "REPORTABLE",
+    "reportability": "NOT_EVALUATED",
     "reject_stage": "NONE",
     "reject_reason": "NONE",
     "category_state": "CATEGORY_ASSIGNED",

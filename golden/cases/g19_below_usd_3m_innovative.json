@@ -53,7 +53,7 @@
       "member_candidate_ids": ["C1"],
       "diagnostic": "Platform panels are described, but their canonical E&M system membership is not established."
     },
-    "reportability": "REPORTABLE",
+    "reportability": "NOT_EVALUATED",
     "reject_stage": "NONE",
     "reject_reason": "NONE",
     "usd_3m_signal": "BELOW_3M",

@@ -512,6 +512,48 @@ class GoldenContractTests(unittest.TestCase):
         self.assertEqual(self.taxonomy_fixtures["G90"]["expected"]["e&m_taxonomy"], [])
         self.assertEqual(self.taxonomy_fixtures["G91"]["expected"]["e&m_taxonomy"], [])
 
+    def test_reportability_projection_follows_reachability_and_locked_cases(self):
+        all_fixtures = {**self.fixtures, **self.taxonomy_fixtures}
+        for case_id, fixture in all_fixtures.items():
+            expected = fixture["expected"]
+            category_reached = expected["category_state"] == "CATEGORY_ASSIGNED"
+            raw_systems = expected["e&m_taxonomy"]
+            taxonomy_state = expected.get("taxonomy_state")
+            taxonomy_reached = raw_systems != "NOT_EVALUATED" and taxonomy_state in {
+                None,
+                "TAXONOMY_EVALUATED",
+            }
+            reportability = expected["reportability"]
+
+            if not (category_reached and taxonomy_reached):
+                self.assertEqual(reportability, "NOT_EVALUATED", case_id)
+                # Preserve upstream rejection metadata, but never project a
+                # Reportability rejection before Reportability is reached.
+                self.assertNotEqual(expected["reject_stage"], "REPORTABILITY", case_id)
+                self.assertNotEqual(expected["reject_reason"], "LOW_REPORTABILITY_VALUE", case_id)
+            else:
+                self.assertIn(reportability, {"REPORTABLE", "NOT_REPORTABLE"}, case_id)
+                if reportability == "REPORTABLE":
+                    self.assertNotEqual(expected["reject_stage"], "REPORTABILITY", case_id)
+                    self.assertNotEqual(expected["reject_reason"], "LOW_REPORTABILITY_VALUE", case_id)
+                else:
+                    self.assertEqual(expected["reject_stage"], "REPORTABILITY", case_id)
+                    self.assertEqual(expected["reject_reason"], "LOW_REPORTABILITY_VALUE", case_id)
+
+        self.assertEqual(self.fixtures["G07"]["expected"]["reportability"], "NOT_REPORTABLE")
+        self.assertEqual(self.fixtures["G07"]["expected"]["reject_stage"], "REPORTABILITY")
+        self.assertEqual(self.fixtures["G07"]["expected"]["reject_reason"], "LOW_REPORTABILITY_VALUE")
+
+        office_move = self.taxonomy_fixtures["G90"]["expected"]
+        self.assertEqual(office_move["e&m_taxonomy"], [])
+        self.assertEqual(office_move["reportability"], "NOT_REPORTABLE")
+        self.assertEqual(office_move["reject_stage"], "REPORTABILITY")
+        self.assertEqual(office_move["reject_reason"], "LOW_REPORTABILITY_VALUE")
+
+        self.assertEqual(self.fixtures["G17"]["expected"]["e&m_taxonomy"], [])
+        self.assertEqual(self.fixtures["G17"]["expected"]["reportability"], "REPORTABLE")
+        self.assertEqual(self.fixtures["G85"]["expected"]["reportability"], "NOT_REPORTABLE")
+
 
 if __name__ == "__main__":
     unittest.main()

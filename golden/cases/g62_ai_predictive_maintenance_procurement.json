@@ -55,7 +55,7 @@
       "member_candidate_ids": ["C1"],
       "diagnostic": "Wheel and bearing are named, but their canonical E&M system membership is not established."
     },
-    "reportability": "REPORTABLE",
+    "reportability": "NOT_EVALUATED",
     "classification_reason": "PRINCIPAL_ACTION_PROCUREMENT",
     "category_resolution_reason": "NONE",
     "reject_stage": "NONE",
