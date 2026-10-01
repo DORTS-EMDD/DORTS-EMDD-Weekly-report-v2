@@ -48,6 +48,7 @@ from .taxonomy import (
     TaxonomyStageFailure,
 )
 from .report_workflow import ReportWorkflow, build_report_workflow
+from .reportability import Reportability
 
 __all__ = [
     "CanonicalCandidate",
@@ -67,6 +68,7 @@ __all__ = [
     "ReportabilityStageFailure",
     "ReportabilityState",
     "ReportabilitySupportSpan",
+    "Reportability",
     "ScopeClassifier",
     "ScopeDiagnostic",
     "ScopeResult",
