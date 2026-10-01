@@ -843,3 +843,55 @@ class TaxonomyResult:
                 }
             ),
         }
+
+
+@dataclass(frozen=True, slots=True)
+class EventDecisionRecord:
+    """Immutable structural handoff from Category/Taxonomy to downstream stages.
+
+    This carrier references authoritative typed values and deliberately does
+    not copy any Category or Taxonomy semantic fields.
+    """
+
+    event_group: EventGroup
+    member_records: tuple[EventIdentityRecord, ...]
+    category_result: CategoryResult
+    taxonomy_result: TaxonomyResult
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.event_group, EventGroup):
+            raise TypeError("EventDecisionRecord requires an EventGroup")
+        if not isinstance(self.member_records, tuple):
+            raise TypeError("EventDecisionRecord member_records must be an immutable tuple")
+        if any(not isinstance(record, EventIdentityRecord) for record in self.member_records):
+            raise TypeError("EventDecisionRecord member_records must contain EventIdentityRecord values")
+        if not isinstance(self.category_result, CategoryResult):
+            raise TypeError("EventDecisionRecord requires a CategoryResult")
+        if not isinstance(self.taxonomy_result, TaxonomyResult):
+            raise TypeError("EventDecisionRecord requires a TaxonomyResult")
+
+        event_id = self.event_group.event_id
+        if self.category_result.event_id != event_id:
+            raise ValueError("EventDecisionRecord CategoryResult event_id does not match EventGroup")
+        if self.taxonomy_result.event_id != event_id:
+            raise ValueError("EventDecisionRecord TaxonomyResult event_id does not match EventGroup")
+
+        by_candidate: dict[str, EventIdentityRecord] = {}
+        for record in self.member_records:
+            candidate_id = record.candidate.candidate_id
+            if candidate_id in by_candidate:
+                raise ValueError("EventDecisionRecord member_records contain duplicate candidate IDs")
+            by_candidate[candidate_id] = record
+
+        expected_ids = self.event_group.member_candidate_ids
+        if set(by_candidate) != set(expected_ids):
+            raise ValueError("EventDecisionRecord member_records must match EventGroup membership exactly")
+
+        # EventGroup membership is already canonicalized.  Rebuild only the
+        # structural tuple in that order so caller input order cannot become a
+        # second semantic truth.
+        object.__setattr__(
+            self,
+            "member_records",
+            tuple(by_candidate[candidate_id] for candidate_id in expected_ids),
+        )

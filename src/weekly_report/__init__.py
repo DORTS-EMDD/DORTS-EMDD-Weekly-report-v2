@@ -2,6 +2,7 @@
 
 from .contracts import (
     CanonicalCandidate,
+    EventDecisionRecord,
     EvidenceResult,
     EvidenceState,
     FetchedSource,
@@ -35,6 +36,7 @@ from .taxonomy import (
     TaxonomySemanticRequest,
     TaxonomyStageFailure,
 )
+from .report_workflow import ReportWorkflow, build_report_workflow
 
 __all__ = [
     "CanonicalCandidate",
@@ -64,6 +66,8 @@ __all__ = [
     "TaxonomySemanticMember",
     "TaxonomySemanticProposal",
     "TaxonomySemanticProposalProvider",
+    "ReportWorkflow",
+    "build_report_workflow",
     "TaxonomySemanticRequest",
     "TaxonomyStageFailure",
 ]
