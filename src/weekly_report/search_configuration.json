@@ -1,5 +1,5 @@
 {
-  "configuration_version": "search-discovery-v1",
+  "configuration_version": "search-discovery-v2",
   "region_modes": [
     "selected",
     "global"
@@ -2318,7 +2318,7 @@
         "operations": ["policy_terms"],
         "procurement": ["tender_terms"]
       },
-      "provider_target": "default"
+      "provider_target": "google_news_rss"
     }
   ],
   "planning_limits": {

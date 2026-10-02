@@ -104,13 +104,118 @@ Entry point 可以不同，Production Domain Logic 只能有一套。任何 entr
 
 ### Shared production workflow
 
-既有 shared production core workflow 的具體實作邊界固定為
-`src/weekly_report/report_workflow.py` 的 `ReportWorkflow` service，其公開
-lifecycle method 為 `ReportWorkflow.run`。這是既有 workflow authority 的具體
-實作，不新增 authoritative orchestration owner。`main.py`、`streamlit_app.py`、
-GitHub Actions 與未來 entry point 都只能呼叫這一個 shared workflow。
+正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式
+invocation seam 為 `ReportApplication.run(...)`。Main、Streamlit 與 Automation
+都必須呼叫同一個 application seam，不得各自重組 Search、Evidence、Scope、
+Temporal、Event Identity、Category、Reportability 或 Delivery lifecycle。
 
-同一模組的 `build_report_workflow` 是 production composition boundary。它只負責
+`ReportApplication` 只負責 application orchestration，不重新推導任何 Domain
+decision。其正式 path 為：
+
+```text
+RegionRegistry
+→ SearchPlanner
+→ SearchExecutor
+→ CandidateNormalizer
+→ Search execution gate
+→ EvidenceService
+→ ScopeClassifier
+→ TemporalRule
+→ Event Identity
+→ Classifier
+→ ReportWorkflow.run
+→ later Ordering / Writer / Validation / Delivery
+```
+
+既有 shared downstream workflow 的具體實作邊界仍為
+`src/weekly_report/report_workflow.py` 的 `ReportWorkflow` service，其公開
+method 為 `ReportWorkflow.run`。它只負責 post-EventGroup / Category-result
+downstream orchestration，不擁有 Search、Search execution、Evidence、Scope、
+Temporal、Event Identity 或 Category authority。其既有 API 與 lower-level seam
+必須保留。`build_report_workflow` 仍只是該 downstream service 的 dependency
+factory；未來 `build_report_application` 才是完整 application composition root。
+兩者都只負責 construction/injection，不得在 construction 時執行 lifecycle、
+呼叫網路或作 Domain decision。
+
+### Phase 2B-A mechanical execution contract
+
+```text
+FORMAL_APPLICATION_ORCHESTRATION_OWNER = ReportApplication
+FORMAL_APPLICATION_INVOCATION_SEAM = ReportApplication.run
+SEARCH_EXECUTION_COMPONENT = SearchExecutor
+SEARCH_EXECUTION_DOMAIN_AUTHORITY = NO
+SEARCH_EXECUTION_RESULT_AUTHORITY = MECHANICAL_ONLY
+```
+
+`SearchExecutor` 只接收 complete frozen `SearchPlan`、immutable provider
+dispatch mapping 與 fixed transport/pacing configuration，依 frozen plan 順序
+逐 item exact dispatch，每 item 最多一次，產生 `SearchAttemptResult` 與 immutable
+attempt observations。它不得改寫 plan、選擇 query/market/language/provider、retry、
+fallback、rescue、backfill、normalize Candidate，或決定 Evidence、Category、
+Reportability。
+
+Search 的唯一 executable provider vocabulary 為：
+
+```text
+google_news_rss
+```
+
+```text
+PHASE_2B_REFERENCE_PROVIDER = Google News RSS
+PROVIDER_TARGET_CANONICAL_ID = google_news_rss
+DEFAULT_PROVIDER_TARGET = FORBIDDEN
+MAX_PROVIDER_INVOCATIONS_PER_PLAN_ITEM = 1
+HIDDEN_TRANSPORT_RETRY = FORBIDDEN
+REDIRECT_FOLLOW_COUNT = 0
+PAGINATION = ONE_PROVIDER_REQUEST_PAGE_ONLY
+EXECUTION_CONCURRENCY = SEQUENTIAL
+```
+
+`default` 不得作為 executable provider target，也不得由 runtime hidden mapping
+轉換為 `google_news_rss`。Provider dispatch semantic authority 維持 NO。
+
+`SearchExecutionResult` 是 immutable mechanical aggregate，至少保存 plan identity、
+ordered terminal attempt results、unattempted frozen items、safe infrastructure
+failure provenance/state 與 immutable attempt observations。它不得包含 Evidence、
+Category、Reportability 或 formal report outcome。每個 frozen plan item 必須恰有
+一個 terminal result 或列在 unattempted items，並恰有一個對應的 attempt-stage
+observation；foreign/duplicate/overlap 都必須 fail closed，兩者都依 frozen plan
+order。每個 observation 的 market、intent、language/profile、query family 與
+canonical provider 必須和 frozen plan item 完全一致；attempted observation 必須
+和 terminal result 的 status/failure class 一致，成功結果的 raw count 必須符合
+parsed result count，unattempted observation 必須是 zero raw results。`execution_complete` 與
+`has_technical_failures` 必須由 validated records 推導；前者表示所有 items 已
+terminal attempted 且沒有 infrastructure failure，後者表示任一 terminal result
+為 `TECHNICAL_FAILURE`。因此完整 execution 仍可能含 technical failure。
+
+Execution aggregate 內的 observation 固定是 attempt-stage snapshot，
+`normalized_result_count` 必須為 `None`。Normalization 完成後的非負數量必須由
+ReportApplication 建立新的 immutable projection，不得回頭 mutation execution
+aggregate；`None` 表示未執行，0 表示已完成且輸出為零。
+
+Item `TECHNICAL_FAILURE` 與 executor infrastructure failure 必須分開。Item failure
+仍須繼續 remaining frozen items；infrastructure failure 或 incomplete execution
+時，application execution gate 必須 fail closed。Gate 只消費 validated
+`SearchExecutionResult`，不得消費 Debug observation；任何 technical failure、
+infrastructure failure 或 incomplete execution 都禁止 formal artifact、PDF 與
+Email。完整且無失敗的 `SUCCESS_ZERO_RESULTS` execution 是合法的 completed search，
+可產生零 Candidate，不得 fallback、rescue、backfill 或 fabricate Candidate。
+
+每個 provider item 只允許一個 request；不得 hidden transport retry。Redirect
+follow count 固定為 0；redirect response 視為 safe technical failure。每 item
+只取一頁 provider response；adaptive pagination 禁止；rate limit 是
+`TECHNICAL_FAILURE`；execution concurrency 固定為 sequential。Malformed provider
+row（缺 title、URL、required field、invalid type）使整個 item 成為
+`TECHNICAL_FAILURE / INVALID_RESPONSE`，不得 salvage subset；合法空 response
+才是 `SUCCESS_ZERO_RESULTS`。
+
+`SearchObservation.normalized_result_count` 的 `None` 表示 normalization 尚未
+執行，非負整數（包括 0）表示 normalization 已完成。Observation 由
+SearchExecutor 產生；normalization observation projection 屬於
+ReportApplication composition。Provider 不得直接寫 RunTrace，Debug 不具 decision
+authority。
+
+同一模組的 `build_report_workflow` 是 downstream dependency-composition boundary。它只負責
 接收／建立 workflow dependencies，並把 proposal-only semantic dependencies 注入
 各自的 authoritative owner；它不得決定 E&M semantics、推導 systems、擁有
 Category／Taxonomy semantics，或加入 provider-specific business rules。Taxonomy

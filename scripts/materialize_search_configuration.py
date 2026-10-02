@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from src.weekly_report.contracts import SearchProviderId  # noqa: E402
 from src.weekly_report.region_registry import CONFIGURATION_PATH, RegionRegistry  # noqa: E402
 
 
@@ -55,6 +56,7 @@ def validate_configuration(path: str | Path = CONFIGURATION_PATH) -> RegionRegis
     source = _load(Path(path))
     registry = RegionRegistry.from_mapping(source)
     _validate_governance_documents(registry)
+    _validate_provider_targets(registry)
     materialized = registry.as_mapping()
     round_trip = RegionRegistry.from_mapping(materialized).as_mapping()
     if materialized != round_trip:
@@ -132,6 +134,13 @@ def _validate_governance_documents(registry: RegionRegistry) -> None:
         r"GLOBAL_MODE_TAIWAN_BEHAVIOR\s*=\s*EXCLUDE_DISCOVERY",
         r"TAIWAN_SELECTED_SEARCH_PLAN_ITEMS\s*=\s*FORBIDDEN",
         r"TAIWAN_GLOBAL_SEARCH_PLAN_ITEMS\s*=\s*FORBIDDEN",
+        r"PROVIDER_TARGET_CANONICAL_ID\s*=\s*google_news_rss",
+        r"DEFAULT_PROVIDER_TARGET\s*=\s*FORBIDDEN",
+        r"MAX_PROVIDER_INVOCATIONS_PER_PLAN_ITEM\s*=\s*1",
+        r"HIDDEN_TRANSPORT_RETRY\s*=\s*FORBIDDEN",
+        r"REDIRECT_FOLLOW_COUNT\s*=\s*0",
+        r"PAGINATION\s*=\s*ONE_PROVIDER_REQUEST_PAGE_ONLY",
+        r"EXECUTION_CONCURRENCY\s*=\s*SEQUENTIAL",
     ):
         if re.search(marker, architecture) is None:
             raise ValueError(f"Architecture Contract marker missing: {marker}")
@@ -199,6 +208,18 @@ def _validate_governance_documents(registry: RegionRegistry) -> None:
         raise ValueError("runtime profile vocabulary does not match governance content")
 
 
+def _validate_provider_targets(registry: RegionRegistry) -> None:
+    """Keep executable provider routing inside the typed governed vocabulary."""
+
+    canonical_ids = {provider.value for provider in SearchProviderId}
+    for family in registry.query_families:
+        provider_target = getattr(family.provider_target, "value", family.provider_target)
+        if provider_target not in canonical_ids:
+            raise ValueError(f"query family provider target is not governed: {provider_target}")
+        if provider_target == "default":
+            raise ValueError("default provider target is forbidden")
+
+
 def materialize_configuration(
     source_path: str | Path = CONFIGURATION_PATH,
     destination_path: str | Path | None = None,
@@ -208,6 +229,7 @@ def materialize_configuration(
     hydrated = _source_with_governed_vocabulary(source, language)
     registry = RegionRegistry.from_mapping(hydrated)
     _validate_governance_documents(registry)
+    _validate_provider_targets(registry)
     materialized = registry.as_mapping()
     if materialized != RegionRegistry.from_mapping(materialized).as_mapping():
         raise ValueError("typed configuration materialization is not deterministic")

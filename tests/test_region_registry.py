@@ -89,6 +89,17 @@ class RegionRegistryTests(unittest.TestCase):
     def test_materialization_is_lossless_and_deterministic(self) -> None:
         registry = validate_configuration(CONFIGURATION_PATH)
         self.assertEqual(registry.as_mapping(), RegionRegistry.from_mapping(registry.as_mapping()).as_mapping())
+        self.assertEqual(
+            {family.provider_target.value for family in registry.query_families},
+            {"google_news_rss"},
+        )
+
+    def test_provider_target_parity_rejects_default_and_unknown_ids(self) -> None:
+        for provider_target in ("default", "unknown_provider"):
+            source = copy.deepcopy(self.source)
+            source["query_families"][0]["provider_target"] = provider_target
+            with self.assertRaises(ValueError):
+                RegionRegistry.from_mapping(source)
 
     def test_governance_parity_rejects_runtime_only_or_modified_fields(self) -> None:
         def validate_modified(source: dict) -> None:

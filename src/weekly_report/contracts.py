@@ -1203,6 +1203,49 @@ class SearchTechnicalFailureClass(StrEnum):
     UNKNOWN = "UNKNOWN"
 
 
+class SearchProviderId(StrEnum):
+    """Canonical executable provider IDs governed by the Search contract."""
+
+    GOOGLE_NEWS_RSS = "google_news_rss"
+
+
+class SearchInfrastructureFailureClass(StrEnum):
+    """Safe mechanical classes for executor-level failures."""
+
+    EXECUTION_ABORTED = "EXECUTION_ABORTED"
+    INFRASTRUCTURE_UNAVAILABLE = "INFRASTRUCTURE_UNAVAILABLE"
+    UNKNOWN = "UNKNOWN"
+
+
+class SearchInfrastructureStage(StrEnum):
+    """Finite safe stages for executor-level failures."""
+
+    EXECUTION = "execution"
+    DISPATCH = "dispatch"
+    OBSERVATION = "observation"
+    UNKNOWN = "unknown"
+
+
+@dataclass(frozen=True, slots=True)
+class SearchInfrastructureFailure:
+    """Safe executor provenance; it carries no raw exception or domain result."""
+
+    failure_class: SearchInfrastructureFailureClass
+    stage: SearchInfrastructureStage | str
+
+    def __post_init__(self) -> None:
+        try:
+            failure_class = SearchInfrastructureFailureClass(self.failure_class)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("invalid Search infrastructure failure class") from exc
+        object.__setattr__(self, "failure_class", failure_class)
+        try:
+            stage = SearchInfrastructureStage(self.stage)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("invalid Search infrastructure failure stage") from exc
+        object.__setattr__(self, "stage", stage)
+
+
 @dataclass(frozen=True, slots=True)
 class SearchPlanningLimits:
     """Configured bounded planning limits materialized with the registry."""
@@ -1310,8 +1353,8 @@ class QueryFamilyConfig:
     family_id: str
     templates: tuple[str, ...]
     vocabulary_groups: Mapping[str, tuple[str, ...]]
+    provider_target: SearchProviderId | str
     anchor_terms: tuple[str, ...] = ()
-    provider_target: str = "default"
 
     def __post_init__(self) -> None:
         if not isinstance(self.family_id, str) or not self.family_id.strip():
@@ -1344,8 +1387,11 @@ class QueryFamilyConfig:
         if len(anchors) != len(set(anchors)):
             raise ValueError("query family anchor terms must be unique")
         object.__setattr__(self, "anchor_terms", anchors)
-        if not isinstance(self.provider_target, str) or not self.provider_target.strip():
-            raise ValueError("query family requires provider_target")
+        try:
+            provider_target = SearchProviderId(self.provider_target)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("query family requires a canonical provider_target") from exc
+        object.__setattr__(self, "provider_target", provider_target)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1358,7 +1404,7 @@ class SearchPlanItem:
     intent: DiscoveryIntent
     language_profile: str
     query_family_id: str
-    provider_target: str
+    provider_target: SearchProviderId | str
     query: str
     locale: str = ""
 
@@ -1374,10 +1420,15 @@ class SearchPlanItem:
             raise ValueError("SearchPlanItem requires canonical region mode and intent") from exc
         object.__setattr__(self, "region_mode", mode)
         object.__setattr__(self, "intent", intent)
-        for field_name in ("language_profile", "query_family_id", "provider_target", "query", "locale"):
+        for field_name in ("language_profile", "query_family_id", "query", "locale"):
             value = getattr(self, field_name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"SearchPlanItem requires {field_name}")
+        try:
+            provider_target = SearchProviderId(self.provider_target)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("SearchPlanItem requires a canonical provider_target") from exc
+        object.__setattr__(self, "provider_target", provider_target)
 
     @property
     def request(self) -> str:
@@ -1502,13 +1553,13 @@ class SearchObservation:
     intent: DiscoveryIntent
     language_profile: str
     query_family_id: str
-    provider: str
+    provider: SearchProviderId | str
     planned: bool
     attempted: bool
     terminal_status: SearchTerminalStatus | None
     raw_result_count: int
     technical_failure_class: SearchTechnicalFailureClass | None = None
-    normalized_result_count: int = 0
+    normalized_result_count: int | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.plan_item_id, str) or not self.plan_item_id.strip():
@@ -1520,9 +1571,14 @@ class SearchObservation:
         except (TypeError, ValueError) as exc:
             raise ValueError("SearchObservation requires canonical intent") from exc
         object.__setattr__(self, "intent", intent)
-        for field_name in ("language_profile", "query_family_id", "provider"):
+        for field_name in ("language_profile", "query_family_id"):
             if not isinstance(getattr(self, field_name), str) or not getattr(self, field_name).strip():
                 raise ValueError(f"SearchObservation requires {field_name}")
+        try:
+            provider = SearchProviderId(self.provider)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("SearchObservation requires a canonical provider") from exc
+        object.__setattr__(self, "provider", provider)
         if not isinstance(self.planned, bool) or not isinstance(self.attempted, bool):
             raise TypeError("SearchObservation planned/attempted must be bool")
         if not self.planned and self.attempted:
@@ -1536,10 +1592,29 @@ class SearchObservation:
                 object.__setattr__(self, "terminal_status", SearchTerminalStatus(self.terminal_status))
             except (TypeError, ValueError) as exc:
                 raise ValueError("SearchObservation requires a legal terminal status") from exc
-        if not isinstance(self.raw_result_count, int) or self.raw_result_count < 0:
+        if (
+            not isinstance(self.raw_result_count, int)
+            or isinstance(self.raw_result_count, bool)
+            or self.raw_result_count < 0
+        ):
             raise ValueError("raw_result_count must be non-negative")
-        if not isinstance(self.normalized_result_count, int) or self.normalized_result_count < 0:
-            raise ValueError("normalized_result_count must be non-negative")
+        if self.normalized_result_count is not None and (
+            not isinstance(self.normalized_result_count, int)
+            or isinstance(self.normalized_result_count, bool)
+            or self.normalized_result_count < 0
+        ):
+            raise ValueError("normalized_result_count must be None or a non-negative integer")
+        if not self.attempted:
+            if self.terminal_status is not None:
+                raise ValueError("an unattempted observation cannot carry terminal status")
+            if self.technical_failure_class is not None:
+                raise ValueError("an unattempted observation cannot carry failure class")
+            if self.raw_result_count != 0:
+                raise ValueError("an unattempted observation must have zero raw results")
+            if self.normalized_result_count is not None:
+                raise ValueError("an unattempted observation cannot be normalized")
+        elif self.normalized_result_count is not None and self.terminal_status is None:
+            raise ValueError("a normalized observation requires a terminal status")
         if self.terminal_status is SearchTerminalStatus.TECHNICAL_FAILURE:
             try:
                 failure_class = SearchTechnicalFailureClass(self.technical_failure_class)
@@ -1548,6 +1623,120 @@ class SearchObservation:
             object.__setattr__(self, "technical_failure_class", failure_class)
         elif self.technical_failure_class is not None:
             raise ValueError("successful observation must not carry technical failure class")
+
+
+@dataclass(frozen=True, slots=True)
+class SearchExecutionResult:
+    """Immutable mechanical result for one complete frozen Search plan."""
+
+    plan: SearchPlan
+    attempt_results: tuple[SearchAttemptResult, ...] = ()
+    unattempted_items: tuple[SearchPlanItem, ...] = ()
+    infrastructure_failure: SearchInfrastructureFailure | None = None
+    observations: tuple[SearchObservation, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.plan, SearchPlan):
+            raise TypeError("SearchExecutionResult requires a SearchPlan")
+        plan_items = {item.plan_item_id: item for item in self.plan.items}
+        plan_order = {item_id: index for index, item_id in enumerate(plan_items)}
+
+        attempts = tuple(self.attempt_results)
+        if any(not isinstance(result, SearchAttemptResult) for result in attempts):
+            raise TypeError("SearchExecutionResult attempts must be SearchAttemptResult values")
+        attempt_ids = tuple(result.plan_item_id for result in attempts)
+        if len(attempt_ids) != len(set(attempt_ids)):
+            raise ValueError("SearchExecutionResult cannot contain duplicate attempt results")
+        if any(item_id not in plan_items for item_id in attempt_ids):
+            raise ValueError("SearchExecutionResult contains a foreign plan_item_id")
+
+        unattempted = tuple(self.unattempted_items)
+        if any(not isinstance(item, SearchPlanItem) for item in unattempted):
+            raise TypeError("SearchExecutionResult unattempted items must be SearchPlanItem values")
+        unattempted_ids = tuple(item.plan_item_id for item in unattempted)
+        if len(unattempted_ids) != len(set(unattempted_ids)):
+            raise ValueError("SearchExecutionResult cannot duplicate unattempted items")
+        if any(item_id not in plan_items for item_id in unattempted_ids):
+            raise ValueError("SearchExecutionResult contains a foreign unattempted plan_item_id")
+        if set(attempt_ids) & set(unattempted_ids):
+            raise ValueError("a plan item cannot be both attempted and unattempted")
+        if set(attempt_ids) | set(unattempted_ids) != set(plan_items):
+            raise ValueError("SearchExecutionResult must account for every frozen plan item")
+
+        object.__setattr__(
+            self,
+            "attempt_results",
+            tuple(sorted(attempts, key=lambda result: plan_order[result.plan_item_id])),
+        )
+        object.__setattr__(
+            self,
+            "unattempted_items",
+            tuple(sorted(unattempted, key=lambda item: plan_order[item.plan_item_id])),
+        )
+        if self.infrastructure_failure is not None and not isinstance(
+            self.infrastructure_failure, SearchInfrastructureFailure
+        ):
+            raise TypeError("SearchExecutionResult infrastructure_failure must be typed")
+
+        observations = tuple(self.observations)
+        if any(not isinstance(observation, SearchObservation) for observation in observations):
+            raise TypeError("SearchExecutionResult observations must be SearchObservation values")
+        observation_ids = tuple(observation.plan_item_id for observation in observations)
+        if len(observation_ids) != len(set(observation_ids)):
+            raise ValueError("SearchExecutionResult cannot duplicate observations")
+        if any(item_id not in plan_items for item_id in observation_ids):
+            raise ValueError("SearchExecutionResult observations contain a foreign plan_item_id")
+        if set(observation_ids) != set(plan_items):
+            raise ValueError("SearchExecutionResult requires exactly one observation per plan item")
+        attempt_by_id = {result.plan_item_id: result for result in attempts}
+        unattempted_id_set = set(unattempted_ids)
+        for observation in observations:
+            item = plan_items[observation.plan_item_id]
+            if not observation.planned:
+                raise ValueError("execution observations must be planned")
+            if (
+                observation.market_id != item.market_id
+                or observation.intent is not item.intent
+                or observation.language_profile != item.language_profile
+                or observation.query_family_id != item.query_family_id
+                or observation.provider is not item.provider_target
+            ):
+                raise ValueError("SearchExecutionResult observation does not match frozen plan metadata")
+            if observation.attempted:
+                result = attempt_by_id.get(observation.plan_item_id)
+                if result is None or observation.terminal_status is not result.status:
+                    raise ValueError("attempt observation must match its terminal result")
+                if observation.normalized_result_count is not None:
+                    raise ValueError("execution observations must not contain normalization results")
+                if result.status is SearchTerminalStatus.SUCCESS_ZERO_RESULTS:
+                    if observation.raw_result_count != 0:
+                        raise ValueError("zero-result observation must have zero raw results")
+                elif result.status is SearchTerminalStatus.SUCCESS_WITH_RESULTS:
+                    if observation.raw_result_count != len(result.results):
+                        raise ValueError("successful observation raw count must match results")
+                elif observation.technical_failure_class is not result.technical_failure_class:
+                    raise ValueError("technical failure observation must match its result")
+                if result.status is not SearchTerminalStatus.TECHNICAL_FAILURE and observation.technical_failure_class is not None:
+                    raise ValueError("successful observation must not carry failure class")
+            elif observation.plan_item_id not in unattempted_id_set:
+                raise ValueError("unattempted observation must match an unattempted item")
+        object.__setattr__(
+            self,
+            "observations",
+            tuple(sorted(observations, key=lambda observation: plan_order[observation.plan_item_id])),
+        )
+
+    @property
+    def plan_id(self) -> str:
+        return self.plan.plan_id
+
+    @property
+    def execution_complete(self) -> bool:
+        return not self.unattempted_items and self.infrastructure_failure is None
+
+    @property
+    def has_technical_failures(self) -> bool:
+        return any(result.status is SearchTerminalStatus.TECHNICAL_FAILURE for result in self.attempt_results)
 
 
 @runtime_checkable
