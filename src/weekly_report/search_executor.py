@@ -70,11 +70,18 @@ class SearchExecutor:
             try:
                 value = provider.execute(item)
             except Exception:
+                value = SearchAttemptResult(
+                    item.plan_item_id,
+                    SearchTerminalStatus.TECHNICAL_FAILURE,
+                    technical_failure_class=SearchTechnicalFailureClass.UNKNOWN,
+                )
+                attempts.append(value)
+                observations[item.plan_item_id] = self._attempt_observation(item, value)
                 infrastructure_failure = SearchInfrastructureFailure(
                     SearchInfrastructureFailureClass.EXECUTION_ABORTED,
                     SearchInfrastructureStage.EXECUTION,
                 )
-                unattempted = tuple(plan.items[index:])
+                unattempted = tuple(plan.items[index + 1 :])
                 break
 
             if not isinstance(value, SearchAttemptResult) or value.plan_item_id != item.plan_item_id:

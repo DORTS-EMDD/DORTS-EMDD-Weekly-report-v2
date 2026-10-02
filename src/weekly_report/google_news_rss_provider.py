@@ -76,6 +76,14 @@ def _failure(item: SearchPlanItem, failure_class: SearchTechnicalFailureClass) -
     )
 
 
+def _failure_class_for_status(status_code: int) -> SearchTechnicalFailureClass:
+    if status_code in {401, 403}:
+        return SearchTechnicalFailureClass.AUTHENTICATION
+    if status_code == 429:
+        return SearchTechnicalFailureClass.RATE_LIMIT
+    return SearchTechnicalFailureClass.INVALID_RESPONSE
+
+
 def _response_parts(value: RssTransportResponse, request_url: str) -> tuple[bytes, int, str, Mapping[str, str]]:
     """Consume only the explicit transport contract; reject other shapes."""
 
@@ -173,7 +181,9 @@ class GoogleNewsRssProvider(SearchProvider):
         try:
             response = self._transport(url, self._timeout_seconds)
             body, status, final_url, headers = _response_parts(response, url)
-            if status != 200 or final_url != url or any(
+            if status != 200:
+                return _failure(request, _failure_class_for_status(status))
+            if final_url != url or any(
                 str(key).casefold() == "location" for key in headers
             ):
                 return _failure(request, SearchTechnicalFailureClass.INVALID_RESPONSE)
@@ -186,15 +196,7 @@ class GoogleNewsRssProvider(SearchProvider):
                 results,
             )
         except HTTPError as exc:
-            if exc.code in {401, 403}:
-                failure_class = SearchTechnicalFailureClass.AUTHENTICATION
-            elif exc.code == 429:
-                failure_class = SearchTechnicalFailureClass.RATE_LIMIT
-            elif 300 <= exc.code < 400:
-                failure_class = SearchTechnicalFailureClass.INVALID_RESPONSE
-            else:
-                failure_class = SearchTechnicalFailureClass.INVALID_RESPONSE
-            return _failure(request, failure_class)
+            return _failure(request, _failure_class_for_status(exc.code))
         except TimeoutError:
             return _failure(request, SearchTechnicalFailureClass.TIMEOUT)
         except URLError as exc:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from urllib.parse import urlsplit
 
 from .contracts import (
@@ -37,11 +38,19 @@ def _raise_failure(failure_class: CandidateNormalizationFailureClass) -> None:
 
 
 def _valid_exact_http_url(value: str) -> bool:
-    if not isinstance(value, str) or not value or value != value.strip() or any(char.isspace() for char in value):
+    if (
+        not isinstance(value, str)
+        or not value
+        or value != value.strip()
+        or any(char.isspace() for char in value)
+        or any(ord(char) < 0x20 or ord(char) == 0x7F for char in value)
+    ):
         return False
     try:
         parsed = urlsplit(value)
         if parsed.scheme.casefold() not in {"http", "https"} or not parsed.netloc or not parsed.hostname:
+            return False
+        if "\\" in parsed.netloc or re.search(r"%(?![0-9A-Fa-f]{2})", value):
             return False
         parsed.port
     except (TypeError, ValueError):

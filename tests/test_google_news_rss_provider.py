@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlsplit
 from unittest import TestCase
 from unittest.mock import Mock
@@ -112,6 +113,27 @@ class GoogleNewsRssProviderTests(TestCase):
         result = GoogleNewsRssProvider(transport).execute(_item())
         self.assertEqual(result.status, SearchTerminalStatus.TECHNICAL_FAILURE)
         self.assertEqual(calls, 1)
+
+    def test_http_status_classification_is_transport_representation_parity(self) -> None:
+        expected = {
+            401: SearchTechnicalFailureClass.AUTHENTICATION,
+            403: SearchTechnicalFailureClass.AUTHENTICATION,
+            429: SearchTechnicalFailureClass.RATE_LIMIT,
+            302: SearchTechnicalFailureClass.INVALID_RESPONSE,
+            500: SearchTechnicalFailureClass.INVALID_RESPONSE,
+        }
+        for status, failure_class in expected.items():
+            with self.subTest(status=status):
+                ordinary = GoogleNewsRssProvider(
+                    lambda url, timeout, status=status: RssTransportResponse(b"", status_code=status)
+                ).execute(_item())
+
+                def raise_http_error(url, timeout, status=status):
+                    raise HTTPError(url, status, "synthetic status", {}, None)
+
+                exceptional = GoogleNewsRssProvider(raise_http_error).execute(_item())
+                self.assertEqual(ordinary.technical_failure_class, failure_class)
+                self.assertEqual(exceptional.technical_failure_class, failure_class)
 
     def test_speculative_transport_shapes_are_rejected_without_inspection(self) -> None:
         arbitrary = Mock(body=EMPTY_RSS, status_code=200, final_url="", headers={})

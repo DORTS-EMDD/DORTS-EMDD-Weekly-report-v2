@@ -82,6 +82,8 @@ class CandidateNormalizerTests(TestCase):
         for value, expected in (
             (DiscoveryResult("bad", "relative/path"), "INVALID_URL"),
             (DiscoveryResult("bad", " https://example.test "), "INVALID_URL"),
+            (DiscoveryResult("bad", "https://example.test/%zz"), "INVALID_URL"),
+            (DiscoveryResult("bad", r"https://exa\mple.test/item"), "INVALID_URL"),
         ):
             with self.assertRaises(CandidateNormalizationError) as context:
                 self.normalizer.normalize((_record(result=value),))
@@ -89,6 +91,25 @@ class CandidateNormalizerTests(TestCase):
         with self.assertRaises(CandidateNormalizationError) as context:
             self.normalizer.normalize(("bad",))
         self.assertEqual(context.exception.failure_class.value, "INVALID_ACQUISITION")
+
+    def test_raw_ascii_control_characters_are_invalid_urls(self) -> None:
+        urls = (
+            "https://example.test/it\x00em",
+            "https://exam\x01ple.test/item",
+            "\x02https://example.test/item",
+            "https://example.test/it\x7fem",
+            "https://example.test/it\x1fem",
+        )
+        for url in urls:
+            with self.subTest(url=repr(url)):
+                with self.assertRaises(CandidateNormalizationError) as context:
+                    self.normalizer.normalize((_record(result=DiscoveryResult("bad", url)),))
+                self.assertEqual(context.exception.failure_class.value, "INVALID_URL")
+
+    def test_valid_percent_encoding_preserves_exact_url_representation(self) -> None:
+        url = "https://example.test/story%2Fpart?term=rail%20system#section%2F1"
+        result = self.normalizer.normalize((_record(result=DiscoveryResult("valid", url)),))
+        self.assertEqual(result.normalized_candidates[0].candidate.url, url)
 
     def test_candidate_and_origin_order_are_deterministic_and_google_url_is_opaque(self) -> None:
         first = _record(result=DiscoveryResult("first", "https://news.google.com/rss/articles/a?b=2&a=1#x"))

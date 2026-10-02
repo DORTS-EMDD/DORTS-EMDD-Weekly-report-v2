@@ -86,9 +86,29 @@ class SearchExecutorTests(TestCase):
         result = SearchExecutor({SearchProviderId.GOOGLE_NEWS_RSS: provider}).execute(_plan())
         self.assertFalse(result.execution_complete)
         self.assertEqual(result.infrastructure_failure.stage, SearchInfrastructureStage.EXECUTION)
-        self.assertEqual(result.unattempted_items, _plan().items)
+        self.assertEqual(tuple(item.plan_item_id for item in result.unattempted_items), ("item-1", "item-2"))
+        self.assertEqual(tuple(item.plan_item_id for item in result.attempt_results), ("item-0",))
+        self.assertEqual(result.attempt_results[0].status, SearchTerminalStatus.TECHNICAL_FAILURE)
+        self.assertEqual(result.attempt_results[0].technical_failure_class, SearchTechnicalFailureClass.UNKNOWN)
+        self.assertTrue(result.observations[0].attempted)
         self.assertNotIn("secret", repr(result))
         self.assertEqual(provider.calls, ["item-0"])
+
+    def test_provider_exception_after_completed_item_preserves_provenance(self) -> None:
+        def outcome(item):
+            if item.plan_item_id == "item-1":
+                raise RuntimeError("transport secret")
+            return SearchAttemptResult(item.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
+
+        provider = FakeProvider(outcome)
+        result = SearchExecutor({SearchProviderId.GOOGLE_NEWS_RSS: provider}).execute(_plan())
+        self.assertEqual(provider.calls, ["item-0", "item-1"])
+        self.assertEqual(tuple(item.plan_item_id for item in result.attempt_results), ("item-0", "item-1"))
+        self.assertEqual(result.attempt_results[0].status, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
+        self.assertEqual(result.attempt_results[1].status, SearchTerminalStatus.TECHNICAL_FAILURE)
+        self.assertTrue(result.observations[0].attempted)
+        self.assertTrue(result.observations[1].attempted)
+        self.assertEqual(tuple(item.plan_item_id for item in result.unattempted_items), ("item-2",))
 
     def test_malformed_provider_result_becomes_one_item_failure(self) -> None:
         provider = FakeProvider(lambda item: object())
