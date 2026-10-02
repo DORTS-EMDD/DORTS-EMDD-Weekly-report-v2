@@ -10,10 +10,14 @@ other downstream owner.
 
 ## 1. Scope and authority
 
-The authoritative selected-market registry is the 20-market list in the
+The authoritative selected-market registry is the 19-market list in the
 Architecture Contract. `region_mode=selected` uses that registry;
-`region_mode=global` remains a separate mode and may include additional
-markets in the future. This document does not redefine global mode.
+`region_mode=global` is a separate configured target mode. It is not limited to
+the selected 19 markets and may include additional V2 governed/supported
+markets that satisfy `INTERNATIONAL_EXCLUDING_TAIWAN` project geography. It is
+not unrestricted worldwide exploratory discovery. Global discovery excludes
+Taiwan, and Taiwan must not appear in global Search plan items. SearchPlanner
+consumes the RegionRegistry target set; this document does not add targets.
 
 The profile list and mapping were recovered from repository evidence:
 
@@ -39,6 +43,20 @@ en, zh, ja, ko, de, fr, es, it, pt, nl, sv, da, no
 
 The V1 `ru` profile remains available as non-selected/global reference
 material, but is not one of the 13 profiles in this selected-market contract.
+
+The four discovery intents use one canonical machine-ID mapping:
+
+```text
+technology     -> technology
+major_incident -> major incident
+operations    -> operations
+procurement   -> procurement
+```
+
+`major_incident` is the canonical machine ID and `major incident` is its
+human-readable display label. They are one semantic intent. Implementations
+must not establish authority by replacing whitespace, changing case, or
+performing per-layer ad-hoc normalization.
 
 ## 2. Search-only boundary
 
@@ -69,13 +87,14 @@ logic.
 
 ## 3. Selected markets and deterministic mapping
 
-`en` is a secondary discovery fallback for non-English selected markets where
+`en` is a pre-planned English supplement for non-English selected markets where
 the table says `en`. It supplements, and does not replace, the primary local
-profile. No Cartesian product of every language and every market is implied.
+profile. It is not failure-triggered fallback, retry, alternate-provider rescue,
+or post-failure backfill. No Cartesian product of every language and every
+market is implied.
 
-| Selected market | Primary profile(s) | Secondary applicable profile(s) | English fallback |
+| Selected market | Primary profile(s) | Secondary applicable profile(s) | English supplement |
 | --- | --- | --- | --- |
-| Taiwan | `zh` | — | `en` |
 | South Korea | `ko` | — | `en` |
 | Hong Kong | `zh` | — | `en` |
 | United Kingdom | `en` | — | — |
@@ -100,8 +119,8 @@ The profile-level market registry is:
 
 | Profile ID | Display name | Language / script | Primary markets | Secondary applicable markets |
 | --- | --- | --- | --- | --- |
-| `en` | English | English / Latin | United Kingdom, Canada, Singapore, Australia, United States | Taiwan, South Korea, Hong Kong, Germany, Netherlands, Italy, Austria, Norway, Portugal, Japan, France, Spain, Switzerland, Sweden, Denmark |
-| `zh` | Chinese | Traditional and Simplified Chinese / Han | Taiwan, Hong Kong | — |
+| `en` | English | English / Latin | United Kingdom, Canada, Singapore, Australia, United States | South Korea, Hong Kong, Germany, Netherlands, Italy, Austria, Norway, Portugal, Japan, France, Spain, Switzerland, Sweden, Denmark |
+| `zh` | Chinese | Traditional and Simplified Chinese / Han | Hong Kong | — |
 | `ja` | Japanese | Japanese / Kanji and Kana | Japan | — |
 | `ko` | Korean | Korean / Hangul | South Korea | — |
 | `de` | German | German / Latin | Germany, Austria, Switzerland | — |
@@ -136,6 +155,12 @@ The Planner **MAY** select one or more deterministic templates per enabled
 intent and profile. It **MUST** enforce a configured query budget and stable
 ordering. It **MUST NOT** generate an unbounded Cartesian product of markets,
 languages, synonyms, systems, and intents.
+
+Query families are bounded discovery composition templates governed by the
+Search Planner. They may reference urban-rail anchors, intent/action terms,
+market/operator terms, and optional technical vocabulary. Query counts,
+ranking, Top N, and optimal weighting remain deferred coverage-optimization
+decisions.
 
 Shared technical terms such as `CBTC`, `MRT`, `LRT`, `BIM`, `AFC`, `ATO`,
 `ATP`, `IoT`, and `digital twin` may be reused across profiles where they are
@@ -271,7 +296,10 @@ Scope authority. A local-language term in a query has the same limitation.
 
 ## 7. Runtime and ownership guard
 
-The Region Registry remains the only owner of selected-market configuration.
+The Region Registry remains the only owner of configured discovery target
+configuration for both `selected` and `global` modes. This subordinate
+document may define selected-market profile mapping, but it does not create a
+separate global registry.
 The Search Planner consumes the mapping conceptually as:
 
 ```text
@@ -281,9 +309,21 @@ Region Registry market
 ```
 
 There must not be a second Country Registry or a manually divergent hard-coded
-Python registry. A future implementation **MAY** materialize this Markdown
-contract into one runtime representation, but that representation must have a
-single authoritative derivation path.
+Python registry. The governed derivation path is:
+
+```text
+Architecture Contract
+→ selected-market membership / region-mode authority
+→ this subordinate language/profile/mapping/seed contract
+→ deterministic materialization with field/content parity validation
+→ one versioned runtime declarative asset
+→ typed RegionRegistry / SearchPlanner
+```
+
+Runtime must not parse Markdown directly. The runtime asset must have one
+authoritative derivation path and must not be maintained as an independent
+Python dictionary. A source hash may be retained for provenance, but it is not
+sufficient by itself to prove semantic parity.
 
 Search language profiles **MUST NOT** create language-specific Evidence,
 Scope, Date, Category, E&M Taxonomy, or Reportability owners. Japanese,
@@ -293,13 +333,17 @@ downstream owner contracts.
 Search **MUST NOT** fetch another source, reinterpret an Evidence rejection,
 select an alternative source, or use a query keyword as a survival gate.
 
+Candidate Normalizer remains the separate owner for normalization and stable
+acquisition identity. Search providers do not directly own CanonicalCandidate
+semantics.
+
 ## 8. Maintenance and validation
 
 When a profile or market mapping changes, the maintainer must update this
 contract and the corresponding single runtime representation together in one
 review. The change must preserve:
 
-* exactly 20 selected markets unless the Architecture Contract changes;
+* exactly 19 selected markets unless the Architecture Contract changes;
 * exactly 13 selected-market language profiles unless this contract is
   explicitly revised;
 * all four discovery intents for every enabled profile;
@@ -307,8 +351,34 @@ review. The change must preserve:
 * the Search-only boundary.
 
 Validation must include profile-ID uniqueness, market coverage exactly once in
-the selected registry, explicit primary/secondary/fallback mapping, intent
+the selected registry, explicit primary/secondary/supplement mapping, intent
 coverage, and absence of downstream Domain decisions in query data.
 
 This document is configuration documentation, not executable Golden behavior.
 Golden fixtures and Evidence contracts remain unchanged.
+
+DORTS technical documents are `AUTHORING_REFERENCE_ONLY`. They may inform
+curated discovery vocabulary, but are not runtime truth, candidate authoritative
+evidence, Category authority, Taxonomy authority, or Reportability authority.
+They answer **what Search should try to find**, not **what the discovered event
+is**. The future authoring flow is:
+
+```text
+technical references
+→ curated English / international synonyms
+→ reviewed local-language equivalents
+→ versioned declarative discovery asset
+→ SearchPlanner
+```
+
+The vocabulary dimensions are discovery-only:
+
+1. system/equipment
+2. function/action
+3. technology/method
+4. failure/incident
+5. procurement/project action
+6. urban-rail anchors
+
+System/equipment vocabulary must not become E&M Taxonomy authority, a candidate
+survival gate, or a Reportability condition.

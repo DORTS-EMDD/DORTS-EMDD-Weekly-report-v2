@@ -144,7 +144,6 @@ selected
 
 「指定先進國家」預設清單：
 
-* 臺灣
 * 韓國
 * 香港
 * 英國
@@ -165,13 +164,60 @@ selected
 * 瑞典
 * 丹麥
 
-`global` 包含以上市場，以及印度、巴西、俄羅斯與其他未來支援市場。
+目前 selected mode 包含上述 19 個市場。`global` 是獨立的 configured target
+mode，不等於 selected 19，也不等於 unrestricted worldwide exploratory
+discovery。Global target set 可以包含 selected 19 以外的額外市場，但每個
+target 必須是 V2 governed/supported、符合 `INTERNATIONAL_EXCLUDING_TAIWAN`
+project geography 且不是 Taiwan。`GLOBAL_MODE_TAIWAN_BEHAVIOR =
+EXCLUDE_DISCOVERY`；Taiwan 不得進入 global discovery target set。SearchPlanner
+只消費 RegionRegistry 的 configured target set，不自行新增 Taiwan 或其他
+未配置 target。RegionRegistry 不判定已 discovered Candidate 的 factual Scope，
+也不得以 ScopeClassifier 修補 selected 或 global configuration。
 
-Region Registry 為唯一 source of truth。
+Region Registry 為 `selected` 與 `global` 兩種 region mode 的 configured
+discovery target configuration 唯一 source of truth，並負責 typed immutable
+market/profile values，包括 language/profile references、locale hints 與
+local discovery terminology references。它不得判定 Scope、Category、E&M
+Taxonomy 或 Reportability。
 
 ## F. Search / Discovery
 
 Search 只做 discovery。
+
+Search 的唯一規劃 owner 是一個 `SearchPlanner`。SearchPlanner 負責
+deterministic discovery planning、language/profile selection、bounded query
+composition，以及消費 query-family configuration。不得按 intent 建立多個
+互相獨立的 Search owner。
+
+Taiwan 不得產生 selected 或 global Search plan items：
+
+```text
+TAIWAN_SELECTED_SEARCH_PLAN_ITEMS = FORBIDDEN
+TAIWAN_GLOBAL_SEARCH_PLAN_ITEMS = FORBIDDEN
+```
+
+四個 discovery intent 使用一個 canonical typed machine representation：
+
+```text
+technology
+major_incident
+operations
+procurement
+```
+
+其中 `major_incident` 是 canonical machine ID，`major incident` 是同一
+semantic intent 的 human-readable display label。四組 ID/label 如下：
+
+```text
+technology     -> technology
+major_incident -> major incident
+operations     -> operations
+procurement    -> procurement
+```
+
+不得以 whitespace replacement、case conversion 或各層自行 normalization
+取代 canonical mapping。Search intent 不等於 Category；`procurement` intent
+不得推導 `Category = PROCUREMENT`。
 
 四種 discovery intent：
 
@@ -189,6 +235,22 @@ PLANNED + ATTEMPTED
 Provider 0 result 不代表 coverage failure。
 
 Provider failure 必須記錄。
+
+每個 enabled discovery plan item 都必須有 plan record、attempt record 與
+terminal status。`ATTEMPTED` 不等於 `FOUND_CANDIDATE`，zero-result attempt
+仍是一次合法 attempt。
+
+SearchPlan 的 decision unit 是一個 immutable、可獨立 attempt 的 concrete
+discovery request。每個 item 至少能識別 stable `plan_item_id`、market target
+或 configured global target、canonical intent、language/profile、query
+family、provider target，以及 concrete provider-compatible request/query。
+完整 plan 必須在執行前產生並凍結；相同 configuration/version/input 必須產生
+相同 plan contents、ordering 與 stable IDs。
+
+Query family 是 SearchPlanner 管理的 bounded discovery composition template，
+可引用 urban-rail anchor、intent/action、market/operator 與 optional
+technical vocabulary。不得產生無界 Cartesian product；query count、ranking、
+Top N 與 optimal weighting 延後至 coverage optimization。
 
 最高 discovery priority：
 
@@ -219,6 +281,77 @@ Category authority：
 ```text
 SEARCH_KEYWORDS_CATEGORY_AUTHORITY = NO
 ```
+
+Provider 只接收已規劃 request，執行 technical discovery call，回傳
+normalized technical result/status。Provider-specific 行為僅限 transport、
+request encoding、locale support 與 result-field extraction。Provider 不得
+判定 EvidenceReady、Scope、Category、Taxonomy 或 Reportability，不得修改
+frozen Search plan，不得以 alternate provider fallback 或 recovery backfill
+取代失敗的 item。
+
+每個 attempt 的 terminal status 只有以下三類：
+
+```text
+SUCCESS_WITH_RESULTS
+SUCCESS_ZERO_RESULTS
+TECHNICAL_FAILURE
+```
+
+`SUCCESS_ZERO_RESULTS` 是合法成功終態，不是 provider failure，也不自動表示
+coverage failure。`TECHNICAL_FAILURE` 必須保存 attempt provenance 與 technical
+failure class，不得製造 synthetic candidate。
+
+一個 item 發生 `TECHNICAL_FAILURE` 時，執行必須繼續 already-frozen plan 的
+remaining items；不得 retry failed item、建立 replacement query、switch
+provider 作為 rescue、建立 backfill call 或 adaptive expansion。若執行在所有
+required items attempt 前停止，run 必須標示 incomplete Search execution，不能
+宣稱未執行的 item 已達 `PLANNED + ATTEMPTED`。
+
+Search output boundary 固定為：
+
+```text
+provider result
+→ acquisition input
+→ Candidate Normalizer
+→ CanonicalCandidate
+→ Evidence
+```
+
+Candidate Normalizer 是獨立且既有的 owner，負責 candidate normalization 與
+stable acquisition identity；SearchPlanner 或 provider 不得直接接管
+CanonicalCandidate semantics。Search result title 與 snippet 只屬 discovery
+metadata，不是 Evidence、Category、Taxonomy 或 Reportability evidence。
+
+Candidate Normalizer 只能機械處理 exactly identical provider result records
+或 exact URL duplicates，並保留 acquisition origins。不同 URL 不得依 similar
+titles、overlapping snippets、publisher preference、inferred equivalent URLs
+或 event interpretation 做 semantic merge；Event Identity / Dedup 仍是正式
+event grouping owner。
+
+Search observation records 至少包含 plan/item ID、market、canonical intent、
+language/profile、query family、provider、planned/attempted status、terminal
+status、raw result count、technical failure class 與 normalized result count。
+它們加入既有 `RunTrace` 的 observation-only governance；provider、market、
+language、intent、query-family contribution、exact-result overlap 與
+EvidenceReady handoff count 只能是 projections，且 handoff count 必須消費
+Evidence owner 的結果。Debug/Search telemetry 不得參與同一 run 的 query
+expansion、provider substitution、candidate survival、Category、Taxonomy 或
+Reportability decision。Adaptive query logic = DEFERRED。
+
+Search runtime 的 implementation boundary 分階段固定如下：
+
+* Phase 2A：typed Search contracts、canonical DiscoveryIntent、Region Registry
+  runtime data seam、deterministic SearchPlanner、provider protocol declaration
+  與 observation types；offline only。
+* Phase 2B：concrete provider adapters、mechanical execution、failure/zero-result
+  records、Candidate Normalizer runtime integration 與 shared workflow integration。
+* Phase 2C：controlled/offline acceptance、reproducibility 與 measurable coverage
+  baseline。
+* Phase 3：measured coverage optimization、curated vocabulary、international
+  synonyms、profile/query-family 與 provider/market tuning。
+
+Search runtime 不得改寫既有 Evidence、Scope、Temporal、Event Dedup、Category、
+E&M Taxonomy、Reportability、Writer、Validation 或 Delivery contracts。
 
 ## G. Procurement
 
