@@ -422,6 +422,117 @@ provider result
 → Evidence
 ```
 
+### Phase 2B-B candidate normalization contract
+
+Candidate Normalizer is the sole mechanical normalization owner. Its formal
+input is `tuple[AcquisitionRecord, ...]`, projected by the future
+`ReportApplication` only from validated successful `SearchAttemptResult`
+values and their corresponding frozen `SearchPlanItem` values. It does not
+receive the whole `SearchExecutionResult`, Debug records, technical failure
+decisions or delivery decisions. A successful zero-result item creates no
+acquisition record; failed and unattempted items create no acquisition record.
+
+The immutable `AcquisitionRecord` fields are exactly:
+
+```text
+plan_id: str
+plan_item: SearchPlanItem
+provider_result_ordinal: int
+raw_result: DiscoveryResult
+```
+
+Plan metadata is read from `plan_item` rather than copied into a second
+provider or market truth. The ordinal is zero-based occurrence position, must
+be a non-negative integer, and is diagnostic provenance only; it is not a
+relevance rank. `AcquisitionRecord` has a Candidate Normalizer-owned
+`acquisition-id-v1` identity. Its SHA-256 input is canonical UTF-8 JSON with
+`ensure_ascii=false`, `sort_keys=true`, compact separators, no trailing
+newline, and no Unicode normalization, containing the version, `plan_id`,
+`plan_item_id`, ordinal, and every `DiscoveryResult` field. The emitted ID is
+`acq_` plus the full lowercase 64-character digest. The same occurrence may
+be idempotently collapsed. A different ordinal remains a distinct origin,
+even when the raw result is identical. A conflicting raw result at the same
+`(plan_id, plan_item_id, ordinal)` fails closed as `INVALID_ACQUISITION`.
+
+Candidate URL identity in this version is `EXACT_REPRESENTATION_IDENTITY`.
+After structural validation, the raw URL representation is retained exactly;
+only a complete representation match is the same discovered resource. URL
+validation accepts absolute HTTP and HTTPS URLs with case-insensitive scheme
+eligibility, but rejects surrounding whitespace, relative or hostless URLs,
+invalid ports, malformed syntax, and unsupported schemes. It does not trim,
+rewrite, decode, re-encode, remove fragments or query parameters, remove
+tracking parameters, remove `www.`, normalize ports or paths, resolve dot
+segments, rewrite HTTP to HTTPS, or infer semantic equivalence. Candidate
+Normalizer does not resolve Google News URLs, follow redirects, substitute a
+publisher link or homepage, fetch a page, or infer an article URL. A Google
+News discovered URL remains opaque; actual source resolution belongs to
+EvidenceService.
+
+Each valid exact URL forms one `CanonicalCandidate`, regardless of provider,
+plan item, intent or language. All acquisition origins are preserved. If
+metadata is identical, the result is one candidate with all origins. If
+metadata conflicts, the result is still one candidate: the complete tuple
+`(title, publisher, published_at, snippet)` with raw Unicode Python
+lexicographic ordering selects the minimum tuple as a non-authoritative
+compatibility projection. The four fields are taken together from one raw
+result; no field-wise merge, rank, provider, language, intent, arrival-order,
+date or model preference is allowed. Every variant remains in acquisition
+origins. The `provider_target` in `plan_item` is the only provider identity;
+no independently mutable `provider_id` is added.
+
+If multiple discovery intents find one exact URL, there is one Candidate and
+all origins are retained. The existing single `CanonicalCandidate.discovery_intent`
+field is a non-authoritative compatibility projection using the lexicographic
+minimum canonical `DiscoveryIntent.value`. Discovery intent remains discovery
+metadata and cannot influence Evidence, Event Identity, Category or
+Reportability.
+
+Candidate IDs are owned by CandidateNormalizer and use `candidate-id-v1` with
+the canonical JSON input `{"version":"candidate-id-v1","url":<exact
+validated URL>}`. The emitted ID is `cand_` plus the full lowercase 64-character
+SHA-256 digest. It contains no provider, plan, ordinal, intent, mutable
+metadata, timestamp or randomness, and is not an Event ID. A future identity
+rule revision must explicitly version this identity; old IDs must not be
+silently reinterpreted.
+
+The typed normalization aggregate is immutable and contains only:
+
+```text
+AcquisitionOrigin:
+    acquisition_id: str
+    record: AcquisitionRecord
+
+NormalizedCandidate:
+    candidate: CanonicalCandidate
+    acquisition_origins: tuple[AcquisitionOrigin, ...]
+
+CandidateNormalizationResult:
+    normalized_candidates: tuple[NormalizedCandidate, ...]
+```
+
+Every candidate has one or more unique origins, every acquisition maps to
+exactly one candidate, candidate URLs and IDs are unique, and candidates and
+origins are canonically ordered by candidate ID and acquisition ID. A zero
+candidate result is valid only for successful zero-acquisition normalization;
+invalid input and internal failure never become zero-result success. Typed
+normalization failures are finite `INVALID_ACQUISITION`, `INVALID_URL`, or
+`INTERNAL_FAILURE` values and carry no raw payload, exception text, traceback,
+secret, or unsafe exception chain. They produce no partial result and fail the
+formal run closed. Normalization does not create a semantic unresolved state.
+
+`normalized_result_count` remains an observation owned by the future
+`ReportApplication` projection, not by `CandidateNormalizationResult`: for
+each successful plan item it is the number of distinct candidate IDs linked
+to acquisitions from that item; a successful zero-result item is zero, while
+failed, unattempted, or normalization-failed items are `None`. The original
+`SearchExecutionResult` and its attempt-stage observations remain unchanged.
+Exact raw-result overlap and same-URL association overlap are separate
+observation-only metrics. Candidate Normalizer never performs fuzzy URL
+deduplication, title similarity merging, cross-URL semantic merging, Evidence
+fetching, redirect resolution, event deduplication, or downstream domain
+decisions. Existing direct `CanonicalCandidate → EvidenceService` tests and
+Golden seams remain valid.
+
 Candidate Normalizer 是獨立且既有的 owner，負責 candidate normalization 與
 stable acquisition identity；SearchPlanner 或 provider 不得直接接管
 CanonicalCandidate semantics。Search result title 與 snippet 只屬 discovery

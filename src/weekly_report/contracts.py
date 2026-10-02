@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+import hashlib
+import json
 from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
@@ -1737,6 +1739,183 @@ class SearchExecutionResult:
     @property
     def has_technical_failures(self) -> bool:
         return any(result.status is SearchTerminalStatus.TECHNICAL_FAILURE for result in self.attempt_results)
+
+
+ACQUISITION_ID_VERSION = "acquisition-id-v1"
+CANDIDATE_ID_VERSION = "candidate-id-v1"
+
+
+def _canonical_identity_json(value: Mapping[str, Any]) -> bytes:
+    """Serialize a mechanical identity input without text normalization."""
+
+    return json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+
+@dataclass(frozen=True, slots=True)
+class AcquisitionRecord:
+    """One immutable raw discovery result and its frozen plan provenance."""
+
+    plan_id: str
+    plan_item: SearchPlanItem
+    provider_result_ordinal: int
+    raw_result: DiscoveryResult
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.plan_id, str) or not self.plan_id.strip():
+            raise ValueError("AcquisitionRecord requires plan_id")
+        if not isinstance(self.plan_item, SearchPlanItem):
+            raise TypeError("AcquisitionRecord requires a SearchPlanItem")
+        if (
+            not isinstance(self.provider_result_ordinal, int)
+            or isinstance(self.provider_result_ordinal, bool)
+            or self.provider_result_ordinal < 0
+        ):
+            raise ValueError("provider_result_ordinal must be a non-negative integer")
+        if not isinstance(self.raw_result, DiscoveryResult):
+            raise TypeError("AcquisitionRecord requires a DiscoveryResult")
+
+    @property
+    def acquisition_id(self) -> str:
+        """Return the CandidateNormalizer-owned deterministic occurrence ID."""
+
+        return acquisition_id_for(self)
+
+
+def acquisition_id_for(record: AcquisitionRecord) -> str:
+    """Build the versioned ID for one raw discovery occurrence."""
+
+    if not isinstance(record, AcquisitionRecord):
+        raise TypeError("acquisition_id_for requires an AcquisitionRecord")
+    raw = record.raw_result
+    payload = {
+        "version": ACQUISITION_ID_VERSION,
+        "plan_id": record.plan_id,
+        "plan_item_id": record.plan_item.plan_item_id,
+        "provider_result_ordinal": record.provider_result_ordinal,
+        "raw_result": {
+            "title": raw.title,
+            "url": raw.url,
+            "publisher": raw.publisher,
+            "published_at": raw.published_at,
+            "snippet": raw.snippet,
+        },
+    }
+    return "acq_" + hashlib.sha256(_canonical_identity_json(payload)).hexdigest()
+
+
+def candidate_id_for_url(url: str) -> str:
+    """Build a candidate ID from a validated URL's exact representation."""
+
+    if not isinstance(url, str) or not url:
+        raise ValueError("candidate_id_for_url requires a non-empty URL string")
+    payload = {"version": CANDIDATE_ID_VERSION, "url": url}
+    return "cand_" + hashlib.sha256(_canonical_identity_json(payload)).hexdigest()
+
+
+class CandidateNormalizationFailureClass(StrEnum):
+    """Finite mechanical failure classes for the future normalizer boundary."""
+
+    INVALID_ACQUISITION = "INVALID_ACQUISITION"
+    INVALID_URL = "INVALID_URL"
+    INTERNAL_FAILURE = "INTERNAL_FAILURE"
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateNormalizationFailure:
+    """Safe typed failure; raw payloads and exception text never belong here."""
+
+    failure_class: CandidateNormalizationFailureClass
+
+    def __post_init__(self) -> None:
+        try:
+            value = CandidateNormalizationFailureClass(self.failure_class)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("invalid CandidateNormalizationFailureClass") from exc
+        object.__setattr__(self, "failure_class", value)
+
+
+@dataclass(frozen=True, slots=True)
+class AcquisitionOrigin:
+    """Immutable association from one acquisition occurrence to one candidate."""
+
+    acquisition_id: str
+    record: AcquisitionRecord
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.acquisition_id, str)
+            or re.fullmatch(r"acq_[0-9a-f]{64}", self.acquisition_id) is None
+        ):
+            raise ValueError("AcquisitionOrigin requires a canonical acquisition ID")
+        if not isinstance(self.record, AcquisitionRecord):
+            raise TypeError("AcquisitionOrigin requires an AcquisitionRecord")
+        if self.acquisition_id != acquisition_id_for(self.record):
+            raise ValueError("AcquisitionOrigin ID does not match its record")
+
+
+@dataclass(frozen=True, slots=True)
+class NormalizedCandidate:
+    """One candidate with every immutable acquisition origin preserved."""
+
+    candidate: CanonicalCandidate
+    acquisition_origins: tuple[AcquisitionOrigin, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.candidate, CanonicalCandidate):
+            raise TypeError("NormalizedCandidate requires a CanonicalCandidate")
+        if self.candidate.candidate_id != candidate_id_for_url(self.candidate.url):
+            raise ValueError("NormalizedCandidate candidate ID does not match candidate.url")
+        origins = tuple(self.acquisition_origins)
+        if not origins:
+            raise ValueError("NormalizedCandidate requires acquisition origins")
+        if any(not isinstance(origin, AcquisitionOrigin) for origin in origins):
+            raise TypeError("acquisition_origins must contain AcquisitionOrigin values")
+        ids = tuple(origin.acquisition_id for origin in origins)
+        if len(ids) != len(set(ids)):
+            raise ValueError("NormalizedCandidate acquisition origins must be unique")
+        if any(origin.record.raw_result.url != self.candidate.url for origin in origins):
+            raise ValueError("all acquisition origins must exactly match candidate.url")
+        object.__setattr__(self, "acquisition_origins", tuple(sorted(origins, key=lambda item: item.acquisition_id)))
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateNormalizationResult:
+    """Immutable normalization result with no debug counts or domain outcomes."""
+
+    normalized_candidates: tuple[NormalizedCandidate, ...] = ()
+
+    def __post_init__(self) -> None:
+        candidates = tuple(self.normalized_candidates)
+        if any(not isinstance(candidate, NormalizedCandidate) for candidate in candidates):
+            raise TypeError("normalized_candidates must contain NormalizedCandidate values")
+        candidate_ids = tuple(item.candidate.candidate_id for item in candidates)
+        if len(candidate_ids) != len(set(candidate_ids)):
+            raise ValueError("normalized candidate IDs must be unique")
+        urls = tuple(item.candidate.url for item in candidates)
+        if len(urls) != len(set(urls)):
+            raise ValueError("normalized candidate URLs must be unique")
+        origin_ids = [origin.acquisition_id for item in candidates for origin in item.acquisition_origins]
+        if len(origin_ids) != len(set(origin_ids)):
+            raise ValueError("acquisition IDs cannot map to multiple candidates")
+        occurrence_records: dict[tuple[str, str, int], tuple[str, DiscoveryResult]] = {}
+        for item in candidates:
+            for origin in item.acquisition_origins:
+                record = origin.record
+                occurrence_key = (
+                    record.plan_id,
+                    record.plan_item.plan_item_id,
+                    record.provider_result_ordinal,
+                )
+                prior = occurrence_records.get(occurrence_key)
+                if prior is not None and prior != (origin.acquisition_id, record.raw_result):
+                    raise ValueError("conflicting acquisition records share one occurrence identity")
+                occurrence_records[occurrence_key] = (origin.acquisition_id, record.raw_result)
+        object.__setattr__(self, "normalized_candidates", tuple(sorted(candidates, key=lambda item: item.candidate.candidate_id)))
 
 
 @runtime_checkable
