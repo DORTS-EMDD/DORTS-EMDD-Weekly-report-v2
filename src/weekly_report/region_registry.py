@@ -9,15 +9,20 @@ from typing import Any, Mapping
 
 from .contracts import (
     DiscoveryIntent,
+    GoogleNewsRssEncoding,
     LanguageProfileConfig,
     MarketConfig,
+    ProviderProfileBinding,
+    ProviderProfileEligibility,
     QueryFamilyConfig,
     RegionMode,
+    SearchProviderId,
     SearchPlanningLimits,
 )
 
 
 CONFIGURATION_PATH = Path(__file__).with_name("search_configuration.json")
+CONFIGURATION_VERSION = "search-discovery-v3"
 
 
 def _tuple_strings(value: Any, field_name: str) -> tuple[str, ...]:
@@ -48,8 +53,10 @@ class RegionRegistry:
         "profiles",
         "query_families",
         "planning_limits",
+        "provider_profile_bindings",
         "_market_by_id",
         "_profile_by_id",
+        "_provider_profile_binding_by_key",
         "_sealed",
     )
 
@@ -68,6 +75,7 @@ class RegionRegistry:
         profiles: tuple[LanguageProfileConfig, ...],
         query_families: tuple[QueryFamilyConfig, ...],
         planning_limits: SearchPlanningLimits,
+        provider_profile_bindings: tuple[ProviderProfileBinding, ...],
     ) -> None:
         if not isinstance(configuration_version, str) or not configuration_version.strip():
             raise ValueError("configuration requires configuration_version")
@@ -77,15 +85,18 @@ class RegionRegistry:
         self.global_markets = tuple(global_markets)
         self.profiles = tuple(profiles)
         self.query_families = tuple(query_families)
+        self.provider_profile_bindings = tuple(provider_profile_bindings)
         if not isinstance(planning_limits, SearchPlanningLimits):
             raise TypeError("planning_limits must be SearchPlanningLimits")
         self.planning_limits = planning_limits
-        self._validate()
-
         self._market_by_id = MappingProxyType(
             {market.market_id: market for market in (*self.selected_markets, *self.global_markets)}
         )
         self._profile_by_id = MappingProxyType({profile.profile_id: profile for profile in self.profiles})
+        self._validate()
+        self._provider_profile_binding_by_key = MappingProxyType(
+            {binding.key: binding for binding in self.provider_profile_bindings}
+        )
         object.__setattr__(self, "_sealed", True)
 
     @classmethod
@@ -123,6 +134,7 @@ class RegionRegistry:
             )
             for item in value.get("query_families", ())
         )
+        bindings = tuple(cls._provider_profile_binding_from_mapping(item) for item in value.get("provider_profile_bindings", ()))
         intents = value.get("discovery_intents", ())
         expected_intents = tuple(
             {"id": intent.value, "display_label": intent.display_label} for intent in DiscoveryIntent
@@ -140,6 +152,7 @@ class RegionRegistry:
             profiles=profiles,
             query_families=families,
             planning_limits=cls._planning_limits_from_mapping(value.get("planning_limits", {})),
+            provider_profile_bindings=bindings,
         )
 
     @staticmethod
@@ -168,7 +181,41 @@ class RegionRegistry:
             enabled=value.get("enabled", True),
         )
 
+    @staticmethod
+    def _provider_profile_binding_from_mapping(value: Any) -> ProviderProfileBinding:
+        if not isinstance(value, Mapping):
+            raise ValueError("provider profile binding must be an object")
+        if set(value) != {
+            "market_id",
+            "language_profile_id",
+            "provider_id",
+            "eligibility",
+            "encoding",
+        }:
+            raise ValueError("provider profile binding fields must match the governed schema exactly")
+        raw_encoding = value.get("encoding")
+        encoding = None
+        if raw_encoding is not None:
+            if not isinstance(raw_encoding, Mapping):
+                raise ValueError("provider profile binding encoding must be an object")
+            if set(raw_encoding) != {"hl", "gl", "ceid"}:
+                raise ValueError("Google News RSS encoding fields must match the governed schema exactly")
+            encoding = GoogleNewsRssEncoding(
+                hl=raw_encoding.get("hl", ""),
+                gl=raw_encoding.get("gl", ""),
+                ceid=raw_encoding.get("ceid", ""),
+            )
+        return ProviderProfileBinding(
+            market_id=value.get("market_id", ""),
+            language_profile_id=value.get("language_profile_id", ""),
+            provider_id=value.get("provider_id", ""),
+            eligibility=value.get("eligibility", ""),
+            encoding=encoding,
+        )
+
     def _validate(self) -> None:
+        if self.configuration_version != CONFIGURATION_VERSION:
+            raise ValueError(f"configuration_version must be {CONFIGURATION_VERSION}")
         all_markets = (*self.selected_markets, *self.global_markets)
         market_ids = tuple(market.market_id for market in all_markets)
         if len(market_ids) != len(set(market_ids)):
@@ -217,6 +264,40 @@ class RegionRegistry:
                 ):
                     raise ValueError("query family references an unknown vocabulary group")
 
+        binding_keys = tuple(binding.key for binding in self.provider_profile_bindings)
+        if len(binding_keys) != len(set(binding_keys)):
+            raise ValueError("provider profile binding keys must be unique")
+        known_market_by_id = {market.market_id: market for market in all_markets}
+        known_profile_ids = set(profile_ids)
+        known_provider_ids = {family.provider_target for family in self.query_families}
+        for binding in self.provider_profile_bindings:
+            if binding.market_id not in known_market_by_id:
+                raise ValueError("provider profile binding market must resolve")
+            if binding.language_profile_id not in known_profile_ids:
+                raise ValueError("provider profile binding profile must resolve")
+            market_profiles = self.profiles_for_market(known_market_by_id[binding.market_id])
+            if binding.language_profile_id not in market_profiles:
+                raise ValueError("provider profile binding profile must belong to market")
+            if binding.provider_id not in known_provider_ids:
+                raise ValueError("provider profile binding provider must be referenced by a query family")
+            if _is_taiwan_identifier(binding.market_id):
+                raise ValueError("Taiwan is forbidden in provider profile bindings")
+
+        evaluation_population = {
+            (market.market_id, profile_id, family.provider_target)
+            for market in self.markets_for(RegionMode.SELECTED)
+            for profile_id in self.profiles_for_market(market)
+            for family in self.query_families
+        }
+        evaluation_population.update(
+            (market.market_id, profile_id, family.provider_target)
+            for market in self.markets_for(RegionMode.GLOBAL)
+            for profile_id in self.profiles_for_market(market)
+            for family in self.query_families
+        )
+        if set(binding_keys) != evaluation_population:
+            raise ValueError("provider profile bindings must exactly cover evaluation population")
+
     @property
     def selected_profile_ids(self) -> tuple[str, ...]:
         return tuple(profile.profile_id for profile in self.profiles)
@@ -240,6 +321,21 @@ class RegionRegistry:
 
     def profile(self, profile_id: str) -> LanguageProfileConfig:
         return self._profile_by_id[profile_id]
+
+    def provider_profile_binding(
+        self,
+        market_id: str,
+        language_profile_id: str,
+        provider_id: SearchProviderId | str,
+    ) -> ProviderProfileBinding:
+        try:
+            provider_id = SearchProviderId(provider_id)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("provider profile binding requires a canonical provider") from exc
+        try:
+            return self._provider_profile_binding_by_key[(market_id, language_profile_id, provider_id)]
+        except KeyError as exc:
+            raise ValueError("provider profile capability is not configured") from exc
 
     def profiles_for_market(self, market: MarketConfig) -> tuple[str, ...]:
         profiles = (*market.primary_profiles, *market.secondary_profiles, *market.english_supplement_profiles)
@@ -294,4 +390,25 @@ class RegionRegistry:
                 "max_concrete_requests_per_family": self.planning_limits.max_concrete_requests_per_family,
                 "max_plan_items": self.planning_limits.max_plan_items,
             },
+            "provider_profile_bindings": [
+                {
+                    "market_id": binding.market_id,
+                    "language_profile_id": binding.language_profile_id,
+                    "provider_id": binding.provider_id,
+                    "eligibility": binding.eligibility,
+                    "encoding": (
+                        {
+                            "hl": binding.encoding.hl,
+                            "gl": binding.encoding.gl,
+                            "ceid": binding.encoding.ceid,
+                        }
+                        if binding.encoding is not None
+                        else None
+                    ),
+                }
+                for binding in sorted(
+                    self.provider_profile_bindings,
+                    key=lambda item: (item.market_id, item.language_profile_id, item.provider_id.value),
+                )
+            ],
         }

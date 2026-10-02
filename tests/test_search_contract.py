@@ -17,6 +17,7 @@ from src.weekly_report.contracts import (
     CanonicalCandidate,
     DiscoveryIntent,
     DiscoveryResult,
+    GoogleNewsRssEncoding,
     QueryFamilyConfig,
     RegionMode,
     SearchAttemptResult,
@@ -49,11 +50,12 @@ class SearchContractTests(TestCase):
                 "family",
                 SearchProviderId.GOOGLE_NEWS_RSS,
                 item_id,
+                GoogleNewsRssEncoding("en-US", "US", "US:en"),
                 "en-US",
             )
             for item_id in ("item-1", "item-2")
         )
-        return SearchPlan("search-discovery-v2", RegionMode.SELECTED, items, "plan-1")
+        return SearchPlan("search-discovery-v3", RegionMode.SELECTED, items, "plan-1")
 
     @staticmethod
     def _attempt_observation(item, result, *, raw_result_count=None, normalized_result_count=None):
@@ -129,7 +131,7 @@ class SearchContractTests(TestCase):
                 return SearchAttemptResult(request.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
 
         self.assertIsInstance(Provider(), SearchProvider)
-        item = SearchPlanItem("item", "market", RegionMode.SELECTED, DiscoveryIntent.OPERATIONS, "en", "family", SearchProviderId.GOOGLE_NEWS_RSS, "query", "en")
+        item = SearchPlanItem("item", "market", RegionMode.SELECTED, DiscoveryIntent.OPERATIONS, "en", "family", SearchProviderId.GOOGLE_NEWS_RSS, "query", GoogleNewsRssEncoding("en-US", "US", "US:en"), "en")
         planned = SearchObservation("item", "market", DiscoveryIntent.OPERATIONS, "en", "family", SearchProviderId.GOOGLE_NEWS_RSS, True, False, None, 0)
         attempted = SearchObservation("item", "market", DiscoveryIntent.OPERATIONS, "en", "family", SearchProviderId.GOOGLE_NEWS_RSS, True, True, SearchTerminalStatus.SUCCESS_ZERO_RESULTS, 0)
         self.assertFalse(planned.attempted)
@@ -176,9 +178,9 @@ class SearchContractTests(TestCase):
     def test_provider_target_is_canonical_and_default_is_rejected(self) -> None:
         self.assertEqual(SearchProviderId("google_news_rss"), SearchProviderId.GOOGLE_NEWS_RSS)
         with self.assertRaises(ValueError):
-            SearchPlanItem("item", "market", RegionMode.SELECTED, DiscoveryIntent.OPERATIONS, "en", "family", "default", "query", "en")
+            SearchPlanItem("item", "market", RegionMode.SELECTED, DiscoveryIntent.OPERATIONS, "en", "family", "default", "query", GoogleNewsRssEncoding("en-US", "US", "US:en"), "en")
         with self.assertRaises(ValueError):
-            SearchPlanItem("item", "market", RegionMode.SELECTED, DiscoveryIntent.OPERATIONS, "en", "family", "unknown", "query", "en")
+            SearchPlanItem("item", "market", RegionMode.SELECTED, DiscoveryIntent.OPERATIONS, "en", "family", "unknown", "query", GoogleNewsRssEncoding("en-US", "US", "US:en"), "en")
 
     def test_execution_result_derives_complete_success_and_preserves_plan_order(self) -> None:
         plan = self._plan()

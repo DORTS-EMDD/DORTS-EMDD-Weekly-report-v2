@@ -1,5 +1,5 @@
 {
-  "configuration_version": "search-discovery-v2",
+  "configuration_version": "search-discovery-v3",
   "region_modes": [
     "selected",
     "global"
@@ -2302,6 +2302,44 @@
       "id": "procurement",
       "display_label": "procurement"
     }
+  ],
+  "provider_profile_bindings": [
+    {"market_id": "australia", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-AU", "gl": "AU", "ceid": "AU:en"}},
+    {"market_id": "austria", "language_profile_id": "de", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "de", "gl": "AT", "ceid": "AT:de"}},
+    {"market_id": "austria", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "canada", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-CA", "gl": "CA", "ceid": "CA:en"}},
+    {"market_id": "canada", "language_profile_id": "fr", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "fr-CA", "gl": "CA", "ceid": "CA:fr"}},
+    {"market_id": "denmark", "language_profile_id": "da", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "denmark", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "france", "language_profile_id": "fr", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "fr", "gl": "FR", "ceid": "FR:fr"}},
+    {"market_id": "france", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "germany", "language_profile_id": "de", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "de", "gl": "DE", "ceid": "DE:de"}},
+    {"market_id": "germany", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "hong_kong", "language_profile_id": "zh", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "zh-HK", "gl": "HK", "ceid": "HK:zh-Hant"}},
+    {"market_id": "hong_kong", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "italy", "language_profile_id": "it", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "it", "gl": "IT", "ceid": "IT:it"}},
+    {"market_id": "italy", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "japan", "language_profile_id": "ja", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "ja", "gl": "JP", "ceid": "JP:ja"}},
+    {"market_id": "japan", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "netherlands", "language_profile_id": "nl", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "nl", "gl": "NL", "ceid": "NL:nl"}},
+    {"market_id": "netherlands", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "norway", "language_profile_id": "no", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "no", "gl": "NO", "ceid": "NO:no"}},
+    {"market_id": "norway", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "portugal", "language_profile_id": "pt", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "pt-PT", "gl": "PT", "ceid": "PT:pt-150"}},
+    {"market_id": "portugal", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "singapore", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-SG", "gl": "SG", "ceid": "SG:en"}},
+    {"market_id": "south_korea", "language_profile_id": "ko", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "ko", "gl": "KR", "ceid": "KR:ko"}},
+    {"market_id": "south_korea", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "spain", "language_profile_id": "es", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "es", "gl": "ES", "ceid": "ES:es"}},
+    {"market_id": "spain", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "sweden", "language_profile_id": "sv", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "sv", "gl": "SE", "ceid": "SE:sv"}},
+    {"market_id": "sweden", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "switzerland", "language_profile_id": "de", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "de", "gl": "CH", "ceid": "CH:de"}},
+    {"market_id": "switzerland", "language_profile_id": "fr", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "fr", "gl": "CH", "ceid": "CH:fr"}},
+    {"market_id": "switzerland", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "switzerland", "language_profile_id": "it", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "united_kingdom", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-GB", "gl": "GB", "ceid": "GB:en"}},
+    {"market_id": "united_states", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-US", "gl": "US", "ceid": "US:en"}}
   ],
   "query_families": [
     {

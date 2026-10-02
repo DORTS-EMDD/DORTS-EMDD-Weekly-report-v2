@@ -42,7 +42,7 @@ class RegionRegistryTests(unittest.TestCase):
         with self.assertRaises(FrozenInstanceError):
             self.registry.market("hong_kong").primary_profiles += ("en",)
 
-    def test_future_governed_global_target_does_not_change_selected_owner(self) -> None:
+    def test_future_governed_global_target_requires_capability_population(self) -> None:
         source = copy.deepcopy(self.source)
         source["global_markets"].append(
             {
@@ -54,10 +54,8 @@ class RegionRegistryTests(unittest.TestCase):
             }
         )
         source["global_targets"].append("future_market")
-        registry = RegionRegistry.from_mapping(source)
-        self.assertEqual(registry.selected_market_count, 19)
-        self.assertEqual(registry.global_target_count, 20)
-        self.assertEqual(registry.markets_for(RegionMode.GLOBAL)[-1].market_id, "future_market")
+        with self.assertRaises(ValueError):
+            RegionRegistry.from_mapping(source)
 
     def test_invalid_configuration_fails_closed(self) -> None:
         duplicate = copy.deepcopy(self.source)
@@ -135,6 +133,4 @@ class RegionRegistryTests(unittest.TestCase):
         hong_kong = next(item for item in changed_hong_kong["selected_markets"] if item["market_id"] == "hong_kong")
         hong_kong["primary_profiles"] = ["fr"]
         hong_kong["english_supplement_profiles"] = ["en"]
-        registry = RegionRegistry.from_mapping(changed_hong_kong)
-        self.assertEqual(registry.market("hong_kong").primary_profiles, ("fr",))
         validate_modified(changed_hong_kong)

@@ -169,6 +169,8 @@ HIDDEN_TRANSPORT_RETRY = FORBIDDEN
 REDIRECT_FOLLOW_COUNT = 0
 PAGINATION = ONE_PROVIDER_REQUEST_PAGE_ONLY
 EXECUTION_CONCURRENCY = SEQUENTIAL
+SEARCH_CONFIGURATION_VERSION = search-discovery-v3
+PROVIDER_PROFILE_ELIGIBILITY_OWNER = RegionRegistry
 ```
 
 `default` 不得作為 executable provider target，也不得由 runtime hidden mapping
@@ -309,6 +311,38 @@ major_incident
 operations
 procurement
 ```
+
+Provider capability is part of the same materialized RegionRegistry contract.
+The single declarative source is `provider_profile_bindings`, keyed by
+`(market_id, language_profile_id, provider_id)`. Each binding is explicitly
+`SUPPORTED` or `UNSUPPORTED`; a supported Google News RSS binding carries the
+exact immutable `hl`, `gl`, and `ceid` encoding, while an unsupported binding
+carries no encoding. Missing bindings are configuration-incomplete and fail
+closed; they are not interpreted as unsupported and no default or substituted
+encoding is allowed.
+
+The binding population is the union of configured selected/global target
+markets, each market's mapped profiles, and each query family's provider target.
+Every binding in that population must be present exactly once. SearchPlanner
+copies a supported binding's exact encoding into each frozen SearchPlanItem and
+plan identity; unsupported bindings produce no item. After capability filtering,
+every configured target market and every enabled intent must still have at least
+one executable item or the whole plan construction fails. A market with no
+supported profile remains configured and is not silently removed.
+
+Denmark remains a configured selected/global target with `da` and `en` profiles,
+but both current Google News RSS bindings are `UNSUPPORTED`; therefore current
+production selected and global planning fail closed with no partial plan until
+another separately governed provider capability is introduced. This does not
+remove Denmark or authorize a substitute market/profile. A future provider
+prepared for controlled Phase 2C acceptance is preplanned capability, not a
+fallback or runtime rescue.
+
+`locale` remains general profile metadata. It is not Google News execution
+authority. Provider capability configuration does not probe runtime support,
+select another provider, retry, fallback, rescue, backfill, or create a second
+RegionRegistry/source-of-truth owner. SearchExecutor and downstream workflow
+consume the frozen plan only.
 
 其中 `major_incident` 是 canonical machine ID，`major incident` 是同一
 semantic intent 的 human-readable display label。四組 ID/label 如下：

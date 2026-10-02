@@ -30,6 +30,7 @@ _TOP_LEVEL_FIELDS = frozenset(
         "global_markets",
         "profiles",
         "discovery_intents",
+        "provider_profile_bindings",
         "query_families",
         "planning_limits",
     }
@@ -141,6 +142,8 @@ def _validate_governance_documents(registry: RegionRegistry) -> None:
         r"REDIRECT_FOLLOW_COUNT\s*=\s*0",
         r"PAGINATION\s*=\s*ONE_PROVIDER_REQUEST_PAGE_ONLY",
         r"EXECUTION_CONCURRENCY\s*=\s*SEQUENTIAL",
+        r"SEARCH_CONFIGURATION_VERSION\s*=\s*search-discovery-v3",
+        r"PROVIDER_PROFILE_ELIGIBILITY_OWNER\s*=\s*RegionRegistry",
     ):
         if re.search(marker, architecture) is None:
             raise ValueError(f"Architecture Contract marker missing: {marker}")

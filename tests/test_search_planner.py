@@ -16,8 +16,22 @@ class SearchPlannerTests(unittest.TestCase):
     def setUp(self) -> None:
         with open("src/weekly_report/search_configuration.json", encoding="utf-8") as handle:
             self.source = json.load(handle)
+        self.production_registry = RegionRegistry.from_mapping(self.source)
+        self.source = self._supported_fixture(self.source)
         self.registry = RegionRegistry.from_mapping(self.source)
         self.planner = SearchPlanner(self.registry)
+
+    @staticmethod
+    def _supported_fixture(source: dict) -> dict:
+        fixture = copy.deepcopy(source)
+        fixture["selected_markets"] = [
+            market for market in fixture["selected_markets"] if market["market_id"] != "denmark"
+        ]
+        fixture["global_targets"] = [target for target in fixture["global_targets"] if target != "denmark"]
+        fixture["provider_profile_bindings"] = [
+            binding for binding in fixture["provider_profile_bindings"] if binding["market_id"] != "denmark"
+        ]
+        return fixture
 
     def test_identical_input_produces_identical_frozen_plan(self) -> None:
         first = self.planner.plan(RegionMode.SELECTED)
@@ -42,13 +56,22 @@ class SearchPlannerTests(unittest.TestCase):
     def test_primary_and_preplanned_english_supplement_are_in_frozen_plan(self) -> None:
         plan = self.planner.plan("selected", intents=(DiscoveryIntent.TECHNOLOGY,))
         south_korea_profiles = {item.language_profile for item in plan.items if item.market_id == "south_korea"}
-        self.assertEqual(south_korea_profiles, {"ko", "en"})
+        self.assertEqual(south_korea_profiles, {"ko"})
         expected_count = sum(
             len(self.registry.profile(profile_id).intent_vocabulary["technology"]["technology_terms"])
             for market in self.registry.selected_markets
             for profile_id in self.registry.profiles_for_market(market)
+            if self.registry.provider_profile_binding(market.market_id, profile_id, "google_news_rss").eligibility.value == "SUPPORTED"
         )
         self.assertEqual(len(plan.items), expected_count)
+
+    def test_production_selected_planning_fails_closed_for_denmark_without_support(self) -> None:
+        with self.assertRaises(ValueError):
+            SearchPlanner(self.production_registry).plan("selected")
+
+    def test_production_global_planning_fails_closed_for_denmark_without_support(self) -> None:
+        with self.assertRaises(ValueError):
+            SearchPlanner(self.production_registry).plan("global")
 
     def test_concrete_requests_from_one_family_have_distinct_stable_ids(self) -> None:
         source = copy.deepcopy(self.source)

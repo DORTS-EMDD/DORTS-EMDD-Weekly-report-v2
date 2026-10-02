@@ -6,7 +6,14 @@ import hashlib
 import json
 from typing import Iterable
 
-from .contracts import DiscoveryIntent, QueryFamilyConfig, RegionMode, SearchPlan, SearchPlanItem
+from .contracts import (
+    DiscoveryIntent,
+    ProviderProfileEligibility,
+    QueryFamilyConfig,
+    RegionMode,
+    SearchPlan,
+    SearchPlanItem,
+)
 from .region_registry import RegionRegistry
 
 
@@ -31,11 +38,21 @@ class SearchPlanner:
         mode = RegionMode(mode)
         selected_intents = self._canonical_intents(intents)
         items: list[SearchPlanItem] = []
+        market_item_counts = {market.market_id: 0 for market in self._registry.markets_for(mode)}
+        intent_item_counts = {intent: 0 for intent in selected_intents}
         for market in self._registry.markets_for(mode):
             profiles = self._registry.profiles_for_market(market)
             for intent in selected_intents:
                 for profile_id in profiles:
                     for family in self._registry.query_families:
+                        binding = self._registry.provider_profile_binding(
+                            market.market_id, profile_id, family.provider_target
+                        )
+                        if binding.eligibility is ProviderProfileEligibility.UNSUPPORTED:
+                            continue
+                        encoding = binding.encoding
+                        if encoding is None:
+                            raise ValueError("supported provider profile binding has no encoding")
                         concrete = self._concrete_queries(market, profile_id, intent, family)
                         for query in concrete:
                             payload = {
@@ -48,6 +65,11 @@ class SearchPlanner:
                                 "provider_target": family.provider_target,
                                 "query": query,
                                 "locale": self._registry.profile(profile_id).locale,
+                                "provider_encoding": {
+                                    "hl": encoding.hl,
+                                    "gl": encoding.gl,
+                                    "ceid": encoding.ceid,
+                                },
                             }
                             items.append(
                                 SearchPlanItem(
@@ -60,15 +82,25 @@ class SearchPlanner:
                                     provider_target=family.provider_target,
                                     query=query,
                                     locale=self._registry.profile(profile_id).locale,
+                                    provider_encoding=encoding,
                                 )
                             )
+                            market_item_counts[market.market_id] += 1
+                            intent_item_counts[intent] += 1
                             if len(items) > self._registry.planning_limits.max_plan_items:
                                 raise ValueError("Search plan exceeds bounded item limit")
+
+        if any(count == 0 for count in market_item_counts.values()):
+            raise ValueError("Search plan has a configured market with no executable provider coverage")
+        if any(count == 0 for count in intent_item_counts.values()):
+            raise ValueError("Search plan has an enabled intent with no executable provider coverage")
 
         # The loops consume ordered tuples from the registry. Sorting here is
         # an explicit final canonical order and cannot depend on hash iteration.
         items.sort(key=lambda item: (item.market_id, item.intent.value, item.language_profile,
-                                     item.query_family_id, item.provider_target, item.query))
+                                     item.query_family_id, item.provider_target, item.query,
+                                     item.provider_encoding.hl, item.provider_encoding.gl,
+                                     item.provider_encoding.ceid))
         plan_payload = {
             "configuration_version": self._registry.configuration_version,
             "region_mode": mode.value,
@@ -82,6 +114,11 @@ class SearchPlanner:
                     "provider_target": item.provider_target,
                     "query": item.query,
                     "locale": item.locale,
+                    "provider_encoding": {
+                        "hl": item.provider_encoding.hl,
+                        "gl": item.provider_encoding.gl,
+                        "ceid": item.provider_encoding.ceid,
+                    },
                 }
                 for item in items
             ],

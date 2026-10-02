@@ -1211,6 +1211,64 @@ class SearchProviderId(StrEnum):
     GOOGLE_NEWS_RSS = "google_news_rss"
 
 
+class ProviderProfileEligibility(StrEnum):
+    """Whether one market/profile/provider tuple is executable."""
+
+    SUPPORTED = "SUPPORTED"
+    UNSUPPORTED = "UNSUPPORTED"
+
+
+@dataclass(frozen=True, slots=True)
+class GoogleNewsRssEncoding:
+    """Exact Google News RSS parameters frozen by provider capability config."""
+
+    hl: str
+    gl: str
+    ceid: str
+
+    def __post_init__(self) -> None:
+        for field_name in ("hl", "gl", "ceid"):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"Google News RSS encoding requires non-empty {field_name}")
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderProfileBinding:
+    """Typed capability decision for one market/profile/provider tuple."""
+
+    market_id: str
+    language_profile_id: str
+    provider_id: SearchProviderId | str
+    eligibility: ProviderProfileEligibility | str
+    encoding: GoogleNewsRssEncoding | None = None
+
+    def __post_init__(self) -> None:
+        for field_name in ("market_id", "language_profile_id"):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"provider profile binding requires {field_name}")
+        try:
+            provider_id = SearchProviderId(self.provider_id)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("provider profile binding requires a canonical provider_id") from exc
+        object.__setattr__(self, "provider_id", provider_id)
+        try:
+            eligibility = ProviderProfileEligibility(self.eligibility)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("provider profile binding requires canonical eligibility") from exc
+        object.__setattr__(self, "eligibility", eligibility)
+        if eligibility is ProviderProfileEligibility.SUPPORTED:
+            if not isinstance(self.encoding, GoogleNewsRssEncoding):
+                raise ValueError("supported provider profile binding requires encoding")
+        elif self.encoding is not None:
+            raise ValueError("unsupported provider profile binding must not carry encoding")
+
+    @property
+    def key(self) -> tuple[str, str, SearchProviderId]:
+        return (self.market_id, self.language_profile_id, self.provider_id)
+
+
 class SearchInfrastructureFailureClass(StrEnum):
     """Safe mechanical classes for executor-level failures."""
 
@@ -1408,6 +1466,7 @@ class SearchPlanItem:
     query_family_id: str
     provider_target: SearchProviderId | str
     query: str
+    provider_encoding: GoogleNewsRssEncoding
     locale: str = ""
 
     def __post_init__(self) -> None:
@@ -1431,6 +1490,8 @@ class SearchPlanItem:
         except (TypeError, ValueError) as exc:
             raise ValueError("SearchPlanItem requires a canonical provider_target") from exc
         object.__setattr__(self, "provider_target", provider_target)
+        if provider_target is SearchProviderId.GOOGLE_NEWS_RSS and not isinstance(self.provider_encoding, GoogleNewsRssEncoding):
+            raise ValueError("SearchPlanItem requires provider_encoding for google_news_rss")
 
     @property
     def request(self) -> str:
@@ -1483,6 +1544,11 @@ class SearchPlan:
                     "provider_target": item.provider_target,
                     "query": item.query,
                     "locale": item.locale,
+                    "provider_encoding": {
+                        "hl": item.provider_encoding.hl,
+                        "gl": item.provider_encoding.gl,
+                        "ceid": item.provider_encoding.ceid,
+                    },
                 }
                 for item in self.items
             ],
