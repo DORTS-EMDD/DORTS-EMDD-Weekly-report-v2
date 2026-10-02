@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Any, Mapping, Protocol
+from typing import Any, Mapping, Protocol, runtime_checkable
 
 
 class EvidenceState(StrEnum):
@@ -1152,3 +1152,407 @@ class EventDecisionRecord:
             "member_records",
             tuple(by_candidate[candidate_id] for candidate_id in expected_ids),
         )
+
+
+class DiscoveryIntent(StrEnum):
+    """Canonical machine IDs owned by Search discovery."""
+
+    TECHNOLOGY = "technology"
+    MAJOR_INCIDENT = "major_incident"
+    OPERATIONS = "operations"
+    PROCUREMENT = "procurement"
+
+    @property
+    def display_label(self) -> str:
+        return _DISCOVERY_INTENT_DISPLAY_LABELS[self]
+
+
+_DISCOVERY_INTENT_DISPLAY_LABELS = MappingProxyType(
+    {
+        DiscoveryIntent.TECHNOLOGY: "technology",
+        DiscoveryIntent.MAJOR_INCIDENT: "major incident",
+        DiscoveryIntent.OPERATIONS: "operations",
+        DiscoveryIntent.PROCUREMENT: "procurement",
+    }
+)
+
+
+class RegionMode(StrEnum):
+    """The two configured Search target modes."""
+
+    SELECTED = "selected"
+    GLOBAL = "global"
+
+
+class SearchTerminalStatus(StrEnum):
+    """Terminal status of one independently attempted discovery request."""
+
+    SUCCESS_WITH_RESULTS = "SUCCESS_WITH_RESULTS"
+    SUCCESS_ZERO_RESULTS = "SUCCESS_ZERO_RESULTS"
+    TECHNICAL_FAILURE = "TECHNICAL_FAILURE"
+
+
+class SearchTechnicalFailureClass(StrEnum):
+    """Finite safe classes for technical provider failures."""
+
+    NETWORK = "NETWORK"
+    TIMEOUT = "TIMEOUT"
+    AUTHENTICATION = "AUTHENTICATION"
+    RATE_LIMIT = "RATE_LIMIT"
+    INVALID_RESPONSE = "INVALID_RESPONSE"
+    UNKNOWN = "UNKNOWN"
+
+
+@dataclass(frozen=True, slots=True)
+class SearchPlanningLimits:
+    """Configured bounded planning limits materialized with the registry."""
+
+    max_concrete_requests_per_family: int
+    max_plan_items: int
+
+    def __post_init__(self) -> None:
+        for field_name in ("max_concrete_requests_per_family", "max_plan_items"):
+            value = getattr(self, field_name)
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+                raise ValueError(f"{field_name} must be a positive integer")
+
+
+@dataclass(frozen=True, slots=True)
+class LanguageProfileConfig:
+    """Immutable language/profile configuration consumed by RegionRegistry."""
+
+    profile_id: str
+    display_name: str = ""
+    locale: str = ""
+    intent_vocabulary: Mapping[str, Mapping[str, tuple[str, ...]]] = field(default_factory=dict)
+    enabled: bool = True
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.profile_id, str) or not self.profile_id.strip():
+            raise ValueError("language profile requires profile_id")
+        if not isinstance(self.display_name, str) or not isinstance(self.locale, str):
+            raise TypeError("language profile labels must be strings")
+        if not isinstance(self.enabled, bool):
+            raise TypeError("language profile enabled must be bool")
+        vocabulary: dict[str, Mapping[str, tuple[str, ...]]] = {}
+        for intent, groups in dict(self.intent_vocabulary).items():
+            try:
+                intent_id = DiscoveryIntent(intent).value
+            except (TypeError, ValueError) as exc:
+                raise ValueError("language profile contains an invalid discovery intent") from exc
+            if not isinstance(groups, Mapping) or not groups:
+                raise ValueError("language profile intent vocabulary requires groups")
+            normalized_groups: dict[str, tuple[str, ...]] = {}
+            for group_name, terms in dict(groups).items():
+                if not isinstance(group_name, str) or not group_name.strip():
+                    raise ValueError("language profile vocabulary group requires a name")
+                terms = tuple(terms)
+                if not terms or any(not isinstance(term, str) or not term.strip() for term in terms):
+                    raise ValueError("language profile vocabulary terms must be non-empty")
+                if len(terms) != len(set(terms)):
+                    raise ValueError("language profile vocabulary terms must be unique")
+                normalized_groups[group_name] = terms
+            vocabulary[intent_id] = MappingProxyType(normalized_groups)
+        missing_intents = {intent.value for intent in DiscoveryIntent} - set(vocabulary)
+        if missing_intents:
+            raise ValueError("language profile must expose all discovery intents")
+        object.__setattr__(self, "intent_vocabulary", MappingProxyType(vocabulary))
+
+
+@dataclass(frozen=True, slots=True)
+class MarketConfig:
+    """Immutable configured discovery target; it is not a factual Scope result."""
+
+    market_id: str
+    display_name: str
+    primary_profiles: tuple[str, ...] = ()
+    secondary_profiles: tuple[str, ...] = ()
+    english_supplement_profiles: tuple[str, ...] = ()
+    locale_hints: tuple[str, ...] = ()
+    terminology_refs: tuple[str, ...] = ()
+    enabled: bool = True
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.market_id, str) or not self.market_id.strip():
+            raise ValueError("market requires market_id")
+        if not isinstance(self.display_name, str) or not self.display_name.strip():
+            raise ValueError("market requires display_name")
+        if not isinstance(self.enabled, bool):
+            raise TypeError("market enabled must be bool")
+        for field_name in (
+            "primary_profiles",
+            "secondary_profiles",
+            "english_supplement_profiles",
+            "locale_hints",
+            "terminology_refs",
+        ):
+            values = getattr(self, field_name)
+            if isinstance(values, (str, bytes, bytearray)):
+                raise TypeError(f"{field_name} must be an immutable tuple")
+            values = tuple(values)
+            if any(not isinstance(value, str) or not value.strip() for value in values):
+                raise ValueError(f"{field_name} must contain non-empty strings")
+            if len(values) != len(set(values)):
+                raise ValueError(f"{field_name} must not contain duplicates")
+            object.__setattr__(self, field_name, values)
+
+        primary = set(self.primary_profiles)
+        secondary = set(self.secondary_profiles)
+        supplement = set(self.english_supplement_profiles)
+        if primary & secondary or primary & supplement or secondary & supplement:
+            raise ValueError("market profile mappings must be disjoint")
+
+
+@dataclass(frozen=True, slots=True)
+class QueryFamilyConfig:
+    """Bounded deterministic query composition configuration."""
+
+    family_id: str
+    templates: tuple[str, ...]
+    vocabulary_groups: Mapping[str, tuple[str, ...]]
+    anchor_terms: tuple[str, ...] = ()
+    provider_target: str = "default"
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.family_id, str) or not self.family_id.strip():
+            raise ValueError("query family requires family_id")
+        templates = tuple(self.templates)
+        if not templates or any(not isinstance(value, str) or not value.strip() for value in templates):
+            raise ValueError("query family requires non-empty templates")
+        if len(templates) != len(set(templates)):
+            raise ValueError("query family templates must be unique")
+        object.__setattr__(self, "templates", templates)
+        groups_by_intent: dict[str, tuple[str, ...]] = {}
+        for intent, values in dict(self.vocabulary_groups).items():
+            try:
+                intent_id = DiscoveryIntent(intent).value
+            except (TypeError, ValueError) as exc:
+                raise ValueError("query family contains an invalid discovery intent") from exc
+            values = tuple(values)
+            if not values or any(not isinstance(value, str) or not value.strip() for value in values):
+                raise ValueError("query family vocabulary groups must be non-empty")
+            if len(values) != len(set(values)):
+                raise ValueError("query family vocabulary groups must be unique")
+            groups_by_intent[intent_id] = values
+        missing = {intent.value for intent in DiscoveryIntent} - set(groups_by_intent)
+        if missing:
+            raise ValueError("query family must expose all discovery intents")
+        object.__setattr__(self, "vocabulary_groups", MappingProxyType(groups_by_intent))
+        anchors = tuple(self.anchor_terms)
+        if any(not isinstance(value, str) or not value.strip() for value in anchors):
+            raise ValueError("query family anchor terms must be non-empty strings")
+        if len(anchors) != len(set(anchors)):
+            raise ValueError("query family anchor terms must be unique")
+        object.__setattr__(self, "anchor_terms", anchors)
+        if not isinstance(self.provider_target, str) or not self.provider_target.strip():
+            raise ValueError("query family requires provider_target")
+
+
+@dataclass(frozen=True, slots=True)
+class SearchPlanItem:
+    """One frozen, independently-attemptable concrete discovery request."""
+
+    plan_item_id: str
+    market_id: str
+    region_mode: RegionMode
+    intent: DiscoveryIntent
+    language_profile: str
+    query_family_id: str
+    provider_target: str
+    query: str
+    locale: str = ""
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.plan_item_id, str) or not self.plan_item_id.strip():
+            raise ValueError("SearchPlanItem requires plan_item_id")
+        if not isinstance(self.market_id, str) or not self.market_id.strip():
+            raise ValueError("SearchPlanItem requires market_id")
+        try:
+            mode = RegionMode(self.region_mode)
+            intent = DiscoveryIntent(self.intent)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("SearchPlanItem requires canonical region mode and intent") from exc
+        object.__setattr__(self, "region_mode", mode)
+        object.__setattr__(self, "intent", intent)
+        for field_name in ("language_profile", "query_family_id", "provider_target", "query", "locale"):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"SearchPlanItem requires {field_name}")
+
+    @property
+    def request(self) -> str:
+        """Provider-compatible concrete request represented by this item."""
+
+        return self.query
+
+
+@dataclass(frozen=True, slots=True)
+class SearchPlan:
+    """Complete immutable Search plan frozen before any provider execution."""
+
+    configuration_version: str
+    region_mode: RegionMode
+    items: tuple[SearchPlanItem, ...]
+    plan_id: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.configuration_version, str) or not self.configuration_version.strip():
+            raise ValueError("SearchPlan requires configuration_version")
+        try:
+            mode = RegionMode(self.region_mode)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("SearchPlan requires a canonical region mode") from exc
+        object.__setattr__(self, "region_mode", mode)
+        items = tuple(self.items)
+        if any(not isinstance(item, SearchPlanItem) for item in items):
+            raise TypeError("SearchPlan items must be SearchPlanItem values")
+        ids = tuple(item.plan_item_id for item in items)
+        if len(ids) != len(set(ids)):
+            raise ValueError("SearchPlan requires unique plan_item_id values")
+        if any(item.region_mode is not mode for item in items):
+            raise ValueError("SearchPlan item region mode must match plan")
+        object.__setattr__(self, "items", items)
+        if not isinstance(self.plan_id, str) or not self.plan_id.strip():
+            raise ValueError("SearchPlan requires plan_id")
+
+    def as_mapping(self) -> dict[str, Any]:
+        return {
+            "configuration_version": self.configuration_version,
+            "region_mode": self.region_mode.value,
+            "plan_id": self.plan_id,
+            "items": [
+                {
+                    "plan_item_id": item.plan_item_id,
+                    "market_id": item.market_id,
+                    "intent": item.intent.value,
+                    "language_profile": item.language_profile,
+                    "query_family_id": item.query_family_id,
+                    "provider_target": item.provider_target,
+                    "query": item.query,
+                    "locale": item.locale,
+                }
+                for item in self.items
+            ],
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class DiscoveryResult:
+    """Mechanical provider result; title/snippet remain discovery metadata only."""
+
+    title: str
+    url: str
+    publisher: str = ""
+    published_at: str = ""
+    snippet: str = ""
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.title, str) or not self.title.strip():
+            raise ValueError("DiscoveryResult requires title")
+        if not isinstance(self.url, str) or not self.url.strip():
+            raise ValueError("DiscoveryResult requires url")
+        for field_name in ("publisher", "published_at", "snippet"):
+            if not isinstance(getattr(self, field_name), str):
+                raise TypeError("DiscoveryResult metadata must be strings")
+
+
+@dataclass(frozen=True, slots=True)
+class SearchAttemptResult:
+    """Typed mechanical attempt outcome; it owns no downstream decisions."""
+
+    plan_item_id: str
+    status: SearchTerminalStatus
+    results: tuple[DiscoveryResult, ...] = ()
+    technical_failure_class: SearchTechnicalFailureClass | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.plan_item_id, str) or not self.plan_item_id.strip():
+            raise ValueError("SearchAttemptResult requires plan_item_id")
+        try:
+            status = SearchTerminalStatus(self.status)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("SearchAttemptResult requires a legal terminal status") from exc
+        object.__setattr__(self, "status", status)
+        results = tuple(self.results)
+        if any(not isinstance(result, DiscoveryResult) for result in results):
+            raise TypeError("SearchAttemptResult results must be DiscoveryResult values")
+        object.__setattr__(self, "results", results)
+        if status is SearchTerminalStatus.SUCCESS_ZERO_RESULTS and results:
+            raise ValueError("SUCCESS_ZERO_RESULTS must contain no results")
+        if status is SearchTerminalStatus.SUCCESS_WITH_RESULTS and not results:
+            raise ValueError("SUCCESS_WITH_RESULTS requires results")
+        if status is SearchTerminalStatus.TECHNICAL_FAILURE:
+            if results:
+                raise ValueError("TECHNICAL_FAILURE must not create synthetic results")
+            try:
+                failure_class = SearchTechnicalFailureClass(self.technical_failure_class)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("TECHNICAL_FAILURE requires a safe failure class") from exc
+            object.__setattr__(self, "technical_failure_class", failure_class)
+        elif self.technical_failure_class is not None:
+            raise ValueError("successful result must not carry technical failure class")
+
+
+@dataclass(frozen=True, slots=True)
+class SearchObservation:
+    """Immutable observation only; it cannot alter plan or downstream decisions."""
+
+    plan_item_id: str
+    market_id: str
+    intent: DiscoveryIntent
+    language_profile: str
+    query_family_id: str
+    provider: str
+    planned: bool
+    attempted: bool
+    terminal_status: SearchTerminalStatus | None
+    raw_result_count: int
+    technical_failure_class: SearchTechnicalFailureClass | None = None
+    normalized_result_count: int = 0
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.plan_item_id, str) or not self.plan_item_id.strip():
+            raise ValueError("SearchObservation requires plan_item_id")
+        if not isinstance(self.market_id, str) or not self.market_id.strip():
+            raise ValueError("SearchObservation requires market_id")
+        try:
+            intent = DiscoveryIntent(self.intent)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("SearchObservation requires canonical intent") from exc
+        object.__setattr__(self, "intent", intent)
+        for field_name in ("language_profile", "query_family_id", "provider"):
+            if not isinstance(getattr(self, field_name), str) or not getattr(self, field_name).strip():
+                raise ValueError(f"SearchObservation requires {field_name}")
+        if not isinstance(self.planned, bool) or not isinstance(self.attempted, bool):
+            raise TypeError("SearchObservation planned/attempted must be bool")
+        if not self.planned and self.attempted:
+            raise ValueError("an unplanned observation cannot be attempted")
+        if not self.attempted and self.terminal_status is not None:
+            raise ValueError("an unattempted observation cannot carry terminal status")
+        if self.attempted and self.terminal_status is None:
+            raise ValueError("an attempted observation requires terminal status")
+        if self.terminal_status is not None:
+            try:
+                object.__setattr__(self, "terminal_status", SearchTerminalStatus(self.terminal_status))
+            except (TypeError, ValueError) as exc:
+                raise ValueError("SearchObservation requires a legal terminal status") from exc
+        if not isinstance(self.raw_result_count, int) or self.raw_result_count < 0:
+            raise ValueError("raw_result_count must be non-negative")
+        if not isinstance(self.normalized_result_count, int) or self.normalized_result_count < 0:
+            raise ValueError("normalized_result_count must be non-negative")
+        if self.terminal_status is SearchTerminalStatus.TECHNICAL_FAILURE:
+            try:
+                failure_class = SearchTechnicalFailureClass(self.technical_failure_class)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("technical failure observation requires safe failure class") from exc
+            object.__setattr__(self, "technical_failure_class", failure_class)
+        elif self.technical_failure_class is not None:
+            raise ValueError("successful observation must not carry technical failure class")
+
+
+@runtime_checkable
+class SearchProvider(Protocol):
+    """Phase 2B provider seam; implementations receive frozen plan items only."""
+
+    def execute(self, request: SearchPlanItem) -> SearchAttemptResult:
+        """Execute one technical discovery request and return a typed result."""
