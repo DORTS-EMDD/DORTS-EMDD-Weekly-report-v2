@@ -35,8 +35,12 @@ ROUND_4 = NO
 ```
 
 The three complete round reports were assessed offline by
-`assess_final_seal_batch`. Their local `.env.*` evidence files remain covered
-by the repository `.gitignore` rule and are not part of this checkpoint commit.
+`assess_final_seal_batch`. Historically these reports were captured as root
+`.env.category-*` files. Their current canonical local paths are
+`docs/category-v4-final-seal/category-final-seal-round{1,2,3}.json`; all five
+evidence files remain `IGNORED_LOCAL` and are not part of this checkpoint
+commit. The operator harness is
+`scripts/RUN_FINAL_SEAL_ASSESSMENT.ps1`.
 
 The Category `Classifier` remains the sole Category decision owner. MaiAgent
 remains proposal-only; this checkpoint introduces no Writer path, fallback,

@@ -1033,6 +1033,17 @@ Repository 無法驗證 hidden platform state 時，應記錄
 fingerprint 與 deployment fingerprint；deployment snapshot malformed 時必須在 transport
 前停止，不得自動修復、fallback 或 placeholder substitution。
 
+### Category Final Seal evidence location
+
+Repository root 的 `.env` 是實際 dotenv configuration。Category Final Seal 與 deployment
+evidence 不是 dotenv，canonical local evidence owner 是
+`docs/category-v4-final-seal/`；其檔名不使用 `.env.` prefix。五份 evidence file
+(`category-deployment-snapshot-v1.json`、`category-deployment-snapshot-v1.metadata.json`
+與 `category-final-seal-round1.json` 至 `category-final-seal-round3.json`) 屬於
+`IGNORED_LOCAL`，每個 checkout 只保留一份 canonical copy。不得保留 root-path
+fallback、duplicate copy、symlink 或 compatibility alias。canonical operator harness
+是 `scripts/RUN_FINAL_SEAL_ASSESSMENT.ps1`。
+
 Final Seal batch 失敗後必須停止並保留全部 evidence。只有通過 review 的通用變更
 可以建立新的 acceptance version 與新的預先固定 batch；歷史失敗不得刪除或由後續
 成功 round 取代。
