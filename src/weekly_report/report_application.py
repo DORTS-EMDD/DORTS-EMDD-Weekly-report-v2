@@ -10,12 +10,16 @@ from .contracts import (
     AcquisitionRecord,
     CandidateNormalizationFailure,
     CandidateNormalizationResult,
+    EvidenceResult,
+    EvidenceState,
+    NormalizedCandidate,
     RegionMode,
     SearchExecutionResult,
     SearchObservation,
     SearchPlan,
     SearchTerminalStatus,
 )
+from .evidence_service import EvidenceService
 from .region_registry import RegionRegistry
 from .search_executor import SearchExecutor
 from .search_planner import SearchPlanner
@@ -23,7 +27,7 @@ from .search_planner import SearchPlanner
 
 @dataclass(frozen=True, slots=True)
 class ReportApplicationResult:
-    """Immutable Search composition output before Evidence acquisition."""
+    """Immutable shared application result through the Evidence boundary."""
 
     plan: SearchPlan
     execution: SearchExecutionResult
@@ -31,6 +35,9 @@ class ReportApplicationResult:
     normalization_result: CandidateNormalizationResult | None = None
     normalized_observations: tuple[SearchObservation, ...] = ()
     normalization_failure: CandidateNormalizationFailure | None = None
+    # ``None`` means that the Evidence stage was not reached.  An empty tuple
+    # means it completed for a legal zero-candidate population.
+    evidence_results: tuple[EvidenceResult, ...] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.plan, SearchPlan):
@@ -59,6 +66,25 @@ class ReportApplicationResult:
             raise TypeError("ReportApplicationResult normalization_failure must be typed")
         if self.normalization_result is not None and self.normalization_failure is not None:
             raise ValueError("normalization result and failure are mutually exclusive")
+        evidence_results = self.evidence_results
+        if evidence_results is not None:
+            if not self.execution.execution_complete or self.execution.has_technical_failures:
+                raise ValueError("Evidence results require successful Search execution")
+            evidence_results = tuple(evidence_results)
+            if self.normalization_result is None or self.normalization_failure is not None:
+                raise ValueError("Evidence results require completed normalization")
+            if any(not isinstance(item, EvidenceResult) for item in evidence_results):
+                raise TypeError("ReportApplicationResult evidence_results must be typed")
+            if any(not isinstance(item.state, EvidenceState) for item in evidence_results):
+                raise TypeError("EvidenceResult state must be an EvidenceState")
+            candidates = self.normalized_candidates
+            candidate_ids = tuple(item.candidate.candidate_id for item in candidates)
+            result_ids = tuple(item.candidate_id for item in evidence_results)
+            if len(result_ids) != len(set(result_ids)):
+                raise ValueError("Evidence results must have unique candidate IDs")
+            if result_ids != candidate_ids:
+                raise ValueError("Evidence results must cover normalized candidates in order")
+        object.__setattr__(self, "evidence_results", evidence_results)
 
     @property
     def downstream_ready(self) -> bool:
@@ -75,6 +101,22 @@ class ReportApplicationResult:
             return ()
         return self.normalization_result.normalized_candidates
 
+    @property
+    def evidence_stage_completed(self) -> bool:
+        return self.evidence_results is not None
+
+    @property
+    def evidence_admitted_candidates(self) -> tuple[NormalizedCandidate, ...]:
+        if self.evidence_results is None:
+            return ()
+        return tuple(
+            candidate
+            for candidate, evidence in zip(
+                self.normalized_candidates, self.evidence_results, strict=True
+            )
+            if evidence.state is EvidenceState.READY
+        )
+
 
 class ReportApplication:
     """The single application orchestration owner for Search Phase 2B."""
@@ -85,6 +127,7 @@ class ReportApplication:
         planner: SearchPlanner | None = None,
         executor: SearchExecutor | None = None,
         normalizer: CandidateNormalizer | None = None,
+        evidence_service: EvidenceService | None = None,
     ) -> None:
         if not isinstance(registry, RegionRegistry):
             raise TypeError("ReportApplication requires a RegionRegistry")
@@ -94,10 +137,13 @@ class ReportApplication:
             raise TypeError("ReportApplication requires a SearchExecutor")
         if normalizer is not None and not isinstance(normalizer, CandidateNormalizer):
             raise TypeError("ReportApplication normalizer must be a CandidateNormalizer")
+        if not isinstance(evidence_service, EvidenceService):
+            raise TypeError("ReportApplication requires an EvidenceService")
         self._registry = registry
         self._planner = planner or SearchPlanner(registry)
         self._executor = executor
         self._normalizer = normalizer or CandidateNormalizer()
+        self._evidence_service = evidence_service
 
     @property
     def registry(self) -> RegionRegistry:
@@ -114,6 +160,10 @@ class ReportApplication:
     @property
     def normalizer(self) -> CandidateNormalizer:
         return self._normalizer
+
+    @property
+    def evidence_service(self) -> EvidenceService:
+        return self._evidence_service
 
     def run(
         self,
@@ -143,6 +193,17 @@ class ReportApplication:
                 normalization_failure=exc.failure,
             )
 
+        evidence_results: list[EvidenceResult] = []
+        for normalized_candidate in normalized.normalized_candidates:
+            evidence = self._evidence_service.evaluate(normalized_candidate.candidate)
+            if not isinstance(evidence, EvidenceResult):
+                raise TypeError("EvidenceService must return an EvidenceResult")
+            if not isinstance(evidence.state, EvidenceState):
+                raise TypeError("EvidenceResult state must be an EvidenceState")
+            if evidence.candidate_id != normalized_candidate.candidate.candidate_id:
+                raise ValueError("EvidenceResult candidate_id does not match candidate")
+            evidence_results.append(evidence)
+
         return ReportApplicationResult(
             plan,
             execution,
@@ -151,6 +212,7 @@ class ReportApplication:
             normalized_observations=self._normalized_observations(
                 execution, acquisitions, normalized
             ),
+            evidence_results=tuple(evidence_results),
         )
 
     @staticmethod
@@ -240,10 +302,11 @@ def build_report_application(
     *,
     planner: SearchPlanner | None = None,
     normalizer: CandidateNormalizer | None = None,
+    evidence_service: EvidenceService,
 ) -> ReportApplication:
     """Construct the shared Search application seam without executing it."""
 
-    return ReportApplication(registry, planner, executor, normalizer)
+    return ReportApplication(registry, planner, executor, normalizer, evidence_service)
 
 
 __all__ = [
