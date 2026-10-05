@@ -10,6 +10,8 @@ from src.weekly_report.contracts import (
     DiscoveryResult,
     EvidenceResult,
     EvidenceState,
+    EventGroup,
+    EventIdentityRun,
     GoogleNewsRssEncoding,
     RejectReason,
     RegionMode,
@@ -19,6 +21,10 @@ from src.weekly_report.contracts import (
     SearchProviderId,
     SearchTechnicalFailureClass,
     SearchTerminalStatus,
+    ScopeResult,
+    ScopeState,
+    TemporalResult,
+    TemporalDiagnostic,
     candidate_id_for_url,
 )
 from src.weekly_report.region_registry import RegionRegistry
@@ -26,6 +32,9 @@ from src.weekly_report.report_application import ReportApplication
 from src.weekly_report.evidence_service import EvidenceService
 from src.weekly_report.search_executor import SearchExecutor
 from src.weekly_report.search_planner import SearchPlanner
+from src.weekly_report.scope_classifier import ScopeClassifier
+from src.weekly_report.temporal_rule import TemporalRule
+from src.weekly_report.event_identity import EventIdentity
 
 
 def _registry() -> RegionRegistry:
@@ -127,17 +136,111 @@ class FailOnSecondEvidenceService(RecordingEvidenceService):
         )
 
 
+class FixtureReportApplication(ReportApplication):
+    """Keep legacy Search/Evidence fixtures concise with an explicit period."""
+
+    def run(self, mode, intents=None, *, period_start="2026-09-12", period_end="2026-09-18"):
+        return super().run(
+            mode,
+            intents,
+            period_start=period_start,
+            period_end=period_end,
+        )
+
+
+class RecordingScopeClassifier(ScopeClassifier):
+    def __init__(self, *, out_of_scope=(), error=None, invalid=None):
+        self.calls = []
+        self.out_of_scope = set(out_of_scope)
+        self.error = error
+        self.invalid = invalid
+
+    def classify(self, evidence, *, candidate_title=""):
+        self.calls.append((evidence, candidate_title))
+        if self.error is not None:
+            raise self.error
+        if self.invalid is not None:
+            return self.invalid
+        state = (
+            ScopeState.OUT_OF_SCOPE
+            if evidence.candidate_id in self.out_of_scope
+            else ScopeState.IN_SCOPE
+        )
+        return ScopeResult(evidence.candidate_id, state)
+
+
+class RecordingTemporalRule(TemporalRule):
+    def __init__(self, *, invalid=None, error=None, date_valid=True):
+        self.calls = []
+        self.invalid = invalid
+        self.error = error
+        self.date_valid = date_valid
+
+    def evaluate(self, candidate_id, source_date_facts, period_start, period_end, **kwargs):
+        self.calls.append((candidate_id, tuple(source_date_facts), period_start, period_end, kwargs))
+        if self.error is not None:
+            raise self.error
+        if self.invalid is not None:
+            return self.invalid
+        return TemporalResult(
+            candidate_id,
+            self.date_valid,
+            diagnostic=(
+                TemporalDiagnostic.NONE
+                if self.date_valid
+                else TemporalDiagnostic.DATE_MISSING
+            ),
+        )
+
+
+class RecordingEventIdentity(EventIdentity):
+    def __init__(self, *, error=None, invalid=None, merge=False):
+        self.calls = []
+        self.error = error
+        self.invalid = invalid
+        self.merge = merge
+
+    def evaluate(self, records):
+        records = tuple(records)
+        self.calls.append(records)
+        if self.error is not None:
+            raise self.error
+        if self.invalid is not None:
+            return self.invalid
+        if self.merge and records:
+            ids = tuple(sorted(record.candidate.candidate_id for record in records))
+            return EventIdentityRun((EventGroup("evt-fixture", ids, ids[0], ()),))
+        groups = tuple(
+            EventGroup(f"evt-{record.candidate.candidate_id}", (record.candidate.candidate_id,), record.candidate.candidate_id, ())
+            for record in records
+        )
+        return EventIdentityRun(groups)
+
+
 class ReportApplicationTests(TestCase):
-    def _app(self, provider: FakeProvider, *, dispatch=True, normalizer=None, evidence_service=None) -> ReportApplication:
+    def _app(
+        self,
+        provider: FakeProvider,
+        *,
+        dispatch=True,
+        normalizer=None,
+        evidence_service=None,
+        scope_classifier=None,
+        temporal_rule=None,
+        event_identity=None,
+    ) -> ReportApplication:
         plan = _fixture_plan()
         registry = _registry()
         mapping = {SearchProviderId.GOOGLE_NEWS_RSS: provider} if dispatch else {}
-        return ReportApplication(
+        return FixtureReportApplication(
             registry,
             FixturePlanner(registry, plan),
             SearchExecutor(mapping),
             normalizer,
             evidence_service or RecordingEvidenceService(),
+            scope_classifier=scope_classifier,
+            temporal_rule=temporal_rule,
+            event_identity=event_identity,
         )
 
     def test_fixture_preserves_complete_production_registry(self) -> None:
@@ -391,3 +494,361 @@ class ReportApplicationTests(TestCase):
         self.assertTrue(result.evidence_stage_completed)
         self.assertEqual(result.evidence_results, ())
         self.assertEqual(service.calls, [])
+
+    def test_ready_evidence_flows_through_scope_temporal_and_event_identity(self) -> None:
+        scope = RecordingScopeClassifier()
+        temporal = RecordingTemporalRule()
+        identity = RecordingEventIdentity()
+        result = self._app(
+            FakeProvider(),
+            scope_classifier=scope,
+            temporal_rule=temporal,
+            event_identity=identity,
+        ).run("selected", period_start="2026-09-12", period_end="2026-09-18")
+
+        self.assertEqual(len(scope.calls), 1)
+        self.assertEqual(len(temporal.calls), 1)
+        self.assertEqual(len(identity.calls), 1)
+        self.assertEqual(len(identity.calls[0]), 1)
+        self.assertEqual(len(result.event_identity_run.groups), 1)
+        self.assertIs(result.event_identity_records[0].evidence, result.evidence_results[0])
+        self.assertIs(result.event_identity_records[0].scope, result.scope_results[0])
+        self.assertIs(result.event_identity_records[0].temporal, result.temporal_results[0])
+
+    def test_rejected_evidence_never_reaches_scope(self) -> None:
+        scope = RecordingScopeClassifier()
+        result = self._app(
+            FakeProvider(),
+            evidence_service=RecordingEvidenceService(
+                rejected_ids={candidate_id_for_url("https://example.test/item")}
+            ),
+            scope_classifier=scope,
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+        ).run("selected")
+
+        self.assertEqual(scope.calls, [])
+        self.assertEqual(result.scope_results, ())
+        self.assertEqual(result.temporal_results, ())
+        self.assertEqual(result.event_identity_records, ())
+
+    def test_out_of_scope_stops_before_temporal_and_event_identity(self) -> None:
+        scope = RecordingScopeClassifier(
+            out_of_scope={candidate_id_for_url("https://example.test/item")}
+        )
+        temporal = RecordingTemporalRule()
+        identity = RecordingEventIdentity()
+        result = self._app(
+            FakeProvider(),
+            scope_classifier=scope,
+            temporal_rule=temporal,
+            event_identity=identity,
+        ).run("selected")
+
+        self.assertEqual(result.scope_results[0].state, ScopeState.OUT_OF_SCOPE)
+        self.assertEqual(temporal.calls, [])
+        self.assertEqual(identity.calls, [()])
+        self.assertEqual(result.event_identity_run.groups, ())
+
+    def test_invalid_temporal_result_stops_before_event_identity(self) -> None:
+        temporal = RecordingTemporalRule(invalid={})
+        identity = RecordingEventIdentity()
+        with self.assertRaises(TypeError):
+            self._app(
+                FakeProvider(),
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=temporal,
+                event_identity=identity,
+            ).run("selected")
+        self.assertEqual(identity.calls, [])
+
+    def test_event_identity_receives_complete_population_once(self) -> None:
+        scope = RecordingScopeClassifier()
+        temporal = RecordingTemporalRule()
+        identity = RecordingEventIdentity()
+        result = self._app(
+            MultiResultProvider(),
+            scope_classifier=scope,
+            temporal_rule=temporal,
+            event_identity=identity,
+        ).run("selected")
+
+        self.assertEqual(len(scope.calls), 2)
+        self.assertEqual(len(temporal.calls), 2)
+        self.assertEqual(len(identity.calls), 1)
+        self.assertEqual(
+            {record.candidate.candidate_id for record in identity.calls[0]},
+            {candidate.candidate.candidate_id for candidate in result.normalized_candidates},
+        )
+
+    def test_duplicate_event_keeps_all_member_records_and_provenance(self) -> None:
+        identity = RecordingEventIdentity(merge=True)
+        result = self._app(
+            MultiResultProvider(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=identity,
+        ).run("selected")
+
+        self.assertEqual(len(result.event_identity_run.groups), 1)
+        group = result.event_identity_run.groups[0]
+        self.assertEqual(len(group.member_candidate_ids), 2)
+        self.assertEqual(len(result.event_identity_records), 2)
+        self.assertEqual(len(identity.calls), 1)
+        self.assertEqual(len(result.normalized_candidates[0].acquisition_origins), 1)
+        self.assertEqual(len(result.normalized_candidates[1].acquisition_origins), 1)
+
+    def test_scope_invalid_result_is_an_application_contract_failure(self) -> None:
+        with self.assertRaises(TypeError):
+            self._app(
+                FakeProvider(),
+                scope_classifier=RecordingScopeClassifier(invalid={}),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=RecordingEventIdentity(),
+            ).run("selected")
+
+    def test_event_identity_invalid_result_is_an_application_contract_failure(self) -> None:
+        with self.assertRaises(TypeError):
+            self._app(
+                FakeProvider(),
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=RecordingEventIdentity(invalid={}),
+            ).run("selected")
+
+    def test_scope_exception_does_not_expose_partial_result(self) -> None:
+        error = RuntimeError("scope failure")
+
+        class FailOnSecondScope(RecordingScopeClassifier):
+            def __init__(self):
+                super().__init__()
+                self.successful_results = []
+
+            def classify(self, evidence, *, candidate_title=""):
+                if len(self.calls) == 0:
+                    result = super().classify(evidence, candidate_title=candidate_title)
+                    self.successful_results.append(result)
+                    return result
+                self.calls.append((evidence, candidate_title))
+                raise error
+
+        scope = FailOnSecondScope()
+        with self.assertRaises(RuntimeError):
+            self._app(
+                MultiResultProvider(),
+                scope_classifier=scope,
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=RecordingEventIdentity(),
+            ).run("selected")
+        self.assertEqual(len(scope.calls), 2)
+        self.assertEqual(len(scope.successful_results), 1)
+        self.assertIsInstance(scope.successful_results[0], ScopeResult)
+
+    def test_temporal_exception_does_not_expose_partial_result(self) -> None:
+        error = RuntimeError("temporal failure")
+
+        class FailOnSecondTemporal(RecordingTemporalRule):
+            def __init__(self):
+                super().__init__()
+                self.successful_results = []
+
+            def evaluate(self, candidate_id, source_date_facts, period_start, period_end, **kwargs):
+                if len(self.calls) == 0:
+                    result = super().evaluate(
+                        candidate_id, source_date_facts, period_start, period_end, **kwargs
+                    )
+                    self.successful_results.append(result)
+                    return result
+                self.calls.append((candidate_id, tuple(source_date_facts), period_start, period_end, kwargs))
+                raise error
+
+        temporal = FailOnSecondTemporal()
+        identity = RecordingEventIdentity()
+        with self.assertRaises(RuntimeError):
+            self._app(
+                MultiResultProvider(),
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=temporal,
+                event_identity=identity,
+            ).run("selected")
+        self.assertEqual(len(temporal.calls), 2)
+        self.assertEqual(len(temporal.successful_results), 1)
+        self.assertIsInstance(temporal.successful_results[0], TemporalResult)
+        self.assertEqual(identity.calls, [])
+
+    def test_event_identity_exception_does_not_expose_partial_result(self) -> None:
+        error = RuntimeError("identity failure")
+        with self.assertRaises(RuntimeError):
+            self._app(
+                FakeProvider(),
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=RecordingEventIdentity(error=error),
+            ).run("selected")
+
+    def test_zero_date_valid_population_is_completed_and_calls_identity_once(self) -> None:
+        identity = RecordingEventIdentity()
+        result = self._app(
+            FakeProvider(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(date_valid=False),
+            event_identity=identity,
+        ).run("selected")
+
+        self.assertEqual(len(identity.calls), 1)
+        self.assertEqual(identity.calls[0], ())
+        self.assertEqual(result.event_identity_records, ())
+        self.assertIsNotNone(result.event_identity_run)
+
+    def test_invalid_report_period_propagates_from_temporal_owner(self) -> None:
+        identity = RecordingEventIdentity()
+        with self.assertRaises(ValueError):
+            self._app(
+                FakeProvider(),
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=TemporalRule(),
+                event_identity=identity,
+            ).run("selected", period_start="2026-09-19", period_end="2026-09-12")
+        self.assertEqual(identity.calls, [])
+
+    def test_invalid_report_period_aborts_independently_of_population(self) -> None:
+        class ZeroProvider(FakeProvider):
+            def execute(self, item):
+                self.calls.append(item.plan_item_id)
+                return SearchAttemptResult(item.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
+
+        candidate_id = candidate_id_for_url("https://example.test/item")
+        invalid_periods = (
+            ("not-a-date", "2026-09-18"),
+            ("2026-09-19", "2026-09-12"),
+        )
+        for period_start, period_end in invalid_periods:
+            for population in ("in_scope", "out_of_scope", "zero_ready", "zero_normalized"):
+                scope = RecordingScopeClassifier(
+                    out_of_scope={candidate_id} if population == "out_of_scope" else ()
+                )
+                evidence = RecordingEvidenceService(
+                    rejected_ids={candidate_id} if population == "zero_ready" else ()
+                )
+                temporal = RecordingTemporalRule()
+                identity = RecordingEventIdentity()
+                provider = ZeroProvider() if population == "zero_normalized" else FakeProvider()
+                with self.assertRaises(ValueError):
+                    self._app(
+                        provider,
+                        evidence_service=evidence,
+                        scope_classifier=scope,
+                        temporal_rule=temporal,
+                        event_identity=identity,
+                    ).run(
+                        "selected",
+                        period_start=period_start,
+                        period_end=period_end,
+                    )
+                self.assertEqual(scope.calls, [], (period_start, period_end, population))
+                self.assertEqual(temporal.calls, [], (period_start, period_end, population))
+                self.assertEqual(identity.calls, [], (period_start, period_end, population))
+
+    def test_non_boolean_temporal_result_aborts_before_event_identity(self) -> None:
+        for value in ("false", 1):
+            identity = RecordingEventIdentity()
+            with self.assertRaises(TypeError):
+                self._app(
+                    FakeProvider(),
+                    scope_classifier=RecordingScopeClassifier(),
+                    temporal_rule=RecordingTemporalRule(date_valid=value),
+                    event_identity=identity,
+                ).run("selected")
+            self.assertEqual(identity.calls, [], value)
+
+    def test_scope_candidate_id_mismatch_aborts_before_temporal(self) -> None:
+        temporal = RecordingTemporalRule()
+        identity = RecordingEventIdentity()
+        with self.assertRaises(ValueError):
+            self._app(
+                FakeProvider(),
+                scope_classifier=RecordingScopeClassifier(
+                    invalid=ScopeResult("foreign", ScopeState.IN_SCOPE)
+                ),
+                temporal_rule=temporal,
+                event_identity=identity,
+            ).run("selected")
+        self.assertEqual(temporal.calls, [])
+        self.assertEqual(identity.calls, [])
+
+    def test_temporal_candidate_id_mismatch_aborts_before_event_identity(self) -> None:
+        identity = RecordingEventIdentity()
+        with self.assertRaises(ValueError):
+            self._app(
+                FakeProvider(),
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(
+                    invalid=TemporalResult("foreign", True)
+                ),
+                event_identity=identity,
+            ).run("selected")
+        self.assertEqual(identity.calls, [])
+
+    def test_missing_event_member_is_rejected(self) -> None:
+        class MissingMemberIdentity(RecordingEventIdentity):
+            def evaluate(self, records):
+                records = tuple(records)
+                self.calls.append(records)
+                first = records[0].candidate.candidate_id
+                return EventIdentityRun((EventGroup("evt-one", (first,), first, ()),))
+
+        with self.assertRaises(ValueError):
+            self._app(
+                MultiResultProvider(),
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=MissingMemberIdentity(),
+            ).run("selected")
+
+    def test_unknown_event_member_is_rejected(self) -> None:
+        class UnknownMemberIdentity(RecordingEventIdentity):
+            def evaluate(self, records):
+                records = tuple(records)
+                self.calls.append(records)
+                first = records[0].candidate.candidate_id
+                members = tuple(sorted((first, "foreign")))
+                return EventIdentityRun((EventGroup("evt-unknown", members, first, ()),))
+
+        with self.assertRaises(ValueError):
+            self._app(
+                MultiResultProvider(),
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=UnknownMemberIdentity(),
+            ).run("selected")
+
+    def test_overlapping_event_groups_are_rejected_mechanically(self) -> None:
+        class OverlappingIdentity(RecordingEventIdentity):
+            def evaluate(self, records):
+                records = tuple(records)
+                self.calls.append(records)
+                first = records[0].candidate.candidate_id
+                second = records[-1].candidate.candidate_id
+                return EventIdentityRun(
+                    (
+                        EventGroup("evt-a", (first,), first, ()),
+                        EventGroup("evt-b", (first, second), first, ()),
+                    )
+                )
+
+        with self.assertRaises(ValueError):
+            self._app(
+                MultiResultProvider(),
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=OverlappingIdentity(),
+            ).run("selected")
+
+    def test_downstream_ready_remains_search_side_only_after_new_stages(self) -> None:
+        result = self._app(
+            FakeProvider(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+        ).run("selected")
+        self.assertTrue(result.downstream_ready)

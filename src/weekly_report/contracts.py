@@ -335,6 +335,8 @@ class TemporalResult:
     provenance: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        if type(self.date_valid) is not bool:
+            raise TypeError("TemporalResult date_valid must be a bool")
         if self.date_valid and self.diagnostic is not TemporalDiagnostic.NONE:
             raise ValueError("DATE_VALID cannot carry a failure diagnostic")
         if not self.date_valid and self.diagnostic is TemporalDiagnostic.NONE:

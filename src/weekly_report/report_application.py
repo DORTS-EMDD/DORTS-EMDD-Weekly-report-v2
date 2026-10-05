@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import date
 
 from .candidate_normalizer import CandidateNormalizationError, CandidateNormalizer
 from .contracts import (
@@ -12,22 +13,31 @@ from .contracts import (
     CandidateNormalizationResult,
     EvidenceResult,
     EvidenceState,
+    EventGroup,
+    EventIdentityRecord,
+    EventIdentityRun,
     NormalizedCandidate,
     RegionMode,
     SearchExecutionResult,
     SearchObservation,
     SearchPlan,
     SearchTerminalStatus,
+    ScopeResult,
+    ScopeState,
+    TemporalResult,
 )
 from .evidence_service import EvidenceService
+from .event_identity import EventIdentity
 from .region_registry import RegionRegistry
 from .search_executor import SearchExecutor
 from .search_planner import SearchPlanner
+from .scope_classifier import ScopeClassifier
+from .temporal_rule import TemporalRule
 
 
 @dataclass(frozen=True, slots=True)
 class ReportApplicationResult:
-    """Immutable shared application result through the Evidence boundary."""
+    """Immutable shared application result through the Event Identity boundary."""
 
     plan: SearchPlan
     execution: SearchExecutionResult
@@ -38,6 +48,12 @@ class ReportApplicationResult:
     # ``None`` means that the Evidence stage was not reached.  An empty tuple
     # means it completed for a legal zero-candidate population.
     evidence_results: tuple[EvidenceResult, ...] | None = None
+    # Each later field is None until its stage is reached.  Empty tuples are
+    # completed zero populations, not an unvisited stage.
+    scope_results: tuple[ScopeResult, ...] | None = None
+    temporal_results: tuple[TemporalResult, ...] | None = None
+    event_identity_records: tuple[EventIdentityRecord, ...] | None = None
+    event_identity_run: EventIdentityRun | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.plan, SearchPlan):
@@ -86,6 +102,125 @@ class ReportApplicationResult:
                 raise ValueError("Evidence results must cover normalized candidates in order")
         object.__setattr__(self, "evidence_results", evidence_results)
 
+        scope_results = self.scope_results
+        if scope_results is not None:
+            if evidence_results is None:
+                raise ValueError("Scope results require completed Evidence")
+            scope_results = tuple(scope_results)
+            if any(not isinstance(result, ScopeResult) for result in scope_results):
+                raise TypeError("ReportApplicationResult scope_results must be typed")
+            admitted_ids = tuple(
+                result.candidate_id
+                for result in evidence_results
+                if result.state is EvidenceState.READY
+            )
+            if len(scope_results) != len(admitted_ids):
+                raise ValueError("Scope results must cover READY Evidence candidates")
+            result_ids = tuple(result.candidate_id for result in scope_results)
+            if result_ids != admitted_ids:
+                raise ValueError("Scope results must cover READY candidates in order")
+            if any(not isinstance(result.state, ScopeState) for result in scope_results):
+                raise TypeError("ScopeResult state must be a ScopeState")
+        object.__setattr__(self, "scope_results", scope_results)
+
+        temporal_results = self.temporal_results
+        if temporal_results is not None:
+            if scope_results is None:
+                raise ValueError("Temporal results require completed Scope")
+            temporal_results = tuple(temporal_results)
+            if any(not isinstance(result, TemporalResult) for result in temporal_results):
+                raise TypeError("ReportApplicationResult temporal_results must be typed")
+            if any(type(result.date_valid) is not bool for result in temporal_results):
+                raise TypeError("TemporalResult date_valid must be a bool")
+            scoped_ids = tuple(
+                result.candidate_id
+                for result in scope_results
+                if result.state is ScopeState.IN_SCOPE
+            )
+            if len(temporal_results) != len(scoped_ids):
+                raise ValueError("Temporal results must cover IN_SCOPE candidates")
+            result_ids = tuple(result.candidate_id for result in temporal_results)
+            if result_ids != scoped_ids:
+                raise ValueError("Temporal results must cover IN_SCOPE candidates in order")
+        object.__setattr__(self, "temporal_results", temporal_results)
+
+        records = self.event_identity_records
+        if records is not None:
+            if temporal_results is None:
+                raise ValueError("Event Identity records require completed Temporal")
+            records = tuple(records)
+            eligible_ids = tuple(
+                result.candidate_id
+                for result in temporal_results
+                if result.date_valid is True
+            )
+            if len(records) != len(eligible_ids):
+                raise ValueError("Event Identity records must cover date-valid candidates")
+            if any(not isinstance(record, EventIdentityRecord) for record in records):
+                raise TypeError("ReportApplicationResult event_identity_records must be typed")
+            record_ids = tuple(record.candidate.candidate_id for record in records)
+            if record_ids != eligible_ids:
+                raise ValueError("Event Identity records must cover eligible candidates in order")
+            candidate_by_id = {
+                candidate.candidate.candidate_id: candidate.candidate
+                for candidate in self.normalized_candidates
+            }
+            evidence_by_id = {
+                result.candidate_id: result
+                for result in evidence_results or ()
+            }
+            scope_by_id = {
+                result.candidate_id: result
+                for result in scope_results or ()
+            }
+            temporal_by_id = {
+                result.candidate_id: result
+                for result in temporal_results
+            }
+            for record in records:
+                candidate_id = record.candidate.candidate_id
+                if record.evidence.state is not EvidenceState.READY:
+                    raise ValueError("Event Identity record requires READY Evidence")
+                if record.scope.state is not ScopeState.IN_SCOPE:
+                    raise ValueError("Event Identity record requires IN_SCOPE Scope")
+                if record.temporal.date_valid is not True:
+                    raise ValueError("Event Identity record requires valid Temporal result")
+                if record.candidate is not candidate_by_id[candidate_id]:
+                    raise ValueError("Event Identity record must preserve Candidate reference")
+                if record.evidence is not evidence_by_id[candidate_id]:
+                    raise ValueError("Event Identity record must preserve Evidence reference")
+                if record.scope is not scope_by_id[candidate_id]:
+                    raise ValueError("Event Identity record must preserve Scope reference")
+                if record.temporal is not temporal_by_id[candidate_id]:
+                    raise ValueError("Event Identity record must preserve Temporal reference")
+        object.__setattr__(self, "event_identity_records", records)
+
+        event_identity_run = self.event_identity_run
+        if event_identity_run is not None:
+            if records is None:
+                raise ValueError("Event Identity run requires completed records")
+            if not isinstance(event_identity_run, EventIdentityRun):
+                raise TypeError("ReportApplicationResult event_identity_run must be typed")
+            if not isinstance(event_identity_run.groups, tuple):
+                raise TypeError("EventIdentityRun groups must be a tuple")
+            expected_ids = tuple(record.candidate.candidate_id for record in records)
+            seen_ids: list[str] = []
+            seen_event_ids: set[str] = set()
+            for group in event_identity_run.groups:
+                if not isinstance(group, EventGroup):
+                    raise TypeError("EventIdentityRun groups must contain EventGroup values")
+                if group.event_id in seen_event_ids:
+                    raise ValueError("Event Identity groups must have unique event IDs")
+                seen_event_ids.add(group.event_id)
+                seen_ids.extend(group.member_candidate_ids)
+            if tuple(sorted(seen_ids)) != tuple(sorted(expected_ids)):
+                raise ValueError("Event Identity groups must partition eligible candidates")
+            if len(seen_ids) != len(set(seen_ids)):
+                raise ValueError("Event Identity groups must not overlap")
+        elif records is not None:
+            raise ValueError("completed Event Identity records require an EventIdentityRun")
+        object.__setattr__(self, "event_identity_run", event_identity_run)
+
     @property
     def downstream_ready(self) -> bool:
         return (
@@ -128,6 +263,9 @@ class ReportApplication:
         executor: SearchExecutor | None = None,
         normalizer: CandidateNormalizer | None = None,
         evidence_service: EvidenceService | None = None,
+        scope_classifier: ScopeClassifier | None = None,
+        temporal_rule: TemporalRule | None = None,
+        event_identity: EventIdentity | None = None,
     ) -> None:
         if not isinstance(registry, RegionRegistry):
             raise TypeError("ReportApplication requires a RegionRegistry")
@@ -139,11 +277,20 @@ class ReportApplication:
             raise TypeError("ReportApplication normalizer must be a CandidateNormalizer")
         if not isinstance(evidence_service, EvidenceService):
             raise TypeError("ReportApplication requires an EvidenceService")
+        if scope_classifier is not None and not isinstance(scope_classifier, ScopeClassifier):
+            raise TypeError("ReportApplication scope_classifier must be a ScopeClassifier")
+        if temporal_rule is not None and not isinstance(temporal_rule, TemporalRule):
+            raise TypeError("ReportApplication temporal_rule must be a TemporalRule")
+        if event_identity is not None and not isinstance(event_identity, EventIdentity):
+            raise TypeError("ReportApplication event_identity must be an EventIdentity")
         self._registry = registry
         self._planner = planner or SearchPlanner(registry)
         self._executor = executor
         self._normalizer = normalizer or CandidateNormalizer()
         self._evidence_service = evidence_service
+        self._scope_classifier = scope_classifier or ScopeClassifier()
+        self._temporal_rule = temporal_rule or TemporalRule()
+        self._event_identity = event_identity or EventIdentity()
 
     @property
     def registry(self) -> RegionRegistry:
@@ -165,11 +312,27 @@ class ReportApplication:
     def evidence_service(self) -> EvidenceService:
         return self._evidence_service
 
+    @property
+    def scope_classifier(self) -> ScopeClassifier:
+        return self._scope_classifier
+
+    @property
+    def temporal_rule(self) -> TemporalRule:
+        return self._temporal_rule
+
+    @property
+    def event_identity(self) -> EventIdentity:
+        return self._event_identity
+
     def run(
         self,
         mode: RegionMode | str,
         intents: Iterable | None = None,
+        *,
+        period_start: date | str,
+        period_end: date | str,
     ) -> ReportApplicationResult:
+        self._temporal_rule.validate_period(period_start, period_end)
         plan = self._planner.plan(mode, intents=intents)
         execution = self._executor.execute(plan)
         if not execution.execution_complete or execution.has_technical_failures:
@@ -204,6 +367,69 @@ class ReportApplication:
                 raise ValueError("EvidenceResult candidate_id does not match candidate")
             evidence_results.append(evidence)
 
+        evidence_tuple = tuple(evidence_results)
+        ready_pairs = tuple(
+            (normalized_candidate, evidence)
+            for normalized_candidate, evidence in zip(
+                normalized.normalized_candidates, evidence_tuple, strict=True
+            )
+            if evidence.state is EvidenceState.READY
+        )
+        scope_results: list[ScopeResult] = []
+        for normalized_candidate, evidence in ready_pairs:
+            scope = self._scope_classifier.classify(
+                evidence,
+                candidate_title=normalized_candidate.candidate.title,
+            )
+            if not isinstance(scope, ScopeResult):
+                raise TypeError("ScopeClassifier must return a ScopeResult")
+            if not isinstance(scope.state, ScopeState):
+                raise TypeError("ScopeResult state must be a ScopeState")
+            if scope.candidate_id != normalized_candidate.candidate.candidate_id:
+                raise ValueError("ScopeResult candidate_id does not match candidate")
+            scope_results.append(scope)
+
+        scope_tuple = tuple(scope_results)
+        scope_by_id = {result.candidate_id: result for result in scope_tuple}
+        ready_by_id = {
+            normalized_candidate.candidate.candidate_id: (normalized_candidate, evidence)
+            for normalized_candidate, evidence in ready_pairs
+        }
+        temporal_results: list[TemporalResult] = []
+        for scope in scope_tuple:
+            if scope.state is not ScopeState.IN_SCOPE:
+                continue
+            normalized_candidate, evidence = ready_by_id[scope.candidate_id]
+            temporal = self._temporal_rule.evaluate(
+                scope.candidate_id,
+                evidence.source_date_facts,
+                period_start,
+                period_end,
+                source_type=evidence.source_type,
+                discovery_published_at=normalized_candidate.candidate.published_at,
+                scope_result=scope,
+            )
+            if not isinstance(temporal, TemporalResult):
+                raise TypeError("TemporalRule must return a TemporalResult")
+            if temporal.candidate_id != scope.candidate_id:
+                raise ValueError("TemporalResult candidate_id does not match candidate")
+            temporal_results.append(temporal)
+
+        temporal_tuple = tuple(temporal_results)
+        event_identity_records = tuple(
+            EventIdentityRecord(
+                candidate=ready_by_id[temporal.candidate_id][0].candidate,
+                evidence=ready_by_id[temporal.candidate_id][1],
+                scope=scope_by_id[temporal.candidate_id],
+                temporal=temporal,
+            )
+            for temporal in temporal_tuple
+            if temporal.date_valid is True
+        )
+        event_identity_run = self._event_identity.evaluate(event_identity_records)
+        if not isinstance(event_identity_run, EventIdentityRun):
+            raise TypeError("EventIdentity must return an EventIdentityRun")
+
         return ReportApplicationResult(
             plan,
             execution,
@@ -212,7 +438,11 @@ class ReportApplication:
             normalized_observations=self._normalized_observations(
                 execution, acquisitions, normalized
             ),
-            evidence_results=tuple(evidence_results),
+            evidence_results=evidence_tuple,
+            scope_results=scope_tuple,
+            temporal_results=temporal_tuple,
+            event_identity_records=event_identity_records,
+            event_identity_run=event_identity_run,
         )
 
     @staticmethod
@@ -303,10 +533,22 @@ def build_report_application(
     planner: SearchPlanner | None = None,
     normalizer: CandidateNormalizer | None = None,
     evidence_service: EvidenceService,
+    scope_classifier: ScopeClassifier | None = None,
+    temporal_rule: TemporalRule | None = None,
+    event_identity: EventIdentity | None = None,
 ) -> ReportApplication:
     """Construct the shared Search application seam without executing it."""
 
-    return ReportApplication(registry, planner, executor, normalizer, evidence_service)
+    return ReportApplication(
+        registry,
+        planner,
+        executor,
+        normalizer,
+        evidence_service,
+        scope_classifier,
+        temporal_rule,
+        event_identity,
+    )
 
 
 __all__ = [

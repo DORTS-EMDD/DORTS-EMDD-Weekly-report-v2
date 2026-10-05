@@ -12,6 +12,7 @@ from src.weekly_report.contracts import (
     SourceDateFact,
     SourceDateKind,
     TemporalDiagnostic,
+    TemporalResult,
 )
 from src.weekly_report.temporal_rule import TemporalRule
 
@@ -39,6 +40,16 @@ def _fact(
 class TemporalRuleTests(unittest.TestCase):
     def setUp(self):
         self.rule = TemporalRule()
+
+    def test_temporal_result_requires_an_exact_boolean_date_valid(self):
+        with self.assertRaises(TypeError):
+            TemporalResult("C1", "false")
+        with self.assertRaises(TypeError):
+            TemporalResult("C1", 1)
+        self.assertTrue(TemporalResult("C1", True).date_valid)
+        self.assertFalse(
+            TemporalResult("C1", False, diagnostic=TemporalDiagnostic.DATE_MISSING).date_valid
+        )
 
     def test_inclusive_boundaries_and_source_calendar_date(self):
         start = self.rule.evaluate(

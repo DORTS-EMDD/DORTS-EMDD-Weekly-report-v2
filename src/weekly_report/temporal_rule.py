@@ -83,6 +83,19 @@ def _coerce_kind(value: SourceDateKind | str) -> SourceDateKind | None:
 class TemporalRule:
     """The sole authoritative owner of DATE_VALID and Temporal diagnostics."""
 
+    def validate_period(
+        self,
+        period_start: date | str,
+        period_end: date | str,
+    ) -> tuple[date, date]:
+        """Validate one formal report period without evaluating a Candidate."""
+
+        start = self._required_calendar_date(period_start, "period_start")
+        end = self._required_calendar_date(period_end, "period_end")
+        if start > end:
+            raise ValueError("period_start must not be after period_end")
+        return start, end
+
     def evaluate(
         self,
         candidate_id: str,
@@ -98,10 +111,7 @@ class TemporalRule:
 
         if scope_result is not None and scope_result.state is not ScopeState.IN_SCOPE:
             raise ValueError("TemporalRule requires an IN_SCOPE ScopeResult")
-        start = self._required_calendar_date(period_start, "period_start")
-        end = self._required_calendar_date(period_end, "period_end")
-        if start > end:
-            raise ValueError("period_start must not be after period_end")
+        start, end = self.validate_period(period_start, period_end)
 
         facts = tuple(_coerce_fact(value) for value in source_date_facts)
         if not facts:

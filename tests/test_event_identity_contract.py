@@ -11,6 +11,7 @@ from src.weekly_report.contracts import (
     EvidenceState,
     EventIdentityFacts,
     EventIdentityRecord,
+    EventGroup,
     ScopeResult,
     ScopeState,
     TemporalDiagnostic,
@@ -112,6 +113,15 @@ def _facts(**values) -> EventIdentityFacts:
 
 
 class EventIdentityContractTests(unittest.TestCase):
+    def test_event_group_rejects_canonical_candidate_outside_members(self):
+        with self.assertRaises(ValueError):
+            EventGroup(
+                event_id="evt-invalid",
+                member_candidate_ids=("A",),
+                canonical_candidate_id="B",
+                identity_basis=(),
+            )
+
     def test_generic_incident_asset_and_location_overlap_cannot_prove_same_event(self):
         facts = lambda: EventIdentityFacts(
             action="incident",
