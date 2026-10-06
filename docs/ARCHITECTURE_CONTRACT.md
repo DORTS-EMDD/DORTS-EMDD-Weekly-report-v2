@@ -1690,22 +1690,114 @@ Reportability 必須建立在事件本身實質：
 
 「對臺北捷運有參考價值」不得單獨救回普通事件。
 
-Ordering 採 deterministic lexicographic priority：
+### Ordering boundary and contract
 
-1. 新技術、新材料、新方式
-2. 都市軌道機電技術關聯度
-3. 系統、安全或專案影響程度
-4. 臺北捷運實質參考價值
-5. 採購案重大性
-6. 來源品質
-7. 時效性
-8. stable identity
+Reportability remains the sole owner of whether an EventGroup has sufficient
+reporting value to enter the formal weekly report. Ordering does not perform a
+second semantic importance evaluation. Novelty or new technology/material/method,
+E&M relevance, system/safety/project impact, Taipei Metro reference value,
+procurement significance, and source quality may remain relevant to
+Reportability or another already-authorized upstream decision, but they are not
+executable Ordering comparators. Ordering must not derive them from Evidence,
+Category, Taxonomy, Reportability rationale, source domain, keywords,
+procurement amount, Writer/MaiAgent output, or diagnostics. No numeric score,
+weight, category ranking, geography ranking, or editorial heuristic is allowed.
 
-不得改用不透明加權總分。
+The sole Ordering domain owner is the future
+`src.weekly_report.ordering.Ordering` class. Its owner count is one. Ordering
+is a separate domain boundary after Reportability and before MaiAgent Writer:
 
-Category diversity 不作 Selection factor。
+```text
+Reportability
+→ Ordering
+→ MaiAgent Writer
+→ Validation
+→ Report Service / Report Assembly
+→ Delivery
+```
 
-Selector 不得設定最低篇數、最高篇數、Category quota、A/B/C level、backfill 或 rescue。
+`ReportWorkflow` ends at Reportability and must not orchestrate Ordering.
+`ReportApplication` is orchestration only. After the complete ReportWorkflow
+population succeeds and is structurally validated, ReportApplication projects
+every and only `REPORTABLE` / `downstream_eligible` result exactly once,
+preserves the exact `ReportWorkflowResult` object references, invokes Ordering
+exactly once including for `()`, and preserves the returned order. It must not
+rank, compare dates, infer importance, re-evaluate Reportability, inspect
+Evidence for Ordering, or perform semantic sorting. Ordering validates its
+REPORTABLE-only precondition and does not perform a second filtering decision.
+
+The future API is:
+
+```text
+Ordering.order(
+    events: tuple[ReportWorkflowResult, ...]
+) -> tuple[ReportWorkflowResult, ...]
+```
+
+The input is all and only authoritative `REPORTABLE`
+`ReportWorkflowResult` values projected from the completed current workflow
+population. `NOT_REPORTABLE` and `NOT_EVALUATED` are structural contract
+failures at the Ordering boundary. The output is a pure permutation of the
+exact input object instances: no reconstruction, copying, replacement,
+foreign object, missing object, additional object, selection, or re-deduplication.
+For every successful invocation:
+
+```text
+len(output) == len(input)
+0 → 0
+1 → 1
+N → N
+```
+
+Ordering can never drop a REPORTABLE event, create zero from a non-zero valid
+REPORTABLE population, or add an ineligible event. It has no selection,
+top-N, quota, balance, diversity, minimum-count, maximum-count, rescue,
+fallback, editorial-fill, or backfill authority.
+
+The only executable Ordering comparator is:
+
+1. the `temporal.controlling_calendar_date` of the unique
+   `EventIdentityRecord` in `ReportWorkflowResult.member_records` whose
+   `candidate.candidate_id` equals
+   `ReportWorkflowResult.event_group.canonical_candidate_id`, descending;
+2. `ReportWorkflowResult.event_group.event_id`, ascending, compared as the
+   exact string without normalization.
+
+The first key is the canonical member's authoritative Temporal
+publication/notice date. It is not a newly inferred event-occurrence date.
+Ordering must not choose an earliest or latest member date, average dates,
+reparse source dates, inspect article text, use discovery timestamps or current
+time, use another member as fallback, default a missing date, or silently use
+input order. If the canonical member cannot be found exactly once, canonical
+membership is inconsistent, or its authoritative `controlling_calendar_date`
+is missing or invalid, Ordering fails closed with no output tuple and no
+alternative sort. A duplicate `event_id` is a structural `ValueError`; wrong
+container or item types are `TypeError`; other invalid or inconsistent typed
+upstream facts are `ValueError`. There is no partial output, retry, fallback,
+repair, rescue, or backfill. The two keys produce a deterministic total order.
+
+```text
+CATEGORY_MAY_AFFECT_ORDERING = NO
+TAXONOMY_MAY_AFFECT_ORDERING = NO
+GEOGRAPHY_MAY_AFFECT_ORDERING = NO
+ORDERING_REDEDUPLICATES_EVENTS = NO
+WRITER_INPUT_ORDER_IS_AUTHORITATIVE = YES
+WRITER_MAY_REORDER = NO
+WRITER_MAY_DROP_EVENT = NO
+WRITER_MAY_ADD_EVENT = NO
+DELIVERY_MAY_REORDER_EVENTS = NO
+DEBUG_ORDERING_AUTHORITY = NO
+```
+
+Writer receives the already-ordered REPORTABLE population and drafts text
+only. Delivery preserves assembled report order. Debug may expose Ordering
+inputs, canonical dates, outputs, and diagnostics, but cannot modify the
+Ordering decision. The completed ReportWorkflow aggregate may preserve its
+existing structural EventIdentityRun order; that order is not final report
+event order. Ordering becomes the sole event-order owner only after the
+REPORTABLE projection. Validation may reject generated content only under its
+own authoritative contract; it does not recompute Ordering, and events that
+survive Validation retain their relative Ordering.
 
 ## O. No Quota
 
@@ -1820,6 +1912,12 @@ Report Service 唯一負責：
 * artifact naming
 * report metadata
 
+Report Service may arrange category sections according to its separately
+authorized section-order contract, but it does not own event priority. Within
+each category section it must preserve the stable subsequence of Validation-
+PASS events from the authoritative Ordering output. It may not recompute event
+priority or reorder events within a section.
+
 Delivery Service 不得做 domain decision。
 
 GitHub Actions 為 production automation。
@@ -1837,6 +1935,9 @@ Delivery 必須具 stable delivery identity，至少可追溯：
 Retry 不得造成同一 artifact 重複成功寄送。
 
 Report Service 不得改寫 Validation 結果；Delivery Service 不得選題、分類、修正 Evidence 或執行其他 domain decision。
+
+Delivery preserves assembled report order. PDF, email, and rendering may not
+semantically reorder events.
 
 ## S. Debug
 
