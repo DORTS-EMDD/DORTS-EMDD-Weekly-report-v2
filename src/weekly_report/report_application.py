@@ -7,10 +7,13 @@ from dataclasses import dataclass
 from datetime import date
 
 from .candidate_normalizer import CandidateNormalizationError, CandidateNormalizer
+from .classifier import Classifier
 from .contracts import (
     AcquisitionRecord,
     CandidateNormalizationFailure,
     CandidateNormalizationResult,
+    CategoryResult,
+    CategoryState,
     EvidenceResult,
     EvidenceState,
     EventGroup,
@@ -54,6 +57,7 @@ class ReportApplicationResult:
     temporal_results: tuple[TemporalResult, ...] | None = None
     event_identity_records: tuple[EventIdentityRecord, ...] | None = None
     event_identity_run: EventIdentityRun | None = None
+    category_results: tuple[CategoryResult, ...] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.plan, SearchPlan):
@@ -221,6 +225,26 @@ class ReportApplicationResult:
             raise ValueError("completed Event Identity records require an EventIdentityRun")
         object.__setattr__(self, "event_identity_run", event_identity_run)
 
+        category_results = self.category_results
+        if category_results is not None:
+            if event_identity_run is None:
+                raise ValueError("Category results require completed Event Identity")
+            category_results = tuple(category_results)
+            if any(not isinstance(result, CategoryResult) for result in category_results):
+                raise TypeError("ReportApplicationResult category_results must be typed")
+            groups = event_identity_run.groups
+            if len(category_results) != len(groups):
+                raise ValueError("Category results must cover EventGroups exactly")
+            group_ids = tuple(group.event_id for group in groups)
+            result_ids = tuple(result.event_id for result in category_results)
+            if result_ids != group_ids:
+                raise ValueError("Category results must match EventGroups in order")
+            if len(result_ids) != len(set(result_ids)):
+                raise ValueError("Category results must have unique event IDs")
+            if any(result.category_state is CategoryState.NOT_EVALUATED for result in category_results):
+                raise ValueError("invoked Category must not return NOT_EVALUATED")
+        object.__setattr__(self, "category_results", category_results)
+
     @property
     def downstream_ready(self) -> bool:
         return (
@@ -266,6 +290,7 @@ class ReportApplication:
         scope_classifier: ScopeClassifier | None = None,
         temporal_rule: TemporalRule | None = None,
         event_identity: EventIdentity | None = None,
+        classifier: Classifier | None = None,
     ) -> None:
         if not isinstance(registry, RegionRegistry):
             raise TypeError("ReportApplication requires a RegionRegistry")
@@ -283,6 +308,8 @@ class ReportApplication:
             raise TypeError("ReportApplication temporal_rule must be a TemporalRule")
         if event_identity is not None and not isinstance(event_identity, EventIdentity):
             raise TypeError("ReportApplication event_identity must be an EventIdentity")
+        if classifier is not None and not isinstance(classifier, Classifier):
+            raise TypeError("ReportApplication classifier must be a Classifier")
         self._registry = registry
         self._planner = planner or SearchPlanner(registry)
         self._executor = executor
@@ -291,6 +318,7 @@ class ReportApplication:
         self._scope_classifier = scope_classifier or ScopeClassifier()
         self._temporal_rule = temporal_rule or TemporalRule()
         self._event_identity = event_identity or EventIdentity()
+        self._classifier = classifier or Classifier()
 
     @property
     def registry(self) -> RegionRegistry:
@@ -323,6 +351,10 @@ class ReportApplication:
     @property
     def event_identity(self) -> EventIdentity:
         return self._event_identity
+
+    @property
+    def classifier(self) -> Classifier:
+        return self._classifier
 
     def run(
         self,
@@ -429,6 +461,10 @@ class ReportApplication:
         event_identity_run = self._event_identity.evaluate(event_identity_records)
         if not isinstance(event_identity_run, EventIdentityRun):
             raise TypeError("EventIdentity must return an EventIdentityRun")
+        category_results = self._classify_event_groups(
+            event_identity_run,
+            event_identity_records,
+        )
 
         return ReportApplicationResult(
             plan,
@@ -443,7 +479,66 @@ class ReportApplication:
             temporal_results=temporal_tuple,
             event_identity_records=event_identity_records,
             event_identity_run=event_identity_run,
+            category_results=category_results,
         )
+
+    def _classify_event_groups(
+        self,
+        event_identity_run: EventIdentityRun,
+        event_identity_records: tuple[EventIdentityRecord, ...],
+    ) -> tuple[CategoryResult, ...]:
+        groups = event_identity_run.groups
+        if not isinstance(groups, tuple):
+            raise TypeError("Category EventIdentityRun groups must be a tuple")
+        if any(not isinstance(group, EventGroup) for group in groups):
+            raise TypeError("Category EventIdentityRun groups must contain EventGroup values")
+
+        record_by_id: dict[str, EventIdentityRecord] = {}
+        for record in event_identity_records:
+            if not isinstance(record, EventIdentityRecord):
+                raise TypeError("Category Event Identity records must be typed")
+            candidate_id = record.candidate.candidate_id
+            if candidate_id in record_by_id:
+                raise ValueError("Event Identity records contain duplicate candidate IDs")
+            record_by_id[candidate_id] = record
+
+        group_ids = tuple(group.event_id for group in groups)
+        if len(group_ids) != len(set(group_ids)):
+            raise ValueError("Category EventGroups must have unique event IDs")
+        expected_member_ids = tuple(
+            candidate_id
+            for group in groups
+            for candidate_id in group.member_candidate_ids
+        )
+        if len(expected_member_ids) != len(set(expected_member_ids)):
+            raise ValueError("Category EventGroups must not overlap")
+        if set(expected_member_ids) != set(record_by_id):
+            raise ValueError("Category EventGroups must cover EventIdentity records exactly")
+
+        projections: list[tuple[EventGroup, tuple[EventIdentityRecord, ...]]] = []
+        for event_group in groups:
+            try:
+                member_records = tuple(
+                    record_by_id[candidate_id]
+                    for candidate_id in event_group.member_candidate_ids
+                )
+            except KeyError as exc:
+                raise ValueError(
+                    "Category member projection does not match EventGroup"
+                ) from exc
+            projections.append((event_group, member_records))
+
+        results: list[CategoryResult] = []
+        for event_group, member_records in projections:
+            result = self._classifier.classify(event_group, member_records)
+            if not isinstance(result, CategoryResult):
+                raise TypeError("Classifier must return a CategoryResult")
+            if result.category_state is CategoryState.NOT_EVALUATED:
+                raise ValueError("invoked Classifier cannot return NOT_EVALUATED")
+            if result.event_id != event_group.event_id:
+                raise ValueError("CategoryResult event_id does not match EventGroup")
+            results.append(result)
+        return tuple(results)
 
     @staticmethod
     def _project_acquisitions(execution: SearchExecutionResult) -> tuple[AcquisitionRecord, ...]:
@@ -536,6 +631,7 @@ def build_report_application(
     scope_classifier: ScopeClassifier | None = None,
     temporal_rule: TemporalRule | None = None,
     event_identity: EventIdentity | None = None,
+    classifier: Classifier | None = None,
 ) -> ReportApplication:
     """Construct the shared Search application seam without executing it."""
 
@@ -548,6 +644,7 @@ def build_report_application(
         scope_classifier,
         temporal_rule,
         event_identity,
+        classifier,
     )
 
 

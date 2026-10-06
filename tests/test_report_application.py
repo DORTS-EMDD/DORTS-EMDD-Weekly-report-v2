@@ -4,8 +4,12 @@ from dataclasses import replace
 from unittest import TestCase
 
 from src.weekly_report.candidate_normalizer import CandidateNormalizationError, CandidateNormalizer
+from src.weekly_report.classifier import Classifier
 from src.weekly_report.contracts import (
     CandidateNormalizationFailure,
+    CategoryId,
+    CategoryResult,
+    CategoryState,
     DiscoveryIntent,
     DiscoveryResult,
     EvidenceResult,
@@ -217,6 +221,36 @@ class RecordingEventIdentity(EventIdentity):
         return EventIdentityRun(groups)
 
 
+def _assigned_category(event_group: EventGroup) -> CategoryResult:
+    return CategoryResult(
+        CategoryState.CATEGORY_ASSIGNED,
+        event_id=event_group.event_id,
+        primary_category_id=CategoryId.PROCUREMENT,
+        primary_category=CategoryId.PROCUREMENT.display_label,
+        classification_reason="PRINCIPAL_ACTION_PROCUREMENT",
+    )
+
+
+class RecordingClassifier(Classifier):
+    def __init__(self, *, result_factory=None, error_after=None):
+        self.calls = []
+        self.results = []
+        self.result_factory = result_factory
+        self.error_after = error_after
+
+    def classify(self, event_group, records):
+        records = tuple(records)
+        self.calls.append((event_group, records))
+        if self.error_after is not None and len(self.calls) > self.error_after:
+            raise RuntimeError("unexpected classifier failure")
+        if self.result_factory is not None:
+            result = self.result_factory(event_group, records, len(self.calls))
+        else:
+            result = _assigned_category(event_group)
+        self.results.append(result)
+        return result
+
+
 class ReportApplicationTests(TestCase):
     def _app(
         self,
@@ -228,6 +262,7 @@ class ReportApplicationTests(TestCase):
         scope_classifier=None,
         temporal_rule=None,
         event_identity=None,
+        classifier=None,
     ) -> ReportApplication:
         plan = _fixture_plan()
         registry = _registry()
@@ -241,6 +276,7 @@ class ReportApplicationTests(TestCase):
             scope_classifier=scope_classifier,
             temporal_rule=temporal_rule,
             event_identity=event_identity,
+            classifier=classifier,
         )
 
     def test_fixture_preserves_complete_production_registry(self) -> None:
@@ -597,6 +633,361 @@ class ReportApplicationTests(TestCase):
         self.assertEqual(len(identity.calls), 1)
         self.assertEqual(len(result.normalized_candidates[0].acquisition_origins), 1)
         self.assertEqual(len(result.normalized_candidates[1].acquisition_origins), 1)
+
+    def test_category_classifies_one_group_once_and_preserves_result(self) -> None:
+        classifier = RecordingClassifier()
+        result = self._app(
+            FakeProvider(),
+            classifier=classifier,
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+        ).run("selected")
+
+        group = result.event_identity_run.groups[0]
+        self.assertEqual(len(classifier.calls), 1)
+        self.assertIs(classifier.calls[0][0], group)
+        self.assertEqual(classifier.calls[0][1], (result.event_identity_records[0],))
+        self.assertIs(result.category_results[0], classifier.results[0])
+        self.assertEqual(result.category_results[0].event_id, group.event_id)
+
+    def test_category_receives_all_group_members_in_authoritative_order(self) -> None:
+        classifier = RecordingClassifier()
+        result = self._app(
+            MultiResultProvider(),
+            classifier=classifier,
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(merge=True),
+        ).run("selected")
+
+        group = result.event_identity_run.groups[0]
+        records = classifier.calls[0][1]
+        self.assertEqual(len(classifier.calls), 1)
+        self.assertEqual(
+            tuple(record.candidate.candidate_id for record in records),
+            group.member_candidate_ids,
+        )
+        expected_records = tuple(
+            next(
+                record
+                for record in result.event_identity_records
+                if record.candidate.candidate_id == candidate_id
+            )
+            for candidate_id in group.member_candidate_ids
+        )
+        self.assertEqual(records, expected_records)
+        self.assertTrue(all(actual is expected for actual, expected in zip(records, expected_records)))
+
+    def test_category_calls_once_per_group_and_preserves_group_order(self) -> None:
+        classifier = RecordingClassifier()
+        result = self._app(
+            MultiResultProvider(),
+            classifier=classifier,
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+        ).run("selected")
+
+        self.assertEqual(len(classifier.calls), 2)
+        self.assertEqual(
+            tuple(call[0].event_id for call in classifier.calls),
+            tuple(group.event_id for group in result.event_identity_run.groups),
+        )
+        self.assertEqual(
+            tuple(category.event_id for category in result.category_results),
+            tuple(group.event_id for group in result.event_identity_run.groups),
+        )
+
+    def test_category_unresolved_is_preserved_and_other_groups_continue(self) -> None:
+        unresolved_provenance = {
+            "decision_basis": "constrained_semantic_helper",
+            "source_candidate_ids": ("candidate-https-example.test-first",),
+        }
+
+        def result_factory(group, records, call_number):
+            if call_number == 1:
+                return CategoryResult(
+                    CategoryState.CATEGORY_UNRESOLVED,
+                    event_id=group.event_id,
+                    classification_reason=CategoryState.CATEGORY_UNRESOLVED.value,
+                    category_resolution_reason="NO_CATEGORY_DEFINING_ACTION",
+                    provenance=unresolved_provenance,
+                )
+            return _assigned_category(group)
+
+        classifier = RecordingClassifier(result_factory=result_factory)
+        result = self._app(
+            MultiResultProvider(),
+            classifier=classifier,
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+        ).run("selected")
+
+        self.assertEqual(len(classifier.calls), 2)
+        self.assertIs(result.category_results[0], classifier.results[0])
+        self.assertIs(result.category_results[0].category_state, CategoryState.CATEGORY_UNRESOLVED)
+        self.assertEqual(
+            result.category_results[0].category_resolution_reason.value,
+            "NO_CATEGORY_DEFINING_ACTION",
+        )
+        self.assertEqual(result.category_results[0].provenance, unresolved_provenance)
+        self.assertIs(result.category_results[1].category_state, CategoryState.CATEGORY_ASSIGNED)
+
+    def test_invoked_not_evaluated_category_fails_closed(self) -> None:
+        classifier = RecordingClassifier(
+            result_factory=lambda group, records, call_number: CategoryResult.not_evaluated(
+                event_id=group.event_id
+            )
+        )
+        with self.assertRaises(ValueError):
+            self._app(
+                FakeProvider(),
+                classifier=classifier,
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=RecordingEventIdentity(),
+            ).run("selected")
+
+    def test_invalid_category_result_type_fails_closed(self) -> None:
+        classifier = RecordingClassifier(
+            result_factory=lambda group, records, call_number: object()
+        )
+        with self.assertRaises(TypeError):
+            self._app(
+                FakeProvider(),
+                classifier=classifier,
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=RecordingEventIdentity(),
+            ).run("selected")
+
+    def test_category_event_id_mismatch_fails_closed(self) -> None:
+        def mismatched_result(group, records, call_number):
+            foreign_id = "foreign-event"
+            foreign_group = EventGroup(
+                foreign_id,
+                group.member_candidate_ids,
+                group.canonical_candidate_id,
+                (),
+            )
+            return _assigned_category(foreign_group)
+
+        classifier = RecordingClassifier(result_factory=mismatched_result)
+        with self.assertRaises(ValueError):
+            self._app(
+                FakeProvider(),
+                classifier=classifier,
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=RecordingEventIdentity(),
+            ).run("selected")
+
+    def test_partial_category_success_is_not_exposed_on_exception(self) -> None:
+        classifier = RecordingClassifier(error_after=1)
+        with self.assertRaises(RuntimeError):
+            self._app(
+                MultiResultProvider(),
+                classifier=classifier,
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=RecordingEventIdentity(),
+            ).run("selected")
+        self.assertEqual(len(classifier.calls), 2)
+        self.assertEqual(classifier.results[0].category_state, CategoryState.CATEGORY_ASSIGNED)
+
+    def test_zero_event_groups_complete_category_with_zero_calls(self) -> None:
+        class ZeroProvider(FakeProvider):
+            def execute(self, item):
+                self.calls.append(item.plan_item_id)
+                return SearchAttemptResult(item.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
+
+        classifier = RecordingClassifier()
+        result = self._app(
+            ZeroProvider(),
+            classifier=classifier,
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+        ).run("selected")
+
+        self.assertEqual(result.event_identity_run.groups, ())
+        self.assertEqual(classifier.calls, [])
+        self.assertEqual(result.category_results, ())
+
+    def test_category_member_projection_rejects_missing_and_foreign_group_members(self) -> None:
+        result = self._app(
+            MultiResultProvider(),
+            classifier=RecordingClassifier(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(merge=True),
+        ).run("selected")
+        group = result.event_identity_run.groups[0]
+        with self.assertRaises(ValueError):
+            replace(
+                result,
+                event_identity_run=EventIdentityRun(
+                    (EventGroup("missing", (group.member_candidate_ids[0],), group.canonical_candidate_id, ()),)
+                ),
+            )
+        with self.assertRaises(ValueError):
+            replace(
+                result,
+                event_identity_run=EventIdentityRun(
+                    (EventGroup("foreign", ("foreign",), "foreign", ()),)
+                ),
+            )
+
+    def test_category_admission_rejects_malformed_groups_before_classifier(self) -> None:
+        class MalformedContainerIdentity(RecordingEventIdentity):
+            def evaluate(self, records):
+                valid_run = super().evaluate(records)
+                return EventIdentityRun(list(valid_run.groups))
+
+        semantic_helper_calls = []
+
+        class CountingClassifier(Classifier):
+            def __init__(self):
+                super().__init__(
+                    semantic_helper=lambda request: semantic_helper_calls.append(request)
+                )
+                self.calls = []
+
+            def classify(self, event_group, records):
+                self.calls.append((event_group, tuple(records)))
+                return super().classify(event_group, records)
+
+        classifier = CountingClassifier()
+        with self.assertRaises(TypeError):
+            self._app(
+                MultiResultProvider(),
+                classifier=classifier,
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=MalformedContainerIdentity(),
+            ).run("selected")
+        self.assertEqual(classifier.calls, [])
+        self.assertEqual(semantic_helper_calls, [])
+
+    def test_category_admission_rejects_malformed_group_element_before_classifier(self) -> None:
+        class MalformedElementIdentity(RecordingEventIdentity):
+            def evaluate(self, records):
+                super().evaluate(records)
+                return EventIdentityRun((object(),))
+
+        semantic_helper_calls = []
+
+        class CountingClassifier(Classifier):
+            def __init__(self):
+                super().__init__(
+                    semantic_helper=lambda request: semantic_helper_calls.append(request)
+                )
+                self.calls = []
+
+            def classify(self, event_group, records):
+                self.calls.append((event_group, tuple(records)))
+                return super().classify(event_group, records)
+
+        classifier = CountingClassifier()
+        with self.assertRaises(TypeError):
+            self._app(
+                MultiResultProvider(),
+                classifier=classifier,
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=MalformedElementIdentity(),
+            ).run("selected")
+        self.assertEqual(classifier.calls, [])
+        self.assertEqual(semantic_helper_calls, [])
+
+    def test_category_result_aggregate_rejects_duplicate_extra_foreign_and_wrong_order(self) -> None:
+        result = self._app(
+            MultiResultProvider(),
+            classifier=RecordingClassifier(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+        ).run("selected")
+        first, second = result.category_results
+
+        with self.assertRaises(ValueError):
+            replace(result, category_results=(first, first))
+        with self.assertRaises(ValueError):
+            replace(result, category_results=(first, second, first))
+        with self.assertRaises(ValueError):
+            replace(result, category_results=(replace(first, event_id="foreign"), second))
+        with self.assertRaises(ValueError):
+            replace(result, category_results=(second, first))
+
+    def test_category_result_aggregate_invariants_are_mechanical(self) -> None:
+        result = self._app(
+            FakeProvider(),
+            classifier=RecordingClassifier(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+        ).run("selected")
+        category_result = result.category_results[0]
+
+        with self.assertRaises(ValueError):
+            replace(result, category_results=())
+        with self.assertRaises(ValueError):
+            replace(
+                result,
+                category_results=(
+                    _assigned_category(
+                        EventGroup(
+                            "foreign",
+                            (result.event_identity_records[0].candidate.candidate_id,),
+                            result.event_identity_records[0].candidate.candidate_id,
+                            (),
+                        )
+                    ),
+                ),
+            )
+        with self.assertRaises(ValueError):
+            replace(
+                result,
+                category_results=(CategoryResult.not_evaluated(event_id=category_result.event_id),),
+            )
+        with self.assertRaises(ValueError):
+            replace(
+                result,
+                temporal_results=None,
+                event_identity_records=None,
+                event_identity_run=None,
+                category_results=(category_result,),
+            )
+
+    def test_search_intent_does_not_change_category_result(self) -> None:
+        first = self._app(
+            FakeProvider(),
+            classifier=RecordingClassifier(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+        ).run("selected", intents=(DiscoveryIntent.OPERATIONS,))
+        second = self._app(
+            FakeProvider(),
+            classifier=RecordingClassifier(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+        ).run("selected", intents=(DiscoveryIntent.PROCUREMENT,))
+        self.assertEqual(first.category_results, second.category_results)
+
+    def test_category_stage_does_not_invoke_taxonomy_or_construct_decision_record(self) -> None:
+        result = self._app(
+            FakeProvider(),
+            classifier=RecordingClassifier(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+        ).run("selected")
+        self.assertIsNotNone(result.category_results)
+        self.assertFalse(hasattr(result, "decision"))
 
     def test_scope_invalid_result_is_an_application_contract_failure(self) -> None:
         with self.assertRaises(TypeError):
