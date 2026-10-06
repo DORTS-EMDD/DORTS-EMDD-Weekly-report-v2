@@ -27,18 +27,27 @@ from src.weekly_report.contracts import (
     SearchTerminalStatus,
     ScopeResult,
     ScopeState,
+    TaxonomyResult,
+    TaxonomyState,
+    ReportabilityEvidenceProvenance,
+    ReportabilityReason,
+    ReportabilityResult,
+    ReportabilityState,
     TemporalResult,
     TemporalDiagnostic,
     candidate_id_for_url,
 )
 from src.weekly_report.region_registry import RegionRegistry
 from src.weekly_report.report_application import ReportApplication
+from src.weekly_report.report_application import build_report_application
 from src.weekly_report.evidence_service import EvidenceService
 from src.weekly_report.search_executor import SearchExecutor
 from src.weekly_report.search_planner import SearchPlanner
 from src.weekly_report.scope_classifier import ScopeClassifier
 from src.weekly_report.temporal_rule import TemporalRule
 from src.weekly_report.event_identity import EventIdentity
+from src.weekly_report.report_workflow import ReportWorkflow, ReportWorkflowResult
+from src.weekly_report.taxonomy import Taxonomy
 
 
 def _registry() -> RegionRegistry:
@@ -96,6 +105,12 @@ class MultiResultProvider(FakeProvider):
                 DiscoveryResult("second", "https://example.test/second"),
             ),
         )
+
+
+class ZeroResultProvider(FakeProvider):
+    def execute(self, item):
+        self.calls.append(item.plan_item_id)
+        return SearchAttemptResult(item.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
 
 
 class RecordingEvidenceService(EvidenceService):
@@ -251,6 +266,74 @@ class RecordingClassifier(Classifier):
         return result
 
 
+class RecordingDownstreamTaxonomy:
+    def __init__(self, *, fail_on_event_id=None, fail_on_call=None):
+        self.calls = []
+        self.fail_on_event_id = fail_on_event_id
+        self.fail_on_call = fail_on_call
+
+    def evaluate(self, event_group, records, category_result):
+        records = tuple(records)
+        self.calls.append((event_group, records, category_result))
+        if (
+            event_group.event_id == self.fail_on_event_id
+            or len(self.calls) == self.fail_on_call
+        ):
+            raise RuntimeError("downstream taxonomy failure")
+        if category_result.category_state is CategoryState.CATEGORY_UNRESOLVED:
+            return TaxonomyResult.not_evaluated(event_id=event_group.event_id)
+        return TaxonomyResult(
+            taxonomy_state=TaxonomyState.TAXONOMY_EVALUATED,
+            event_id=event_group.event_id,
+        )
+
+
+class RecordingDownstreamReportability:
+    def __init__(self, *, fail_on_call=None):
+        self.calls = []
+        self.successful_event_ids = []
+        self.fail_on_call = fail_on_call
+
+    def evaluate(self, decision):
+        self.calls.append(decision)
+        if len(self.calls) == self.fail_on_call:
+            raise RuntimeError("downstream reportability failure")
+        self.successful_event_ids.append(decision.event_group.event_id)
+        return ReportabilityResult(
+            event_id=decision.event_group.event_id,
+            reportability_state=ReportabilityState.NOT_REPORTABLE,
+            reportability_reason=ReportabilityReason.LOW_REPORTABILITY_VALUE,
+            provenance=ReportabilityEvidenceProvenance(
+                examined_candidate_ids=decision.event_group.member_candidate_ids,
+                support_spans=(),
+                rationale="fixture downstream result",
+            ),
+        )
+
+
+class RecordingDownstreamWorkflow(ReportWorkflow):
+    def __init__(
+        self,
+        *,
+        fail_on_event_id=None,
+        fail_on_call=None,
+        fail_reportability_on_call=None,
+    ):
+        self.taxonomy_owner = RecordingDownstreamTaxonomy(
+            fail_on_event_id=fail_on_event_id,
+            fail_on_call=fail_on_call,
+        )
+        self.reportability_owner = RecordingDownstreamReportability(
+            fail_on_call=fail_reportability_on_call
+        )
+        self.calls = []
+        super().__init__(self.taxonomy_owner, reportability=self.reportability_owner)
+
+    def run(self, event_groups, member_records, category_results):
+        self.calls.append((tuple(event_groups), member_records, tuple(category_results)))
+        return super().run(event_groups, member_records, category_results)
+
+
 class ReportApplicationTests(TestCase):
     def _app(
         self,
@@ -263,6 +346,7 @@ class ReportApplicationTests(TestCase):
         temporal_rule=None,
         event_identity=None,
         classifier=None,
+        report_workflow=None,
     ) -> ReportApplication:
         plan = _fixture_plan()
         registry = _registry()
@@ -277,6 +361,7 @@ class ReportApplicationTests(TestCase):
             temporal_rule=temporal_rule,
             event_identity=event_identity,
             classifier=classifier,
+            report_workflow=report_workflow,
         )
 
     def test_fixture_preserves_complete_production_registry(self) -> None:
@@ -697,6 +782,267 @@ class ReportApplicationTests(TestCase):
         self.assertEqual(
             tuple(category.event_id for category in result.category_results),
             tuple(group.event_id for group in result.event_identity_run.groups),
+        )
+
+    def test_downstream_bridge_adopts_authoritative_category_and_member_references(self) -> None:
+        classifier = RecordingClassifier()
+        event_identity = RecordingEventIdentity(merge=True)
+        workflow = RecordingDownstreamWorkflow()
+        result = self._app(
+            MultiResultProvider(),
+            classifier=classifier,
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=event_identity,
+            report_workflow=workflow,
+        ).run("selected")
+
+        self.assertEqual(len(event_identity.calls), 1)
+        self.assertEqual(len(workflow.calls), 1)
+        groups, member_records, category_results = workflow.calls[0]
+        self.assertEqual(groups, result.event_identity_run.groups)
+        self.assertTrue(all(
+            actual is expected
+            for actual, expected in zip(groups, result.event_identity_run.groups, strict=True)
+        ))
+        self.assertEqual(category_results, result.category_results)
+        self.assertTrue(all(actual is expected for actual, expected in zip(
+            category_results, classifier.results, strict=True
+        )))
+        for group in groups:
+            self.assertEqual(len(group.member_candidate_ids), 2)
+            expected = tuple(
+                next(
+                    record
+                    for record in result.event_identity_records
+                    if record.candidate.candidate_id == candidate_id
+                )
+                for candidate_id in group.member_candidate_ids
+            )
+            self.assertTrue(all(actual is expected for actual, expected in zip(
+                member_records[group.event_id], expected, strict=True
+            )))
+            self.assertEqual(
+                tuple(record.candidate.candidate_id for record in member_records[group.event_id]),
+                group.member_candidate_ids,
+            )
+        self.assertEqual(len(result.downstream_results), len(groups))
+        self.assertTrue(all(
+            item.decision.event_group is group
+            for item, group in zip(result.downstream_results, groups, strict=True)
+        ))
+        self.assertTrue(all(
+            item.category_result is category
+            for item, category in zip(result.downstream_results, category_results, strict=True)
+        ))
+        self.assertIs(
+            replace(result, downstream_results=result.downstream_results).downstream_results[0],
+            result.downstream_results[0],
+        )
+        self.assertEqual(len(classifier.calls), len(groups))
+        self.assertEqual(len(workflow.taxonomy_owner.calls), len(groups))
+        self.assertEqual(len(workflow.reportability_owner.calls), len(groups))
+
+    def test_real_taxonomy_suppresses_provider_for_unresolved_category_through_bridge(self) -> None:
+        class CountingProvider:
+            def __init__(self):
+                self.calls = []
+
+            def __call__(self, request):
+                self.calls.append(request)
+                raise AssertionError("unresolved Category must suppress Taxonomy provider")
+
+        def unresolved_factory(group, records, call_number):
+            return CategoryResult(
+                CategoryState.CATEGORY_UNRESOLVED,
+                event_id=group.event_id,
+                classification_reason=CategoryState.CATEGORY_UNRESOLVED.value,
+                category_resolution_reason="NO_CATEGORY_DEFINING_ACTION",
+                provenance={"decision_basis": "fixture"},
+            )
+
+        provider = CountingProvider()
+        reportability = RecordingDownstreamReportability()
+        workflow = ReportWorkflow(
+            Taxonomy(proposal_provider=provider),
+            reportability=reportability,
+        )
+        result = self._app(
+            FakeProvider(),
+            classifier=RecordingClassifier(result_factory=unresolved_factory),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+            report_workflow=workflow,
+        ).run("selected")
+
+        self.assertEqual(provider.calls, [])
+        self.assertEqual(reportability.calls, [])
+        self.assertEqual(len(result.downstream_results), 1)
+        self.assertEqual(
+            result.downstream_results[0].taxonomy_result.taxonomy_state,
+            TaxonomyState.NOT_EVALUATED,
+        )
+
+    def test_report_application_aggregate_rejects_raw_and_mixed_downstream_results(self) -> None:
+        result = self._app(
+            MultiResultProvider(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+            report_workflow=RecordingDownstreamWorkflow(),
+        ).run("selected")
+        raw_decision = result.downstream_results[0].decision
+
+        with self.assertRaises(TypeError):
+            replace(result, downstream_results=(raw_decision,))
+        with self.assertRaises(TypeError):
+            replace(
+                result,
+                downstream_results=(result.downstream_results[0], raw_decision),
+            )
+
+    def test_report_application_aggregate_accepts_complete_report_workflow_results(self) -> None:
+        result = self._app(
+            MultiResultProvider(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+            report_workflow=RecordingDownstreamWorkflow(),
+        ).run("selected")
+
+        accepted = replace(result, downstream_results=tuple(result.downstream_results))
+        self.assertEqual(len(accepted.downstream_results), len(accepted.event_identity_run.groups))
+        self.assertTrue(all(
+            actual is expected
+            for actual, expected in zip(
+                accepted.downstream_results, result.downstream_results, strict=True
+            )
+        ))
+
+    def test_formal_factory_injects_and_runs_the_complete_report_workflow(self) -> None:
+        registry = _registry()
+        provider = MultiResultProvider()
+        event_identity = RecordingEventIdentity()
+        classifier = RecordingClassifier()
+        workflow = RecordingDownstreamWorkflow()
+        application = build_report_application(
+            registry,
+            SearchExecutor({SearchProviderId.GOOGLE_NEWS_RSS: provider}),
+            planner=FixturePlanner(registry, _fixture_plan()),
+            evidence_service=RecordingEvidenceService(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=event_identity,
+            classifier=classifier,
+            report_workflow=workflow,
+        )
+
+        self.assertIs(application.report_workflow, workflow)
+        result = application.run(
+            "selected",
+            period_start="2026-09-12",
+            period_end="2026-09-18",
+        )
+
+        self.assertEqual(len(workflow.calls), 1)
+        self.assertEqual(len(result.downstream_results), len(result.event_identity_run.groups))
+        self.assertTrue(all(
+            isinstance(item, ReportWorkflowResult) for item in result.downstream_results
+        ))
+        self.assertEqual(len(event_identity.calls), 1)
+        self.assertEqual(len(classifier.calls), len(result.event_identity_run.groups))
+
+    def test_formal_factory_rejects_missing_or_taxonomy_only_workflow(self) -> None:
+        registry = _registry()
+        executor = SearchExecutor({})
+        with self.assertRaises(TypeError):
+            build_report_application(
+                registry,
+                executor,
+                evidence_service=RecordingEvidenceService(),
+            )
+        with self.assertRaises(ValueError):
+            build_report_application(
+                registry,
+                executor,
+                evidence_service=RecordingEvidenceService(),
+                report_workflow=ReportWorkflow(RecordingDownstreamTaxonomy()),
+            )
+
+    def test_downstream_bridge_passes_category_unresolved_unchanged(self) -> None:
+        unresolved_results = []
+
+        def unresolved_factory(group, records, call_number):
+            unresolved = CategoryResult(
+                CategoryState.CATEGORY_UNRESOLVED,
+                event_id=group.event_id,
+                classification_reason=CategoryState.CATEGORY_UNRESOLVED.value,
+                category_resolution_reason="NO_CATEGORY_DEFINING_ACTION",
+                provenance={"decision_basis": "fixture"},
+            )
+            unresolved_results.append(unresolved)
+            return unresolved
+
+        classifier = RecordingClassifier(
+            result_factory=unresolved_factory
+        )
+        workflow = RecordingDownstreamWorkflow()
+        result = self._app(
+            FakeProvider(),
+            classifier=classifier,
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+            report_workflow=workflow,
+        ).run("selected")
+
+        unresolved = unresolved_results[0]
+        self.assertIs(result.category_results[0], unresolved)
+        self.assertIs(workflow.calls[0][2][0], unresolved)
+        self.assertIs(result.downstream_results[0].decision.category_result, unresolved)
+        self.assertEqual(
+            result.downstream_results[0].taxonomy_result.taxonomy_state,
+            TaxonomyState.NOT_EVALUATED,
+        )
+        self.assertEqual(workflow.taxonomy_owner.calls[0][2], unresolved)
+        self.assertEqual(workflow.reportability_owner.calls, [])
+
+    def test_downstream_bridge_skips_empty_population(self) -> None:
+        workflow = RecordingDownstreamWorkflow()
+        result = self._app(
+            ZeroResultProvider(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(),
+            event_identity=RecordingEventIdentity(),
+            report_workflow=workflow,
+        ).run("selected")
+
+        self.assertEqual(result.event_identity_run.groups, ())
+        self.assertEqual(result.category_results, ())
+        self.assertEqual(result.downstream_results, ())
+        self.assertEqual(workflow.calls, [])
+        self.assertEqual(workflow.taxonomy_owner.calls, [])
+        self.assertEqual(workflow.reportability_owner.calls, [])
+
+    def test_first_full_downstream_success_then_second_failure_exposes_no_partial_result(self) -> None:
+        workflow = RecordingDownstreamWorkflow(fail_reportability_on_call=2)
+        with self.assertRaises(RuntimeError):
+            self._app(
+                MultiResultProvider(),
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(),
+                event_identity=RecordingEventIdentity(),
+                classifier=RecordingClassifier(),
+                report_workflow=workflow,
+            ).run("selected")
+
+        self.assertEqual(len(workflow.taxonomy_owner.calls), 2)
+        self.assertEqual(len(workflow.reportability_owner.calls), 2)
+        self.assertEqual(len(workflow.reportability_owner.successful_event_ids), 1)
+        self.assertEqual(
+            workflow.reportability_owner.successful_event_ids,
+            [workflow.taxonomy_owner.calls[0][0].event_id],
         )
 
     def test_category_unresolved_is_preserved_and_other_groups_continue(self) -> None:

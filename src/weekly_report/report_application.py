@@ -36,6 +36,7 @@ from .search_executor import SearchExecutor
 from .search_planner import SearchPlanner
 from .scope_classifier import ScopeClassifier
 from .temporal_rule import TemporalRule
+from .report_workflow import ReportWorkflow, ReportWorkflowResult
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +59,7 @@ class ReportApplicationResult:
     event_identity_records: tuple[EventIdentityRecord, ...] | None = None
     event_identity_run: EventIdentityRun | None = None
     category_results: tuple[CategoryResult, ...] | None = None
+    downstream_results: tuple[ReportWorkflowResult, ...] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.plan, SearchPlan):
@@ -245,6 +247,23 @@ class ReportApplicationResult:
                 raise ValueError("invoked Category must not return NOT_EVALUATED")
         object.__setattr__(self, "category_results", category_results)
 
+        downstream_results = self.downstream_results
+        if downstream_results is not None:
+            if event_identity_run is None or category_results is None:
+                raise ValueError("downstream results require completed Category")
+            downstream_results = tuple(downstream_results)
+            if any(not isinstance(result, ReportWorkflowResult) for result in downstream_results):
+                raise TypeError(
+                    "ReportApplicationResult downstream_results must be ReportWorkflowResult values"
+                )
+            groups = event_identity_run.groups
+            if len(downstream_results) != len(groups):
+                raise ValueError("downstream results must cover EventGroups exactly")
+            result_ids = tuple(result.event_group.event_id for result in downstream_results)
+            if result_ids != tuple(group.event_id for group in groups):
+                raise ValueError("downstream results must match EventGroups in order")
+        object.__setattr__(self, "downstream_results", downstream_results)
+
     @property
     def downstream_ready(self) -> bool:
         return (
@@ -291,6 +310,7 @@ class ReportApplication:
         temporal_rule: TemporalRule | None = None,
         event_identity: EventIdentity | None = None,
         classifier: Classifier | None = None,
+        report_workflow: ReportWorkflow | None = None,
     ) -> None:
         if not isinstance(registry, RegionRegistry):
             raise TypeError("ReportApplication requires a RegionRegistry")
@@ -310,6 +330,8 @@ class ReportApplication:
             raise TypeError("ReportApplication event_identity must be an EventIdentity")
         if classifier is not None and not isinstance(classifier, Classifier):
             raise TypeError("ReportApplication classifier must be a Classifier")
+        if report_workflow is not None and not isinstance(report_workflow, ReportWorkflow):
+            raise TypeError("ReportApplication report_workflow must be a ReportWorkflow")
         self._registry = registry
         self._planner = planner or SearchPlanner(registry)
         self._executor = executor
@@ -319,6 +341,7 @@ class ReportApplication:
         self._temporal_rule = temporal_rule or TemporalRule()
         self._event_identity = event_identity or EventIdentity()
         self._classifier = classifier or Classifier()
+        self._report_workflow = report_workflow
 
     @property
     def registry(self) -> RegionRegistry:
@@ -355,6 +378,10 @@ class ReportApplication:
     @property
     def classifier(self) -> Classifier:
         return self._classifier
+
+    @property
+    def report_workflow(self) -> ReportWorkflow | None:
+        return self._report_workflow
 
     def run(
         self,
@@ -465,6 +492,11 @@ class ReportApplication:
             event_identity_run,
             event_identity_records,
         )
+        downstream_results = self._run_downstream_workflow(
+            event_identity_run,
+            event_identity_records,
+            category_results,
+        )
 
         return ReportApplicationResult(
             plan,
@@ -480,7 +512,43 @@ class ReportApplication:
             event_identity_records=event_identity_records,
             event_identity_run=event_identity_run,
             category_results=category_results,
+            downstream_results=downstream_results,
         )
+
+    def _run_downstream_workflow(
+        self,
+        event_identity_run: EventIdentityRun,
+        event_identity_records: tuple[EventIdentityRecord, ...],
+        category_results: tuple[CategoryResult, ...],
+    ) -> tuple[ReportWorkflowResult, ...] | None:
+        """Pass validated upstream values to the existing downstream owner."""
+
+        if self._report_workflow is None:
+            return None
+        if not event_identity_run.groups:
+            return ()
+        record_by_id = {
+            record.candidate.candidate_id: record for record in event_identity_records
+        }
+        member_records = {
+            group.event_id: tuple(
+                record_by_id[candidate_id]
+                for candidate_id in group.member_candidate_ids
+            )
+            for group in event_identity_run.groups
+        }
+        downstream_results = self._report_workflow.run(
+            event_identity_run.groups,
+            member_records,
+            category_results,
+        )
+        if not isinstance(downstream_results, tuple):
+            raise TypeError("ReportWorkflow must return a tuple")
+        if any(not isinstance(result, ReportWorkflowResult) for result in downstream_results):
+            raise TypeError(
+                "ReportApplication requires complete ReportWorkflowResult values"
+            )
+        return downstream_results
 
     def _classify_event_groups(
         self,
@@ -632,8 +700,16 @@ def build_report_application(
     temporal_rule: TemporalRule | None = None,
     event_identity: EventIdentity | None = None,
     classifier: Classifier | None = None,
+    report_workflow: ReportWorkflow,
 ) -> ReportApplication:
-    """Construct the shared Search application seam without executing it."""
+    """Construct a formal shared application with its complete downstream workflow."""
+
+    if not isinstance(report_workflow, ReportWorkflow):
+        raise TypeError("build_report_application requires a ReportWorkflow")
+    if report_workflow.reportability is None:
+        raise ValueError(
+            "build_report_application requires a ReportWorkflow with Reportability"
+        )
 
     return ReportApplication(
         registry,
@@ -645,6 +721,7 @@ def build_report_application(
         temporal_rule,
         event_identity,
         classifier,
+        report_workflow,
     )
 
 

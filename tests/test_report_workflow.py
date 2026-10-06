@@ -224,6 +224,18 @@ class ReportWorkflowTests(unittest.TestCase):
         self.assertEqual(len(owner.calls), 1)
         self.assertEqual(result[0].taxonomy_result.taxonomy_state, TaxonomyState.TAXONOMY_EVALUATED)
 
+    def test_taxonomy_only_lower_level_seam_returns_event_decision_records(self):
+        group = _group("A")
+        owner = _RecordingTaxonomy({group.event_id: _evaluated(group)})
+
+        result = ReportWorkflow(owner).run(
+            (group,), {group.event_id: (_record("A"),)}, {group.event_id: _assigned(group)}
+        )
+
+        self.assertEqual(len(result), 1)
+        self.assertIsInstance(result[0], EventDecisionRecord)
+        self.assertNotIsInstance(result[0], ReportWorkflowResult)
+
     def test_unresolved_and_not_evaluated_categories_are_routed_to_owner(self):
         for category_factory in (_unresolved, _not_evaluated):
             group = _group("A")
