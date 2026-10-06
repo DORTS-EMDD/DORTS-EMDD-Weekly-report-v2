@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from dataclasses import replace
 from unittest import TestCase
 
@@ -33,8 +34,10 @@ from src.weekly_report.contracts import (
     ReportabilityReason,
     ReportabilityResult,
     ReportabilityState,
+    ReportabilitySupportSpan,
     TemporalResult,
     TemporalDiagnostic,
+    SourceDateKind,
     candidate_id_for_url,
 )
 from src.weekly_report.region_registry import RegionRegistry
@@ -47,6 +50,7 @@ from src.weekly_report.scope_classifier import ScopeClassifier
 from src.weekly_report.temporal_rule import TemporalRule
 from src.weekly_report.event_identity import EventIdentity
 from src.weekly_report.report_workflow import ReportWorkflow, ReportWorkflowResult
+from src.weekly_report.ordering import Ordering
 from src.weekly_report.taxonomy import Taxonomy
 
 
@@ -103,6 +107,22 @@ class MultiResultProvider(FakeProvider):
             (
                 DiscoveryResult("first", "https://example.test/first"),
                 DiscoveryResult("second", "https://example.test/second"),
+            ),
+        )
+
+
+class TripleResultProvider(MultiResultProvider):
+    def execute(self, item):
+        self.calls.append(item.plan_item_id)
+        if item.plan_item_id == "item-1":
+            return SearchAttemptResult(item.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
+        return SearchAttemptResult(
+            item.plan_item_id,
+            SearchTerminalStatus.SUCCESS_WITH_RESULTS,
+            (
+                DiscoveryResult("first", "https://example.test/first"),
+                DiscoveryResult("second", "https://example.test/second"),
+                DiscoveryResult("third", "https://example.test/third"),
             ),
         )
 
@@ -189,11 +209,13 @@ class RecordingScopeClassifier(ScopeClassifier):
 
 
 class RecordingTemporalRule(TemporalRule):
-    def __init__(self, *, invalid=None, error=None, date_valid=True):
+    def __init__(self, *, invalid=None, error=None, date_valid=True, default_date=None, dates=None):
         self.calls = []
         self.invalid = invalid
         self.error = error
         self.date_valid = date_valid
+        self.default_date = default_date
+        self.dates = dict(dates or {})
 
     def evaluate(self, candidate_id, source_date_facts, period_start, period_end, **kwargs):
         self.calls.append((candidate_id, tuple(source_date_facts), period_start, period_end, kwargs))
@@ -208,6 +230,14 @@ class RecordingTemporalRule(TemporalRule):
                 TemporalDiagnostic.NONE
                 if self.date_valid
                 else TemporalDiagnostic.DATE_MISSING
+            ),
+            controlling_calendar_date=(
+                self.dates.get(candidate_id, self.default_date)
+                if self.date_valid
+                else None
+            ),
+            controlling_date_kind=(
+                SourceDateKind.ORIGINAL_PUBLICATION if self.date_valid else None
             ),
         )
 
@@ -289,16 +319,33 @@ class RecordingDownstreamTaxonomy:
 
 
 class RecordingDownstreamReportability:
-    def __init__(self, *, fail_on_call=None):
+    def __init__(self, *, fail_on_call=None, reportable=False, reportable_on_calls=()):
         self.calls = []
         self.successful_event_ids = []
         self.fail_on_call = fail_on_call
+        self.reportable = reportable
+        self.reportable_on_calls = set(reportable_on_calls)
 
     def evaluate(self, decision):
         self.calls.append(decision)
         if len(self.calls) == self.fail_on_call:
             raise RuntimeError("downstream reportability failure")
         self.successful_event_ids.append(decision.event_group.event_id)
+        if self.reportable or len(self.calls) in self.reportable_on_calls:
+            return ReportabilityResult(
+                event_id=decision.event_group.event_id,
+                reportability_state=ReportabilityState.REPORTABLE,
+                reportability_reason=None,
+                provenance=ReportabilityEvidenceProvenance(
+                    examined_candidate_ids=decision.event_group.member_candidate_ids,
+                    support_spans=(
+                        ReportabilitySupportSpan(
+                            decision.event_group.member_candidate_ids[0], 0, 1
+                        ),
+                    ),
+                    rationale="fixture downstream result",
+                ),
+            )
         return ReportabilityResult(
             event_id=decision.event_group.event_id,
             reportability_state=ReportabilityState.NOT_REPORTABLE,
@@ -318,13 +365,17 @@ class RecordingDownstreamWorkflow(ReportWorkflow):
         fail_on_event_id=None,
         fail_on_call=None,
         fail_reportability_on_call=None,
+        reportable=False,
+        reportable_on_calls=(),
     ):
         self.taxonomy_owner = RecordingDownstreamTaxonomy(
             fail_on_event_id=fail_on_event_id,
             fail_on_call=fail_on_call,
         )
         self.reportability_owner = RecordingDownstreamReportability(
-            fail_on_call=fail_reportability_on_call
+            fail_on_call=fail_reportability_on_call,
+            reportable=reportable,
+            reportable_on_calls=reportable_on_calls,
         )
         self.calls = []
         super().__init__(self.taxonomy_owner, reportability=self.reportability_owner)
@@ -332,6 +383,47 @@ class RecordingDownstreamWorkflow(ReportWorkflow):
     def run(self, event_groups, member_records, category_results):
         self.calls.append((tuple(event_groups), member_records, tuple(category_results)))
         return super().run(event_groups, member_records, category_results)
+
+
+class BrokenOrdering(Ordering):
+    def __init__(self, output_factory):
+        self.calls = []
+        self.output_factory = output_factory
+
+    def order(self, events):
+        events = tuple(events)
+        self.calls.append(events)
+        return self.output_factory(events)
+
+
+class MalformedDownstreamWorkflow(RecordingDownstreamWorkflow):
+    def __init__(self, mode):
+        super().__init__(reportable=True)
+        self.mode = mode
+
+    def run(self, event_groups, member_records, category_results):
+        results = super().run(event_groups, member_records, category_results)
+        if self.mode == "raw":
+            return (results[0].decision,)
+        if self.mode == "mixed":
+            return (results[0], results[1].decision)
+        raise AssertionError(f"unknown malformed mode: {self.mode}")
+
+
+class RecordingOrdering(Ordering):
+    def __init__(self, *, error=None, reverse=False):
+        self.calls = []
+        self.error = error
+        self.reverse = reverse
+
+    def order(self, events):
+        events = tuple(events)
+        self.calls.append(events)
+        if self.error is not None:
+            raise self.error
+        if self.reverse:
+            return tuple(reversed(events))
+        return super().order(events)
 
 
 class ReportApplicationTests(TestCase):
@@ -347,6 +439,7 @@ class ReportApplicationTests(TestCase):
         event_identity=None,
         classifier=None,
         report_workflow=None,
+        ordering=None,
     ) -> ReportApplication:
         plan = _fixture_plan()
         registry = _registry()
@@ -362,7 +455,19 @@ class ReportApplicationTests(TestCase):
             event_identity=event_identity,
             classifier=classifier,
             report_workflow=report_workflow,
+            ordering=ordering,
         )
+
+    def _reportable_run(self, ordering, *, provider=None, workflow=None, classifier=None):
+        return self._app(
+            provider or MultiResultProvider(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(default_date=date(2026, 9, 18)),
+            event_identity=RecordingEventIdentity(),
+            classifier=classifier or RecordingClassifier(),
+            report_workflow=workflow or RecordingDownstreamWorkflow(reportable=True),
+            ordering=ordering,
+        ).run("selected")
 
     def test_fixture_preserves_complete_production_registry(self) -> None:
         registry = self._app(FakeProvider()).registry
@@ -926,6 +1031,7 @@ class ReportApplicationTests(TestCase):
         event_identity = RecordingEventIdentity()
         classifier = RecordingClassifier()
         workflow = RecordingDownstreamWorkflow()
+        ordering = RecordingOrdering()
         application = build_report_application(
             registry,
             SearchExecutor({SearchProviderId.GOOGLE_NEWS_RSS: provider}),
@@ -936,9 +1042,11 @@ class ReportApplicationTests(TestCase):
             event_identity=event_identity,
             classifier=classifier,
             report_workflow=workflow,
+            ordering=ordering,
         )
 
         self.assertIs(application.report_workflow, workflow)
+        self.assertIs(application.ordering, ordering)
         result = application.run(
             "selected",
             period_start="2026-09-12",
@@ -950,6 +1058,8 @@ class ReportApplicationTests(TestCase):
         self.assertTrue(all(
             isinstance(item, ReportWorkflowResult) for item in result.downstream_results
         ))
+        self.assertEqual(ordering.calls, [()])
+        self.assertEqual(result.ordered_results, ())
         self.assertEqual(len(event_identity.calls), 1)
         self.assertEqual(len(classifier.calls), len(result.event_identity_run.groups))
 
@@ -968,7 +1078,170 @@ class ReportApplicationTests(TestCase):
                 executor,
                 evidence_service=RecordingEvidenceService(),
                 report_workflow=ReportWorkflow(RecordingDownstreamTaxonomy()),
+                ordering=RecordingOrdering(),
             )
+
+    def test_formal_factory_rejects_only_missing_ordering(self) -> None:
+        with self.assertRaises(TypeError):
+            build_report_application(
+                _registry(),
+                SearchExecutor({}),
+                evidence_service=RecordingEvidenceService(),
+                report_workflow=RecordingDownstreamWorkflow(),
+            )
+
+    def test_generic_application_without_ordering_preserves_none_surface(self) -> None:
+        result = self._app(FakeProvider()).run("selected")
+        self.assertIsNone(result.ordered_results)
+
+    def test_ordering_projects_all_reportable_results_once_and_preserves_references(self) -> None:
+        ordering = RecordingOrdering(reverse=True)
+        workflow = RecordingDownstreamWorkflow(reportable=True)
+        result = self._app(
+            MultiResultProvider(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(default_date=date(2026, 9, 18)),
+            event_identity=RecordingEventIdentity(),
+            classifier=RecordingClassifier(),
+            report_workflow=workflow,
+            ordering=ordering,
+        ).run("selected")
+
+        self.assertEqual(len(ordering.calls), 1)
+        self.assertEqual(ordering.calls[0], result.downstream_results)
+        self.assertEqual(
+            tuple(result.ordered_results),
+            tuple(reversed(result.downstream_results)),
+        )
+        self.assertTrue(all(
+            any(ordered is source for source in result.downstream_results)
+            for ordered in result.ordered_results
+        ))
+
+    def test_zero_reportable_population_invokes_ordering_once_with_empty_tuple(self) -> None:
+        ordering = RecordingOrdering()
+        result = self._app(
+            ZeroResultProvider(),
+            report_workflow=RecordingDownstreamWorkflow(),
+            ordering=ordering,
+        ).run("selected")
+        self.assertEqual(ordering.calls, [()])
+        self.assertEqual(result.ordered_results, ())
+
+    def test_partial_downstream_failure_never_reaches_ordering(self) -> None:
+        ordering = RecordingOrdering()
+        with self.assertRaises(RuntimeError):
+            self._app(
+                MultiResultProvider(),
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(default_date=date(2026, 9, 18)),
+                event_identity=RecordingEventIdentity(),
+                report_workflow=RecordingDownstreamWorkflow(fail_on_call=2),
+                ordering=ordering,
+            ).run("selected")
+        self.assertEqual(ordering.calls, [])
+
+    def test_ordering_failure_propagates_without_fallback(self) -> None:
+        ordering_error = RuntimeError("ordering failure")
+        with self.assertRaisesRegex(RuntimeError, "ordering failure"):
+            self._app(
+                FakeProvider(),
+                report_workflow=RecordingDownstreamWorkflow(),
+                ordering=RecordingOrdering(error=ordering_error),
+            ).run("selected")
+
+    def test_ordering_output_validation_rejects_all_malformed_shapes(self) -> None:
+        baseline = self._reportable_run(RecordingOrdering())
+        first, second = baseline.downstream_results
+        group = replace(first.event_group, event_id="foreign-event")
+        foreign = ReportWorkflowResult(
+            replace(
+                first.decision,
+                event_group=group,
+                category_result=replace(first.category_result, event_id="foreign-event"),
+                taxonomy_result=replace(first.taxonomy_result, event_id="foreign-event"),
+            ),
+            replace(first.reportability_result, event_id="foreign-event"),
+        )
+        cases = (
+            ("non-tuple", lambda events: None, TypeError),
+            ("wrong-item", lambda events: (object(),), TypeError),
+            ("too-few", lambda events: events[:-1], ValueError),
+            ("duplicate", lambda events: (events[0], events[0]), ValueError),
+            ("foreign", lambda events: (events[0], foreign), ValueError),
+            ("reconstructed", lambda events: (events[0], replace(events[1])), ValueError),
+        )
+        for label, factory, expected_error in cases:
+            with self.subTest(label=label):
+                ordering = BrokenOrdering(factory)
+                with self.assertRaises(expected_error):
+                    self._reportable_run(ordering)
+                self.assertEqual(len(ordering.calls), 1)
+
+    def test_mixed_reportability_projection_passes_only_eligible_references(self) -> None:
+        def classify(group, records, call_number):
+            if call_number == 3:
+                return CategoryResult(
+                    CategoryState.CATEGORY_UNRESOLVED,
+                    event_id=group.event_id,
+                    classification_reason=CategoryState.CATEGORY_UNRESOLVED.value,
+                    category_resolution_reason="NO_CATEGORY_DEFINING_ACTION",
+                    provenance={"decision_basis": "fixture"},
+                )
+            return _assigned_category(group)
+
+        ordering = RecordingOrdering()
+        result = self._reportable_run(
+            ordering,
+            provider=TripleResultProvider(),
+            workflow=RecordingDownstreamWorkflow(reportable_on_calls={1}),
+            classifier=RecordingClassifier(result_factory=classify),
+        )
+
+        self.assertEqual(len(ordering.calls), 1)
+        self.assertEqual(len(ordering.calls[0]), 1)
+        self.assertIs(ordering.calls[0][0], result.downstream_results[0])
+        self.assertIs(result.downstream_results[1].reportability_state, ReportabilityState.NOT_REPORTABLE)
+        self.assertEqual(result.downstream_results[2].reportability_state, "NOT_EVALUATED")
+        self.assertEqual(result.ordered_results, (result.downstream_results[0],))
+
+    def test_late_reportability_failure_blocks_configured_ordering(self) -> None:
+        ordering = RecordingOrdering()
+        with self.assertRaises(RuntimeError):
+            self._reportable_run(
+                ordering,
+                workflow=RecordingDownstreamWorkflow(fail_reportability_on_call=2),
+            )
+        self.assertEqual(ordering.calls, [])
+
+    def test_raw_and_mixed_workflow_outputs_fail_before_configured_ordering(self) -> None:
+        for mode in ("raw", "mixed"):
+            with self.subTest(mode=mode):
+                ordering = RecordingOrdering()
+                with self.assertRaises(TypeError):
+                    self._app(
+                        MultiResultProvider(),
+                        scope_classifier=RecordingScopeClassifier(),
+                        temporal_rule=RecordingTemporalRule(default_date=date(2026, 9, 18)),
+                        event_identity=RecordingEventIdentity(),
+                        classifier=RecordingClassifier(),
+                        report_workflow=MalformedDownstreamWorkflow(mode),
+                        ordering=ordering,
+                    ).run("selected")
+                self.assertEqual(ordering.calls, [])
+
+    def test_ordered_results_aggregate_rejects_invalid_populations(self) -> None:
+        result = self._reportable_run(RecordingOrdering())
+        first, second = result.downstream_results
+
+        with self.assertRaises(ValueError):
+            replace(result, downstream_results=None, ordered_results=())
+        with self.assertRaises(ValueError):
+            replace(result, ordered_results=())
+        with self.assertRaises(ValueError):
+            replace(result, ordered_results=(first, first))
+        with self.assertRaises(ValueError):
+            replace(result, ordered_results=(first, replace(second)))
 
     def test_downstream_bridge_passes_category_unresolved_unchanged(self) -> None:
         unresolved_results = []

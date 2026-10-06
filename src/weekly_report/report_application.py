@@ -36,6 +36,7 @@ from .search_executor import SearchExecutor
 from .search_planner import SearchPlanner
 from .scope_classifier import ScopeClassifier
 from .temporal_rule import TemporalRule
+from .ordering import Ordering
 from .report_workflow import ReportWorkflow, ReportWorkflowResult
 
 
@@ -60,6 +61,7 @@ class ReportApplicationResult:
     event_identity_run: EventIdentityRun | None = None
     category_results: tuple[CategoryResult, ...] | None = None
     downstream_results: tuple[ReportWorkflowResult, ...] | None = None
+    ordered_results: tuple[ReportWorkflowResult, ...] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.plan, SearchPlan):
@@ -264,6 +266,29 @@ class ReportApplicationResult:
                 raise ValueError("downstream results must match EventGroups in order")
         object.__setattr__(self, "downstream_results", downstream_results)
 
+        ordered_results = self.ordered_results
+        if ordered_results is not None:
+            if downstream_results is None:
+                raise ValueError("ordered results require completed downstream results")
+            if not isinstance(ordered_results, tuple):
+                raise TypeError("ReportApplicationResult ordered_results must be a tuple")
+            if any(not isinstance(result, ReportWorkflowResult) for result in ordered_results):
+                raise TypeError(
+                    "ReportApplicationResult ordered_results must be ReportWorkflowResult values"
+                )
+            eligible_results = tuple(
+                result for result in downstream_results if result.downstream_eligible
+            )
+            if len(ordered_results) != len(eligible_results):
+                raise ValueError("ordered results must preserve eligible cardinality")
+            expected_references = {id(result) for result in eligible_results}
+            actual_references = [id(result) for result in ordered_results]
+            if len(actual_references) != len(set(actual_references)):
+                raise ValueError("ordered results must not repeat references")
+            if set(actual_references) != expected_references:
+                raise ValueError("ordered results must preserve eligible references")
+        object.__setattr__(self, "ordered_results", ordered_results)
+
     @property
     def downstream_ready(self) -> bool:
         return (
@@ -311,6 +336,7 @@ class ReportApplication:
         event_identity: EventIdentity | None = None,
         classifier: Classifier | None = None,
         report_workflow: ReportWorkflow | None = None,
+        ordering: Ordering | None = None,
     ) -> None:
         if not isinstance(registry, RegionRegistry):
             raise TypeError("ReportApplication requires a RegionRegistry")
@@ -332,6 +358,10 @@ class ReportApplication:
             raise TypeError("ReportApplication classifier must be a Classifier")
         if report_workflow is not None and not isinstance(report_workflow, ReportWorkflow):
             raise TypeError("ReportApplication report_workflow must be a ReportWorkflow")
+        if ordering is not None and not isinstance(ordering, Ordering):
+            raise TypeError("ReportApplication ordering must be an Ordering")
+        if ordering is not None and report_workflow is None:
+            raise ValueError("ReportApplication ordering requires a ReportWorkflow")
         self._registry = registry
         self._planner = planner or SearchPlanner(registry)
         self._executor = executor
@@ -342,6 +372,7 @@ class ReportApplication:
         self._event_identity = event_identity or EventIdentity()
         self._classifier = classifier or Classifier()
         self._report_workflow = report_workflow
+        self._ordering = ordering
 
     @property
     def registry(self) -> RegionRegistry:
@@ -382,6 +413,10 @@ class ReportApplication:
     @property
     def report_workflow(self) -> ReportWorkflow | None:
         return self._report_workflow
+
+    @property
+    def ordering(self) -> Ordering | None:
+        return self._ordering
 
     def run(
         self,
@@ -497,6 +532,7 @@ class ReportApplication:
             event_identity_records,
             category_results,
         )
+        ordered_results = self._run_ordering(downstream_results)
 
         return ReportApplicationResult(
             plan,
@@ -513,6 +549,7 @@ class ReportApplication:
             event_identity_run=event_identity_run,
             category_results=category_results,
             downstream_results=downstream_results,
+            ordered_results=ordered_results,
         )
 
     def _run_downstream_workflow(
@@ -548,7 +585,46 @@ class ReportApplication:
             raise TypeError(
                 "ReportApplication requires complete ReportWorkflowResult values"
             )
+        if len(downstream_results) != len(event_identity_run.groups):
+            raise ValueError("ReportWorkflow results must cover EventGroups exactly")
+        result_ids = tuple(result.event_group.event_id for result in downstream_results)
+        expected_ids = tuple(group.event_id for group in event_identity_run.groups)
+        if result_ids != expected_ids:
+            raise ValueError("ReportWorkflow results must match EventGroups in order")
+        if len(result_ids) != len(set(result_ids)):
+            raise ValueError("ReportWorkflow results must have unique event IDs")
         return downstream_results
+
+    def _run_ordering(
+        self,
+        downstream_results: tuple[ReportWorkflowResult, ...] | None,
+    ) -> tuple[ReportWorkflowResult, ...] | None:
+        if self._ordering is None or downstream_results is None:
+            return None
+        eligible_results = tuple(
+            result for result in downstream_results if result.downstream_eligible
+        )
+        ordered_results = self._ordering.order(eligible_results)
+        self._validate_ordering_output(eligible_results, ordered_results)
+        return ordered_results
+
+    @staticmethod
+    def _validate_ordering_output(
+        eligible_results: tuple[ReportWorkflowResult, ...],
+        ordered_results: tuple[ReportWorkflowResult, ...],
+    ) -> None:
+        if not isinstance(ordered_results, tuple):
+            raise TypeError("Ordering must return a tuple")
+        if any(not isinstance(result, ReportWorkflowResult) for result in ordered_results):
+            raise TypeError("Ordering must return ReportWorkflowResult values")
+        if len(ordered_results) != len(eligible_results):
+            raise ValueError("Ordering output must preserve cardinality")
+        expected_references = {id(result) for result in eligible_results}
+        actual_references = [id(result) for result in ordered_results]
+        if len(actual_references) != len(set(actual_references)):
+            raise ValueError("Ordering output must not repeat references")
+        if set(actual_references) != expected_references:
+            raise ValueError("Ordering output must preserve exact references")
 
     def _classify_event_groups(
         self,
@@ -701,6 +777,7 @@ def build_report_application(
     event_identity: EventIdentity | None = None,
     classifier: Classifier | None = None,
     report_workflow: ReportWorkflow,
+    ordering: Ordering,
 ) -> ReportApplication:
     """Construct a formal shared application with its complete downstream workflow."""
 
@@ -710,6 +787,8 @@ def build_report_application(
         raise ValueError(
             "build_report_application requires a ReportWorkflow with Reportability"
         )
+    if not isinstance(ordering, Ordering):
+        raise TypeError("build_report_application requires an Ordering")
 
     return ReportApplication(
         registry,
@@ -722,6 +801,7 @@ def build_report_application(
         event_identity,
         classifier,
         report_workflow,
+        ordering,
     )
 
 
