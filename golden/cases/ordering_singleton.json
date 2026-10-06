@@ -1,0 +1,25 @@
+{
+  "case_id": "O02",
+  "name": "ordering_singleton",
+  "description": "One valid REPORTABLE event remains present exactly once.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-only",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-only",
+        "members": [
+          {"candidate_id": "candidate-only", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-18"}}
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "ordered_event_ids": ["event-only"],
+    "input_count": 1,
+    "output_count": 1,
+    "cardinality_preserved": true
+  },
+  "contract_notes": ["A singleton is still validated as a REPORTABLE Ordering input."]
+}

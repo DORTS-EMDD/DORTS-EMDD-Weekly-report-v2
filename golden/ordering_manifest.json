@@ -1,0 +1,21 @@
+{
+  "golden_version": "ordering-v1",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "stage": "ORDERING",
+  "live_search": false,
+  "input_boundary": "completed REPORTABLE population",
+  "mixed_reportability": "NOT_APPLICABLE_AT_GOLDEN_BOUNDARY",
+  "failure_cases_supported": false,
+  "case_count": 9,
+  "cases": [
+    {"case_id": "O01", "file": "cases/ordering_zero.json", "case_class": "zero"},
+    {"case_id": "O02", "file": "cases/ordering_singleton.json", "case_class": "singleton"},
+    {"case_id": "O03", "file": "cases/ordering_date_desc.json", "case_class": "date_desc"},
+    {"case_id": "O04", "file": "cases/ordering_same_date_event_id.json", "case_class": "event_id_tie"},
+    {"case_id": "O05", "file": "cases/ordering_canonical_member_date.json", "case_class": "canonical_member_date"},
+    {"case_id": "O06", "file": "cases/ordering_large_population.json", "case_class": "large_population"},
+    {"case_id": "O07", "file": "cases/ordering_category_independence.json", "case_class": "category_independence"},
+    {"case_id": "O08", "file": "cases/ordering_taxonomy_independence.json", "case_class": "taxonomy_independence"},
+    {"case_id": "O09", "file": "cases/ordering_geography_independence.json", "case_class": "geography_independence"}
+  ]
+}

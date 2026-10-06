@@ -1,0 +1,31 @@
+{
+  "case_id": "O08",
+  "name": "ordering_taxonomy_independence",
+  "description": "Materially different E&M Taxonomy systems do not add an Ordering comparator.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-signalling",
+        "reportability_state": "REPORTABLE",
+        "taxonomy_systems": ["SIGNALLING"],
+        "canonical_member_candidate_id": "candidate-signalling",
+        "members": [{"candidate_id": "candidate-signalling", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-17"}}]
+      },
+      {
+        "event_id": "event-power",
+        "reportability_state": "REPORTABLE",
+        "taxonomy_systems": ["POWER_SUPPLY"],
+        "canonical_member_candidate_id": "candidate-power",
+        "members": [{"candidate_id": "candidate-power", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-18"}}]
+      }
+    ]
+  },
+  "expected": {
+    "ordered_event_ids": ["event-power", "event-signalling"],
+    "input_count": 2,
+    "output_count": 2,
+    "cardinality_preserved": true
+  },
+  "contract_notes": ["Date order determines the result even though Taxonomy systems differ."]
+}

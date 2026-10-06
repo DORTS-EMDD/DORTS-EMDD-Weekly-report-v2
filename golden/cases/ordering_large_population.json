@@ -1,0 +1,29 @@
+{
+  "case_id": "O06",
+  "name": "ordering_large_population",
+  "description": "A twelve-event REPORTABLE population remains complete and ordered.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {"event_id": "event-01", "reportability_state": "REPORTABLE", "canonical_member_candidate_id": "candidate-01", "members": [{"candidate_id": "candidate-01", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-01"}}]},
+      {"event_id": "event-02", "reportability_state": "REPORTABLE", "canonical_member_candidate_id": "candidate-02", "members": [{"candidate_id": "candidate-02", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-02"}}]},
+      {"event_id": "event-03", "reportability_state": "REPORTABLE", "canonical_member_candidate_id": "candidate-03", "members": [{"candidate_id": "candidate-03", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-03"}}]},
+      {"event_id": "event-04", "reportability_state": "REPORTABLE", "canonical_member_candidate_id": "candidate-04", "members": [{"candidate_id": "candidate-04", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-04"}}]},
+      {"event_id": "event-05", "reportability_state": "REPORTABLE", "canonical_member_candidate_id": "candidate-05", "members": [{"candidate_id": "candidate-05", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-05"}}]},
+      {"event_id": "event-06", "reportability_state": "REPORTABLE", "canonical_member_candidate_id": "candidate-06", "members": [{"candidate_id": "candidate-06", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-06"}}]},
+      {"event_id": "event-07", "reportability_state": "REPORTABLE", "canonical_member_candidate_id": "candidate-07", "members": [{"candidate_id": "candidate-07", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-07"}}]},
+      {"event_id": "event-08", "reportability_state": "REPORTABLE", "canonical_member_candidate_id": "candidate-08", "members": [{"candidate_id": "candidate-08", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-08"}}]},
+      {"event_id": "event-09", "reportability_state": "REPORTABLE", "canonical_member_candidate_id": "candidate-09", "members": [{"candidate_id": "candidate-09", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-09"}}]},
+      {"event_id": "event-10", "reportability_state": "REPORTABLE", "canonical_member_candidate_id": "candidate-10", "members": [{"candidate_id": "candidate-10", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-10"}}]},
+      {"event_id": "event-11", "reportability_state": "REPORTABLE", "canonical_member_candidate_id": "candidate-11", "members": [{"candidate_id": "candidate-11", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-11"}}]},
+      {"event_id": "event-12", "reportability_state": "REPORTABLE", "canonical_member_candidate_id": "candidate-12", "members": [{"candidate_id": "candidate-12", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-12"}}]}
+    ]
+  },
+  "expected": {
+    "ordered_event_ids": ["event-12", "event-11", "event-10", "event-09", "event-08", "event-07", "event-06", "event-05", "event-04", "event-03", "event-02", "event-01"],
+    "input_count": 12,
+    "output_count": 12,
+    "cardinality_preserved": true
+  },
+  "contract_notes": ["Every input event remains present; this case is an anti-zero and anti-Top-N lock."]
+}

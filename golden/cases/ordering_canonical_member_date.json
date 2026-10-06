@@ -1,0 +1,34 @@
+{
+  "case_id": "O05",
+  "name": "ordering_canonical_member_date",
+  "description": "Only the canonical member controlling date determines an event's position.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-canonical-authority",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-canonical",
+        "members": [
+          {"candidate_id": "candidate-canonical", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-10"}},
+          {"candidate_id": "candidate-secondary", "canonical": false, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-18"}}
+        ]
+      },
+      {
+        "event_id": "event-competitor",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-competitor",
+        "members": [
+          {"candidate_id": "candidate-competitor", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-11"}}
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "ordered_event_ids": ["event-competitor", "event-canonical-authority"],
+    "input_count": 2,
+    "output_count": 2,
+    "cardinality_preserved": true
+  },
+  "contract_notes": ["The newer non-canonical member must not move event-canonical-authority ahead of event-competitor."]
+}

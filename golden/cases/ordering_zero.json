@@ -1,0 +1,14 @@
+{
+  "case_id": "O01",
+  "name": "ordering_zero",
+  "description": "An empty completed REPORTABLE population remains empty.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {"events": []},
+  "expected": {
+    "ordered_event_ids": [],
+    "input_count": 0,
+    "output_count": 0,
+    "cardinality_preserved": true
+  },
+  "contract_notes": ["Zero eligible events is a legal Ordering result."]
+}

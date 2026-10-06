@@ -1,0 +1,31 @@
+{
+  "case_id": "O07",
+  "name": "ordering_category_independence",
+  "description": "Materially different Category values do not add an Ordering comparator.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-incident",
+        "reportability_state": "REPORTABLE",
+        "category_id": "INCIDENT",
+        "canonical_member_candidate_id": "candidate-incident",
+        "members": [{"candidate_id": "candidate-incident", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-17"}}]
+      },
+      {
+        "event_id": "event-technical",
+        "reportability_state": "REPORTABLE",
+        "category_id": "TECHNICAL_DEVELOPMENT",
+        "canonical_member_candidate_id": "candidate-technical",
+        "members": [{"candidate_id": "candidate-technical", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-18"}}]
+      }
+    ]
+  },
+  "expected": {
+    "ordered_event_ids": ["event-technical", "event-incident"],
+    "input_count": 2,
+    "output_count": 2,
+    "cardinality_preserved": true
+  },
+  "contract_notes": ["Date order determines the result even though Category values differ."]
+}

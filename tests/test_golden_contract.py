@@ -4,22 +4,152 @@ from __future__ import annotations
 
 import json
 import unittest
+from datetime import date
 from pathlib import Path
 
 from src.weekly_report.contracts import (
+    CanonicalCandidate,
+    CategoryId,
+    CategoryResult,
+    CategoryState,
+    EvidenceResult,
+    EvidenceState,
+    EventDecisionRecord,
+    EventGroup,
+    EventIdentityFacts,
+    EventIdentityRecord,
     EMSystemId,
+    ReportabilityEvidenceProvenance,
+    ReportabilityReason,
+    ReportabilityResult,
+    ReportabilityState,
+    ReportabilitySupportSpan,
+    ScopeResult,
+    ScopeState,
+    SourceDateKind,
     TaxonomyConflictEvidenceProvenance,
     TaxonomyInsufficientEvidenceProvenance,
     TaxonomyResolutionReason,
+    TaxonomyResult,
     TaxonomyState,
     TaxonomySupportSpan,
+    TemporalResult,
     canonical_em_system_ids,
 )
+from src.weekly_report.ordering import Ordering
+from src.weekly_report.report_workflow import ReportWorkflowResult
 
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = ROOT / "golden"
 CASES = GOLDEN / "cases"
+
+
+def _materialize_ordering_event(event: dict) -> ReportWorkflowResult:
+    """Build one typed workflow result from a declarative Ordering fixture."""
+
+    event_id = event["event_id"]
+    category_id = CategoryId(event.get("category_id", CategoryId.PROCUREMENT.value))
+    member_records = []
+    member_candidate_ids = []
+    for member in event["members"]:
+        candidate_id = member["candidate_id"]
+        member_candidate_ids.append(candidate_id)
+        controlling_date = date.fromisoformat(
+            member["temporal"]["controlling_calendar_date"]
+        )
+        identity_facts = EventIdentityFacts(
+            location=member.get("identity_facts", {}).get("location", "")
+        )
+        candidate = CanonicalCandidate(
+            candidate_id=candidate_id,
+            title=f"Golden {candidate_id}",
+            url=f"https://fixtures.invalid/ordering/{candidate_id}",
+            publisher="Synthetic Ordering Golden",
+        )
+        member_records.append(
+            EventIdentityRecord(
+                candidate=candidate,
+                evidence=EvidenceResult(
+                    candidate_id=candidate_id,
+                    state=EvidenceState.READY,
+                    canonical_source_url=candidate.url,
+                    source_type="synthetic_ordering_golden",
+                    substantive_content="Synthetic authoritative Ordering fixture content.",
+                    identity_facts=identity_facts,
+                ),
+                scope=ScopeResult(candidate_id, ScopeState.IN_SCOPE),
+                temporal=TemporalResult(
+                    candidate_id=candidate_id,
+                    date_valid=member["temporal"]["date_valid"],
+                    controlling_calendar_date=controlling_date,
+                    controlling_date_kind=SourceDateKind.ORIGINAL_PUBLICATION,
+                ),
+            )
+        )
+
+    event_group = EventGroup(
+        event_id=event_id,
+        member_candidate_ids=tuple(member_candidate_ids),
+        canonical_candidate_id=event["canonical_member_candidate_id"],
+        identity_basis=(),
+    )
+    category_result = CategoryResult(
+        CategoryState.CATEGORY_ASSIGNED,
+        event_id=event_id,
+        primary_category_id=category_id,
+        primary_category=category_id.display_label,
+        classification_reason=f"PRINCIPAL_ACTION_{category_id.value}",
+    )
+    taxonomy_systems = tuple(
+        EMSystemId(system_id) for system_id in event.get("taxonomy_systems", ())
+    )
+    taxonomy_result = TaxonomyResult(
+        TaxonomyState.TAXONOMY_EVALUATED,
+        event_id=event_id,
+        systems=taxonomy_systems,
+        support_spans=tuple(
+            TaxonomySupportSpan(
+                system_id,
+                event["canonical_member_candidate_id"],
+                0,
+                1,
+            )
+            for system_id in taxonomy_systems
+        ),
+    )
+    decision = EventDecisionRecord(
+        event_group,
+        tuple(member_records),
+        category_result,
+        taxonomy_result,
+    )
+    reportability_state = ReportabilityState(event["reportability_state"])
+    reportability_result = ReportabilityResult(
+        event_id,
+        reportability_state,
+        (
+            None
+            if reportability_state is ReportabilityState.REPORTABLE
+            else ReportabilityReason.LOW_REPORTABILITY_VALUE
+        ),
+        ReportabilityEvidenceProvenance(
+            tuple(member_candidate_ids),
+            (
+                (ReportabilitySupportSpan(member_candidate_ids[0], 0, 1),)
+                if reportability_state is ReportabilityState.REPORTABLE
+                else ()
+            ),
+            "Synthetic Ordering Golden fixture.",
+        ),
+    )
+    return ReportWorkflowResult(decision, reportability_result)
+
+
+def _materialize_ordering_case(fixture: dict) -> tuple[ReportWorkflowResult, ...]:
+    """Materialize fixture input in declared order without ranking or filtering."""
+
+    return tuple(_materialize_ordering_event(event) for event in fixture["input"]["events"])
 
 
 class GoldenContractTests(unittest.TestCase):
@@ -50,6 +180,16 @@ class GoldenContractTests(unittest.TestCase):
                 (GOLDEN / entry["file"]).read_text(encoding="utf-8")
             )
             for entry in cls.taxonomy_manifest["cases"]
+        }
+        cls.ordering_manifest = json.loads(
+            (GOLDEN / "ordering_manifest.json").read_text(encoding="utf-8")
+        )
+        cls.ordering_entries = cls.ordering_manifest["cases"]
+        cls.ordering_fixtures = {
+            entry["case_id"]: json.loads(
+                (GOLDEN / entry["file"]).read_text(encoding="utf-8")
+            )
+            for entry in cls.ordering_entries
         }
 
     def test_manifest_is_sequential_and_complete(self):
@@ -106,7 +246,13 @@ class GoldenContractTests(unittest.TestCase):
                 category_id = expected["primary_category_id"]
                 self.assertIn(category_id, self.CATEGORY_LABELS, fixture["case_id"])
                 self.assertEqual(expected["primary_category"], self.CATEGORY_LABELS[category_id])
-                self.assertTrue(expected["subtype"], fixture["case_id"])
+                if expected["subtype"] is not None:
+                    self.assertIsInstance(expected["subtype"], str, fixture["case_id"])
+                    self.assertRegex(
+                        expected["subtype"],
+                        r"^[a-z][a-z0-9_]{0,63}$",
+                        fixture["case_id"],
+                    )
                 self.assertTrue(expected["classification_reason"], fixture["case_id"])
                 self.assertEqual(expected["category_resolution_reason"], "NONE", fixture["case_id"])
             elif state == "CATEGORY_UNRESOLVED":
@@ -167,6 +313,17 @@ class GoldenContractTests(unittest.TestCase):
         self.assertEqual(mixed["expected"]["event_identity_expectation"], "SAME_EVENT")
         self.assertEqual(mixed["expected"]["event_count_after_dedup"], 1)
         self.assertEqual(len(mixed["candidates"]), 2)
+        self.assertEqual(mixed["expected"]["category_state"], "CATEGORY_UNRESOLVED")
+        self.assertEqual(
+            mixed["expected"]["category_resolution_reason"],
+            "NO_UNIQUE_PRINCIPAL_ACTION",
+        )
+        low_value = self.fixtures["G85"]["expected"]
+        self.assertEqual(low_value["category_state"], "CATEGORY_ASSIGNED")
+        self.assertEqual(low_value["primary_category_id"], "PROCUREMENT")
+        self.assertEqual(low_value["subtype"], "award")
+        self.assertEqual(low_value["classification_reason"], "PRINCIPAL_ACTION_PROCUREMENT")
+        self.assertEqual(low_value["reportability"], "NOT_REPORTABLE")
 
     def test_search_context_is_non_authoritative_and_evidence_rejection_stops_category(self):
         for case_id in ("G49", "G53", "G60", "G62", "G63", "G64", "G69", "G79"):
@@ -553,6 +710,134 @@ class GoldenContractTests(unittest.TestCase):
         self.assertEqual(self.fixtures["G17"]["expected"]["e&m_taxonomy"], [])
         self.assertEqual(self.fixtures["G17"]["expected"]["reportability"], "REPORTABLE")
         self.assertEqual(self.fixtures["G85"]["expected"]["reportability"], "NOT_REPORTABLE")
+
+    def test_ordering_manifest_is_explicit_and_stage_scoped(self):
+        manifest = self.ordering_manifest
+        self.assertEqual(manifest["stage"], "ORDERING")
+        self.assertFalse(manifest["live_search"])
+        self.assertEqual(manifest["input_boundary"], "completed REPORTABLE population")
+        self.assertEqual(manifest["mixed_reportability"], "NOT_APPLICABLE_AT_GOLDEN_BOUNDARY")
+        self.assertFalse(manifest["failure_cases_supported"])
+        self.assertEqual(manifest["case_count"], 9)
+        self.assertEqual(len(self.ordering_entries), 9)
+        self.assertEqual(
+            [entry["case_id"] for entry in self.ordering_entries],
+            [f"O{i:02d}" for i in range(1, 10)],
+        )
+        for entry in self.ordering_entries:
+            fixture = self.ordering_fixtures[entry["case_id"]]
+            self.assertEqual(fixture["case_id"], entry["case_id"])
+            self.assertEqual(fixture["origin_type"], "SYNTHETIC_CONTRACT_CASE")
+            self.assertTrue((GOLDEN / entry["file"]).is_file())
+
+    def test_ordering_expected_orders_are_declarative_and_cardinality_preserving(self):
+        expected_orders = {
+            "O01": [],
+            "O02": ["event-only"],
+            "O03": ["event-newest", "event-middle", "event-old"],
+            "O04": ["event-alpha", "event-zulu"],
+            "O05": ["event-competitor", "event-canonical-authority"],
+            "O06": [
+                "event-12", "event-11", "event-10", "event-09", "event-08", "event-07",
+                "event-06", "event-05", "event-04", "event-03", "event-02", "event-01",
+            ],
+            "O07": ["event-technical", "event-incident"],
+            "O08": ["event-power", "event-signalling"],
+            "O09": ["event-alpha", "event-zulu"],
+        }
+        for case_id, fixture in self.ordering_fixtures.items():
+            events = fixture["input"]["events"]
+            expected = fixture["expected"]
+            input_ids = [event["event_id"] for event in events]
+            self.assertEqual(expected["ordered_event_ids"], expected_orders[case_id], case_id)
+            self.assertEqual(len(input_ids), len(set(input_ids)), case_id)
+            self.assertEqual(set(expected["ordered_event_ids"]), set(input_ids), case_id)
+            self.assertEqual(expected["input_count"], len(input_ids), case_id)
+            self.assertEqual(expected["output_count"], len(expected["ordered_event_ids"]), case_id)
+            self.assertTrue(expected["cardinality_preserved"], case_id)
+            self.assertEqual(expected["input_count"], expected["output_count"], case_id)
+            for event in events:
+                self.assertEqual(event["reportability_state"], "REPORTABLE", case_id)
+
+    def test_ordering_golden_locks_canonical_and_forbidden_dimensions(self):
+        canonical = self.ordering_fixtures["O05"]["input"]["events"][0]
+        self.assertEqual(canonical["canonical_member_candidate_id"], "candidate-canonical")
+        members = {member["candidate_id"]: member for member in canonical["members"]}
+        self.assertEqual(members["candidate-canonical"]["temporal"]["controlling_calendar_date"], "2026-09-10")
+        self.assertEqual(members["candidate-secondary"]["temporal"]["controlling_calendar_date"], "2026-09-18")
+
+        category_events = self.ordering_fixtures["O07"]["input"]["events"]
+        self.assertEqual({event["category_id"] for event in category_events}, {"INCIDENT", "TECHNICAL_DEVELOPMENT"})
+        taxonomy_events = self.ordering_fixtures["O08"]["input"]["events"]
+        self.assertEqual({event["taxonomy_systems"][0] for event in taxonomy_events}, {"POWER_SUPPLY", "SIGNALLING"})
+        geography_events = self.ordering_fixtures["O09"]["input"]["events"]
+        events_by_id = {event["event_id"]: event for event in geography_events}
+        self.assertEqual(
+            events_by_id["event-zulu"]["members"][0]["identity_facts"]["location"],
+            "Amsterdam",
+        )
+        self.assertEqual(
+            events_by_id["event-alpha"]["members"][0]["identity_facts"]["location"],
+            "Zurich",
+        )
+        locations = {
+            event["members"][0]["identity_facts"]["location"] for event in geography_events
+        }
+        self.assertEqual(locations, {"Amsterdam", "Zurich"})
+        self.assertEqual(
+            [event["members"][0]["temporal"]["controlling_calendar_date"] for event in geography_events],
+            ["2026-09-18", "2026-09-18"],
+        )
+        self.assertEqual(self.ordering_fixtures["O09"]["expected"]["ordered_event_ids"], ["event-alpha", "event-zulu"])
+
+    def test_ordering_golden_executes_production_against_declared_expected_orders(self):
+        for entry in self.ordering_entries:
+            case_id = entry["case_id"]
+            fixture = self.ordering_fixtures[case_id]
+            with self.subTest(case_id=case_id):
+                typed_events = _materialize_ordering_case(fixture)
+                actual = Ordering().order(typed_events)
+                actual_ids = tuple(item.event_group.event_id for item in actual)
+                expected_ids = tuple(fixture["expected"]["ordered_event_ids"])
+
+                self.assertEqual(actual_ids, expected_ids)
+                self.assertEqual(len(actual), fixture["expected"]["output_count"])
+                self.assertEqual(len(actual), len(typed_events))
+                if case_id == "O06":
+                    self.assertEqual(len(typed_events), 12)
+                if case_id == "O07":
+                    self.assertEqual(
+                        {item.category_result.primary_category_id for item in typed_events},
+                        {CategoryId.INCIDENT, CategoryId.TECHNICAL_DEVELOPMENT},
+                    )
+                if case_id == "O08":
+                    self.assertEqual(
+                        {item.taxonomy_result.systems[0] for item in typed_events},
+                        {EMSystemId.POWER_SUPPLY, EMSystemId.SIGNALLING},
+                    )
+                if case_id == "O09":
+                    self.assertEqual(
+                        {
+                            member.evidence.identity_facts.location
+                            for item in typed_events
+                            for member in item.member_records
+                        },
+                        {"Amsterdam", "Zurich"},
+                    )
+
+    def test_ordering_large_population_is_explicit_anti_zero_and_anti_top_n_lock(self):
+        fixture = self.ordering_fixtures["O06"]
+        self.assertEqual(len(fixture["input"]["events"]), 12)
+        self.assertEqual(len(fixture["expected"]["ordered_event_ids"]), 12)
+        self.assertEqual(fixture["expected"]["input_count"], 12)
+        self.assertEqual(fixture["expected"]["output_count"], 12)
+        self.assertEqual(
+            fixture["expected"]["ordered_event_ids"],
+            [
+                "event-12", "event-11", "event-10", "event-09", "event-08", "event-07",
+                "event-06", "event-05", "event-04", "event-03", "event-02", "event-01",
+            ],
+        )
 
 
 if __name__ == "__main__":

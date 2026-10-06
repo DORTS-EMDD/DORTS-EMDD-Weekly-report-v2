@@ -1,0 +1,41 @@
+{
+  "case_id": "O03",
+  "name": "ordering_date_desc",
+  "description": "Different canonical controlling dates order newest first.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-old",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-old",
+        "members": [
+          {"candidate_id": "candidate-old", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-12"}}
+        ]
+      },
+      {
+        "event_id": "event-newest",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-newest",
+        "members": [
+          {"candidate_id": "candidate-newest", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-18"}}
+        ]
+      },
+      {
+        "event_id": "event-middle",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-middle",
+        "members": [
+          {"candidate_id": "candidate-middle", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-15"}}
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "ordered_event_ids": ["event-newest", "event-middle", "event-old"],
+    "input_count": 3,
+    "output_count": 3,
+    "cardinality_preserved": true
+  },
+  "contract_notes": ["The expected order is declared independently of production sorting."]
+}

@@ -1,0 +1,33 @@
+{
+  "case_id": "O04",
+  "name": "ordering_same_date_event_id",
+  "description": "Same canonical dates use exact event ID ascending as the tie-break.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-zulu",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-zulu",
+        "members": [
+          {"candidate_id": "candidate-zulu", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-18"}}
+        ]
+      },
+      {
+        "event_id": "event-alpha",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-alpha",
+        "members": [
+          {"candidate_id": "candidate-alpha", "canonical": true, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-18"}}
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "ordered_event_ids": ["event-alpha", "event-zulu"],
+    "input_count": 2,
+    "output_count": 2,
+    "cardinality_preserved": true
+  },
+  "contract_notes": ["Input order conflicts with the declared event ID order."]
+}

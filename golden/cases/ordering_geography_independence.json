@@ -1,0 +1,29 @@
+{
+  "case_id": "O09",
+  "name": "ordering_geography_independence",
+  "description": "Different typed location values do not alter a same-date event ID tie-break.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-zulu",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-zulu",
+        "members": [{"candidate_id": "candidate-zulu", "canonical": true, "identity_facts": {"location": "Amsterdam"}, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-18"}}]
+      },
+      {
+        "event_id": "event-alpha",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-alpha",
+        "members": [{"candidate_id": "candidate-alpha", "canonical": true, "identity_facts": {"location": "Zurich"}, "temporal": {"date_valid": true, "controlling_calendar_date": "2026-09-18"}}]
+      }
+    ]
+  },
+  "expected": {
+    "ordered_event_ids": ["event-alpha", "event-zulu"],
+    "input_count": 2,
+    "output_count": 2,
+    "cardinality_preserved": true
+  },
+  "contract_notes": ["Location ASC would place event-zulu first, but exact event_id ASC places event-alpha first."]
+}
