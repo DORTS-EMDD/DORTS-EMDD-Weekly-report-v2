@@ -15,9 +15,11 @@ from src.weekly_report.contracts import (
     DiscoveryResult,
     EvidenceResult,
     EvidenceState,
+    EventIdentityFacts,
     EventGroup,
     EventIdentityRun,
     GoogleNewsRssEncoding,
+    IdentityMetadataSupport,
     RejectReason,
     RegionMode,
     SearchAttemptResult,
@@ -51,6 +53,12 @@ from src.weekly_report.temporal_rule import TemporalRule
 from src.weekly_report.event_identity import EventIdentity
 from src.weekly_report.report_workflow import ReportWorkflow, ReportWorkflowResult
 from src.weekly_report.ordering import Ordering
+from src.weekly_report.report_service import (
+    FormalMetadataFailure,
+    FormalMetadataFailureReason,
+    FormalReportMetadata,
+    ReportService,
+)
 from src.weekly_report.taxonomy import Taxonomy
 
 
@@ -133,6 +141,33 @@ class ZeroResultProvider(FakeProvider):
         return SearchAttemptResult(item.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
 
 
+class FormalResultProvider(FakeProvider):
+    def execute(self, item):
+        self.calls.append(item.plan_item_id)
+        if item.plan_item_id == "item-1":
+            return SearchAttemptResult(item.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
+        return SearchAttemptResult(
+            item.plan_item_id,
+            SearchTerminalStatus.SUCCESS_WITH_RESULTS,
+            (DiscoveryResult("formal event", "https://candidate.example/formal"),),
+        )
+
+
+class TwoFormalResultProvider(FormalResultProvider):
+    def execute(self, item):
+        self.calls.append(item.plan_item_id)
+        if item.plan_item_id == "item-1":
+            return SearchAttemptResult(item.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
+        return SearchAttemptResult(
+            item.plan_item_id,
+            SearchTerminalStatus.SUCCESS_WITH_RESULTS,
+            (
+                DiscoveryResult("formal event one", "https://candidate.example/formal-one"),
+                DiscoveryResult("formal event two", "https://candidate.example/formal-two"),
+            ),
+        )
+
+
 class RecordingEvidenceService(EvidenceService):
     def __init__(self, *, rejected_ids=(), error=None, invalid_result=None):
         self.calls = []
@@ -156,6 +191,29 @@ class RecordingEvidenceService(EvidenceService):
             candidate.candidate_id,
             EvidenceState.READY,
             substantive_content="authoritative fixture body",
+        )
+
+
+class FormalEvidenceService(RecordingEvidenceService):
+    def evaluate(self, candidate):
+        self.calls.append(candidate)
+        body = "Taiwan Metro Taipei"
+        facts = EventIdentityFacts(
+            country="Taiwan",
+            transit_system_name="Metro",
+            location="Taipei",
+            metadata_support=(
+                IdentityMetadataSupport("country", 0, 6),
+                IdentityMetadataSupport("transit_system_name", 7, 12),
+                IdentityMetadataSupport("location", 13, 19),
+            ),
+        )
+        return EvidenceResult(
+            candidate.candidate_id,
+            EvidenceState.READY,
+            canonical_source_url="https://WWW.News.Example.COM:8443/formal",
+            substantive_content=body,
+            identity_facts=facts,
         )
 
 
@@ -411,19 +469,41 @@ class MalformedDownstreamWorkflow(RecordingDownstreamWorkflow):
 
 
 class RecordingOrdering(Ordering):
-    def __init__(self, *, error=None, reverse=False):
+    def __init__(self, *, error=None, reverse=False, trace=None):
         self.calls = []
+        self.returned_results = []
         self.error = error
         self.reverse = reverse
+        self.trace = trace
 
     def order(self, events):
         events = tuple(events)
         self.calls.append(events)
+        if self.trace is not None:
+            self.trace.append("ordering")
         if self.error is not None:
             raise self.error
         if self.reverse:
-            return tuple(reversed(events))
-        return super().order(events)
+            ordered_results = tuple(reversed(events))
+        else:
+            ordered_results = super().order(events)
+        self.returned_results.append(ordered_results)
+        return ordered_results
+
+
+class RecordingReportService(ReportService):
+    def __init__(self, *, failure=None, trace=None):
+        self.calls = []
+        self.failure = failure
+        self.trace = trace
+
+    def project_formal_metadata(self, ordered_results):
+        self.calls.append(ordered_results)
+        if self.trace is not None:
+            self.trace.append("report_service")
+        if self.failure is not None:
+            raise self.failure
+        return super().project_formal_metadata(ordered_results)
 
 
 class ReportApplicationTests(TestCase):
@@ -440,6 +520,7 @@ class ReportApplicationTests(TestCase):
         classifier=None,
         report_workflow=None,
         ordering=None,
+        report_service=None,
     ) -> ReportApplication:
         plan = _fixture_plan()
         registry = _registry()
@@ -456,6 +537,7 @@ class ReportApplicationTests(TestCase):
             classifier=classifier,
             report_workflow=report_workflow,
             ordering=ordering,
+            report_service=report_service,
         )
 
     def _reportable_run(self, ordering, *, provider=None, workflow=None, classifier=None):
@@ -468,6 +550,23 @@ class ReportApplicationTests(TestCase):
             report_workflow=workflow or RecordingDownstreamWorkflow(reportable=True),
             ordering=ordering,
         ).run("selected")
+
+    def _formal_application_run(self, *, provider=None, trace=None, ordering=None):
+        report_service = RecordingReportService(trace=trace)
+        if ordering is None:
+            ordering = RecordingOrdering(trace=trace)
+        result = self._app(
+            provider or FormalResultProvider(),
+            evidence_service=FormalEvidenceService(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(default_date=date(2026, 9, 18)),
+            event_identity=RecordingEventIdentity(),
+            classifier=RecordingClassifier(),
+            report_workflow=RecordingDownstreamWorkflow(reportable=True),
+            ordering=ordering,
+            report_service=report_service,
+        ).run("selected")
+        return result, report_service
 
     def test_fixture_preserves_complete_production_registry(self) -> None:
         registry = self._app(FakeProvider()).registry
@@ -1043,6 +1142,7 @@ class ReportApplicationTests(TestCase):
             classifier=classifier,
             report_workflow=workflow,
             ordering=ordering,
+            report_service=ReportService(),
         )
 
         self.assertIs(application.report_workflow, workflow)
@@ -1060,6 +1160,7 @@ class ReportApplicationTests(TestCase):
         ))
         self.assertEqual(ordering.calls, [()])
         self.assertEqual(result.ordered_results, ())
+        self.assertEqual(result.formal_metadata, ())
         self.assertEqual(len(event_identity.calls), 1)
         self.assertEqual(len(classifier.calls), len(result.event_identity_run.groups))
 
@@ -1079,6 +1180,7 @@ class ReportApplicationTests(TestCase):
                 evidence_service=RecordingEvidenceService(),
                 report_workflow=ReportWorkflow(RecordingDownstreamTaxonomy()),
                 ordering=RecordingOrdering(),
+                report_service=ReportService(),
             )
 
     def test_formal_factory_rejects_only_missing_ordering(self) -> None:
@@ -1088,11 +1190,29 @@ class ReportApplicationTests(TestCase):
                 SearchExecutor({}),
                 evidence_service=RecordingEvidenceService(),
                 report_workflow=RecordingDownstreamWorkflow(),
+                report_service=ReportService(),
+            )
+
+    def test_formal_factory_requires_report_service(self) -> None:
+        kwargs = dict(
+            evidence_service=RecordingEvidenceService(),
+            report_workflow=RecordingDownstreamWorkflow(),
+            ordering=RecordingOrdering(),
+        )
+        with self.assertRaises(TypeError):
+            build_report_application(_registry(), SearchExecutor({}), **kwargs)
+        with self.assertRaises(TypeError):
+            build_report_application(
+                _registry(),
+                SearchExecutor({}),
+                report_service=object(),
+                **kwargs,
             )
 
     def test_generic_application_without_ordering_preserves_none_surface(self) -> None:
         result = self._app(FakeProvider()).run("selected")
         self.assertIsNone(result.ordered_results)
+        self.assertIsNone(result.formal_metadata)
 
     def test_ordering_projects_all_reportable_results_once_and_preserves_references(self) -> None:
         ordering = RecordingOrdering(reverse=True)
@@ -1117,6 +1237,11 @@ class ReportApplicationTests(TestCase):
             any(ordered is source for source in result.downstream_results)
             for ordered in result.ordered_results
         ))
+
+    def test_completed_ordering_without_report_service_leaves_formal_metadata_none(self) -> None:
+        result = self._reportable_run(RecordingOrdering())
+        self.assertIsNotNone(result.ordered_results)
+        self.assertIsNone(result.formal_metadata)
 
     def test_zero_reportable_population_invokes_ordering_once_with_empty_tuple(self) -> None:
         ordering = RecordingOrdering()
@@ -1149,6 +1274,79 @@ class ReportApplicationTests(TestCase):
                 report_workflow=RecordingDownstreamWorkflow(),
                 ordering=RecordingOrdering(error=ordering_error),
             ).run("selected")
+
+    def test_configured_report_service_runs_after_ordering(self) -> None:
+        report_service = RecordingReportService()
+        result = self._app(
+            ZeroResultProvider(),
+            report_workflow=RecordingDownstreamWorkflow(),
+            ordering=RecordingOrdering(),
+            report_service=report_service,
+        ).run("selected")
+        self.assertEqual(len(report_service.calls), 1)
+        self.assertEqual(report_service.calls[0], result.ordered_results)
+        self.assertEqual(result.formal_metadata, ())
+
+    def test_nonzero_formal_projection_preserves_values_and_runs_after_ordering_once(self) -> None:
+        trace = []
+        ordering = RecordingOrdering(trace=trace)
+        result, report_service = self._formal_application_run(trace=trace, ordering=ordering)
+
+        self.assertIsNotNone(result.ordered_results)
+        self.assertGreater(len(result.ordered_results), 0)
+        self.assertEqual(len(result.formal_metadata), len(result.ordered_results))
+        self.assertEqual(
+            tuple(item.event_id for item in result.formal_metadata),
+            tuple(item.event_group.event_id for item in result.ordered_results),
+        )
+        metadata = result.formal_metadata[0]
+        self.assertEqual(metadata.country, "Taiwan")
+        self.assertEqual(metadata.transit_system_name, "Metro")
+        self.assertEqual(metadata.display_date, "2026-09-18")
+        self.assertEqual(metadata.source_display, "www.news.example.com")
+        self.assertEqual(trace, ["ordering", "report_service"])
+        self.assertEqual(len(ordering.calls), 1)
+        self.assertEqual(len(ordering.returned_results), 1)
+        self.assertEqual(len(report_service.calls), 1)
+        self.assertIs(report_service.calls[0], ordering.returned_results[0])
+        self.assertIs(result.ordered_results, ordering.returned_results[0])
+
+    def test_formal_metadata_requires_completed_ordering(self) -> None:
+        result, _ = self._formal_application_run()
+        with self.assertRaises(ValueError):
+            replace(result, ordered_results=None, formal_metadata=result.formal_metadata)
+
+    def test_formal_metadata_rejects_cardinality_mismatch(self) -> None:
+        result, _ = self._formal_application_run()
+        with self.assertRaises(ValueError):
+            replace(result, formal_metadata=())
+
+    def test_formal_metadata_rejects_event_order_mismatch(self) -> None:
+        result, _ = self._formal_application_run(provider=TwoFormalResultProvider())
+        first, second = result.formal_metadata
+        with self.assertRaises(ValueError):
+            replace(result, formal_metadata=(second, first))
+
+    def test_formal_metadata_rejects_duplicate_event_ids(self) -> None:
+        result, _ = self._formal_application_run(provider=TwoFormalResultProvider())
+        first, second = result.formal_metadata
+        duplicate_second = replace(second, event_id=first.event_id)
+        with self.assertRaisesRegex(ValueError, "preserve ordered event IDs"):
+            replace(result, formal_metadata=(first, duplicate_second))
+
+    def test_formal_metadata_failure_propagates_without_downgrade(self) -> None:
+        with self.assertRaises(FormalMetadataFailure) as context:
+            self._app(
+                MultiResultProvider(),
+                scope_classifier=RecordingScopeClassifier(),
+                temporal_rule=RecordingTemporalRule(default_date=date(2026, 9, 18)),
+                event_identity=RecordingEventIdentity(),
+                classifier=RecordingClassifier(),
+                report_workflow=RecordingDownstreamWorkflow(reportable=True),
+                ordering=RecordingOrdering(),
+                report_service=ReportService(),
+            ).run("selected")
+        self.assertEqual(context.exception.reason, FormalMetadataFailureReason.MISSING_COUNTRY)
 
     def test_ordering_output_validation_rejects_all_malformed_shapes(self) -> None:
         baseline = self._reportable_run(RecordingOrdering())

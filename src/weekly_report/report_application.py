@@ -38,6 +38,7 @@ from .scope_classifier import ScopeClassifier
 from .temporal_rule import TemporalRule
 from .ordering import Ordering
 from .report_workflow import ReportWorkflow, ReportWorkflowResult
+from .report_service import FormalReportMetadata, ReportService
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +63,7 @@ class ReportApplicationResult:
     category_results: tuple[CategoryResult, ...] | None = None
     downstream_results: tuple[ReportWorkflowResult, ...] | None = None
     ordered_results: tuple[ReportWorkflowResult, ...] | None = None
+    formal_metadata: tuple[FormalReportMetadata, ...] | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.plan, SearchPlan):
@@ -289,6 +291,26 @@ class ReportApplicationResult:
                 raise ValueError("ordered results must preserve eligible references")
         object.__setattr__(self, "ordered_results", ordered_results)
 
+        formal_metadata = self.formal_metadata
+        if formal_metadata is not None:
+            if ordered_results is None:
+                raise ValueError("formal metadata requires completed ordered results")
+            if not isinstance(formal_metadata, tuple):
+                raise TypeError("ReportApplicationResult formal_metadata must be a tuple")
+            if any(not isinstance(item, FormalReportMetadata) for item in formal_metadata):
+                raise TypeError(
+                    "ReportApplicationResult formal_metadata must be FormalReportMetadata values"
+                )
+            if len(formal_metadata) != len(ordered_results):
+                raise ValueError("formal metadata must preserve ordered cardinality")
+            metadata_ids = tuple(item.event_id for item in formal_metadata)
+            ordered_ids = tuple(item.event_group.event_id for item in ordered_results)
+            if metadata_ids != ordered_ids:
+                raise ValueError("formal metadata must preserve ordered event IDs")
+            if len(metadata_ids) != len(set(metadata_ids)):
+                raise ValueError("formal metadata must have unique event IDs")
+        object.__setattr__(self, "formal_metadata", formal_metadata)
+
     @property
     def downstream_ready(self) -> bool:
         return (
@@ -337,6 +359,7 @@ class ReportApplication:
         classifier: Classifier | None = None,
         report_workflow: ReportWorkflow | None = None,
         ordering: Ordering | None = None,
+        report_service: ReportService | None = None,
     ) -> None:
         if not isinstance(registry, RegionRegistry):
             raise TypeError("ReportApplication requires a RegionRegistry")
@@ -360,6 +383,8 @@ class ReportApplication:
             raise TypeError("ReportApplication report_workflow must be a ReportWorkflow")
         if ordering is not None and not isinstance(ordering, Ordering):
             raise TypeError("ReportApplication ordering must be an Ordering")
+        if report_service is not None and not isinstance(report_service, ReportService):
+            raise TypeError("ReportApplication report_service must be a ReportService")
         if ordering is not None and report_workflow is None:
             raise ValueError("ReportApplication ordering requires a ReportWorkflow")
         self._registry = registry
@@ -373,6 +398,7 @@ class ReportApplication:
         self._classifier = classifier or Classifier()
         self._report_workflow = report_workflow
         self._ordering = ordering
+        self._report_service = report_service
 
     @property
     def registry(self) -> RegionRegistry:
@@ -417,6 +443,10 @@ class ReportApplication:
     @property
     def ordering(self) -> Ordering | None:
         return self._ordering
+
+    @property
+    def report_service(self) -> ReportService | None:
+        return self._report_service
 
     def run(
         self,
@@ -533,6 +563,7 @@ class ReportApplication:
             category_results,
         )
         ordered_results = self._run_ordering(downstream_results)
+        formal_metadata = self._run_formal_metadata_projection(ordered_results)
 
         return ReportApplicationResult(
             plan,
@@ -550,7 +581,19 @@ class ReportApplication:
             category_results=category_results,
             downstream_results=downstream_results,
             ordered_results=ordered_results,
+            formal_metadata=formal_metadata,
         )
+
+    def _run_formal_metadata_projection(
+        self,
+        ordered_results: tuple[ReportWorkflowResult, ...] | None,
+    ) -> tuple[FormalReportMetadata, ...] | None:
+        if self._report_service is None or ordered_results is None:
+            return None
+        formal_metadata = self._report_service.project_formal_metadata(ordered_results)
+        if not isinstance(formal_metadata, tuple):
+            raise TypeError("ReportService must return a tuple of formal metadata")
+        return formal_metadata
 
     def _run_downstream_workflow(
         self,
@@ -778,6 +821,7 @@ def build_report_application(
     classifier: Classifier | None = None,
     report_workflow: ReportWorkflow,
     ordering: Ordering,
+    report_service: ReportService,
 ) -> ReportApplication:
     """Construct a formal shared application with its complete downstream workflow."""
 
@@ -789,6 +833,8 @@ def build_report_application(
         )
     if not isinstance(ordering, Ordering):
         raise TypeError("build_report_application requires an Ordering")
+    if not isinstance(report_service, ReportService):
+        raise TypeError("build_report_application requires a ReportService")
 
     return ReportApplication(
         registry,
@@ -802,6 +848,7 @@ def build_report_application(
         classifier,
         report_workflow,
         ordering,
+        report_service,
     )
 
 
