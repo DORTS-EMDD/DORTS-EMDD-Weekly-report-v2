@@ -908,11 +908,12 @@ implementing or configuring a production metadata provider:
 CONCRETE_METADATA_PROVIDER_REQUIRED_FOR_SEAM_IMPLEMENTATION = NO
 ```
 
-No MaiAgent, LLM, regex engine, deterministic NLP model, or external API is
-selected by this contract. Separately, a nonzero production formal report that
-requires Country and transit-system name eventually requires a configured
-production `EvidenceMetadataExtractor`/provider capable of supplying those
-source-supported facts:
+The seam itself does not make a model or platform a metadata authority. The
+current operational production transport is the existing MaiAgent chatbot
+completion API through the shared Structured Helper contract in §P. A nonzero
+production formal report that requires Country and transit-system name requires
+a configured production `EvidenceMetadataExtractor`/provider capable of
+supplying those source-supported facts:
 
 ```text
 FORMAL_RUN_METADATA_PROVIDER_REQUIRED = YES
@@ -2214,13 +2215,13 @@ survive Validation retain their relative Ordering.
 
 ## P. MaiAgent
 
-MaiAgent 只有：
+MaiAgent Writer 只有：
 
 > 正式技術週報撰稿
 
 一個 production responsibility。
 
-MaiAgent 不得：
+MaiAgent Writer 不得：
 
 * Search
 * Select
@@ -2232,6 +2233,72 @@ MaiAgent 不得：
 * 修改 Reportability
 * 猜 metadata
 * 查外部背景
+
+The MaiAgent platform may separately provide exactly one Generic Stateless
+Structured Helper deployment for bounded, non-authoritative proposal tasks.
+The helper may transport both the Category semantic proposal and Evidence
+metadata proposal, but it is not a Domain owner and it does not write the
+formal report. The authoritative owners remain Classifier for Category,
+EvidenceService for factual evidence metadata, and ReportWriter for formal
+prose. Sharing a chatbot identity does not merge these owners.
+
+The operational deployment therefore has exactly two MaiAgent roles:
+
+```text
+MaiAgent chatbot #1 = Writer
+MaiAgent chatbot #2 = Generic Stateless Structured Helper
+MINIMUM_SAFE_CHATBOT_COUNT = 2
+DEDICATED_METADATA_CHATBOT_REQUIRED = NO
+```
+
+The Writer chatbot must remain a distinct deployment identity from the
+Structured Helper. The helper must not be used for formal prose generation.
+
+Every Structured Helper invocation is self-contained:
+
+```text
+conversation = null
+attachments = []
+persistent conversational memory = forbidden
+RAG / knowledge retrieval = forbidden
+search = forbidden
+tools = forbidden
+external knowledge retrieval = forbidden
+```
+
+Each request supplies an explicit task identity, complete versioned
+task-specific instructions, the bounded task request, and that task's response
+schema. Category and metadata retain separate request types, prompts, schemas,
+local validators, post-processing boundaries, and Domain result types. They may
+share only the MaiAgent API base, credential, pure mechanical HTTP transport,
+and the single authoritative helper chatbot configuration key:
+
+```text
+MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID
+```
+
+`CATEGORY_MAIAGENT_CHATBOT_ID` and
+`EVIDENCE_METADATA_MAIAGENT_CHATBOT_ID` are not parallel production truths.
+Any migration from existing deployment settings is a one-time deployment
+operation; runtime fallback aliases are forbidden. The Structured Helper has
+no Category, metadata, Writer, or other Domain authority.
+
+The sealed Category deployment snapshot is not automatically compliant with
+this shared-helper contract. Its Category-specific role and recorded enabled
+state/history-related capabilities require deployment reconfiguration and
+platform read-back before production reuse. The read-back must confirm, to the
+extent the platform exposes those settings, a neutral helper role, no fixed
+Category-only or metadata-only chatbot schema, no RAG or knowledge retrieval,
+no tools, no search, no persistent conversation/history influence, and
+per-request task instructions as the behavioral contract. Repository text must
+not invent unavailable platform settings or claim that Git has verified hidden
+platform state.
+
+The direct GPT-OSS Gateway path is an unavailable external dependency and is
+not part of production runtime. Gateway model discovery, direct Gateway
+credentials, alternate paid providers, and Gateway requests are not fallback
+paths. The selected operational transport is the existing MaiAgent chatbot
+completion API.
 
 Input：
 

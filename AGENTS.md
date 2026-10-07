@@ -160,11 +160,32 @@ Ordering 採可解釋 deterministic / lexicographic rules，不使用不透明�
 
 ## 11. MaiAgent
 
-MaiAgent 只有一個 production responsibility：
+MaiAgent Writer 只有一個 production responsibility：
 
 > 正式週報撰稿。
 
-MaiAgent 不得搜尋、選題、Fetch、Dedup、補 Evidence、修改 Scope、修改 Category、修改 Reportability、猜缺漏 metadata 或自行查外部背景資訊。
+MaiAgent Writer 不得搜尋、選題、Fetch、Dedup、補 Evidence、修改 Scope、修改 Temporal、修改 Event Identity、修改 Category、修改 Taxonomy、修改 Reportability、修改 Ordering、猜缺漏 metadata 或自行查外部背景資訊。
+
+MaiAgent 平台另可提供一個 Generic Stateless Structured Helper，作為
+Category semantic helper 與 Evidence metadata extractor 的 proposal-only
+執行 transport。這個 helper 不是 Domain owner、不寫正式週報、不取代任何
+Python authoritative owner，也不得搜尋、使用外部知識、補充 Evidence 或作
+authoritative inference。Writer chatbot 與 Structured Helper chatbot 是兩個
+不同的 deployment identity；Structured Helper 每次呼叫都必須以
+`conversation = null`、空 attachments、完整 task-specific prompt 與對應
+schema 自足執行。兩個 proposal task 保留各自的 request builder、schema、
+validator、post-processing 與 Domain result type，不得建立通用 semantic
+Domain service。
+
+Category 與 metadata 的共用 helper 設定鍵固定為：
+
+```text
+MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID
+```
+
+這是唯一 authoritative production helper key；Category-specific 或
+metadata-specific chatbot key 不得成為平行 runtime truth。直接 GPT-OSS
+Gateway 不屬於 production runtime，也不得作為 fallback。
 
 事件摘要：
 
