@@ -725,6 +725,204 @@ Each support record identifies at least `field_name`, `start`, and `end` and
 refers to the parent substantive-content text. Candidate identity and source
 provenance remain attached through `EvidenceResult` and the candidate record.
 
+#### Evidence metadata extraction seam
+
+EvidenceService may use exactly one provider-agnostic, injected subordinate
+helper for factual metadata extraction:
+
+```text
+src.weekly_report.evidence_metadata.py::EvidenceMetadataExtractor
+```
+
+The helper is proposal-only and is not a Domain owner. EvidenceService remains
+the sole authoritative owner of `country`, `transit_system_name`, `location`,
+accepted `metadata_support`, and `EvidenceResult`. The existing
+source-to-Candidate `SemanticJudge` remains dedicated to deciding the semantic
+relationship between a Candidate and its established principal document. It
+must not be extended to extract country, transit-system name, or location.
+Evidence metadata extraction answers a separate question after that relation
+has been established: which explicitly supported factual metadata is present
+in the principal body?
+
+`evidence_document.py` remains a structural owner. It may provide the
+principal-document status and identifier, principal body segments, document
+headlines, canonical values, and source-date facts. It must not semantically
+infer country, transit-system identity, or location. No city-country table,
+metro-system table, regular-expression world-knowledge inference, TLD mapping,
+publisher geography, or Search-region mapping is permitted there.
+
+The helper request is the minimum authoritative request:
+
+```text
+EvidenceMetadataRequest:
+    candidate_id: str
+    principal_body_segments: tuple[PrincipalBodySegment, ...]
+```
+
+`candidate_id` is a correlation handle only. Segment order, segment IDs, and
+segment text are preserved exactly, and segment IDs are unique. The request
+does not contain Candidate title, publisher, discovery snippet, Search region,
+provider market, URL geography, TLD, document language, or external facts.
+
+The helper returns an untrusted observation object, never an authoritative
+result:
+
+```text
+EvidenceMetadataExtraction:
+    observations: tuple[MetadataFieldObservation, ...]
+
+MetadataFieldObservation:
+    field_name: country | transit_system_name | location
+    value: str
+    support_spans: tuple[MetadataSupportSpan, ...]
+
+MetadataSupportSpan:
+    segment_id: str
+    start: int
+    end: int
+```
+
+The raw extractor response is validated against an exact provider-agnostic
+schema. The top-level response must be an object with exactly the key
+`observations`; `observations` must be an array/sequence. Each observation must
+be an object with exactly `field_name`, `value`, and `support_spans`; each
+support span must be an object with exactly `segment_id`, `start`, and `end`.
+Missing keys, extra keys, non-object or non-array values, non-string field
+names or segment IDs, unsupported field names, blank or non-string values,
+non-array or empty support spans, unknown segments, boolean or non-integer
+offsets, invalid bounds, and values absent from their supported span text are
+validation failures. Same-source distinct values for one governed field are
+also invalid. The governed field names remain exactly `country`,
+`transit_system_name`, and `location`. Missing or unknown keys are never
+silently ignored and no partial-schema acceptance or permissive fallback is
+allowed.
+
+The response contains no Evidence state, Scope, Temporal, Event Identity,
+Category, Taxonomy, Reportability, Ordering, source replacement, canonical
+source, confidence authority, normalized geographic ID, or report-inclusion
+decision. A value must be an exact nonblank source surface form appearing
+unchanged in its supporting principal-body span. Translation, case-folded
+replacement, alias normalization, geographic inference, inferred expansion,
+ontology lookup, and canonical-name substitution are forbidden. Transit-system
+identity must be explicitly established in the source text.
+
+Helper support spans use segment-relative Python Unicode offsets and half-open
+`[start, end)` coordinates. `start` and `end` are integers with booleans
+excluded; `0 <= start < end <= len(segment.text)`. The slice must be nonblank
+and contain the unchanged claimed value. EvidenceService strictly validates the
+raw response using the existing V2 proposal-helper pattern: injected Protocol,
+pure mechanical validator, and immutable validated observations. The validator
+only validates untrusted extractor output; it is not an Evidence, metadata,
+Event Identity, Reportability, or other Domain owner. The SemanticJudge schema
+is not reused or extended.
+
+EvidenceService alone translates valid segment spans into
+`EvidenceResult.substantive_content` offsets. For principal segments in exact
+order, let `J = " ".join(segment.text for segment in segments)` and
+`substantive_content = J.strip()`. Let `L = len(J) - len(J.lstrip())`,
+`R = len(J.rstrip())`, and
+`P_i = sum(len(previous segment.text)) + i` for segment `i`. A helper span
+`[s, e)` becomes `[P_i + s - L, P_i + e - L)`. EvidenceService accepts it only
+when `L <= P_i + s < P_i + e <= R` and the source slice equals the translated
+substantive-content slice exactly. It never clips, repairs, approximates, or
+guesses offsets. The current ordered segment flattening is deterministic, so no
+`evidence_document.py` representation change is required for this mapping.
+
+Each field observation has one or more valid exact supports. Exact duplicate
+supports may be removed while preserving first-seen order; nonidentical
+supports are not merged and whole-document support is not fabricated. Within a
+single source, identical proposed values may be consolidated with their valid
+supports. Distinct values for one field invalidate the complete extraction
+response: EvidenceService publishes no metadata from it, records the safe
+`invalid_response` diagnostic with optional detail
+`same_source_distinct_values`, and does not salvage a partial response.
+
+The Evidence lifecycle is ordered:
+
+```text
+fetch
+→ principal document structural assessment
+→ authoritative principal body established
+→ factual substance established
+→ source-to-candidate semantic SAME_EVENT established
+→ EvidenceMetadataExtractor invoked at most once
+→ raw metadata response strictly validated
+→ segment-relative support mechanically translated by EvidenceService
+→ accepted metadata facts/support constructed by EvidenceService
+→ EVIDENCE_READY EvidenceResult constructed
+```
+
+The extractor runs only after the pre-existing Evidence eligibility
+requirements have otherwise passed and never runs for a Candidate rejected by
+an earlier Evidence gate. At most one invocation is allowed per qualifying
+Candidate. Not configured, timeout, `transport_error`, `invalid_response`,
+`span_mapping_invalid`, exception, malformed response, invalid span,
+span-mapping failure, and valid zero metadata leave an otherwise valid
+Candidate as `EVIDENCE_READY` with formal metadata absent. They do not become
+`EVIDENCE_REJECTED`; there is no retry, fallback, rescue, second extractor,
+alternate model, inference, or external search. Required Country/System
+completeness remains a later formal pre-Writer concern.
+
+The finite metadata diagnostics are:
+
+```text
+not_configured
+timeout
+transport_error
+invalid_response
+valid_zero_metadata
+valid_metadata
+```
+
+Invalid-response detail may identify `same_source_distinct_values` or
+`span_mapping_invalid`. Diagnostics contain no provider secrets, raw payloads,
+exception text, or traceback. A valid zero-observation response is legal and
+leaves `EVIDENCE_READY` unchanged; required country and transit-system
+completeness is checked later before Writer under §R.
+
+`IdentityMetadataSupport` is an immutable support record with exactly the
+governed field name and half-open `start`/`end` offsets into the parent
+`EvidenceResult.substantive_content`. Its field names are limited to
+`country`, `transit_system_name`, and `location`; its offsets are integer-only,
+boolean-excluded, and satisfy `0 <= start < end`. A READY Evidence result also
+requires the support to be bounded, nonblank, field-specific, and to contain
+the unchanged field value. The support record does not duplicate candidate ID,
+source URL, or value.
+
+`EVIDENCE_READY` may legally carry `identity_facts = None` or identity facts
+without one or more governed formal metadata fields. READY does not require
+country, `transit_system_name`, or location to be present. When governed
+metadata is present, its field-specific authoritative support must satisfy the
+rules above. An `EVIDENCE_REJECTED` `EvidenceResult` must not expose
+authoritative country, authoritative `transit_system_name`, newly extracted
+authoritative location, or `metadata_support` produced by this seam; its
+`substantive_content` remains empty under the existing Evidence contract.
+
+The first seam implementation is independent of concrete provider
+configuration. A provider-agnostic Protocol, strict raw-response validator,
+immutable validated response types, EvidenceService integration, mechanical
+span translation, and injected fake extractor tests may be implemented without
+implementing or configuring a production metadata provider:
+
+```text
+CONCRETE_METADATA_PROVIDER_REQUIRED_FOR_SEAM_IMPLEMENTATION = NO
+```
+
+No MaiAgent, LLM, regex engine, deterministic NLP model, or external API is
+selected by this contract. Separately, a nonzero production formal report that
+requires Country and transit-system name eventually requires a configured
+production `EvidenceMetadataExtractor`/provider capable of supplying those
+source-supported facts:
+
+```text
+FORMAL_RUN_METADATA_PROVIDER_REQUIRED = YES
+```
+
+Configuration is not metadata authority and does not guarantee that a source
+establishes the required facts. Later pre-Writer metadata prerequisites still
+fail closed when required facts are absent. Zero-reportable-event runs remain
+legal without extractor calls.
+
 Country, transit-system name, and location MUST NOT be established from Search
 region, publisher location, title alone, language, city or world knowledge,
 discovery snippets, or model general knowledge. `Candidate.title` remains
@@ -735,9 +933,23 @@ available; this provenance does not transfer headline authority to Candidate or
 Writer.
 
 The metadata extension is a formal-report prerequisite only. It does not alter
-Evidence eligibility, Scope, Temporal, Event Identity matching criteria or
-EventGroup membership, Category, E&M Taxonomy, Reportability, or Ordering.
-These fields MUST NOT silently become Event Identity keys.
+Evidence eligibility, Scope, Temporal, Category, E&M Taxonomy, Reportability,
+or Ordering. It introduces no new Event Identity matching criterion. The
+pre-existing `EventIdentityFacts.location` field remains an Event Identity
+specific anchor and may be populated by EvidenceService through the validated
+metadata seam. Supplying an authoritative location where it was previously
+absent may therefore activate the existing matching rule and change actual
+grouping outcomes; this is expected activation of an existing rule, not a new
+Event Identity rule. `country`, `transit_system_name`, and `metadata_support`
+must not become Event Identity keys.
+
+There is exactly one authoritative location concept: the source-supported
+location of the reported event, project, or action, at the specificity
+explicitly established by that source. EvidenceService owns that fact. The
+same fact may be consumed by EventIdentity under its existing rules and may be
+mechanically projected by Report Service as optional formal display metadata.
+No `identity_location`, `formal_location`, `display_location`, second location
+DTO, or second location source of truth is permitted.
 
 Country is required for formal assembly. One established supported value, or
 repeated identical supported values, is mechanically projectable. A missing
@@ -763,6 +975,22 @@ identity. A missing value or unresolved competing supported values cause the
 same typed formal-metadata failure before Writer. There is no Writer inference,
 majority vote, canonical-source override, downstream alias resolution,
 city-to-system lookup, Search-region mapping, or event omission.
+
+The principal-source headline is separate from metadata extraction. EvidenceService
+mechanically preserves all structurally established
+`StructuralAssessment.document_level_headlines` in their existing order and
+with their existing exact deduplication, together with the established
+`principal_document_identifier`, in Evidence provenance:
+
+```text
+EvidenceResult.provenance["principal_source_headlines"]
+EvidenceResult.provenance["principal_document_identifier"]
+```
+
+An empty headline tuple is legal. No first, longest, H1, semantic, or
+Candidate-title preference is introduced, and `Candidate.title` remains
+discovery metadata. This provenance is not Writer output and does not require
+the metadata extractor.
 
 ### Evidence semantic match mechanism
 
@@ -910,8 +1138,66 @@ system aliases, location aliases, or spelling variants, and it does not choose
 a winning member metadata value. Mechanical projection downstream may collapse
 only identical supported values. Distinct supported values remain unresolved
 conflicts and follow the formal metadata failure or optional-location rules in
-§H. The metadata extension does not change Event Identity matching criteria or
-EventGroup membership.
+§H.
+
+The metadata extension introduces no new Event Identity matching criterion.
+The existing `EventIdentityFacts.location` field remains in the identity facts,
+the existing specific-anchor set, and the existing Event Identity basis. Its
+current rules remain unchanged: location alone is insufficient; action,
+lifecycle, occurrence-context, and the existing anchor requirements still
+apply; differing nonempty locations may prevent deterministic SAME_EVENT;
+missing location is not itself a contradiction; and a location mismatch alone
+does not establish DISTINCT_EVENT. Existing exact-source and semantic-advisor
+paths remain available. When EvidenceService newly supplies an authoritative
+supported location, actual grouping may change through this pre-existing rule.
+That is expected activation of an existing rule, not a new Event Identity rule.
+
+Country and `transit_system_name` are formal-only. They must not be added to
+EventIdentity identity fields or anchors, appear as identity-basis fields, or
+influence the semantic advisor's relation. `metadata_support` is provenance
+only and must not influence SAME_EVENT, DISTINCT_EVENT, grouping,
+canonical-member selection, Event ID, Category, Taxonomy, Reportability, or
+Ordering. The semantic advisor may receive the existing location fact under
+its current contract, but before constructing an Event Identity semantic-advisor
+request, EventIdentity must create an ephemeral mechanical identity-only
+projection of the authoritative `EventIdentityFacts`. This projection is
+transport/interface data only: it preserves every pre-extension field that the
+existing advisor interface allowed, including `event_key`, `action`,
+`lifecycle_step`, `subject`, `asset`, `project`, `package`, `location`,
+`occurrence_context`, `occurrence_date`, and existing `non_identity_claims` /
+`evidence_references` only to the extent already permitted by that contract.
+It must exclude or mechanically empty `country`, `transit_system_name`, and
+`metadata_support`. The advisor may use existing location under the existing
+rules, but must not use country, transit-system name, or metadata support as
+matching evidence. The projection must not become a second authoritative DTO,
+second Event Identity owner, or persisted competing source of truth, and it
+must not rewrite, clear, mutate, or replace the authoritative facts attached to
+EvidenceResult/EventIdentityRecord. Those authoritative facts retain country,
+transit-system name, and metadata support for their legitimate formal
+metadata/provenance uses.
+
+`EventIdentityBasis` may continue to include `location` under the existing
+`_IDENTITY_FIELDS` rule. It must not include `country`, `transit_system_name`,
+or `metadata_support`; none of those formal-only fields is an identity-basis
+fact. No change to the existing Event Identity matching algorithm is
+authorized.
+
+Country and `transit_system_name` are formal metadata only and cannot alter
+Event Identity grouping or Event ID. `metadata_support` remains provenance only.
+Event Identity and formal projection have separate conflict moments. During
+Candidate-to-Candidate matching, differing supported locations follow the
+existing identity behavior above. After an EventGroup exists, formal
+projection may collapse only identical supported location values; missing or
+unresolved differing locations are omitted from the optional formal field while
+diagnostics and source provenance remain available. Formal location conflict
+does not regroup the Event, fail the report by itself, choose the canonical
+member's value, use a majority vote, or reconcile aliases.
+
+This contract clarification authorizes no Event Identity Golden expected
+grouping changes. Later implementation tests must cover supported-location
+activation, location-only insufficiency, location mismatch behavior, and the
+exclusion of country, `transit_system_name`, and `metadata_support` from
+advisor relation authority without changing existing Golden outcomes.
 
 ## L. Category
 
