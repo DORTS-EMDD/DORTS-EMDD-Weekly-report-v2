@@ -47,6 +47,7 @@ from src.weekly_report.contracts import (  # noqa: E402
     EventGroup,
     EventIdentityFacts,
     EventIdentityRecord,
+    IdentityMetadataSupport,
     ScopeResult,
     ScopeState,
     TemporalResult,
@@ -161,6 +162,21 @@ def _records(candidates: list[dict[str, Any]]) -> tuple[EventIdentityRecord, ...
                 else {}
             ),
         )
+        source_content = str(candidate["source_content"])
+        if facts.location:
+            if facts.location not in source_content:
+                source_content = f"{source_content} {facts.location}"
+            start = source_content.index(facts.location)
+            facts = EventIdentityFacts(
+                action=facts.action,
+                lifecycle_step=facts.lifecycle_step,
+                project=facts.project,
+                location=facts.location,
+                non_identity_claims=facts.non_identity_claims,
+                metadata_support=(
+                    IdentityMetadataSupport("location", start, start + len(facts.location)),
+                ),
+            )
         canonical_input = {key: value for key, value in candidate.items() if key in {
             "title", "url", "publisher", "published_at", "discovery_intent", "search_snippet", "source_type"
         }}
@@ -173,7 +189,7 @@ def _records(candidates: list[dict[str, Any]]) -> tuple[EventIdentityRecord, ...
                     state=EvidenceState.READY,
                     canonical_source_url=str(candidate.get("url", "")),
                     source_type="synthetic_golden_source",
-                    substantive_content=str(candidate["source_content"]),
+                    substantive_content=source_content,
                     identity_facts=facts,
                 ),
                 ScopeResult(candidate_id=opaque_id, state=ScopeState.IN_SCOPE),

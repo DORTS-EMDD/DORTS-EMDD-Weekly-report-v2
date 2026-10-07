@@ -428,8 +428,31 @@ def _semantic_request(
         right_source_url=right.evidence.canonical_source_url,
         left_source_type=left.evidence.source_type,
         right_source_type=right.evidence.source_type,
-        left_identity_facts=left.identity_facts,
-        right_identity_facts=right.identity_facts,
+        left_identity_facts=_advisor_identity_facts(left.identity_facts),
+        right_identity_facts=_advisor_identity_facts(right.identity_facts),
+    )
+
+
+def _advisor_identity_facts(
+    facts: EventIdentityFacts | None,
+) -> EventIdentityFacts | None:
+    """Project only the pre-extension Event Identity surface for the advisor."""
+
+    if facts is None:
+        return None
+    return EventIdentityFacts(
+        event_key=facts.event_key,
+        action=facts.action,
+        lifecycle_step=facts.lifecycle_step,
+        subject=facts.subject,
+        asset=facts.asset,
+        project=facts.project,
+        package=facts.package,
+        location=facts.location,
+        occurrence_context=facts.occurrence_context,
+        occurrence_date=facts.occurrence_date,
+        non_identity_claims=facts.non_identity_claims,
+        evidence_references=facts.evidence_references,
     )
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import itertools
 import unittest
+from dataclasses import replace
 
 from src.weekly_report.contracts import (
     CanonicalCandidate,
@@ -12,6 +13,7 @@ from src.weekly_report.contracts import (
     EventIdentityFacts,
     EventIdentityRecord,
     EventGroup,
+    IdentityMetadataSupport,
     ScopeResult,
     ScopeState,
     TemporalDiagnostic,
@@ -76,15 +78,34 @@ def _record(
         published_at=published_at,
         source_type=source_type,
     )
+    evidence_body = body
+    effective_facts = facts
+    if (
+        evidence_state is EvidenceState.READY
+        and facts is not None
+        and facts.location
+        and not facts.metadata_support
+    ):
+        if facts.location not in evidence_body:
+            evidence_body = f"{evidence_body} {facts.location}"
+        start = evidence_body.index(facts.location)
+        effective_facts = replace(
+            facts,
+            metadata_support=(
+                IdentityMetadataSupport(
+                    "location", start, start + len(facts.location)
+                ),
+            ),
+        )
     evidence = EvidenceResult(
         candidate_id=candidate_id,
         state=evidence_state,
         canonical_source_url=candidate.url,
         source_type=source_type,
-        substantive_content=body if evidence_state is EvidenceState.READY else "",
+        substantive_content=evidence_body if evidence_state is EvidenceState.READY else "",
         provenance={"first_hand_source": first_hand},
         reject_reason=None if evidence_state is EvidenceState.READY else "TITLE_ONLY",
-        identity_facts=facts,
+        identity_facts=effective_facts,
     )
     scope = ScopeResult(candidate_id, ScopeState.IN_SCOPE if in_scope else ScopeState.OUT_OF_SCOPE)
     temporal = TemporalResult(
@@ -135,6 +156,243 @@ class EventIdentityContractTests(unittest.TestCase):
         ])
         self.assertEqual([group.member_candidate_ids for group in result.groups], [("A",), ("B",)])
         self.assertTrue(any(item.reason == "INSUFFICIENT_IDENTITY" for item in result.diagnostics))
+
+    def test_rejected_fixture_preserves_legacy_location_facts(self):
+        record = _record(
+            "REJECTED",
+            facts=_facts(action="incident", location="Taipei"),
+            evidence_state=EvidenceState.REJECTED,
+        )
+        self.assertEqual(record.evidence.identity_facts.location, "Taipei")
+        self.assertEqual(record.evidence.identity_facts.metadata_support, ())
+
+    def test_country_only_change_is_not_identity_authority(self):
+        location = "central-city"
+        body_a = "Taiwan commissioning evidence for central-city."
+        body_b_control = "Taiwan commissioning report for central-city."
+        body_b_changed = "Japan commissioning report for central-city."
+
+        def facts_for(body, country):
+            base = _facts(location=location)
+            location_start = body.index(location)
+            country_start = body.index(country)
+            return replace(
+                base,
+                country=country,
+                metadata_support=(
+                    IdentityMetadataSupport(
+                        "country", country_start, country_start + len(country)
+                    ),
+                    IdentityMetadataSupport(
+                        "location", location_start, location_start + len(location)
+                    ),
+                ),
+            )
+
+        left = _record("A", facts=facts_for(body_a, "Taiwan"), body=body_a)
+        control_right = _record(
+            "B", facts=facts_for(body_b_control, "Taiwan"), body=body_b_control
+        )
+        changed_right = _record(
+            "B", facts=facts_for(body_b_changed, "Japan"), body=body_b_changed
+        )
+        control = EventIdentity().group([left, control_right])
+        changed = EventIdentity().group([left, changed_right])
+
+        self.assertEqual(len(control), 1)
+        self.assertEqual(len(changed), 1)
+        self.assertEqual(control[0].member_candidate_ids, ("A", "B"))
+        self.assertEqual(changed[0].member_candidate_ids, control[0].member_candidate_ids)
+        self.assertEqual(changed[0].event_id, control[0].event_id)
+        self.assertEqual(changed[0].identity_basis, control[0].identity_basis)
+        for basis in changed[0].identity_basis:
+            self.assertIn("location", basis.supported_fields)
+            self.assertNotIn("country", basis.supported_fields)
+
+    def test_transit_system_only_change_is_not_identity_authority(self):
+        location = "central-city"
+        body_a = "Metro Alpha commissioning evidence for central-city."
+        body_b_control = "Metro Alpha commissioning report for central-city."
+        body_b_changed = "Metro Beta commissioning report for central-city."
+
+        def facts_for(body, system_name):
+            base = _facts(location=location)
+            location_start = body.index(location)
+            system_start = body.index(system_name)
+            return replace(
+                base,
+                transit_system_name=system_name,
+                metadata_support=(
+                    IdentityMetadataSupport(
+                        "transit_system_name",
+                        system_start,
+                        system_start + len(system_name),
+                    ),
+                    IdentityMetadataSupport(
+                        "location", location_start, location_start + len(location)
+                    ),
+                ),
+            )
+
+        left = _record("A", facts=facts_for(body_a, "Metro Alpha"), body=body_a)
+        control_right = _record(
+            "B",
+            facts=facts_for(body_b_control, "Metro Alpha"),
+            body=body_b_control,
+        )
+        changed_right = _record(
+            "B",
+            facts=facts_for(body_b_changed, "Metro Beta"),
+            body=body_b_changed,
+        )
+        control = EventIdentity().group([left, control_right])
+        changed = EventIdentity().group([left, changed_right])
+
+        self.assertEqual(len(control), 1)
+        self.assertEqual(len(changed), 1)
+        self.assertEqual(control[0].member_candidate_ids, ("A", "B"))
+        self.assertEqual(changed[0].member_candidate_ids, control[0].member_candidate_ids)
+        self.assertEqual(changed[0].event_id, control[0].event_id)
+        self.assertEqual(changed[0].identity_basis, control[0].identity_basis)
+        for basis in changed[0].identity_basis:
+            self.assertIn("location", basis.supported_fields)
+            self.assertNotIn("transit_system_name", basis.supported_fields)
+
+    def test_metadata_support_only_change_is_not_identity_authority(self):
+        location = "Taipei"
+        body_a = "Taipei commissioning evidence was recorded in Taipei."
+        body_b = "Taipei commissioning report was recorded in Taipei."
+
+        def facts_for(body, occurrence_index):
+            base = _facts(location=location)
+            starts = [
+                index
+                for index in range(len(body))
+                if body.startswith(location, index)
+            ]
+            start = starts[occurrence_index]
+            return replace(
+                base,
+                metadata_support=(
+                    IdentityMetadataSupport(
+                        "location", start, start + len(location)
+                    ),
+                ),
+            )
+
+        left_control = _record(
+            "A", facts=facts_for(body_a, 0), body=body_a
+        )
+        right_control = _record(
+            "B", facts=facts_for(body_b, 0), body=body_b
+        )
+        left_changed = _record(
+            "A", facts=facts_for(body_a, 1), body=body_a
+        )
+        right_changed = _record(
+            "B", facts=facts_for(body_b, 1), body=body_b
+        )
+
+        left_control_facts = left_control.evidence.identity_facts
+        left_changed_facts = left_changed.evidence.identity_facts
+        right_control_facts = right_control.evidence.identity_facts
+        right_changed_facts = right_changed.evidence.identity_facts
+        self.assertIsNotNone(left_control_facts)
+        self.assertIsNotNone(left_changed_facts)
+        self.assertIsNotNone(right_control_facts)
+        self.assertIsNotNone(right_changed_facts)
+        self.assertNotEqual(
+            left_control_facts.metadata_support,
+            left_changed_facts.metadata_support,
+        )
+        self.assertNotEqual(
+            right_control_facts.metadata_support,
+            right_changed_facts.metadata_support,
+        )
+        self.assertEqual(
+            left_control_facts,
+            replace(
+                left_changed_facts,
+                metadata_support=left_control_facts.metadata_support,
+            ),
+        )
+        self.assertEqual(
+            right_control_facts,
+            replace(
+                right_changed_facts,
+                metadata_support=right_control_facts.metadata_support,
+            ),
+        )
+
+        control = EventIdentity().group([left_control, right_control])
+        changed = EventIdentity().group([left_changed, right_changed])
+
+        self.assertEqual(len(control), 1)
+        self.assertEqual(len(changed), 1)
+        self.assertEqual(control[0].member_candidate_ids, ("A", "B"))
+        self.assertEqual(changed[0].member_candidate_ids, control[0].member_candidate_ids)
+        self.assertEqual(changed[0].event_id, control[0].event_id)
+        self.assertEqual(changed[0].identity_basis, control[0].identity_basis)
+        for basis in changed[0].identity_basis:
+            self.assertIn("location", basis.supported_fields)
+            self.assertNotIn("metadata_support", basis.supported_fields)
+
+    def test_existing_location_rules_remain_unchanged(self):
+        same_location = EventIdentity().group([
+            _record("A", facts=_facts(location="Taipei")),
+            _record("B", facts=_facts(location="Taipei")),
+        ])
+        self.assertEqual(len(same_location), 1)
+
+        location_only = EventIdentity().evaluate([
+            _record("A", facts=EventIdentityFacts(action="incident", location="Taipei")),
+            _record("B", facts=EventIdentityFacts(action="incident", location="Taipei")),
+        ])
+        self.assertEqual(len(location_only.groups), 2)
+
+        differing = EventIdentity().group([
+            _record("A", facts=_facts(location="Taipei")),
+            _record("B", facts=_facts(location="Kaohsiung")),
+        ])
+        self.assertEqual(len(differing), 2)
+
+        missing_location = EventIdentity().group([
+            _record("A", facts=_facts(location="Taipei")),
+            _record("B", facts=_facts(location="")),
+        ])
+        self.assertEqual(len(missing_location), 1)
+        self.assertIn("location", missing_location[0].identity_basis[0].supported_fields)
+
+    def test_event_identity_basis_has_only_existing_identity_fields(self):
+        group = EventIdentity().group([_record("A", facts=_facts())])[0]
+        supported = group.identity_basis[0].supported_fields
+        self.assertIn("location", supported)
+        self.assertNotIn("country", supported)
+        self.assertNotIn("transit_system_name", supported)
+        self.assertNotIn("metadata_support", supported)
+
+    def test_event_identity_facts_old_positional_constructor_remains_compatible(self):
+        facts = EventIdentityFacts(
+            "event",
+            "action",
+            "lifecycle",
+            "subject",
+            "asset",
+            "project",
+            "package",
+            "location",
+            "context",
+            "date",
+            {"claim": "value"},
+            ("reference",),
+        )
+        self.assertEqual(facts.event_key, "event")
+        self.assertEqual(facts.location, "location")
+        self.assertEqual(facts.non_identity_claims["claim"], "value")
+        self.assertEqual(facts.evidence_references, ("reference",))
+        self.assertIsNone(facts.country)
+        self.assertIsNone(facts.transit_system_name)
+        self.assertEqual(facts.metadata_support, ())
 
     def test_action_surface_difference_defers_to_semantic_advisor(self):
         records = [

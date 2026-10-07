@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Any, Mapping, Protocol, runtime_checkable
+from typing import Any, Literal, Mapping, Protocol, runtime_checkable
 
 
 class EvidenceState(StrEnum):
@@ -66,6 +66,62 @@ class CategoryResolutionReason(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class IdentityMetadataSupport:
+    """Exact source-content support for one formal identity metadata value."""
+
+    field_name: Literal["country", "transit_system_name", "location"]
+    start: int
+    end: int
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.field_name, str) or self.field_name not in {
+            "country",
+            "transit_system_name",
+            "location",
+        }:
+            raise ValueError("unsupported metadata support field")
+        if (
+            isinstance(self.start, bool)
+            or not isinstance(self.start, int)
+            or isinstance(self.end, bool)
+            or not isinstance(self.end, int)
+        ):
+            raise TypeError("metadata support offsets must be integers")
+        if self.start < 0 or self.start >= self.end:
+            raise ValueError("metadata support offsets must satisfy 0 <= start < end")
+
+
+def _coerce_metadata_support(
+    value: object,
+) -> tuple[IdentityMetadataSupport, ...]:
+    if value is None:
+        raise TypeError("metadata_support must be a sequence")
+    if isinstance(value, (str, bytes, bytearray, Mapping)):
+        raise TypeError("metadata_support must be a sequence")
+    try:
+        entries = tuple(value)  # type: ignore[arg-type]
+    except TypeError as exc:
+        raise TypeError("metadata_support must be a sequence") from exc
+    output: list[IdentityMetadataSupport] = []
+    for entry in entries:
+        if isinstance(entry, IdentityMetadataSupport):
+            output.append(entry)
+        elif isinstance(entry, Mapping):
+            if set(entry) != {"field_name", "start", "end"}:
+                raise ValueError("metadata support mapping fields do not match schema")
+            output.append(
+                IdentityMetadataSupport(
+                    field_name=entry["field_name"],
+                    start=entry["start"],
+                    end=entry["end"],
+                )
+            )
+        else:
+            raise TypeError("metadata_support must contain IdentityMetadataSupport values")
+    return tuple(output)
+
+
+@dataclass(frozen=True, slots=True)
 class EventIdentityFacts:
     """Evidence-backed facts that may participate in event identity."""
 
@@ -83,8 +139,15 @@ class EventIdentityFacts:
     occurrence_date: str = ""
     non_identity_claims: Mapping[str, str] = field(default_factory=dict)
     evidence_references: tuple[str, ...] = ()
+    country: str | None = None
+    transit_system_name: str | None = None
+    metadata_support: tuple[IdentityMetadataSupport, ...] = ()
 
     def __post_init__(self) -> None:
+        for field_name in ("country", "transit_system_name"):
+            value = getattr(self, field_name)
+            if value is not None and not isinstance(value, str):
+                raise TypeError(f"{field_name} must be a string or None")
         claims = {
             str(key): str(value)
             for key, value in dict(self.non_identity_claims).items()
@@ -96,11 +159,13 @@ class EventIdentityFacts:
             "evidence_references",
             tuple(str(value) for value in self.evidence_references if str(value)),
         )
+        object.__setattr__(self, "metadata_support", _coerce_metadata_support(self.metadata_support))
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "EventIdentityFacts":
         claims = value.get("non_identity_claims", {})
         references = value.get("evidence_references", ())
+        support = value.get("metadata_support", ())
         return cls(
             event_key=str(value.get("event_key", "") or ""),
             action=str(value.get("action", "") or ""),
@@ -114,7 +179,50 @@ class EventIdentityFacts:
             occurrence_date=str(value.get("occurrence_date", "") or ""),
             non_identity_claims=claims if isinstance(claims, Mapping) else {},
             evidence_references=tuple(references or ()),
+            country=value.get("country"),
+            transit_system_name=value.get("transit_system_name"),
+            metadata_support=support,
         )
+
+
+def _validate_evidence_identity_metadata(
+    substantive_content: str,
+    facts: EventIdentityFacts | None,
+    state: EvidenceState,
+) -> None:
+    if facts is None:
+        return
+    values = {
+        "country": facts.country,
+        "transit_system_name": facts.transit_system_name,
+        "location": facts.location,
+    }
+    if state is EvidenceState.REJECTED:
+        if (
+            facts.country not in (None, "")
+            or facts.transit_system_name not in (None, "")
+            or facts.metadata_support
+        ):
+            raise ValueError("EVIDENCE_REJECTED cannot expose formal identity metadata")
+        return
+
+    supported_fields: set[str] = set()
+    content_length = len(substantive_content)
+    for support in facts.metadata_support:
+        value = values[support.field_name]
+        if not isinstance(value, str) or not value:
+            raise ValueError("metadata support requires a non-empty governed value")
+        if support.end > content_length:
+            raise ValueError("metadata support exceeds substantive_content")
+        slice_value = substantive_content[support.start : support.end]
+        if not slice_value.strip():
+            raise ValueError("metadata support must refer to nonblank content")
+        if value not in slice_value:
+            raise ValueError("metadata support does not contain its governed value")
+        supported_fields.add(support.field_name)
+    for field_name, value in values.items():
+        if value not in (None, "") and field_name not in supported_fields:
+            raise ValueError(f"{field_name} requires matching metadata support")
 
 
 class EventIdentityRelation(StrEnum):
@@ -429,6 +537,11 @@ class EvidenceResult:
             raise ValueError("EVIDENCE_READY requires substantive_content")
         if self.state is EvidenceState.REJECTED and self.substantive_content:
             raise ValueError("Rejected evidence cannot expose authoritative content")
+        _validate_evidence_identity_metadata(
+            self.substantive_content,
+            self.identity_facts,
+            self.state,
+        )
 
 
 @dataclass(frozen=True, slots=True)

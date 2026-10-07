@@ -23,6 +23,7 @@ from src.weekly_report.contracts import (
     EventGroup,
     EventIdentityFacts,
     EventIdentityRecord,
+    IdentityMetadataSupport,
     ScopeResult,
     ScopeState,
     TemporalResult,
@@ -86,13 +87,28 @@ def _materialize_record(candidate: dict) -> EventIdentityRecord:
             else {}
         ),
     )
+    source_content = candidate["source_content"]
+    if facts.location:
+        if facts.location not in source_content:
+            source_content = f"{source_content} {facts.location}"
+        start = source_content.index(facts.location)
+        facts = EventIdentityFacts(
+            action=facts.action,
+            lifecycle_step=facts.lifecycle_step,
+            project=facts.project,
+            location=facts.location,
+            non_identity_claims=facts.non_identity_claims,
+            metadata_support=(
+                IdentityMetadataSupport("location", start, start + len(facts.location)),
+            ),
+        )
     canonical = CanonicalCandidate.from_mapping(candidate)
     evidence = EvidenceResult(
         candidate_id=candidate_id,
         state=EvidenceState.READY,
         canonical_source_url=candidate["url"],
         source_type="synthetic_golden_source",
-        substantive_content=candidate["source_content"],
+        substantive_content=source_content,
         provenance={"canonical_source": candidate["url"]},
         identity_facts=facts,
     )

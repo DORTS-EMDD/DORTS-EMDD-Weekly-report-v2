@@ -22,8 +22,17 @@ from .contracts import (
     CanonicalCandidate,
     EvidenceResult,
     EvidenceState,
+    EventIdentityFacts,
     FetchedSource,
+    IdentityMetadataSupport,
     RejectReason,
+)
+from .evidence_metadata import (
+    EvidenceMetadataExtraction,
+    EvidenceMetadataExtractor,
+    EvidenceMetadataRequest,
+    InvalidEvidenceMetadataResponse,
+    validate_evidence_metadata_response,
 )
 from .semantic_judge import (
     JudgeMetadata,
@@ -359,6 +368,7 @@ class EvidenceService:
         timeout_seconds: float = 10.0,
         semantic_judge: SemanticJudge | None = None,
         judge_metadata: JudgeMetadata | None = None,
+        metadata_extractor: EvidenceMetadataExtractor | None = None,
     ) -> None:
         self._timeout_seconds = float(timeout_seconds)
         self._fetcher = fetcher or (
@@ -366,6 +376,7 @@ class EvidenceService:
         )
         self._semantic_judge = semantic_judge
         self._judge_metadata = judge_metadata
+        self._metadata_extractor = metadata_extractor
 
     def evaluate(self, candidate: CanonicalCandidate | Mapping[str, Any]) -> EvidenceResult:
         """Acquire and assess one Candidate without mutating the input."""
@@ -537,6 +548,11 @@ class EvidenceService:
                 canonical_source_url=source_url,
             )
 
+        metadata_facts, metadata_signals = self._extract_metadata(
+            item.candidate_id,
+            assessment.principal_body_segments,
+            body,
+        )
         semantic_signals["EvidenceService_final_decision"] = EvidenceState.READY.value
         return EvidenceResult(
             candidate_id=item.candidate_id,
@@ -553,11 +569,112 @@ class EvidenceService:
                 "page_event_identity": True,
                 "source_to_candidate_match": True,
                 "factual_substance": True,
+                "principal_source_headlines": list(document_level_headlines),
                 **provenance_signals,
                 **structural_provenance,
                 **semantic_signals,
+                **metadata_signals,
             },
             source_date_facts=assessment.source_date_facts,
+            identity_facts=metadata_facts,
+        )
+
+    def _extract_metadata(
+        self,
+        candidate_id: str,
+        document_segments: tuple[DocumentSegment, ...],
+        substantive_content: str,
+    ) -> tuple[EventIdentityFacts | None, dict[str, Any]]:
+        segments = tuple(
+            PrincipalBodySegment(segment_id=segment.segment_id, text=segment.text)
+            for segment in document_segments
+        )
+        request = EvidenceMetadataRequest(candidate_id, segments)
+        if self._metadata_extractor is None:
+            return None, self._metadata_signals("not_configured")
+        try:
+            raw_response = self._metadata_extractor(request)
+        except TimeoutError:
+            return None, self._metadata_signals("timeout")
+        except Exception:
+            return None, self._metadata_signals("transport_error")
+        try:
+            extraction = validate_evidence_metadata_response(raw_response, request)
+        except InvalidEvidenceMetadataResponse as exc:
+            return None, self._metadata_signals("invalid_response", exc.detail)
+        except Exception:
+            return None, self._metadata_signals("invalid_response", "schema_invalid")
+        try:
+            facts = self._translate_metadata(extraction, request, substantive_content)
+        except ValueError:
+            return None, self._metadata_signals("invalid_response", "span_mapping_invalid")
+        if not extraction.observations:
+            return None, self._metadata_signals("valid_zero_metadata")
+        return facts, self._metadata_signals("valid_metadata")
+
+    @staticmethod
+    def _metadata_signals(status: str, detail: str = "") -> dict[str, Any]:
+        return {
+            "metadata_extraction_status": status,
+            "metadata_extraction_detail": detail,
+        }
+
+    @staticmethod
+    def _translate_metadata(
+        extraction: EvidenceMetadataExtraction,
+        request: EvidenceMetadataRequest,
+        substantive_content: str,
+    ) -> EventIdentityFacts:
+        joined = " ".join(segment.text for segment in request.principal_body_segments)
+        if joined.strip() != substantive_content:
+            raise ValueError("principal body does not match substantive content")
+        leading_trim = len(joined) - len(joined.lstrip())
+        trailing_end = len(joined.rstrip())
+        positions: dict[str, int] = {}
+        running = 0
+        for index, segment in enumerate(request.principal_body_segments):
+            positions[segment.segment_id] = running + index
+            running += len(segment.text)
+
+        values: dict[str, str | None] = {
+            "country": None,
+            "transit_system_name": None,
+            "location": "",
+        }
+        supports: list[IdentityMetadataSupport] = []
+        for observation in extraction.observations:
+            values[observation.field_name] = observation.value
+            for span in observation.support_spans:
+                segment = next(
+                    item
+                    for item in request.principal_body_segments
+                    if item.segment_id == span.segment_id
+                )
+                joined_start = positions[span.segment_id] + span.start
+                joined_end = positions[span.segment_id] + span.end
+                if not (
+                    leading_trim <= joined_start < joined_end <= trailing_end
+                ):
+                    raise ValueError("metadata span is outside substantive content")
+                translated_start = joined_start - leading_trim
+                translated_end = joined_end - leading_trim
+                if (
+                    segment.text[span.start : span.end]
+                    != substantive_content[translated_start:translated_end]
+                ):
+                    raise ValueError("metadata span text cannot be translated exactly")
+                supports.append(
+                    IdentityMetadataSupport(
+                        field_name=observation.field_name,
+                        start=translated_start,
+                        end=translated_end,
+                    )
+                )
+        return EventIdentityFacts(
+            country=values["country"],
+            transit_system_name=values["transit_system_name"],
+            location=str(values["location"] or ""),
+            metadata_support=tuple(supports),
         )
 
     def _semantic_match(

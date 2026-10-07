@@ -16,6 +16,7 @@ from src.weekly_report.contracts import (
     EventIdentityFacts,
     EventIdentityRecord,
     EMSystemId,
+    IdentityMetadataSupport,
     ReportabilityEvidenceProvenance,
     ReportabilityReason,
     ReportabilityResult,
@@ -46,6 +47,16 @@ def _event(
 ) -> ReportWorkflowResult:
     records = []
     for candidate_id, controlling_date in dates.items():
+        location = (locations or {}).get(candidate_id, "")
+        body = "authoritative content"
+        facts = EventIdentityFacts(location=location)
+        if location:
+            body = f"{body} {location}"
+            start = body.index(location)
+            facts = EventIdentityFacts(
+                location=location,
+                metadata_support=(IdentityMetadataSupport("location", start, start + len(location)),),
+            )
         candidate = CanonicalCandidate(
             candidate_id=candidate_id,
             title=f"title-{candidate_id}",
@@ -58,10 +69,8 @@ def _event(
                 evidence=EvidenceResult(
                     candidate_id,
                     EvidenceState.READY,
-                    substantive_content="authoritative content",
-                    identity_facts=EventIdentityFacts(
-                        location=(locations or {}).get(candidate_id, "")
-                    ),
+                    substantive_content=body,
+                    identity_facts=facts,
                 ),
                 scope=ScopeResult(candidate_id, ScopeState.IN_SCOPE),
                 temporal=TemporalResult(

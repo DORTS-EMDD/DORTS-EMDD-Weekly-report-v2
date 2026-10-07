@@ -19,6 +19,7 @@ from src.weekly_report.contracts import (
     EventIdentityFacts,
     EventIdentityRecord,
     EMSystemId,
+    IdentityMetadataSupport,
     ReportabilityEvidenceProvenance,
     ReportabilityReason,
     ReportabilityResult,
@@ -61,6 +62,20 @@ def _materialize_ordering_event(event: dict) -> ReportWorkflowResult:
         identity_facts = EventIdentityFacts(
             location=member.get("identity_facts", {}).get("location", "")
         )
+        location = identity_facts.location
+        synthetic_body = "Synthetic authoritative Ordering fixture content."
+        if location:
+            synthetic_body = f"{synthetic_body} {location}"
+            identity_facts = EventIdentityFacts(
+                location=location,
+                metadata_support=(
+                    IdentityMetadataSupport(
+                        "location",
+                        synthetic_body.index(location),
+                        synthetic_body.index(location) + len(location),
+                    ),
+                ),
+            )
         candidate = CanonicalCandidate(
             candidate_id=candidate_id,
             title=f"Golden {candidate_id}",
@@ -75,7 +90,7 @@ def _materialize_ordering_event(event: dict) -> ReportWorkflowResult:
                     state=EvidenceState.READY,
                     canonical_source_url=candidate.url,
                     source_type="synthetic_ordering_golden",
-                    substantive_content="Synthetic authoritative Ordering fixture content.",
+                    substantive_content=synthetic_body,
                     identity_facts=identity_facts,
                 ),
                 scope=ScopeResult(candidate_id, ScopeState.IN_SCOPE),
