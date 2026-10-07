@@ -124,7 +124,12 @@ RegionRegistry
 → Event Identity
 → Classifier
 → ReportWorkflow.run
-→ later Ordering / Writer / Validation / Delivery
+→ Ordering
+→ formal metadata prerequisite check / projection preparation
+→ ReportWriter
+→ Validator
+→ Report Service assembly
+→ Delivery
 ```
 
 既有 shared downstream workflow 的具體實作邊界仍為
@@ -136,6 +141,25 @@ Temporal、Event Identity 或 Category authority。其既有 API 與 lower-level
 factory；未來 `build_report_application` 才是完整 application composition root。
 兩者都只負責 construction/injection，不得在 construction 時執行 lifecycle、
 呼叫網路或作 Domain decision。
+
+`ReportApplication` remains the sole application orchestration owner for the
+post-Reportability path. The intended downstream composition is:
+
+```text
+Reportability
+→ Ordering
+→ formal metadata prerequisite check / projection preparation
+→ ReportWriter
+→ Validator
+→ Report Service assembly
+→ Delivery
+```
+
+The metadata prerequisite check and projection preparation do not create a new
+domain owner. They verify and mechanically project facts owned by EvidenceService,
+TemporalRule, Classifier, and Taxonomy before invoking the Writer. This is a
+documentation boundary for the later implementation; it does not add these
+stages to the current runtime.
 
 ### Phase 2B-A mechanical execution contract
 
@@ -677,6 +701,69 @@ Alternative source 只能由 Evidence Service 在同一 evidence acquisition res
 
 沒有可信且與事件相符的 substantive source content，不得進正式報告流程。
 
+### Formal-report factual metadata
+
+EvidenceService is also the sole authoritative owner of evidence-backed factual
+identity metadata used by the formal report. The evidence interface must expose
+the following optional, source-supported facts on `EventIdentityFacts`:
+
+```text
+country: str | None
+transit_system_name: str | None
+location (existing EventIdentityFacts field)
+```
+
+Each non-empty value must be supported by the parent
+`EvidenceResult.substantive_content`. The contract must retain field-specific
+support using the following concept:
+
+```text
+metadata_support: tuple[IdentityMetadataSupport, ...]
+```
+
+Each support record identifies at least `field_name`, `start`, and `end` and
+refers to the parent substantive-content text. Candidate identity and source
+provenance remain attached through `EvidenceResult` and the candidate record.
+
+Country, transit-system name, and location MUST NOT be established from Search
+region, publisher location, title alone, language, city or world knowledge,
+discovery snippets, or model general knowledge. `Candidate.title` remains
+discovery metadata and does not automatically become an authoritative source
+headline. Evidence must preserve the original principal-source headline text
+and its principal-document association as provenance when that material is
+available; this provenance does not transfer headline authority to Candidate or
+Writer.
+
+The metadata extension is a formal-report prerequisite only. It does not alter
+Evidence eligibility, Scope, Temporal, Event Identity matching criteria or
+EventGroup membership, Category, E&M Taxonomy, Reportability, or Ordering.
+These fields MUST NOT silently become Event Identity keys.
+
+Country is required for formal assembly. One established supported value, or
+repeated identical supported values, is mechanically projectable. A missing
+value or unresolved competing supported values cause a typed formal-metadata
+failure before Writer; the formal run aborts without an artifact or Delivery,
+without omitting the event, inserting a placeholder, using `未明示`, guessing,
+or applying a geographic fallback. A member that lacks the field does not by
+itself conflict with an established supported value. Forbidden resolution
+includes majority vote, canonical-member preference, geographic lookup, alias
+mapping, Writer choice, and Search-region fallback.
+
+Location is optional. A single supported value, or repeated identical supported
+values, may be mechanically projected. A missing location is omitted. Unresolved
+competing location values are omitted from the formal field while their
+diagnostic and provenance are preserved. Location conflict alone does not fail
+the run, and no country, system-name, title, publisher, Search-region, or
+external-geography inference is permitted.
+
+Transit-system name is required and means the named urban-rail network/system;
+it is not E&M Taxonomy, transport mode, city, supplier, or operator unless the
+authoritative evidence explicitly establishes that string as the system
+identity. A missing value or unresolved competing supported values cause the
+same typed formal-metadata failure before Writer. There is no Writer inference,
+majority vote, canonical-source override, downstream alias resolution,
+city-to-system lookup, Search-region mapping, or event omission.
+
 ### Evidence semantic match mechanism
 
 `EvidenceService` remains the sole authoritative owner of:
@@ -745,6 +832,19 @@ inclusive period boundary、failure diagnostics 與 Evidence factual interface �
 該文件不新增 Domain Owner、pipeline stage 或 workflow lane，Temporal Rule 仍為
 `DATE_VALID` 的唯一 owner。
 
+Formal report projection uses the `TemporalResult.controlling_calendar_date` of
+the unique canonical member identified by
+`EventGroup.canonical_candidate_id`. TemporalRule owns this value; Report
+Service only formats it as `YYYY-MM-DD`. The visible field may be labelled
+「日期」, but its authoritative meaning remains the source publication / notice
+controlling calendar date and it MUST NOT be treated as an event occurrence date.
+
+The projection MUST NOT fall back to an alternate member date, an inferred
+occurrence date, a discovery timestamp, the current date, timezone
+reinterpretation, or reparsing. A missing or invalid canonical date remains a
+formal-run technical failure. This paragraph only defines downstream display
+projection and does not modify `docs/TEMPORAL_CONTRACT.md` or any Temporal rule.
+
 ## J. Scope
 
 正式範圍包括：
@@ -802,6 +902,16 @@ Candidate-to-Candidate Event Equivalence
 > 不寫該衝突 factual claim。
 
 Event Identity 只在 Evidence、Scope、Date 完成後負責 Candidate-to-Candidate Event Equivalence；不得由 Evidence Service 或 Selector 取代。
+
+Event Identity preserves member-specific Evidence facts and their source
+provenance, including country, transit-system name, location, and other
+source-specific claims. It does not semantically reconcile country aliases,
+system aliases, location aliases, or spelling variants, and it does not choose
+a winning member metadata value. Mechanical projection downstream may collapse
+only identical supported values. Distinct supported values remain unresolved
+conflicts and follow the formal metadata failure or optional-location rules in
+§H. The metadata extension does not change Event Identity matching criteria or
+EventGroup membership.
 
 ## L. Category
 
@@ -1872,6 +1982,114 @@ declared_maiagent_role_hash
 
 注意：`docs/maiagent_role_reference.md` **不是本輪必須建立的檔案**。等正式角色指令來源準備好後再建立，不要放假的 placeholder。
 
+### Writer boundary contract
+
+The sole Writer owner is the proposed production path
+`src.weekly_report.writer.ReportWriter`. It implements the one MaiAgent
+production responsibility above. No other semantic Writer owner may be added.
+
+The Writer input is:
+
+```text
+tuple[ReportWorkflowResult, ...]
+```
+
+It contains the exact authoritative references returned by Ordering. The Writer
+must not reconstruct events, create a parallel authoritative DTO, reselect,
+reorder, or mutate upstream results. Request serialization is mechanical and is
+not a second source of truth.
+
+The proposed typed Writer output is:
+
+```text
+tuple[WriterReportBlock, ...]
+```
+
+Each block contains only:
+
+```text
+event_id: str
+headline: str
+factual_summary: str
+taipei_insight: str
+```
+
+`event_id` is the immutable correlation key. Writer output MUST NOT independently
+generate authoritative date, country, transit-system name, location, Category,
+E&M Taxonomy, source display, or source URL. Python mechanically projects those
+fields under §R.
+
+For every successful Writer boundary, input and output event IDs are identical
+and in the same sequence:
+
+```text
+0 → 0
+1 → 1
+N → N
+```
+
+There may be no missing, extra, duplicate, merged, split, or reordered event.
+Writer has no Reportability authority and MUST NOT drop or add an ordered event.
+For zero input, `ReportWriter.write(())` returns `()` without a MaiAgent/model
+call. Zero is a valid completed Writer result and is distinct from failure of a
+nonzero population.
+
+The event headline owner is ReportWriter / MaiAgent. Writer MAY rewrite a
+headline into concise Traditional Chinese using the same authoritative member
+`EvidenceResult.substantive_content` used by the factual summary. It MUST
+preserve event meaning; every substantive claim must be supported. Title-only,
+discovery-snippet, general-knowledge, unsupported technical/system, and
+unsupported Taipei claims are forbidden. Headline drafting cannot change
+Category, Taxonomy, Reportability, or Ordering. The original principal-source
+headline remains provenance, and there is no raw-source-title fallback.
+
+Formal report prose language is Traditional Chinese. ReportWriter owns language
+normalization for `headline`, `factual_summary`, and `taipei_insight`; Report
+Service owns fixed labels and mechanical formatting. URLs, source identity,
+`event_id`, and typed enum IDs MUST NOT be translated or mutated. Evidence-
+supported foreign proper names may be retained, but translation or
+transliteration MUST NOT invent or substitute entity identity. A raw foreign-
+language formal headline is not valid.
+
+The factual summary is grounded only in authoritative member
+`EvidenceResult.substantive_content`. Discovery titles, feed snippets, external
+search, general knowledge, source supplementation, guessed country/location,
+and unsupported technical interpretation presented as fact are forbidden.
+Unresolved conflicting factual claims are omitted. If a complete grounded
+Writer block cannot be drafted, the Writer returns a typed drafting failure and
+the formal run fails; no event omission, fallback prose, or hidden retry is
+allowed.
+
+`taipei_insight` is a separate professional-analysis field. It may analyze
+supported foreign event facts, but MUST NOT assert unsupplied facts about Taipei
+Metro equipment, architecture, procurement, maintenance, installed capability,
+regulations, projects, or incidents.
+
+Writer / MaiAgent has no authority to search, fetch, discover sources,
+supplement Evidence, choose or repair source metadata, select or filter events,
+drop or add events, merge, split, deduplicate, reorder, select Top-N, rank,
+prioritize, balance Category or geography, change Event Identity, Category,
+Taxonomy, Reportability, or Ordering, derive a formal date, infer country or
+transit system, or author canonical URL/source-display metadata.
+
+The application-level call shape is:
+
+```text
+ReportWriter.write(ordered_results)
+```
+
+This is one Writer invocation. Internally it makes one isolated initial MaiAgent
+request per event to preserve exact mapping, grounding isolation, and
+event-level validation/correction. Writer transport or malformed-output retry
+is forbidden: one initial drafting attempt per event, with no hidden retry,
+provider rescue, or fallback response. Validator-directed semantic correction is
+separate and is governed by §Q.
+
+If any event has transport failure, malformed response, missing, duplicate, or
+unexpected block, or incomplete required prose, the Writer handoff fails closed
+for the whole formal run: no artifact and no Delivery, with diagnostics. It
+must not silently delete the failed event.
+
 ## Q. Validation
 
 Validator 與 Writer 必須分離。
@@ -1895,6 +2113,21 @@ Transport retry 與 semantic correction 分開計算。
 
 Validator 不得代替 Writer，也不得修改 upstream domain decision。Semantic correction 只限於該 Event，且最多一次。
 
+The Validator receives the original ordered authoritative references together
+with the generated `WriterReportBlock` values. It owns the post-Writer checks
+for exact `event_id` population and sequence, cardinality, required prose,
+Traditional Chinese language, factual grounding, metadata integrity at the
+assembly boundary, and the DORTS/Taipei-analysis boundary. Writer does not
+self-certify.
+
+At most one Validator-directed semantic correction is allowed per failing Event.
+The correction uses the same authoritative Evidence, cannot fetch more Evidence,
+change metadata, alter the event population, or change Ordering. PASS Events are
+not regenerated. This correction is separate from Writer transport retry. After
+the permitted correction, persistent invalidity remains an event-level FAIL
+under this section. A complete Writer population/integrity failure remains a
+whole formal Writer-run failure as specified in §P.
+
 ## R. Report / Delivery
 
 ```text
@@ -1911,6 +2144,42 @@ Report Service 唯一負責：
 * category section ordering
 * artifact naming
 * report metadata
+
+Report Service / Python is the sole mechanical owner of formal metadata
+projection and final report assembly. It projects, without model rewriting:
+
+* `event_id`
+* the canonical member's Temporal controlling date, formatted as `YYYY-MM-DD`
+* required country
+* required transit-system name
+* optional location
+* Category
+* E&M Taxonomy labels
+* canonical source hostname
+* canonical source URL
+
+Country and transit-system name must be complete before Writer. Missing or
+unresolved conflicting required metadata is a typed formal-metadata failure that
+aborts the whole formal run with diagnostics, no artifact, and no Delivery. It
+must not omit the event, create a zero-event success, insert `未明示`, infer a
+value, or backfill one. Missing or conflicting optional location is omitted.
+Report Service may collapse only identical supported metadata values; it does
+not semantically reconcile aliases or choose a winning member.
+
+Formal source display is not model-generated. It is the lowercase parsed
+hostname of the canonical member's authoritative
+`EvidenceResult.canonical_source_url`; `www` and other subdomains are retained,
+while scheme, port, path, query, and fragment are excluded. The displayed link
+target remains the exact canonical URL. Candidate publisher, discovery URL,
+homepage substitution, brand mapping, search, and semantic repair are
+forbidden. Missing or invalid canonical URL/hostname is a typed
+formal-metadata failure before Writer.
+
+Writer authors only `headline`, `factual_summary`, and `taipei_insight` prose.
+Report Service owns fixed labels, metadata projection, assembly, and mechanical
+category-section presentation. This presentation may preserve the stable
+Ordering subsequence within each section but cannot rank, select, or reorder
+events semantically.
 
 Report Service may arrange category sections according to its separately
 authorized section-order contract, but it does not own event priority. Within
@@ -2131,6 +2400,16 @@ FROZEN_REFERENCE
 V2 不以輸出與 V1 相同為目標。
 
 本輪只建立治理文件；V1 維持未修改的 FROZEN_REFERENCE。
+
+For the later Writer implementation, V1 mechanical concepts may be selectively
+reused: the MaiAgent HTTP envelope, timeout and strict response parsing,
+injected transport, rendering primitives, MIME/SMTP mechanics, and fake
+transport test patterns. They do not become V2 domain authority. V1 selection,
+scoring, ranking, Top-N, quotas, balancing, backfill, rescue,
+supplemental-source acquisition, country inference, source substitution,
+taxonomy inference, prose-driven merge/dedup/filter/sort, whole-report
+regeneration, and permissive malformed-response fallback MUST NOT be reused as
+Writer or Report Service semantics.
 
 ## W. Architecture Complexity Guard
 
