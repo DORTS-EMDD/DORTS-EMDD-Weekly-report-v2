@@ -209,6 +209,11 @@ class MaiAgentEvidenceMetadataProviderTests(unittest.TestCase):
         result = MaiAgentEvidenceMetadataExtractor(_config(), transport=transport)(_request())
         self.assertEqual(result, raw)
         self.assertEqual(MAIAGENT_EVIDENCE_METADATA_RESPONSE_SCHEMA["required"], ["observations"])
+        observation_schema = MAIAGENT_EVIDENCE_METADATA_RESPONSE_SCHEMA["properties"]["observations"]["items"]
+        self.assertEqual(observation_schema["required"], ["field_name", "value", "segment_id"])
+        self.assertNotIn("support_spans", observation_schema["properties"])
+        self.assertNotIn("start", observation_schema["properties"])
+        self.assertNotIn("end", observation_schema["properties"])
 
     def test_timeout_status_error_and_http_failure_have_no_retry(self):
         request = _request()
@@ -314,8 +319,8 @@ class MaiAgentEvidenceMetadataProviderTests(unittest.TestCase):
         text = "Taiwan Metro opened at Taipei Central."
         raw = {
             "observations": [
-                {"field_name": "country", "value": "Taiwan", "support_spans": [{"segment_id": "body-0001", "start": 0, "end": 6}]},
-                {"field_name": "transit_system_name", "value": "Metro", "support_spans": [{"segment_id": "body-0001", "start": 7, "end": 12}]},
+                {"field_name": "country", "value": "Taiwan", "segment_id": "body-0001"},
+                {"field_name": "transit_system_name", "value": "Metro", "segment_id": "body-0001"},
             ]
         }
         transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(raw)))
@@ -354,7 +359,7 @@ class MaiAgentEvidenceMetadataProviderTests(unittest.TestCase):
         for raw, error, expected_status in (
             ({"observations": []}, None, "valid_zero_metadata"),
             ({"observations": [{"bad": 1}]}, None, "invalid_response"),
-            ({"observations": [{"field_name": "country", "value": "Taiwan", "support_spans": [{"segment_id": "body-0001", "start": 0, "end": 99}]}]}, None, "invalid_response"),
+            ({"observations": [{"field_name": "country", "value": "Taiwan", "segment_id": "body-0001", "support_spans": []}]}, None, "invalid_response"),
             (None, TimeoutError(), "timeout"),
             (None, RuntimeError("secret-provider-error"), "transport_error"),
         ):

@@ -39,9 +39,8 @@ def _request(*segments: tuple[str, str]) -> EvidenceMetadataRequest:
     )
 
 
-def _span(segment_id: str, text: str, value: str) -> dict[str, object]:
-    start = text.index(value)
-    return {"segment_id": segment_id, "start": start, "end": start + len(value)}
+def _proposal(field_name: str, value: str, segment_id: str) -> dict[str, object]:
+    return {"field_name": field_name, "value": value, "segment_id": segment_id}
 
 
 class MetadataContractTests(unittest.TestCase):
@@ -129,123 +128,93 @@ class MetadataContractTests(unittest.TestCase):
         )
         self.assertEqual(legacy.identity_facts.location, "Taipei")
 
-    def test_validator_accepts_zero_and_consolidates_exact_duplicates(self):
-        request = _request(("s1", "Taiwan Metro opened in Taipei. Japan was mentioned too."))
+    def test_validator_derives_unique_canonical_span_and_consolidates_duplicates(self):
+        request = _request(("s1", "Taiwan Metro opened in Taipei."))
         empty = validate_evidence_metadata_response({"observations": []}, request)
         self.assertEqual(empty.observations, ())
-        text = request.principal_body_segments[0].text
-        raw = {
-            "observations": [
-                {"field_name": "country", "value": "Taiwan", "support_spans": [_span("s1", text, "Taiwan")]},
-                {"field_name": "country", "value": "Taiwan", "support_spans": [_span("s1", text, "Taiwan")]},
-            ]
-        }
+        raw = {"observations": [_proposal("country", "Taiwan", "s1"), _proposal("country", "Taiwan", "s1")]}
         extraction = validate_evidence_metadata_response(raw, request)
         self.assertEqual(len(extraction.observations), 1)
-        self.assertEqual(len(extraction.observations[0].support_spans), 1)
+        self.assertEqual(extraction.observations[0].support_spans[0].as_mapping(), {"segment_id": "s1", "start": 0, "end": 6})
 
-    def test_validator_rejects_strict_schema_errors_and_distinct_values(self):
-        request = _request(("s1", "Taiwan Metro opened in Taipei. Japan was mentioned too."))
+    def test_validator_rejects_provider_offsets_and_strict_schema_errors(self):
+        request = _request(("s1", "Taiwan Metro opened in Taipei."))
         cases = [
             {},
             {"observations": "bad"},
             {"observations": [{"field_name": "country", "value": "Taiwan", "support_spans": []}]},
-            {"observations": [{"field_name": "country", "value": "Taiwan", "support_spans": [{"segment_id": "s1", "start": 0, "end": 99}]}]},
+            {"observations": [{"field_name": "country", "value": "Taiwan", "segment_id": "s1", "start": 0}]},
+            {"observations": [{"field_name": "country", "value": "Taiwan", "segment_id": "s1", "end": 6}]},
+            {"observations": [{"field_name": "country", "value": "Taiwan", "segment_id": "unknown"}]},
+            {"observations": [{"field_name": "city", "value": "Taiwan", "segment_id": "s1"}]},
+            {"observations": [{"field_name": "country", "value": "   ", "segment_id": "s1"}]},
         ]
         for raw in cases:
             with self.subTest(raw=raw), self.assertRaises(InvalidEvidenceMetadataResponse):
                 validate_evidence_metadata_response(raw, request)
-        text = request.principal_body_segments[0].text
+        with self.assertRaises(ValueError):
+            EvidenceMetadataRequest("C1", (PrincipalBodySegment("dup", "Taiwan"), PrincipalBodySegment("dup", "Taiwan")))
+
+    def test_validator_requires_one_exact_occurrence_and_rejects_normalization_or_fuzzy_matching(self):
+        cases = (
+            ("zero", "Korea", "Taiwan Metro"),
+            ("duplicate", "Japan", "Japan Japan"),
+            ("overlap", "aa", "aaaa"),
+            ("whitespace", " Japan", "Japan"),
+            ("case", "japan", "Japan"),
+            ("fuzzy", "Jpn", "Japan"),
+        )
+        for name, value, text in cases:
+            with self.subTest(case=name), self.assertRaises(InvalidEvidenceMetadataResponse):
+                validate_evidence_metadata_response(
+                    {"observations": [_proposal("country", value, "s1")]},
+                    _request(("s1", text)),
+                )
+
+    def test_validator_rejects_distinct_values_for_same_field(self):
+        request = _request(("s1", "Taiwan and Japan"))
         with self.assertRaises(InvalidEvidenceMetadataResponse) as raised:
             validate_evidence_metadata_response(
-                {
-                    "observations": [
-                        {"field_name": "country", "value": "Taiwan", "support_spans": [_span("s1", text, "Taiwan")]},
-                        {"field_name": "country", "value": "Japan", "support_spans": [_span("s1", text, "Japan")]},
-                    ]
-                },
+                {"observations": [_proposal("country", "Taiwan", "s1"), _proposal("country", "Japan", "s1")]},
                 request,
             )
         self.assertEqual(raised.exception.detail, "same_source_distinct_values")
 
-    def test_validator_covers_the_complete_strict_boundary_matrix(self):
-        request = _request(("s1", "Taiwan Metro opened in Taipei."), ("s2", "Japan Metro expanded."))
-        text1 = request.principal_body_segments[0].text
-        valid_span = _span("s1", text1, "Taiwan")
-        valid_observation = {
-            "field_name": "country",
-            "value": "Taiwan",
-            "support_spans": [valid_span],
-        }
-        invalid_top_levels = [None, [], "string", {"observations": [], "extra": True}]
-        for raw in invalid_top_levels:
-            with self.subTest(case="top-level", raw=raw), self.assertRaises(InvalidEvidenceMetadataResponse):
-                validate_evidence_metadata_response(raw, request)
-
-        invalid_observations = [
-            None,
-            {"field_name": "country", "value": "Taiwan", "support_spans": [valid_span], "extra": True},
-            {"field_name": "city", "value": "Taiwan", "support_spans": [valid_span]},
-            {"field_name": "country", "value": "   ", "support_spans": [valid_span]},
-            {"field_name": "country", "value": "Taiwan", "support_spans": "bad"},
-            {"field_name": "country", "value": "Taiwan", "support_spans": b"bad"},
-            {"field_name": "country", "value": "Taiwan", "support_spans": bytearray(b"bad")},
-            {"field_name": "country", "value": "Taiwan", "support_spans": {"s": valid_span}},
-            {"field_name": "country", "value": "Taiwan", "support_spans": []},
-        ]
-        for observation in invalid_observations:
-            with self.subTest(case="observation", raw=observation), self.assertRaises(InvalidEvidenceMetadataResponse):
-                validate_evidence_metadata_response({"observations": [observation]}, request)
-
-        invalid_spans = [
-            {"segment_id": "s1", "start": 0, "end": 6, "extra": True},
-            {"segment_id": "s1", "start": 0},
-            {"segment_id": "unknown", "start": 0, "end": 6},
-            {"segment_id": "s1", "start": True, "end": 6},
-            {"segment_id": "s1", "start": 0, "end": False},
-            {"segment_id": "s1", "start": "0", "end": 6},
-            {"segment_id": "s1", "start": -1, "end": 6},
-            {"segment_id": "s1", "start": 6, "end": 6},
-            {"segment_id": "s1", "start": 0, "end": 99},
-            {"segment_id": "s1", "start": 0, "end": 4},
-        ]
-        for span in invalid_spans:
-            raw = {"observations": [{**valid_observation, "support_spans": [span]}]}
-            with self.subTest(case="span", raw=span), self.assertRaises(InvalidEvidenceMetadataResponse):
-                validate_evidence_metadata_response(raw, request)
-
-        for raw_observations in (b"bad", bytearray(b"bad"), {"bad": True}):
-            with self.subTest(case="observations-array", raw=raw_observations), self.assertRaises(InvalidEvidenceMetadataResponse):
-                validate_evidence_metadata_response({"observations": raw_observations}, request)
-
-        with self.assertRaises(ValueError):
-            EvidenceMetadataRequest(
-                "C1",
-                (
-                    PrincipalBodySegment("dup", "Taiwan"),
-                    PrincipalBodySegment("dup", "Taiwan"),
-                ),
+    def test_validator_preserves_segment_specific_support_and_does_not_accept_ambiguous_segment(self):
+        request = _request(("s1", "Taiwan Metro"), ("s2", "Japan Metro"))
+        extraction = validate_evidence_metadata_response(
+            {"observations": [_proposal("country", "Taiwan", "s1"), _proposal("location", "Japan", "s2")]},
+            request,
+        )
+        self.assertEqual(
+            tuple(span.as_mapping() for span in extraction.observations[0].support_spans),
+            ({"segment_id": "s1", "start": 0, "end": 6},),
+        )
+        with self.assertRaises(InvalidEvidenceMetadataResponse):
+            validate_evidence_metadata_response(
+                {"observations": [_proposal("country", "Taiwan", "unknown")]},
+                request,
             )
 
-        absent_value = {"field_name": "country", "value": "Korea", "support_spans": [valid_span]}
-        with self.assertRaises(InvalidEvidenceMetadataResponse):
-            validate_evidence_metadata_response({"observations": [absent_value]}, request)
-
-    def test_validator_keeps_first_seen_support_order_while_deduplicating(self):
-        request = _request(("s1", "Taiwan Metro opened in Taipei."), ("s2", "Taiwan Metro expanded."))
-        first = _span("s1", request.principal_body_segments[0].text, "Taiwan")
-        second = _span("s2", request.principal_body_segments[1].text, "Taiwan")
+    def test_validator_derives_diagnostic_sentence_offsets_in_python(self):
+        text = "Country: Japan. Transit system: Sakura Metro. Location: Sakura City."
+        request = _request(("META-DIAG-SEG-001", text))
         extraction = validate_evidence_metadata_response(
             {
                 "observations": [
-                    {"field_name": "country", "value": "Taiwan", "support_spans": [second, first, second]},
+                    _proposal("country", "Japan", "META-DIAG-SEG-001"),
+                    _proposal("transit_system_name", "Sakura Metro", "META-DIAG-SEG-001"),
+                    _proposal("location", "Sakura City", "META-DIAG-SEG-001"),
                 ]
             },
             request,
         )
         self.assertEqual(
-            extraction.observations[0].support_spans,
-            (type(extraction.observations[0].support_spans[0])(**second), type(extraction.observations[0].support_spans[0])(**first)),
+            [
+                (observation.field_name, observation.support_spans[0].start, observation.support_spans[0].end)
+                for observation in extraction.observations
+            ],
+            [("country", 9, 14), ("transit_system_name", 32, 44), ("location", 56, 67)],
         )
 
 
@@ -305,9 +274,9 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
         def response(text):
             return {
                 "observations": [
-                    {"field_name": "country", "value": "Taiwan", "support_spans": [_span("body-0001", text, "Taiwan")]},
-                    {"field_name": "transit_system_name", "value": "Metro", "support_spans": [_span("body-0001", text, "Metro")]},
-                    {"field_name": "location", "value": "Taipei Central", "support_spans": [_span("body-0001", text, "Taipei Central")]},
+                    _proposal("country", "Taiwan", "body-0001"),
+                    _proposal("transit_system_name", "Metro", "body-0001"),
+                    _proposal("location", "Taipei Central", "body-0001"),
                 ]
             }
 
@@ -366,16 +335,16 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
         def distinct(_text):
             return {
                 "observations": [
-                    {"field_name": "country", "value": "Taiwan", "support_spans": [_span("body-0001", text, "Taiwan")]},
-                    {"field_name": "country", "value": "Taipei", "support_spans": [_span("body-0001", text, "Taipei")]},
+                    _proposal("country", "Taiwan", "body-0001"),
+                    _proposal("country", "Taipei", "body-0001"),
                 ]
             }
 
         def mixed(_text):
             return {
                 "observations": [
-                    {"field_name": "country", "value": "Taiwan", "support_spans": [_span("body-0001", text, "Taiwan")]},
-                    {"field_name": "city", "value": "Taipei", "support_spans": [_span("body-0001", text, "Taipei")]},
+                    _proposal("country", "Taiwan", "body-0001"),
+                    _proposal("city", "Taipei", "body-0001"),
                 ]
             }
 
@@ -417,8 +386,8 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
             first, second = request.principal_body_segments
             return {
                 "observations": [
-                    {"field_name": "country", "value": "Taiwan", "support_spans": [_span(first.segment_id, first.text, "Taiwan")]},
-                    {"field_name": "location", "value": "Taipei", "support_spans": [_span(second.segment_id, second.text, "Taipei")]},
+                    _proposal("country", "Taiwan", first.segment_id),
+                    _proposal("location", "Taipei", second.segment_id),
                 ]
             }
 
@@ -455,7 +424,7 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
             segment = request.principal_body_segments[0]
             return {
                 "observations": [
-                    {"field_name": "country", "value": "Taiwan", "support_spans": [_span(segment.segment_id, segment.text, "Taiwan")]},
+                    _proposal("country", "Taiwan", segment.segment_id),
                 ]
             }
 
@@ -499,8 +468,8 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
         request = _request(("body-0001", "  Taiwan Metro"), ("body-0002", "opened at Taipei  ."))
         raw = {
             "observations": [
-                {"field_name": "country", "value": "Taiwan", "support_spans": [_span("body-0001", request.principal_body_segments[0].text, "Taiwan")]},
-                {"field_name": "location", "value": "Taipei", "support_spans": [_span("body-0002", request.principal_body_segments[1].text, "Taipei")]},
+                _proposal("country", "Taiwan", "body-0001"),
+                _proposal("location", "Taipei", "body-0002"),
             ]
         }
         extraction = validate_evidence_metadata_response(raw, request)

@@ -19,9 +19,9 @@ from .maiagent_transport import (
 )
 
 
-EVIDENCE_METADATA_PROMPT_VERSION = "evidence-metadata-principal-body-v1"
-EVIDENCE_METADATA_SCHEMA_VERSION = "evidence-metadata-proposal-v1"
-EVIDENCE_METADATA_HELPER_VERSION = "maiagent-structured-helper-adapter-v1"
+EVIDENCE_METADATA_PROMPT_VERSION = "evidence-metadata-principal-body-v2"
+EVIDENCE_METADATA_SCHEMA_VERSION = "evidence-metadata-proposal-v2"
+EVIDENCE_METADATA_HELPER_VERSION = "maiagent-structured-helper-adapter-v2"
 MAIAGENT_EVIDENCE_METADATA_PROVIDER_IDENTIFIER = "maiagent-structured-helper-metadata"
 
 
@@ -40,22 +40,9 @@ MAIAGENT_EVIDENCE_METADATA_RESPONSE_SCHEMA: dict[str, Any] = {
                         "enum": ["country", "transit_system_name", "location"],
                     },
                     "value": {"type": "string", "minLength": 1},
-                    "support_spans": {
-                        "type": "array",
-                        "minItems": 1,
-                        "items": {
-                            "type": "object",
-                            "additionalProperties": False,
-                            "properties": {
-                                "segment_id": {"type": "string"},
-                                "start": {"type": "integer"},
-                                "end": {"type": "integer"},
-                            },
-                            "required": ["segment_id", "start", "end"],
-                        },
-                    },
+                    "segment_id": {"type": "string"},
                 },
-                "required": ["field_name", "value", "support_spans"],
+                "required": ["field_name", "value", "segment_id"],
             },
         },
     },
@@ -73,7 +60,10 @@ EVIDENCE_METADATA_INSTRUCTIONS = (
     "The only governed fields are country, transit_system_name, and location.",
     "Do not infer geography, country from a city, or a transit system from an operator or outside knowledge.",
     "Do not search, browse, use RAG, use tools, retrieve external knowledge, or supplement the supplied source.",
-    "Support every observation with exact segment-relative Python Unicode half-open [start, end) spans.",
+    "For every observation, return the segment_id containing the exact source-surface value.",
+    "Do not return start, end, support_spans, offsets, or any other coordinate fields; Python derives canonical spans.",
+    "Do not calculate, repair, normalize, or guess character offsets.",
+    "Do not retry, fall back, rescue, or repair a missing, ambiguous, or malformed observation.",
     "Return only the requested JSON object. Do not return prose, Markdown, explanations, or extra fields.",
 )
 

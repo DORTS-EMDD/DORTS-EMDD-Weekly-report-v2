@@ -11,8 +11,7 @@ from .semantic_judge import BodySpan, PrincipalBodySegment
 
 MetadataFieldName = Literal["country", "transit_system_name", "location"]
 _GOVERNED_FIELDS = frozenset({"country", "transit_system_name", "location"})
-_OBSERVATION_FIELDS = frozenset({"field_name", "value", "support_spans"})
-_SPAN_FIELDS = frozenset({"segment_id", "start", "end"})
+_OBSERVATION_FIELDS = frozenset({"field_name", "value", "segment_id"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,7 +67,14 @@ def validate_evidence_metadata_response(
     raw_response: object,
     request: EvidenceMetadataRequest,
 ) -> EvidenceMetadataExtraction:
-    """Strictly validate and mechanically consolidate one raw response."""
+    """Validate proposals and derive canonical spans from exact source text.
+
+    The subordinate model chooses a governed field, its exact source-surface
+    value, and the segment that contains it.  Python owns character-coordinate
+    derivation: a proposal is accepted only when that value occurs exactly once
+    in the named segment.  ``str.find`` is advanced by one code point so
+    overlapping occurrences are counted as ambiguous too.
+    """
 
     if not isinstance(raw_response, Mapping) or set(raw_response) != {"observations"}:
         raise InvalidEvidenceMetadataResponse("schema_invalid")
@@ -84,41 +90,22 @@ def validate_evidence_metadata_response(
             raise InvalidEvidenceMetadataResponse("schema_invalid")
         field_name = raw_observation["field_name"]
         value = raw_observation["value"]
-        raw_spans = raw_observation["support_spans"]
+        segment_id = raw_observation["segment_id"]
         if not isinstance(field_name, str) or field_name not in _GOVERNED_FIELDS:
             raise InvalidEvidenceMetadataResponse("schema_invalid")
-        if not isinstance(value, str) or not value.strip() or not _is_array(raw_spans):
+        if not isinstance(value, str) or not value.strip():
             raise InvalidEvidenceMetadataResponse("schema_invalid")
-        if not raw_spans:
+        if not isinstance(segment_id, str) or segment_id not in segments:
             raise InvalidEvidenceMetadataResponse("schema_invalid")
 
-        spans: list[BodySpan] = []
-        seen_spans: set[BodySpan] = set()
-        for raw_span in raw_spans:
-            if not isinstance(raw_span, Mapping) or set(raw_span) != _SPAN_FIELDS:
-                raise InvalidEvidenceMetadataResponse("schema_invalid")
-            segment_id = raw_span["segment_id"]
-            start = raw_span["start"]
-            end = raw_span["end"]
-            if not isinstance(segment_id, str) or segment_id not in segments:
-                raise InvalidEvidenceMetadataResponse("schema_invalid")
-            if (
-                isinstance(start, bool)
-                or not isinstance(start, int)
-                or isinstance(end, bool)
-                or not isinstance(end, int)
-                or start < 0
-                or start >= end
-                or end > len(segments[segment_id])
-            ):
-                raise InvalidEvidenceMetadataResponse("schema_invalid")
-            source_slice = segments[segment_id][start:end]
-            if not source_slice.strip() or value not in source_slice:
-                raise InvalidEvidenceMetadataResponse("schema_invalid")
-            span = BodySpan(segment_id, start, end)
-            if span not in seen_spans:
-                seen_spans.add(span)
-                spans.append(span)
+        occurrence_offsets = _exact_occurrence_offsets(segments[segment_id], value)
+        if len(occurrence_offsets) != 1:
+            raise InvalidEvidenceMetadataResponse("schema_invalid")
+        start = occurrence_offsets[0]
+        end = start + len(value)
+        if segments[segment_id][start:end] != value:
+            raise InvalidEvidenceMetadataResponse("schema_invalid")
+        spans = [BodySpan(segment_id, start, end)]
 
         prior = by_field.get(field_name)
         if prior is None:
@@ -139,6 +126,17 @@ def validate_evidence_metadata_response(
         ordered[ordered.index(prior)] = replacement
 
     return EvidenceMetadataExtraction(tuple(ordered))
+
+
+def _exact_occurrence_offsets(source: str, value: str) -> tuple[int, ...]:
+    """Return every exact occurrence, including overlapping occurrences."""
+
+    offsets: list[int] = []
+    cursor = source.find(value)
+    while cursor >= 0:
+        offsets.append(cursor)
+        cursor = source.find(value, cursor + 1)
+    return tuple(offsets)
 
 
 def _is_array(value: object) -> bool:
