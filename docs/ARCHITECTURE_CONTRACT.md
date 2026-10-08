@@ -244,8 +244,12 @@ authority。
 同一模組的 `build_report_workflow` 是 downstream dependency-composition boundary。它只負責
 接收／建立 workflow dependencies，並把 proposal-only semantic dependencies 注入
 各自的 authoritative owner；它不得決定 E&M semantics、推導 systems、擁有
-Category／Taxonomy semantics，或加入 provider-specific business rules。Taxonomy
-provider backend 維持 `DEFERRED`，MaiAgent 在 Taxonomy decision 中維持 `NONE`。
+Category／Taxonomy semantics，或加入 provider-specific business rules。正式
+provider architecture 使用一個 MaiAgent API family、兩個 chatbot identities
+(Writer 與 Generic Stateless Structured Helper)。Taxonomy 與 Reportability
+可以由 Helper transport bounded untrusted proposals；Python owners 仍建立
+唯一 authoritative results。Domain owner isolation 不要求 provider isolation：
+`SAME_PROVIDER_IDENTITY != SAME_DOMAIN_OWNER`。
 
 ## D. Run Identity
 
@@ -1631,10 +1635,19 @@ retry, malformed-response retry, fallback, rescue, and backfill are prohibited;
 no generic retry policy is currently reused by this seam.
 
 The proposal provider is not a second classifier owner, Category authority,
-Reportability authority, Writer role, MaiAgent role, runtime Golden lookup, or
-keyword authority. Keywords and search terms such as SCADA, train, depot,
-network, and cybersecurity may occur in evidence but do not determine
-taxonomy by themselves.
+Reportability authority, Writer role, runtime Golden lookup, or keyword
+authority. MaiAgent may transport the bounded `taxonomy_semantic_proposal`
+task, but it is never the Taxonomy owner and cannot create `TaxonomyResult`,
+decide final systems, bypass exact-quote validation, change EventGroup
+eligibility, alter Category or Reportability, or decide workflow continuation.
+Keywords and search terms such as SCADA, train, depot, network, and
+cybersecurity may occur in evidence but do not determine taxonomy by themselves.
+
+Timeout, HTTP or transport failure, malformed response, and invalid proposal
+remain `TaxonomyStageFailure` and trigger `ABORT_FORMAL_REPORT_RUN`. They must
+not become `TAXONOMY_UNRESOLVED`, evaluated-empty, zero-population success, or a
+fallback result. There is one provider invocation per reachable EventGroup;
+retry, fallback, rescue, and response repair remain prohibited.
 
 ### Contextual and subsystem rules
 
@@ -1705,11 +1718,22 @@ Reportability outcome 反推 taxonomy。`systems = []` 不自動表示 `NOT_REPO
 non-empty systems 也不自動表示 `REPORTABLE`。Golden G17 的 empty／REPORTABLE 與
 G85 的 AFC／NOT_REPORTABLE semantics 必須保留。
 
-MaiAgent 在 Taxonomy decision 中沒有角色。Writer 只能由 finalized systems 的 machine
-IDs 透過 authoritative registry 顯示 labels；不得新增、移除、替換、normalize、推測或
-修復 taxonomy，也不得處理 `TAXONOMY_UNRESOLVED`。Taxonomy semantic proposal
-provider 只能依本節的 proposal-only seam 提供未信任提案，由 Python owner 驗證；
-不得建立第二個 semantic judge 或任何 MaiAgent Taxonomy role。
+Writer 只能由 finalized systems 的 machine IDs 透過 authoritative registry 顯示
+labels；不得新增、移除、替換、normalize、推測或修復 taxonomy，也不得處理
+`TAXONOMY_UNRESOLVED`。Generic Structured Helper 可以執行
+`taxonomy_semantic_proposal`，但只能依本節 proposal-only seam 提供未信任提案，
+由 Python Taxonomy owner 驗證並建立 `TaxonomyResult`。這不會建立第二個
+semantic judge 或第二個 Taxonomy owner。
+
+The Taxonomy task contract is independently versioned as
+`taxonomy_semantic_proposal`, prompt `taxonomy-principal-body-v1`, and schema
+`taxonomy-semantic-proposal-v1`. Its request is exactly
+`TaxonomySemanticRequest.as_payload()` with `event_id` and all lexically ordered
+members (`candidate_id`, complete unmodified `substantive_content`). Its proposal
+fields are exactly `event_id`, `taxonomy_state`, `systems`,
+`taxonomy_resolution_reason`, `support_citations`, `conflict_citations`, and
+`insufficient_provenance`. It receives no Category, discovery, publisher,
+snippet, Reportability, Writer, Taipei, Golden, or external facts.
 
 ### Workflow integration and typed handoff
 
@@ -1903,7 +1927,8 @@ proposal-only value. It is not an additional owner and cannot create a
 `ReportabilityResult`, directly admit or drop an EventGroup, invoke Ordering
 or Writer, or modify an upstream result. There is exactly one authoritative
 Reportability owner, one injected proposal seam and zero additional
-authoritative semantic owners. The concrete provider backend is deferred.
+authoritative semantic owners. The existing MaiAgent Generic Structured Helper
+is the selected proposal transport; it does not create the authoritative result.
 
 The execution boundary is:
 
@@ -2014,9 +2039,27 @@ Writer rescue are prohibited. Any `ReportabilityStageFailure` triggers
 before Ordering or Writer begins, and no partial formal artifact, PDF or
 Email may be produced. Earlier results may remain diagnostic evidence only.
 
-MaiAgent has no Reportability role. A future backend, if selected, is merely
-an infrastructure dependency behind this proposal protocol and must be
-validated separately for semantic conformance and structural acceptance.
+MaiAgent may transport the bounded `reportability_semantic_proposal` task, but it
+cannot create `ReportabilityResult`, admit or drop events directly, change
+upstream states, create the authoritative reason, bypass exact-quote validation,
+or decide workflow continuation. Reportability remains the sole Python owner.
+
+The Reportability task contract is independently versioned as
+`reportability_semantic_proposal`, prompt `reportability-principal-body-v1`, and
+schema `reportability-semantic-proposal-v1`. Its request is exactly
+`ReportabilitySemanticRequest.as_payload()` with `event_id` and the complete
+lexically ordered member population (`candidate_id`, unmodified
+`substantive_content`). Its proposal fields are exactly `event_id`,
+`proposed_state`, `examined_candidate_ids`, `support_citations`, and `rationale`.
+It receives no CategoryResult, TaxonomyResult/rationale, discovery, publisher,
+snippet, ordering, Writer, Taipei rescue, Golden, or external facts.
+
+Timeout, HTTP or transport failure, malformed response, materialization failure,
+and invalid proposal remain `ReportabilityStageFailure` and trigger
+`ABORT_FORMAL_REPORT_RUN`. They must not become `NOT_REPORTABLE`, an invented
+unresolved state, zero-event success, or a fallback result. There is one
+provider invocation per eligible EventGroup; retry, fallback, rescue, and
+response repair remain prohibited.
 
 ### Procurement and Golden governance boundary
 
@@ -2236,11 +2279,14 @@ MaiAgent Writer 不得：
 
 The MaiAgent platform may separately provide exactly one Generic Stateless
 Structured Helper deployment for bounded, non-authoritative proposal tasks.
-The helper may transport both the Category semantic proposal and Evidence
-metadata proposal, but it is not a Domain owner and it does not write the
-formal report. The authoritative owners remain Classifier for Category,
-EvidenceService for factual evidence metadata, and ReportWriter for formal
-prose. Sharing a chatbot identity does not merge these owners.
+The helper may transport five task-specific proposals: `category_semantic_proposal`,
+`evidence_metadata_extraction`, `evidence_source_candidate_match`,
+`taxonomy_semantic_proposal`, and `reportability_semantic_proposal`. It is not a
+Domain owner and it does not write the formal report. The authoritative owners
+remain Classifier for Category, EvidenceService for factual evidence and
+semantic matching, Taxonomy for E&M systems, Reportability for reportability,
+and ReportWriter for formal prose. Sharing a chatbot identity does not merge
+these owners.
 
 The operational deployment therefore has exactly two MaiAgent roles:
 
@@ -2259,6 +2305,7 @@ Every Structured Helper invocation is self-contained:
 ```text
 conversation = null
 attachments = []
+is_streaming = false
 persistent conversational memory = forbidden
 RAG / knowledge retrieval = forbidden
 search = forbidden
@@ -2266,22 +2313,55 @@ tools = forbidden
 external knowledge retrieval = forbidden
 ```
 
+Each helper request expects one complete non-streaming response. Downstream
+parsing uses the existing MaiAgent outer JSON → top-level `content` string →
+inner JSON object contract; no streaming parser, partial response assembly, or
+incremental semantic decision is permitted.
+
 Each request supplies an explicit task identity, complete versioned
 task-specific instructions, the bounded task request, and that task's response
-schema. Category and metadata retain separate request types, prompts, schemas,
-local validators, post-processing boundaries, and Domain result types. They may
-share only the MaiAgent API base, credential, pure mechanical HTTP transport,
-and the single authoritative helper chatbot configuration key:
+schema. All five tasks retain separate request types, prompts, schemas, local
+validators, post-processing boundaries, Domain result types, and failure
+semantics. They may share only the MaiAgent API base, credential, pure mechanical
+HTTP transport, and the single authoritative helper chatbot configuration key:
 
 ```text
 MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID
 ```
 
-`CATEGORY_MAIAGENT_CHATBOT_ID` and
-`EVIDENCE_METADATA_MAIAGENT_CHATBOT_ID` are not parallel production truths.
+The shared mechanical transport is
+`src/weekly_report/maiagent_transport.py`. It owns configuration loading,
+completion endpoint construction, one HTTP POST, timeout handling, outer JSON
+parsing, top-level `content` extraction, inner JSON-object parsing, and safe
+transport errors. It owns no task prompt, response schema, Domain validator,
+Domain failure mapping, or workflow decision. No second transport module is
+required for Taxonomy or Reportability.
+
+`CATEGORY_MAIAGENT_CHATBOT_ID`, `EVIDENCE_METADATA_MAIAGENT_CHATBOT_ID`,
+`TAXONOMY_MAIAGENT_CHATBOT_ID`, and `REPORTABILITY_MAIAGENT_CHATBOT_ID` are not
+parallel production truths.
 Any migration from existing deployment settings is a one-time deployment
-operation; runtime fallback aliases are forbidden. The Structured Helper has
-no Category, metadata, Writer, or other Domain authority.
+operation; runtime fallback aliases are forbidden. The Structured Helper has no
+Category, metadata, semantic-judge, Taxonomy, Reportability, Writer, or other
+Domain authority.
+
+The production semantic proposal backend is this existing MaiAgent Structured
+Helper; no second AI provider is required. The previous exploratory Gemini
+provider contract is superseded and not adopted. Gemini is not a V2 production
+dependency, and no `GEMINI_API_KEY`, Gemini transport, or Gemini Taxonomy or
+Reportability adapter belongs in the current architecture.
+
+The authoritative production configuration is:
+
+```text
+EXTERNAL_AI_API_FAMILIES = 1
+EXTERNAL_AI_PROVIDER = MaiAgent
+MAIAGENT_API_BASE
+MAIAGENT_API_KEY
+MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID
+MAIAGENT_CHATBOT_ID  # Writer only
+GEMINI_PROVIDER_PLAN = CANCELLED
+```
 
 The sealed Category deployment snapshot is not automatically compliant with
 this shared-helper contract. Its Category-specific role and recorded enabled
