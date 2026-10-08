@@ -768,8 +768,119 @@ segment text are preserved exactly, and segment IDs are unique. The request
 does not contain Candidate title, publisher, discovery snippet, Search region,
 provider market, URL geography, TLD, document language, or external facts.
 
-The helper returns an untrusted observation object, never an authoritative
-result:
+##### Metadata span ownership adjudication
+
+The canonical coordinate owner is Python EvidenceService. Metadata field
+selection and the proposed source value require semantic interpretation;
+counting characters in an immutable supplied segment is mechanical work.
+Requiring the Helper to calculate coordinates unnecessarily couples those
+responsibilities. This ownership defect applies to all metadata proposals,
+not only to a particular failed diagnostic. The previous offset-bearing
+response contract is superseded by the following single resolution rule.
+
+| Option | Assessment | Decision |
+| --- | --- | --- |
+| A: retain Helper-authored offsets | Python validation preserves grounding, but still delegates deterministic character counting to the semantic provider | Rejected |
+| B: Python canonical coordinate derivation | One exact occurrence rule provides reproducible coordinates within the existing Evidence owner | Selected |
+| C: add a quote locator, occurrence selector, or extra service | The segment/value pair already suffices for unique occurrences; extra mechanisms add ambiguity or responsibility without a current requirement | Not adopted; ambiguous occurrences are rejected |
+
+| Responsibility | Proposal / source boundary | Authoritative owner |
+| --- | --- | --- |
+| Metadata field selection | Helper proposes one governed field | EvidenceService accepts or rejects |
+| Exact source surface value | Helper copies the proposed value unchanged | EvidenceService validates and accepts or rejects |
+| Source segment identity | Structural assessment supplies immutable IDs; Helper references one ID | EvidenceService validates the reference |
+| Semantic support relationship | Helper proposes that the named segment establishes the field/value | EvidenceService accepts only under the complete metadata contract |
+| Numeric segment-relative `start` and `end` | No provider coordinate fields | EvidenceService derives both mechanically |
+| Accepted canonical metadata provenance | Python-derived segment span and its exact substantive-content mapping | EvidenceService constructs `metadata_support` |
+
+```text
+EVIDENCE_METADATA_AUTHORITATIVE_OWNER = EvidenceService
+METADATA_CANONICAL_COORDINATE_OWNER = EvidenceService
+METADATA_CANONICAL_COORDINATE_OWNER_COUNT = 1
+METADATA_EVIDENCE_RESOLUTION = EXACT_TEXT_UNIQUE_RESOLUTION
+METADATA_PROVIDER_OFFSET_FIELDS_ALLOWED = NO
+```
+
+The helper returns an untrusted proposal object, never an authoritative result.
+The following names describe the wire contract, not a required new service or
+persisted domain model:
+
+```text
+EvidenceMetadataProposal:
+    observations: tuple[MetadataFieldProposal, ...]
+
+MetadataFieldProposal:
+    field_name: country | transit_system_name | location
+    value: str
+    segment_id: str
+```
+
+The raw extractor response is validated against an exact provider-agnostic
+schema. The top-level response must be an object with exactly the key
+`observations`; `observations` must be an array/sequence. Each observation must
+be an object with exactly `field_name`, `value`, and `segment_id`.
+`support_spans`, `start`, and `end` are removed from the provider proposal
+contract, including nested or compatibility forms. They are extra fields and
+must be rejected even when their coordinates would have been valid. They are
+not retained as ignored hints or used to disambiguate a match.
+
+Missing keys, extra keys, non-object or non-array values, non-string field
+names or segment IDs, unsupported field names, blank or non-string values,
+unknown segments, absent exact values, and ambiguous exact occurrences are
+validation failures. Same-source distinct values for one governed field are
+also invalid. The governed field names remain exactly `country`,
+`transit_system_name`, and `location`. Missing or unknown keys are never
+silently ignored and no partial-schema acceptance or permissive fallback is
+allowed.
+
+The response contains no Evidence state, Scope, Temporal, Event Identity,
+Category, Taxonomy, Reportability, Ordering, source replacement, canonical
+source, confidence authority, normalized geographic ID, or report-inclusion
+decision. A value must be an exact nonblank source surface form copied
+unchanged from the named principal-body segment. Translation, case-folded
+replacement, alias normalization, geographic inference, inferred expansion,
+ontology lookup, and canonical-name substitution are forbidden. Transit-system
+identity must be explicitly established in the source text. Exact occurrence
+validation does not independently prove semantic field selection; accepted
+metadata still relies on the Helper's bounded semantic proposal after the
+complete Python acceptance contract passes. No second semantic judge or
+keyword-based metadata inference is introduced.
+
+##### Canonical exact occurrence resolution
+
+For every proposed observation, EvidenceService uses exactly one deterministic
+rule, executed by the pure mechanical validator in
+`src/weekly_report/evidence_metadata.py` under EvidenceService ownership:
+
+1. Validate the complete proposal fields/types and governed field name.
+2. Require a nonblank string value and an existing supplied `segment_id`.
+3. Locate all exact occurrences of the unchanged value in that named segment
+   using Python Unicode string indexing, including overlapping occurrences.
+   Search no other segment or source on behalf of this observation.
+4. Zero occurrences invalidate the complete extraction. More than one
+   occurrence also invalidates the complete extraction. The contract provides
+   no additional occurrence disambiguator; first, last, nearest, longest, or
+   semantic occurrence selection is forbidden.
+5. For the sole occurrence, derive `start` as its Python index and
+   `end = start + len(value)`. Require `0 <= start < end <= len(segment.text)`
+   and `segment.text[start:end] == value` exactly.
+
+No trimming, whitespace rewriting, case folding, Unicode normalization,
+translation, aliasing, fuzzy or approximate matching, offset guessing, or
+cross-segment reconstruction is permitted. Leading/trailing whitespace that
+does not match the source is rejected, never trimmed; every supplied character
+must match unchanged. Whitespace-only values remain invalid. Repeated values
+in different segments are independently resolvable only when each observation
+names a segment with exactly one occurrence. Repeating an observation cannot
+disambiguate multiple occurrences within its segment.
+
+The helper no longer emits numeric coordinates. Python derives coordinates
+for every accepted observation through the same rule; it never tries provider
+coordinates first or recomputes them after a failed validation. There is no
+model-offset repair, fallback path, provider-side coordinate derivation, or duplicate
+resolution logic in transport, structural assessment, or downstream consumers.
+The pure validator is not a second Domain owner. It returns immutable
+validated observations to EvidenceService using the existing internal shape:
 
 ```text
 EvidenceMetadataExtraction:
@@ -786,58 +897,30 @@ MetadataSupportSpan:
     end: int
 ```
 
-The raw extractor response is validated against an exact provider-agnostic
-schema. The top-level response must be an object with exactly the key
-`observations`; `observations` must be an array/sequence. Each observation must
-be an object with exactly `field_name`, `value`, and `support_spans`; each
-support span must be an object with exactly `segment_id`, `start`, and `end`.
-Missing keys, extra keys, non-object or non-array values, non-string field
-names or segment IDs, unsupported field names, blank or non-string values,
-non-array or empty support spans, unknown segments, boolean or non-integer
-offsets, invalid bounds, and values absent from their supported span text are
-validation failures. Same-source distinct values for one governed field are
-also invalid. The governed field names remain exactly `country`,
-`transit_system_name`, and `location`. Missing or unknown keys are never
-silently ignored and no partial-schema acceptance or permissive fallback is
-allowed.
-
-The response contains no Evidence state, Scope, Temporal, Event Identity,
-Category, Taxonomy, Reportability, Ordering, source replacement, canonical
-source, confidence authority, normalized geographic ID, or report-inclusion
-decision. A value must be an exact nonblank source surface form appearing
-unchanged in its supporting principal-body span. Translation, case-folded
-replacement, alias normalization, geographic inference, inferred expansion,
-ontology lookup, and canonical-name substitution are forbidden. Transit-system
-identity must be explicitly established in the source text.
-
-Helper support spans use segment-relative Python Unicode offsets and half-open
-`[start, end)` coordinates. `start` and `end` are integers with booleans
-excluded; `0 <= start < end <= len(segment.text)`. The slice must be nonblank
-and contain the unchanged claimed value. EvidenceService strictly validates the
-raw response using the existing V2 proposal-helper pattern: injected Protocol,
-pure mechanical validator, and immutable validated observations. The validator
-only validates untrusted extractor output; it is not an Evidence, metadata,
-Event Identity, Reportability, or other Domain owner. The SemanticJudge schema
-is not reused or extended.
+Only Python constructs these segment-relative support spans. Their coordinates
+are integer, boolean-excluded, Python Unicode half-open `[start, end)` values;
+their source slices equal the unchanged claimed values exactly. The
+SemanticJudge schema is not reused or extended.
 
 EvidenceService alone translates valid segment spans into
 `EvidenceResult.substantive_content` offsets. For principal segments in exact
 order, let `J = " ".join(segment.text for segment in segments)` and
 `substantive_content = J.strip()`. Let `L = len(J) - len(J.lstrip())`,
 `R = len(J.rstrip())`, and
-`P_i = sum(len(previous segment.text)) + i` for segment `i`. A helper span
+`P_i = sum(len(previous segment.text)) + i` for segment `i`. A Python-derived span
 `[s, e)` becomes `[P_i + s - L, P_i + e - L)`. EvidenceService accepts it only
-when `L <= P_i + s < P_i + e <= R` and the source slice equals the translated
-substantive-content slice exactly. It never clips, repairs, approximates, or
-guesses offsets. The current ordered segment flattening is deterministic, so no
+when `L <= P_i + s < P_i + e <= R` and the source slice, translated
+substantive-content slice, and proposed value are exactly equal. It never clips,
+repairs, approximates, or guesses offsets. The current ordered segment flattening is deterministic, so no
 `evidence_document.py` representation change is required for this mapping.
 
-Each field observation has one or more valid exact supports. Exact duplicate
-supports may be removed while preserving first-seen order; nonidentical
-supports are not merged and whole-document support is not fabricated. Within a
-single source, identical proposed values may be consolidated with their valid
-supports. Distinct values for one field invalidate the complete extraction
-response: EvidenceService publishes no metadata from it, records the safe
+Each raw observation identifies one segment and resolves to one exact support.
+Multiple observations for the same field/value may name different segments.
+Exact duplicate resolved supports may be removed while preserving first-seen
+order; nonidentical supports are not merged and whole-document support is not
+fabricated. Within a single source, identical proposed values may be
+consolidated with their valid supports. Distinct values for one field invalidate
+the complete extraction response: EvidenceService publishes no metadata from it, records the safe
 `invalid_response` diagnostic with optional detail
 `same_source_distinct_values`, and does not salvage a partial response.
 
@@ -851,6 +934,7 @@ fetch
 → source-to-candidate semantic SAME_EVENT established
 → EvidenceMetadataExtractor invoked at most once
 → raw metadata response strictly validated
+→ exact unique occurrence resolved to a canonical segment span by Python
 → segment-relative support mechanically translated by EvidenceService
 → accepted metadata facts/support constructed by EvidenceService
 → EVIDENCE_READY EvidenceResult constructed
@@ -860,7 +944,7 @@ The extractor runs only after the pre-existing Evidence eligibility
 requirements have otherwise passed and never runs for a Candidate rejected by
 an earlier Evidence gate. At most one invocation is allowed per qualifying
 Candidate. Not configured, timeout, `transport_error`, `invalid_response`,
-`span_mapping_invalid`, exception, malformed response, invalid span,
+`span_mapping_invalid`, exception, malformed response, invalid locator,
 span-mapping failure, and valid zero metadata leave an otherwise valid
 Candidate as `EVIDENCE_READY` with formal metadata absent. They do not become
 `EVIDENCE_REJECTED`; there is no retry, fallback, rescue, second extractor,
@@ -878,11 +962,65 @@ valid_zero_metadata
 valid_metadata
 ```
 
-Invalid-response detail may identify `same_source_distinct_values` or
-`span_mapping_invalid`. Diagnostics contain no provider secrets, raw payloads,
+Failure classes do not create new Evidence states or diagnostic enums:
+
+| Rejected proposal / mapping condition | Existing status | Existing detail |
+| --- | --- | --- |
+| Unknown segment, zero exact matches, or ambiguous exact matches | `invalid_response` | `schema_invalid` |
+| Invalid field, empty/blank value, incorrect types, missing/extra fields, or malformed response | `invalid_response` | `schema_invalid` |
+| Distinct values for one governed field within the source | `invalid_response` | `same_source_distinct_values` |
+| Canonical segment-to-substantive-content mapping fails | `invalid_response` | `span_mapping_invalid` |
+
+Any invalid observation invalidates the complete extraction; no subset is
+published. Timeout, transport failure, valid zero observations, and absence of
+configuration retain the finite diagnostics above and the same lifecycle
+behavior. Diagnostics contain no provider secrets, raw payloads,
 exception text, or traceback. A valid zero-observation response is legal and
 leaves `EVIDENCE_READY` unchanged; required country and transit-system
 completeness is checked later before Writer under §R.
+
+##### Proposal contract migration boundary
+
+This adjudication locks the target contract; it does not claim that baseline
+`960622132602aec997a52b3d9e62e951ab8db4e4` implements it. That baseline still
+requests provider-authored spans and correctly rejects invalid spans. The
+subsequent implementation must change the metadata proposal schema, prompt,
+and local validator together, with no mixed-schema compatibility branch.
+The metadata prompt becomes `evidence-metadata-principal-body-v2` and its
+response schema becomes `evidence-metadata-proposal-v2`; the task identity
+remains `evidence_metadata_extraction`.
+
+The minimum production boundary is `evidence_metadata.py` (strict raw proposal
+validation and the single canonical segment-coordinate resolution rule),
+`maiagent_evidence_metadata_provider.py` (offset-free proposal schema,
+instructions, and versions), and the existing EvidenceService consumption and
+exact mapping seam only as required to retain the accepted invariants. The
+adapter returns the untrusted parsed proposal unchanged and never resolves
+coordinates. Shared HTTP transport/configuration and structural extraction do
+not change. No new service, provider, chatbot, schema alias, or runtime source
+of truth is introduced.
+
+Migration affects the internal extractor response interface, including injected
+extractors, not only adapter-schema tests. The directly affected tests are
+`tests/test_evidence_metadata.py` and
+`tests/test_maiagent_evidence_metadata_provider.py`: fake responses, strict
+schema rejection, unique/absent/ambiguous (including overlapping) occurrences,
+whitespace/case/Unicode exactness, multiple segment references, duplicate and
+conflicting observations, immutable results, owner mapping, and failure/no-retry
+behavior require corresponding coverage. Internal validated
+`EvidenceMetadataExtraction`/`MetadataFieldObservation` spans may retain their
+existing shape. `EvidenceMetadataRequest`, `EventIdentityFacts`,
+`IdentityMetadataSupport`, and `EvidenceResult` interfaces remain intact.
+
+Repository inspection identifies no persisted public raw-metadata-proposal
+format, database migration, or Golden provider-response corpus. Existing Golden
+facts/support and downstream report/Writer schemas consume accepted Evidence,
+not the extractor response. Their formats and expected outcomes require no
+change. Reportability, Ordering, Event Identity, and the other Helper tasks
+receive no new authority or coordinate logic. Historical diagnostics retain
+their original meaning; a later acceptance cannot prove an unretained earlier
+response's root cause. Implementation, offline regression, and separately
+authorized post-change live acceptance remain subsequent work.
 
 `IdentityMetadataSupport` is an immutable support record with exactly the
 governed field name and half-open `start`/`end` offsets into the parent
