@@ -767,7 +767,7 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
         dotenv_values = {
             "MAIAGENT_API_BASE": "https://dotenv.example",
             "MAIAGENT_API_KEY": "dotenv-key",
-            "CATEGORY_MAIAGENT_CHATBOT_ID": "dotenv-category-id",
+            "MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID": "dotenv-helper-id",
             "MAIAGENT_CHATBOT_ID": "writer-only-id",
         }
         with patch.dict("sys.modules", {"dotenv": _dotenv_module(dotenv_values)}):
@@ -778,7 +778,7 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
         self.assertIsNotNone(config)
         self.assertEqual(config.api_base, "https://dotenv.example")
         self.assertEqual(config.api_key, "process-key")
-        self.assertEqual(config.chatbot_id, "dotenv-category-id")
+        self.assertEqual(config.chatbot_id, "dotenv-helper-id")
 
     def test_writer_chatbot_variable_is_never_a_category_configuration_fallback(self):
         dotenv_values = {

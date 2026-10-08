@@ -10,7 +10,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 import json
 import os
-from pathlib import Path
 from typing import Any, Protocol
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit
@@ -24,6 +23,14 @@ from .classifier import (
     _DOMAIN_UNRESOLVED_REASONS,
 )
 from .contracts import CategoryId, CategoryResolutionReason, CategoryState
+from .maiagent_transport import (
+    MaiAgentHttpResponse,
+    MaiAgentJsonHttpTransport,
+    MaiAgentResponseError,
+    UrllibMaiAgentJsonTransport,
+    load_shared_maiagent_values,
+    parse_maiagent_response,
+)
 
 
 CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v2"
@@ -37,11 +44,11 @@ _ENV_MODEL = "CATEGORY_SEMANTIC_MODEL"
 _ENV_API_KEY = "CATEGORY_SEMANTIC_API_KEY"
 _MAIAGENT_ENV_API_BASE = "MAIAGENT_API_BASE"
 _MAIAGENT_ENV_API_KEY = "MAIAGENT_API_KEY"
-_MAIAGENT_ENV_CATEGORY_CHATBOT_ID = "CATEGORY_MAIAGENT_CHATBOT_ID"
+_MAIAGENT_ENV_STRUCTURED_HELPER_CHATBOT_ID = "MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID"
 _MAIAGENT_CONFIG_KEYS = (
     _MAIAGENT_ENV_API_BASE,
     _MAIAGENT_ENV_API_KEY,
-    _MAIAGENT_ENV_CATEGORY_CHATBOT_ID,
+    _MAIAGENT_ENV_STRUCTURED_HELPER_CHATBOT_ID,
 )
 
 
@@ -396,7 +403,7 @@ def build_category_classifier(
 
 @dataclass(frozen=True, slots=True)
 class MaiAgentCategorySemanticProviderConfig:
-    """Configuration for the dedicated Category chatbot completion endpoint."""
+    """Configuration for the shared stateless Structured Helper endpoint."""
 
     api_base: str
     api_key: str
@@ -442,40 +449,13 @@ class MaiAgentCategorySemanticProviderConfig:
         *,
         dotenv_path: str | os.PathLike[str] | None = None,
     ) -> "MaiAgentCategorySemanticProviderConfig | None":
-        """Read Category settings from process env, then repo-root .env.
+        """Read shared helper settings with process-environment precedence."""
 
-        Process values override .env values, including an explicitly empty
-        process value. Only the three MaiAgent Category keys are read.
-        """
-
-        process_values = os.environ if environ is None else environ
-        dotenv: Mapping[str, Any] = {}
-        if not all(
-            key in process_values and str(process_values[key]).strip()
-            for key in _MAIAGENT_CONFIG_KEYS
-        ):
-            env_file = (
-                Path(dotenv_path)
-                if dotenv_path is not None
-                else Path(__file__).resolve().parents[2] / ".env"
-            )
-            try:
-                # python-dotenv is optional when all settings are supplied by
-                # the process environment. Missing/invalid .env fails closed.
-                from dotenv import dotenv_values
-
-                dotenv = dotenv_values(env_file)
-            except (ImportError, OSError, UnicodeError, ValueError):
-                dotenv = {}
-
-        merged = {key: dotenv.get(key) for key in _MAIAGENT_CONFIG_KEYS}
-        for key in _MAIAGENT_CONFIG_KEYS:
-            if key in process_values:
-                merged[key] = process_values[key]
+        merged = load_shared_maiagent_values(environ, dotenv_path=dotenv_path)
 
         api_base = merged[_MAIAGENT_ENV_API_BASE]
         api_key = merged[_MAIAGENT_ENV_API_KEY]
-        chatbot_id = merged[_MAIAGENT_ENV_CATEGORY_CHATBOT_ID]
+        chatbot_id = merged[_MAIAGENT_ENV_STRUCTURED_HELPER_CHATBOT_ID]
         if not all(isinstance(value, str) and value.strip() for value in (api_base, api_key, chatbot_id)):
             return None
         return cls(
@@ -483,50 +463,6 @@ class MaiAgentCategorySemanticProviderConfig:
             api_key=api_key.strip(),
             chatbot_id=chatbot_id.strip(),
         )
-
-
-@dataclass(frozen=True, slots=True)
-class MaiAgentHttpResponse:
-    """HTTP status and body returned by one MaiAgent completion request."""
-
-    status_code: int
-    body: bytes
-
-
-class MaiAgentJsonHttpTransport(Protocol):
-    def __call__(
-        self,
-        endpoint: str,
-        *,
-        headers: Mapping[str, str],
-        body: bytes,
-        timeout_seconds: float,
-    ) -> MaiAgentHttpResponse:
-        """Make one request without redirects/retries and return its status/body."""
-
-
-class UrllibMaiAgentJsonTransport:
-    """One non-stream MaiAgent POST; redirects and retries are disabled."""
-
-    def __call__(
-        self,
-        endpoint: str,
-        *,
-        headers: Mapping[str, str],
-        body: bytes,
-        timeout_seconds: float,
-    ) -> MaiAgentHttpResponse:
-        request = Request(endpoint, data=body, headers=dict(headers), method="POST")
-        opener = build_opener(_NoRedirect)
-        try:
-            with opener.open(request, timeout=timeout_seconds) as response:
-                return MaiAgentHttpResponse(response.status, response.read())
-        except HTTPError as exc:
-            # The provider needs only the status to fail closed. Do not retain
-            # an error body or an exception string that could reveal the URL.
-            return MaiAgentHttpResponse(exc.code, b"")
-        except (URLError, TimeoutError, OSError):
-            raise RuntimeError("MaiAgent Category transport failed") from None
 
 
 class MaiAgentCategorySemanticProvider:
@@ -596,26 +532,10 @@ class MaiAgentCategorySemanticProvider:
 
 
 def _parse_maiagent_response(response_body: bytes) -> dict[str, Any]:
-    """Parse only outer JSON → top-level content string → proposal JSON."""
-
-    if not isinstance(response_body, bytes) or not response_body:
-        raise InvalidCategorySemanticResponse("MaiAgent response body is empty or invalid")
     try:
-        envelope = json.loads(response_body)
-    except (UnicodeDecodeError, TypeError, ValueError):
-        raise InvalidCategorySemanticResponse("MaiAgent response envelope is invalid JSON") from None
-    if not isinstance(envelope, dict):
-        raise InvalidCategorySemanticResponse("MaiAgent response envelope must be an object")
-    content = envelope.get("content")
-    if not isinstance(content, str):
-        raise InvalidCategorySemanticResponse("MaiAgent response has no top-level content string")
-    try:
-        proposal = json.loads(content)
-    except (TypeError, ValueError):
-        raise InvalidCategorySemanticResponse("MaiAgent content is invalid proposal JSON") from None
-    if not isinstance(proposal, dict):
-        raise InvalidCategorySemanticResponse("MaiAgent proposal must be an object")
-    return proposal
+        return parse_maiagent_response(response_body)
+    except MaiAgentResponseError as exc:
+        raise InvalidCategorySemanticResponse(str(exc)) from None
 
 
 def build_maiagent_category_classifier(
