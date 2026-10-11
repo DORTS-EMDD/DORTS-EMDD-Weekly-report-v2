@@ -1159,16 +1159,81 @@ keyword match, or fuzzy lexical match cannot create a positive deterministic
 
 The Semantic Judge receives only EvidenceService-supplied Candidate and
 principal body material. It may return `SAME_EVENT`, `DIFFERENT_EVENT`, or
-`UNCERTAIN` with validated body support or conflict spans. It may not search,
+`UNCERTAIN` with proposed exact support or conflict quotes from named body
+segments. It may not search,
 fetch, use external facts, decide Scope, Date, Category, E&M Taxonomy, or
 Reportability, and it may not take on MaiAgent's writing responsibility.
 
 EvidenceService validates the helper response and makes the final decision.
-`SAME_EVENT` is usable only when its support spans point to supplied body text
-and pass span validation. `DIFFERENT_EVENT`, `UNCERTAIN`, invalid or malformed
-responses, invalid support spans, timeout, and transport/provider failure are
+`SAME_EVENT` is usable only when its support quotes resolve to canonical spans
+in supplied body text and pass the complete Judge acceptance contract.
+`DIFFERENT_EVENT`, `UNCERTAIN`, invalid or malformed
+responses, invalid evidence locators, timeout, and transport/provider failure are
 conservative Evidence rejection conditions. Phase 1 permits one semantic
 judge call per Candidate and no retry to obtain a different relation.
+
+#### Semantic Judge span ownership adjudication
+
+The selected contract is `PYTHON_CANONICAL_COORDINATE_OWNER`. The Helper
+proposes the event relation and selects the exact principal-body text that
+supports or conflicts with that comparison. That selection remains semantic:
+the source may describe the Candidate event in another language or paraphrase,
+without Candidate-title lexical overlap. Locating the unchanged selected
+quote in an immutable named segment and counting its characters are mechanical
+responsibilities of EvidenceService through its existing pure Judge validator.
+Exact quote existence alone is not an independent proof of the proposed
+relation; no second semantic judge or lexical acceptance gate is introduced.
+
+| Option | Assessment | Decision |
+| --- | --- | --- |
+| A: retain Helper-authored offsets | Python can reject invalid bounds, but the semantic provider still performs unnecessary character arithmetic; valid bounds alone do not identify the intended evidentiary text | Rejected |
+| B: Helper selects exact quotes; Python derives coordinates | Preserves semantic evidence selection and provides one deterministic coordinate rule inside the existing Evidence owner | Selected |
+| C: segment-only support, occurrence selectors, or another locator service | Segment-only support loses selected-text specificity; extra selectors or services have no existing authoritative disambiguation rule and add responsibility without a current requirement | Not adopted |
+
+The Metadata offset failure is evidence that model character arithmetic is
+unstable, not proof of a Judge live failure. The Judge ownership decision rests
+independently on separating semantic evidence selection from deterministic
+coordinate derivation. Baseline
+`fa4eb23d3b0c78fd5e3c18bf1661ed90a1c41517` still uses Helper-authored numeric
+offsets and validates them. This adjudication identifies a contract ownership
+defect; it does not claim an observed Judge offset failure or implementation
+acceptance.
+
+| Responsibility | Owner / boundary |
+| --- | --- |
+| `SAME_EVENT` / `DIFFERENT_EVENT` / `UNCERTAIN` proposal | MaiAgent Structured Helper, proposal-only |
+| Supporting source-text selection | MaiAgent Structured Helper, proposal-only |
+| Conflicting source-text selection | MaiAgent Structured Helper, proposal-only |
+| Segment identity / reference | EvidenceService supplies immutable unique IDs; Helper proposes a supplied ID; EvidenceService validates it |
+| Exact unchanged quote proposal | MaiAgent Structured Helper copies the selected source text; EvidenceService validates it |
+| Canonical numeric `start` and `end` | EvidenceService through `semantic_judge.py::validate_semantic_judge_response` and its pure mechanical locator |
+| Validated canonical support/conflict `BodySpan` | EvidenceService through that same validator |
+| Final `EVIDENCE_READY` / `EVIDENCE_REJECTED` | EvidenceService alone |
+
+```text
+EVIDENCE_JUDGE_SPAN_OWNERSHIP_DECISION = PYTHON_CANONICAL_COORDINATE_OWNER
+JUDGE_CANONICAL_COORDINATE_OWNER = EvidenceService
+JUDGE_CANONICAL_COORDINATE_OWNER_COUNT = 1
+JUDGE_PROVIDER_OFFSET_FIELDS_ALLOWED = NO
+JUDGE_EVIDENCE_RESOLUTION = EXACT_TEXT_UNIQUE_RESOLUTION
+```
+
+The provider proposal fields become exactly `relation`, `support_evidence`,
+`conflict_evidence`, and `explanation`. Each support/conflict locator contains
+exactly `segment_id` and `exact_quote`. Provider `support_spans`,
+`conflict_spans`, `start`, and `end` are removed, including compatibility
+forms and ignored coordinate hints. The validated internal response and
+observational provenance retain canonical `support_spans` / `conflict_spans`
+with `segment_id`, `start`, and `end` produced by Python.
+
+The detailed exact-quote algorithm, relation-specific cardinalities, complete
+response rejection, unchanged final-state behavior, and migration boundary
+have one normative definition in `docs/EVIDENCE_SEMANTIC_JUDGE.md`. No new
+owner, service, provider, fallback, retry, rescue, backfill, quote repair, or
+downstream coordinate derivation is authorized. This contract checkpoint
+changes documentation only; production implementation, fixture migration,
+offline regression, and separately authorized live acceptance remain subsequent
+tasks. The sealed Evidence Metadata implementation is not reopened.
 
 The detailed input, output, validation, failure, versioning, and RunTrace
 requirements are authoritative in
