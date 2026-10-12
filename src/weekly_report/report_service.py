@@ -1,10 +1,10 @@
-"""Mechanical formal metadata projection for the pre-Writer boundary.
+"""Mechanical formal metadata projection and final report assembly.
 
-``ReportService`` consumes the already ordered, reportable workflow results.
-It does not select events, infer metadata, or assemble report prose.  The
-upstream Evidence, Temporal, Category, Taxonomy, Reportability, and Ordering
-results remain the authoritative decisions; the values below are an immutable
-downstream display projection of those decisions.
+``ReportService`` consumes already ordered, reportable workflow results and
+Validation-PASS prose.  It does not select events, infer metadata, or rewrite
+model prose.  The upstream Evidence, Temporal, Category, Taxonomy,
+Reportability, and Ordering results remain authoritative; the values below are
+immutable downstream projections and assembly records.
 """
 
 from __future__ import annotations
@@ -12,6 +12,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
+import hashlib
+import json
+from typing import Any
 from urllib.parse import urlparse
 
 from .candidate_normalizer import _valid_exact_http_url
@@ -124,6 +127,117 @@ class FormalReportMetadata:
         object.__setattr__(self, "diagnostics", diagnostics)
 
 
+@dataclass(frozen=True, slots=True)
+class FinalReportBlock:
+    """One mechanically assembled Validation-PASS event.
+
+    ``metadata`` remains the exact ReportService projection.  The three prose
+    fields are the only values supplied by the Writer/Validator boundary.
+    """
+
+    metadata: FormalReportMetadata
+    headline: str
+    factual_summary: str
+    taipei_insight: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.metadata, FormalReportMetadata):
+            raise TypeError("FinalReportBlock requires FormalReportMetadata")
+        for field_name in ("headline", "factual_summary", "taipei_insight"):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"FinalReportBlock requires nonblank {field_name}")
+
+    @property
+    def event_id(self) -> str:
+        return self.metadata.event_id
+
+    @property
+    def display_date(self) -> str:
+        return self.metadata.display_date
+
+    @property
+    def country(self) -> str:
+        return self.metadata.country
+
+    @property
+    def transit_system_name(self) -> str:
+        return self.metadata.transit_system_name
+
+    @property
+    def location(self) -> str | None:
+        return self.metadata.location
+
+    @property
+    def category(self) -> str:
+        return self.metadata.category
+
+    @property
+    def em_system_labels(self) -> tuple[str, ...]:
+        return self.metadata.em_system_labels
+
+    @property
+    def source_display(self) -> str:
+        return self.metadata.source_display
+
+    @property
+    def source_url(self) -> str:
+        return self.metadata.source_url
+
+
+@dataclass(frozen=True, slots=True)
+class FinalReportSection:
+    """A stable category section preserving the Ordering subsequence."""
+
+    category: str
+    events: tuple[FinalReportBlock, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.category, str) or not self.category.strip():
+            raise ValueError("FinalReportSection requires category")
+        events = tuple(self.events)
+        if any(not isinstance(event, FinalReportBlock) for event in events):
+            raise TypeError("FinalReportSection events must be FinalReportBlock values")
+        object.__setattr__(self, "events", events)
+
+
+@dataclass(frozen=True, slots=True)
+class FinalReportArtifact:
+    """The authoritative assembled artifact handed to DeliveryService."""
+
+    report_id: str
+    artifact_id: str
+    artifact_version: str
+    events: tuple[FinalReportBlock, ...]
+    sections: tuple[FinalReportSection, ...]
+    content: str
+
+    def __post_init__(self) -> None:
+        for field_name in ("report_id", "artifact_id", "artifact_version", "content"):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"FinalReportArtifact requires {field_name}")
+        events = tuple(self.events)
+        sections = tuple(self.sections)
+        if any(not isinstance(event, FinalReportBlock) for event in events):
+            raise TypeError("FinalReportArtifact events must be FinalReportBlock values")
+        if any(not isinstance(section, FinalReportSection) for section in sections):
+            raise TypeError("FinalReportArtifact sections must be FinalReportSection values")
+        flattened = tuple(event for section in sections for event in section.events)
+        if flattened != events:
+            raise ValueError("FinalReportArtifact sections must preserve event order")
+        object.__setattr__(self, "events", events)
+        object.__setattr__(self, "sections", sections)
+
+    @property
+    def event_count(self) -> int:
+        return len(self.events)
+
+    @property
+    def no_event(self) -> bool:
+        return not self.events
+
+
 class FormalMetadataFailure(RuntimeError):
     """Typed fail-closed error for a formal metadata projection."""
 
@@ -152,7 +266,7 @@ class FormalMetadataFailure(RuntimeError):
 
 
 class ReportService:
-    """Sole mechanical owner of the formal metadata projection seam."""
+    """Sole mechanical owner of metadata projection and final assembly."""
 
     def project_formal_metadata(
         self,
@@ -184,6 +298,134 @@ class ReportService:
                 )
             projected.append(self._project_one(result))
         return tuple(projected)
+
+    def assemble_final_report(self, validation_result: Any) -> FinalReportArtifact:
+        """Assemble only Validation-PASS prose with exact projected metadata.
+
+        ``ValidationResult`` is imported lazily by callers to keep this owner
+        independent from the Validator module.  The method accepts its typed
+        public shape (``passed`` containing ``ValidatedReportEvent`` values)
+        and performs no semantic filtering or metadata derivation.
+        """
+
+        passed = getattr(validation_result, "passed", None)
+        if passed is None or not isinstance(passed, tuple):
+            raise TypeError("ReportService assembly requires a ValidationResult")
+        assembled: list[FinalReportBlock] = []
+        for item in passed:
+            result = getattr(item, "result", None)
+            metadata = getattr(item, "metadata", None)
+            block = getattr(item, "block", None)
+            if not isinstance(result, ReportWorkflowResult):
+                raise TypeError("Validation-PASS item result is invalid")
+            if not isinstance(metadata, FormalReportMetadata):
+                raise TypeError("Validation-PASS item metadata is invalid")
+            event_id = result.event_group.event_id
+            if metadata.event_id != event_id:
+                raise FormalMetadataFailure(
+                    FormalMetadataFailureReason.STRUCTURAL_INCONSISTENCY,
+                    event_id=event_id,
+                )
+            if any(not isinstance(getattr(block, name, None), str) or not getattr(block, name).strip() for name in ("headline", "factual_summary", "taipei_insight")):
+                raise ValueError("Validation-PASS item prose is incomplete")
+            assembled.append(
+                FinalReportBlock(
+                    metadata=metadata,
+                    headline=block.headline,
+                    factual_summary=block.factual_summary,
+                    taipei_insight=block.taipei_insight,
+                )
+            )
+
+        events = tuple(assembled)
+        sections_by_category: dict[str, list[FinalReportBlock]] = {}
+        category_order: list[str] = []
+        for event in events:
+            if event.category not in sections_by_category:
+                sections_by_category[event.category] = []
+                category_order.append(event.category)
+            sections_by_category[event.category].append(event)
+        sections = tuple(
+            FinalReportSection(category, tuple(sections_by_category[category]))
+            for category in category_order
+        )
+        content = self._render_final_content(events, sections)
+        identity_payload = {
+            "events": [
+                {
+                    "event_id": event.event_id,
+                    "metadata": {
+                        "display_date": event.display_date,
+                        "country": event.country,
+                        "transit_system_name": event.transit_system_name,
+                        "location": event.location,
+                        "category": event.category,
+                        "em_system_labels": list(event.em_system_labels),
+                        "source_display": event.source_display,
+                        "source_url": event.source_url,
+                    },
+                    "headline": event.headline,
+                    "factual_summary": event.factual_summary,
+                    "taipei_insight": event.taipei_insight,
+                }
+                for event in events
+            ],
+        }
+        digest = hashlib.sha256(
+            json.dumps(identity_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        return FinalReportArtifact(
+            report_id=f"weekly-report-{digest[:16]}",
+            artifact_id=f"formal-report-{digest}",
+            artifact_version="v1",
+            events=events,
+            sections=sections,
+            content=content,
+        )
+
+    def assemble(self, validation_result: Any) -> FinalReportArtifact:
+        """Short alias for the final assembly seam."""
+
+        return self.assemble_final_report(validation_result)
+
+    def assemble_report(self, validation_result: Any) -> FinalReportArtifact:
+        """Compatibility name for callers describing the artifact as a report."""
+
+        return self.assemble_final_report(validation_result)
+
+    @staticmethod
+    def _render_final_content(
+        events: tuple[FinalReportBlock, ...],
+        sections: tuple[FinalReportSection, ...],
+    ) -> str:
+        if not events:
+            return "本期無符合正式報導條件之事件。"
+        lines = ["捷運技術週報", ""]
+        for section in sections:
+            lines.extend((f"【{section.category}】", ""))
+            for event in section.events:
+                lines.extend(
+                    (
+                        f"{event.headline}",
+                        f"日期：{event.display_date}",
+                        f"國家／地區：{event.country}",
+                        f"運輸系統：{event.transit_system_name}",
+                    )
+                )
+                if event.location:
+                    lines.append(f"地點：{event.location}")
+                if event.em_system_labels:
+                    lines.append(f"相關系統：{'、'.join(event.em_system_labels)}")
+                lines.extend(
+                    (
+                        f"事件摘要：{event.factual_summary}",
+                        f"臺北捷運局啟示：{event.taipei_insight}",
+                        f"來源：{event.source_display}",
+                        f"來源網址：{event.source_url}",
+                        "",
+                    )
+                )
+        return "\n".join(lines).rstrip() + "\n"
 
     def _project_one(self, result: ReportWorkflowResult) -> FormalReportMetadata:
         event_group = result.event_group
@@ -399,11 +641,24 @@ class ReportService:
         raise FormalMetadataFailure(reason, event_id=event_id, candidate_ids=candidate_ids)
 
 
+# Descriptive aliases keep the single ReportService owner discoverable to
+# callers that use either "artifact" or "assembly" terminology.
+FinalReportEvent = FinalReportBlock
+ReportAssembly = FinalReportArtifact
+ReportAssemblyResult = FinalReportArtifact
+
+
 __all__ = [
     "FormalMetadataDiagnostic",
     "FormalMetadataDiagnosticReason",
     "FormalMetadataFailure",
     "FormalMetadataFailureReason",
     "FormalReportMetadata",
+    "FinalReportBlock",
+    "FinalReportEvent",
+    "FinalReportSection",
+    "FinalReportArtifact",
+    "ReportAssembly",
+    "ReportAssemblyResult",
     "ReportService",
 ]

@@ -38,7 +38,10 @@ from .scope_classifier import ScopeClassifier
 from .temporal_rule import TemporalRule
 from .ordering import Ordering
 from .report_workflow import ReportWorkflow, ReportWorkflowResult
-from .report_service import FormalReportMetadata, ReportService
+from .report_service import FinalReportArtifact, FormalReportMetadata, ReportService
+from .writer import ReportWriter, WriterReportBlock
+from .validator import ValidationResult, Validator
+from .delivery import DeliveryReceipt, DeliveryService
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +67,10 @@ class ReportApplicationResult:
     downstream_results: tuple[ReportWorkflowResult, ...] | None = None
     ordered_results: tuple[ReportWorkflowResult, ...] | None = None
     formal_metadata: tuple[FormalReportMetadata, ...] | None = None
+    writer_blocks: tuple[WriterReportBlock, ...] | None = None
+    validation_result: ValidationResult | None = None
+    final_report: FinalReportArtifact | None = None
+    delivery_result: DeliveryReceipt | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.plan, SearchPlan):
@@ -311,6 +318,39 @@ class ReportApplicationResult:
                 raise ValueError("formal metadata must have unique event IDs")
         object.__setattr__(self, "formal_metadata", formal_metadata)
 
+        writer_blocks = self.writer_blocks
+        if writer_blocks is not None:
+            if ordered_results is None or formal_metadata is None:
+                raise ValueError("writer blocks require completed formal metadata")
+            writer_blocks = tuple(writer_blocks)
+            if any(not isinstance(item, WriterReportBlock) for item in writer_blocks):
+                raise TypeError("ReportApplicationResult writer_blocks must be typed")
+            if tuple(item.event_id for item in writer_blocks) != tuple(
+                result.event_group.event_id for result in ordered_results
+            ):
+                raise ValueError("writer blocks must preserve ordered event IDs")
+        object.__setattr__(self, "writer_blocks", writer_blocks)
+
+        validation_result = self.validation_result
+        if validation_result is not None:
+            if writer_blocks is None or formal_metadata is None:
+                raise ValueError("validation result requires completed Writer and metadata")
+            if not isinstance(validation_result, ValidationResult):
+                raise TypeError("ReportApplicationResult validation_result must be typed")
+        object.__setattr__(self, "validation_result", validation_result)
+
+        final_report = self.final_report
+        if final_report is not None:
+            if validation_result is None or not isinstance(final_report, FinalReportArtifact):
+                raise TypeError("ReportApplicationResult final_report requires ValidationResult")
+        object.__setattr__(self, "final_report", final_report)
+
+        delivery_result = self.delivery_result
+        if delivery_result is not None:
+            if final_report is None or not isinstance(delivery_result, DeliveryReceipt):
+                raise TypeError("ReportApplicationResult delivery_result requires final_report")
+        object.__setattr__(self, "delivery_result", delivery_result)
+
     @property
     def downstream_ready(self) -> bool:
         return (
@@ -360,6 +400,10 @@ class ReportApplication:
         report_workflow: ReportWorkflow | None = None,
         ordering: Ordering | None = None,
         report_service: ReportService | None = None,
+        writer: ReportWriter | None = None,
+        validator: Validator | None = None,
+        delivery: DeliveryService | None = None,
+        delivery_recipient: str | None = None,
     ) -> None:
         if not isinstance(registry, RegionRegistry):
             raise TypeError("ReportApplication requires a RegionRegistry")
@@ -385,6 +429,18 @@ class ReportApplication:
             raise TypeError("ReportApplication ordering must be an Ordering")
         if report_service is not None and not isinstance(report_service, ReportService):
             raise TypeError("ReportApplication report_service must be a ReportService")
+        if writer is not None and not isinstance(writer, ReportWriter):
+            raise TypeError("ReportApplication writer must be a ReportWriter")
+        if validator is not None and not isinstance(validator, Validator):
+            raise TypeError("ReportApplication validator must be a Validator")
+        if delivery is not None and not isinstance(delivery, DeliveryService):
+            raise TypeError("ReportApplication delivery must be a DeliveryService")
+        if (writer is None) != (validator is None):
+            raise ValueError("ReportApplication Writer and Validator must be injected together")
+        if writer is not None and report_service is None:
+            raise ValueError("ReportApplication final pipeline requires ReportService")
+        if delivery_recipient is not None and (delivery is None or writer is None):
+            raise ValueError("delivery_recipient requires the final downstream pipeline")
         if ordering is not None and report_workflow is None:
             raise ValueError("ReportApplication ordering requires a ReportWorkflow")
         self._registry = registry
@@ -399,6 +455,10 @@ class ReportApplication:
         self._report_workflow = report_workflow
         self._ordering = ordering
         self._report_service = report_service
+        self._writer = writer
+        self._validator = validator
+        self._delivery = delivery
+        self._delivery_recipient = delivery_recipient
 
     @property
     def registry(self) -> RegionRegistry:
@@ -447,6 +507,18 @@ class ReportApplication:
     @property
     def report_service(self) -> ReportService | None:
         return self._report_service
+
+    @property
+    def writer(self) -> ReportWriter | None:
+        return self._writer
+
+    @property
+    def validator(self) -> Validator | None:
+        return self._validator
+
+    @property
+    def delivery(self) -> DeliveryService | None:
+        return self._delivery
 
     def run(
         self,
@@ -564,6 +636,9 @@ class ReportApplication:
         )
         ordered_results = self._run_ordering(downstream_results)
         formal_metadata = self._run_formal_metadata_projection(ordered_results)
+        writer_blocks, validation_result, final_report, delivery_result = self._run_final_pipeline(
+            ordered_results, formal_metadata
+        )
 
         return ReportApplicationResult(
             plan,
@@ -582,7 +657,45 @@ class ReportApplication:
             downstream_results=downstream_results,
             ordered_results=ordered_results,
             formal_metadata=formal_metadata,
+            writer_blocks=writer_blocks,
+            validation_result=validation_result,
+            final_report=final_report,
+            delivery_result=delivery_result,
         )
+
+    def _run_final_pipeline(
+        self,
+        ordered_results: tuple[ReportWorkflowResult, ...] | None,
+        formal_metadata: tuple[FormalReportMetadata, ...] | None,
+    ) -> tuple[
+        tuple[WriterReportBlock, ...] | None,
+        ValidationResult | None,
+        FinalReportArtifact | None,
+        DeliveryReceipt | None,
+    ]:
+        if self._writer is None or self._validator is None:
+            return None, None, None, None
+        if ordered_results is None or formal_metadata is None:
+            return None, None, None, None
+        writer_blocks = self._writer.write(ordered_results)
+        if not isinstance(writer_blocks, tuple):
+            raise TypeError("ReportWriter must return a tuple")
+        validation_result = self._validator.validate(
+            ordered_results, formal_metadata, writer_blocks
+        )
+        if not isinstance(validation_result, ValidationResult):
+            raise TypeError("Validator must return a ValidationResult")
+        if self._report_service is None:
+            raise ValueError("final pipeline requires ReportService")
+        final_report = self._report_service.assemble_final_report(validation_result)
+        if not isinstance(final_report, FinalReportArtifact):
+            raise TypeError("ReportService must return a FinalReportArtifact")
+        delivery_result = None
+        if self._delivery is not None and self._delivery_recipient is not None:
+            delivery_result = self._delivery.deliver(final_report, self._delivery_recipient)
+            if not isinstance(delivery_result, DeliveryReceipt):
+                raise TypeError("DeliveryService must return a DeliveryReceipt")
+        return writer_blocks, validation_result, final_report, delivery_result
 
     def _run_formal_metadata_projection(
         self,
@@ -822,6 +935,10 @@ def build_report_application(
     report_workflow: ReportWorkflow,
     ordering: Ordering,
     report_service: ReportService,
+    writer: ReportWriter | None = None,
+    validator: Validator | None = None,
+    delivery: DeliveryService | None = None,
+    delivery_recipient: str | None = None,
 ) -> ReportApplication:
     """Construct a formal shared application with its complete downstream workflow."""
 
@@ -849,6 +966,10 @@ def build_report_application(
         report_workflow,
         ordering,
         report_service,
+        writer,
+        validator,
+        delivery,
+        delivery_recipient,
     )
 
 

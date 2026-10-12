@@ -35,6 +35,8 @@ from src.weekly_report.report_service import (
     ReportService,
 )
 from src.weekly_report.report_workflow import ReportWorkflowResult
+from src.weekly_report.validator import Validator
+from src.weekly_report.writer import WriterReportBlock
 
 
 def _record(
@@ -142,6 +144,32 @@ class ReportServiceTests(TestCase):
 
     def test_zero_input_returns_zero_tuple(self) -> None:
         self.assertEqual(self.service.project_formal_metadata(()), ())
+
+    def test_final_assembly_combines_metadata_without_model_overwrite(self) -> None:
+        result = _workflow_result()
+        metadata = self.service.project_formal_metadata((result,))
+        validation = Validator().validate(
+            (result,),
+            metadata,
+            (WriterReportBlock("E1", "事件標題", "事件摘要 Taiwan Metro", "可供臺北捷運評估規劃方向"),),
+        )
+        artifact = self.service.assemble_final_report(validation)
+        self.assertEqual(artifact.event_count, 1)
+        self.assertEqual(artifact.events[0].source_display, metadata[0].source_display)
+        self.assertEqual(artifact.events[0].source_url, metadata[0].source_url)
+        self.assertEqual(artifact.events[0].category, metadata[0].category)
+
+    def test_zero_pass_assembles_official_no_event_artifact(self) -> None:
+        result = _workflow_result()
+        metadata = self.service.project_formal_metadata((result,))
+        validation = Validator().validate((result,), metadata, (WriterReportBlock("E1", "事件標題", "事件摘要 Taiwan Metro", "可供臺北捷運評估規劃方向"),))
+        # The failed population is represented by an empty ValidationResult
+        # only after Validator has applied its event-level outcome.
+        from src.weekly_report.validator import ValidationResult
+        zero = ValidationResult((result,), metadata, ())
+        artifact = self.service.assemble_final_report(zero)
+        self.assertEqual(artifact.content, "本期無符合正式報導條件之事件。")
+        self.assertTrue(artifact.no_event)
 
     def test_projects_authoritative_fields_and_canonical_source(self) -> None:
         result = self.service.project_formal_metadata((_workflow_result(),))[0]

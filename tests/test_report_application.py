@@ -60,6 +60,9 @@ from src.weekly_report.report_service import (
     ReportService,
 )
 from src.weekly_report.taxonomy import Taxonomy
+from src.weekly_report.writer import ReportWriter
+from src.weekly_report.validator import Validator
+from src.weekly_report.delivery import DeliveryService, DeliveryStatus
 
 
 def _registry() -> RegionRegistry:
@@ -521,6 +524,10 @@ class ReportApplicationTests(TestCase):
         report_workflow=None,
         ordering=None,
         report_service=None,
+        writer=None,
+        validator=None,
+        delivery=None,
+        delivery_recipient=None,
     ) -> ReportApplication:
         plan = _fixture_plan()
         registry = _registry()
@@ -538,6 +545,10 @@ class ReportApplicationTests(TestCase):
             report_workflow=report_workflow,
             ordering=ordering,
             report_service=report_service,
+            writer=writer,
+            validator=validator,
+            delivery=delivery,
+            delivery_recipient=delivery_recipient,
         )
 
     def _reportable_run(self, ordering, *, provider=None, workflow=None, classifier=None):
@@ -1310,6 +1321,40 @@ class ReportApplicationTests(TestCase):
         self.assertEqual(len(report_service.calls), 1)
         self.assertIs(report_service.calls[0], ordering.returned_results[0])
         self.assertIs(result.ordered_results, ordering.returned_results[0])
+
+    def test_final_pipeline_preserves_order_and_uses_validation_pass_count(self) -> None:
+        calls = []
+
+        def writer_provider(request):
+            calls.append(request)
+            event_id = request["writer_request"]["event_id"]
+            return {
+                "event_id": event_id,
+                "headline": "事件標題",
+                "factual_summary": "事件摘要 Taiwan Metro",
+                "taipei_insight": "可供臺北捷運評估相關規劃方向",
+            }
+
+        report_service = ReportService()
+        result = self._app(
+            provider=FormalResultProvider(),
+            evidence_service=FormalEvidenceService(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(default_date=date(2026, 9, 18)),
+            event_identity=RecordingEventIdentity(),
+            classifier=RecordingClassifier(),
+            report_workflow=RecordingDownstreamWorkflow(reportable=True),
+            ordering=RecordingOrdering(),
+            report_service=report_service,
+            writer=ReportWriter(provider=writer_provider),
+            validator=Validator(),
+            delivery=DeliveryService(),
+            delivery_recipient="staging@example.test",
+        ).run("selected")
+        self.assertEqual(len(calls), len(result.ordered_results))
+        self.assertEqual(len(result.writer_blocks), len(result.ordered_results))
+        self.assertEqual(result.validation_result.final_report_count, len(result.final_report.events))
+        self.assertEqual(result.delivery_result.status, DeliveryStatus.STAGED)
 
     def test_formal_metadata_requires_completed_ordering(self) -> None:
         result, _ = self._formal_application_run()
