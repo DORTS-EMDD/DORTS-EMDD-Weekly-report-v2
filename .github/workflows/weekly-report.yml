@@ -1,0 +1,67 @@
+name: Weekly-report V2 production
+
+on:
+  workflow_dispatch:
+    inputs:
+      period_start:
+        description: "Report period start (YYYY-MM-DD)"
+        required: true
+        type: string
+      period_end:
+        description: "Report period end (YYYY-MM-DD)"
+        required: true
+        type: string
+      region_mode:
+        description: "Configured Search region mode"
+        required: true
+        default: selected
+        type: choice
+        options:
+          - selected
+          - global
+      run_production:
+        description: "Run the full production runner after the offline gate"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  offline-regression-and-health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install project dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Offline regression gate
+        run: python -m pytest -q
+      - name: Google News RSS six-probe health check
+        run: python -m scripts.google_news_health_check
+
+  production:
+    needs: offline-regression-and-health
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_production == true }}
+    runs-on: ubuntu-latest
+    env:
+      MAIAGENT_API_BASE: ${{ secrets.MAIAGENT_API_BASE }}
+      MAIAGENT_API_KEY: ${{ secrets.MAIAGENT_API_KEY }}
+      MAIAGENT_CHATBOT_ID: ${{ secrets.MAIAGENT_CHATBOT_ID }}
+      MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID: ${{ secrets.MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install project dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run shared production CLI
+        run: >-
+          python main.py
+          --period-start "${{ inputs.period_start }}"
+          --period-end "${{ inputs.period_end }}"
+          --region-mode "${{ inputs.region_mode }}"
