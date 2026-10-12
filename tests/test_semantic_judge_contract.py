@@ -9,7 +9,13 @@ from src.weekly_report.contracts import (
     RejectReason,
 )
 from src.weekly_report.evidence_service import EvidenceService
-from src.weekly_report.semantic_judge import JudgeMetadata
+from src.weekly_report.semantic_judge import (
+    InvalidSemanticJudgeResponse,
+    JudgeMetadata,
+    PrincipalBodySegment,
+    SemanticJudgeInput,
+    validate_semantic_judge_response,
+)
 
 
 def _candidate(**overrides) -> CanonicalCandidate:
@@ -59,20 +65,21 @@ def _same_event_response(request):
     body = request.principal_body_segments[0].text
     return {
         "relation": "SAME_EVENT",
-        "support_spans": [
-            {"segment_id": "body-0001", "start": 0, "end": len(body)}
+        "support_evidence": [
+            {"segment_id": "body-0001", "exact_quote": body}
         ],
-        "conflict_spans": [],
+        "conflict_evidence": [],
         "explanation": "The principal body describes the Candidate event.",
     }
 
 
-def _different_event_response(_request):
+def _different_event_response(request):
+    body = request.principal_body_segments[0].text
     return {
         "relation": "DIFFERENT_EVENT",
-        "support_spans": [],
-        "conflict_spans": [
-            {"segment_id": "body-0001", "start": 0, "end": 1}
+        "support_evidence": [],
+        "conflict_evidence": [
+            {"segment_id": "body-0001", "exact_quote": body}
         ],
         "explanation": "The principal body describes a different event.",
     }
@@ -157,8 +164,8 @@ class SemanticJudgeContractTests(unittest.TestCase):
         judge = _RecordingJudge(
             response=lambda _request: {
                 "relation": "SAME_EVENT",
-                "support_spans": [],
-                "conflict_spans": [],
+                "support_evidence": [],
+                "conflict_evidence": [],
                 "explanation": "No grounded span.",
             }
         )
@@ -175,8 +182,8 @@ class SemanticJudgeContractTests(unittest.TestCase):
         judge = _RecordingJudge(
             response=lambda _request: {
                 "relation": "SAME_EVENT",
-                "support_spans": [{"segment_id": "missing", "start": 0, "end": 1}],
-                "conflict_spans": [],
+                "support_evidence": [{"segment_id": "missing", "exact_quote": "missing"}],
+                "conflict_evidence": [],
                 "explanation": "Invalid segment.",
             }
         )
@@ -191,8 +198,8 @@ class SemanticJudgeContractTests(unittest.TestCase):
         judge = _RecordingJudge(
             response=lambda _request: {
                 "relation": "SAME_EVENT",
-                "support_spans": [{"segment_id": "body-0001", "start": 0, "end": 99999}],
-                "conflict_spans": [],
+                "support_evidence": [{"segment_id": "body-0001", "exact_quote": "not present"}],
+                "conflict_evidence": [],
                 "explanation": "Invalid boundary.",
             }
         )
@@ -221,8 +228,8 @@ class SemanticJudgeContractTests(unittest.TestCase):
         judge = _RecordingJudge(
             response={
                 "relation": "UNCERTAIN",
-                "support_spans": [],
-                "conflict_spans": [],
+                "support_evidence": [],
+                "conflict_evidence": [],
                 "explanation": "Insufficient semantic certainty.",
             }
         )
@@ -257,8 +264,8 @@ class SemanticJudgeContractTests(unittest.TestCase):
         judge = _RecordingJudge(
             response={
                 "relation": "SAME_EVENT",
-                "support_spans": [],
-                "conflict_spans": [],
+                "support_evidence": [],
+                "conflict_evidence": [],
                 "explanation": "Missing required support.",
                 "unexpected": True,
             }
@@ -383,6 +390,137 @@ class SemanticJudgeContractTests(unittest.TestCase):
         self.assertEqual(result.state, EvidenceState.REJECTED)
         self.assertEqual(result.reject_reason, RejectReason.SOURCE_PAGE_MISMATCH)
         self.assertEqual(judge.calls, 0)
+
+    def test_python_derives_unique_quote_span_and_preserves_unicode(self):
+        request = SemanticJudgeInput(
+            candidate_id="quote-1",
+            candidate_title="Candidate",
+            document_level_headlines=(),
+            principal_body_segments=(
+                PrincipalBodySegment("body-1", "prefix 東京メトロ opened suffix"),
+            ),
+        )
+
+        result = validate_semantic_judge_response(
+            {
+                "relation": "SAME_EVENT",
+                "support_evidence": [
+                    {"segment_id": "body-1", "exact_quote": "東京メトロ"}
+                ],
+                "conflict_evidence": [],
+                "explanation": "grounded",
+            },
+            request,
+        )
+
+        span = result.support_spans[0]
+        self.assertEqual((span.segment_id, span.start, span.end), ("body-1", 7, 12))
+        self.assertEqual(request.principal_body_segments[0].text[span.start:span.end], "東京メトロ")
+
+    def test_different_and_uncertain_allow_empty_evidence_arrays(self):
+        request = SemanticJudgeInput(
+            candidate_id="empty-1",
+            candidate_title="Candidate",
+            document_level_headlines=(),
+            principal_body_segments=(PrincipalBodySegment("body-1", "body text"),),
+        )
+        for relation in ("DIFFERENT_EVENT", "UNCERTAIN"):
+            with self.subTest(relation=relation):
+                result = validate_semantic_judge_response(
+                    {
+                        "relation": relation,
+                        "support_evidence": [],
+                        "conflict_evidence": [],
+                        "explanation": "bounded",
+                    },
+                    request,
+                )
+                self.assertEqual(result.relation.value, relation)
+                self.assertEqual(result.support_spans, ())
+                self.assertEqual(result.conflict_spans, ())
+
+    def test_quote_locator_rejects_zero_duplicate_overlap_and_non_exact_forms(self):
+        cases = (
+            ("zero", "missing", "exact_quote does not occur"),
+            ("duplicate", "ana", "exact_quote occurrence is ambiguous"),
+            ("overlap", "aa", "exact_quote occurrence is ambiguous"),
+            ("whitespace", " body", "exact_quote does not occur"),
+            ("case", "BODY", "exact_quote does not occur"),
+        )
+        for name, quote, message in cases:
+            with self.subTest(name=name):
+                text = {
+                    "zero": "unique body",
+                    "duplicate": "banana",
+                    "overlap": "aaa",
+                    "whitespace": "body",
+                    "case": "body",
+                }[name]
+                request = SemanticJudgeInput(
+                    candidate_id=name,
+                    candidate_title="Candidate",
+                    document_level_headlines=(),
+                    principal_body_segments=(PrincipalBodySegment("body-1", text),),
+                )
+                with self.assertRaisesRegex(InvalidSemanticJudgeResponse, message):
+                    validate_semantic_judge_response(
+                        {
+                            "relation": "SAME_EVENT",
+                            "support_evidence": [{"segment_id": "body-1", "exact_quote": quote}],
+                            "conflict_evidence": [],
+                            "explanation": "bounded",
+                        },
+                        request,
+                    )
+
+    def test_quote_locator_cannot_cross_segments_or_use_numeric_legacy_schema(self):
+        request = SemanticJudgeInput(
+            candidate_id="cross-1",
+            candidate_title="Candidate",
+            document_level_headlines=(),
+            principal_body_segments=(
+                PrincipalBodySegment("body-1", "left"),
+                PrincipalBodySegment("body-2", "right"),
+            ),
+        )
+        with self.assertRaises(InvalidSemanticJudgeResponse):
+            validate_semantic_judge_response(
+                {
+                    "relation": "SAME_EVENT",
+                    "support_evidence": [{"segment_id": "body-1", "exact_quote": "leftright"}],
+                    "conflict_evidence": [],
+                    "explanation": "cross segment",
+                },
+                request,
+            )
+        with self.assertRaises(InvalidSemanticJudgeResponse):
+            validate_semantic_judge_response(
+                {
+                    "relation": "SAME_EVENT",
+                    "support_spans": [{"segment_id": "body-1", "start": 0, "end": 4}],
+                    "conflict_spans": [],
+                    "explanation": "legacy numeric proposal",
+                },
+                request,
+            )
+
+    def test_same_event_still_requires_support_quote(self):
+        request = SemanticJudgeInput(
+            candidate_id="same-1",
+            candidate_title="Candidate",
+            document_level_headlines=(),
+            principal_body_segments=(PrincipalBodySegment("body-1", "body text"),),
+        )
+        with self.assertRaisesRegex(InvalidSemanticJudgeResponse, "requires at least one"):
+            validate_semantic_judge_response(
+                {
+                    "relation": "SAME_EVENT",
+                    "support_evidence": [],
+                    "conflict_evidence": [],
+                    "explanation": "missing support",
+                },
+                request,
+            )
 
 
 if __name__ == "__main__":

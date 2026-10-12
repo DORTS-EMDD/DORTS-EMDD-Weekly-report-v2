@@ -222,11 +222,11 @@ class _SameEventJudge:
     def __call__(self, request):
         return {
             "relation": "SAME_EVENT",
-            "support_spans": [
-                {"segment_id": segment.segment_id, "start": 0, "end": len(segment.text)}
+            "support_evidence": [
+                {"segment_id": segment.segment_id, "exact_quote": segment.text}
                 for segment in request.principal_body_segments
             ],
-            "conflict_spans": [],
+            "conflict_evidence": [],
             "explanation": "grounded",
         }
 

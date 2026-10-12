@@ -84,9 +84,9 @@ class InvalidSemanticJudgeResponse(ValueError):
 
 
 _RESPONSE_FIELDS = frozenset(
-    {"relation", "support_spans", "conflict_spans", "explanation"}
+    {"relation", "support_evidence", "conflict_evidence", "explanation"}
 )
-_SPAN_FIELDS = frozenset({"segment_id", "start", "end"})
+_EVIDENCE_FIELDS = frozenset({"segment_id", "exact_quote"})
 
 
 def semantic_judge_input_hash(request: SemanticJudgeInput) -> str:
@@ -124,8 +124,8 @@ def validate_semantic_judge_response(
         segment.segment_id: segment.text
         for segment in request.principal_body_segments
     }
-    support_spans = _validate_spans(response["support_spans"], segments)
-    conflict_spans = _validate_spans(response["conflict_spans"], segments)
+    support_spans = _resolve_evidence_quotes(response["support_evidence"], segments)
+    conflict_spans = _resolve_evidence_quotes(response["conflict_evidence"], segments)
     if relation == SemanticRelation.SAME_EVENT and not support_spans:
         raise InvalidSemanticJudgeResponse(
             "SAME_EVENT requires at least one support span"
@@ -151,34 +151,48 @@ def _parse_response_object(raw_response: object) -> Mapping[str, Any]:
     return response
 
 
-def _validate_spans(
-    raw_spans: object,
+def _resolve_evidence_quotes(
+    raw_evidence: object,
     segments: Mapping[str, str],
 ) -> tuple[BodySpan, ...]:
-    if not isinstance(raw_spans, Sequence) or isinstance(
-        raw_spans, (str, bytes, bytearray)
+    if not isinstance(raw_evidence, Sequence) or isinstance(
+        raw_evidence, (str, bytes, bytearray)
     ):
-        raise InvalidSemanticJudgeResponse("spans must be an array")
+        raise InvalidSemanticJudgeResponse("evidence must be an array")
 
     validated: list[BodySpan] = []
-    for raw_span in raw_spans:
-        if not isinstance(raw_span, Mapping):
-            raise InvalidSemanticJudgeResponse("span must be an object")
-        if frozenset(raw_span) != _SPAN_FIELDS:
-            raise InvalidSemanticJudgeResponse("span fields do not match schema")
-        segment_id = raw_span["segment_id"]
-        start = raw_span["start"]
-        end = raw_span["end"]
+    for raw_locator in raw_evidence:
+        if not isinstance(raw_locator, Mapping):
+            raise InvalidSemanticJudgeResponse("evidence locator must be an object")
+        if frozenset(raw_locator) != _EVIDENCE_FIELDS:
+            raise InvalidSemanticJudgeResponse("evidence fields do not match schema")
+        segment_id = raw_locator["segment_id"]
+        exact_quote = raw_locator["exact_quote"]
         if not isinstance(segment_id, str) or segment_id not in segments:
-            raise InvalidSemanticJudgeResponse("span references an unknown segment")
-        if (
-            isinstance(start, bool)
-            or not isinstance(start, int)
-            or isinstance(end, bool)
-            or not isinstance(end, int)
-        ):
-            raise InvalidSemanticJudgeResponse("span offsets must be integers")
+            raise InvalidSemanticJudgeResponse("evidence references an unknown segment")
+        if not isinstance(exact_quote, str) or not exact_quote:
+            raise InvalidSemanticJudgeResponse("exact_quote must be a non-empty string")
+        occurrences = _exact_occurrence_offsets(segments[segment_id], exact_quote)
+        if not occurrences:
+            raise InvalidSemanticJudgeResponse("exact_quote does not occur in segment")
+        if len(occurrences) != 1:
+            raise InvalidSemanticJudgeResponse("exact_quote occurrence is ambiguous")
+        start = occurrences[0]
+        end = start + len(exact_quote)
         if start < 0 or start >= end or end > len(segments[segment_id]):
-            raise InvalidSemanticJudgeResponse("span offsets are out of range")
+            raise InvalidSemanticJudgeResponse("derived span offsets are out of range")
+        if segments[segment_id][start:end] != exact_quote:
+            raise InvalidSemanticJudgeResponse("derived span does not match exact_quote")
         validated.append(BodySpan(segment_id, start, end))
     return tuple(validated)
+
+
+def _exact_occurrence_offsets(source: str, value: str) -> tuple[int, ...]:
+    """Return every exact occurrence, including overlapping occurrences."""
+
+    offsets: list[int] = []
+    cursor = source.find(value)
+    while cursor >= 0:
+        offsets.append(cursor)
+        cursor = source.find(value, cursor + 1)
+    return tuple(offsets)

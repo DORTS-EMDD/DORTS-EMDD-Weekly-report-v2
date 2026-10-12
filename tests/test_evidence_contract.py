@@ -97,10 +97,10 @@ class _SameEventJudge:
         body = request.principal_body_segments[0].text
         return {
             "relation": "SAME_EVENT",
-            "support_spans": [
-                {"segment_id": "body-0001", "start": 0, "end": len(body)}
+            "support_evidence": [
+                {"segment_id": "body-0001", "exact_quote": body}
             ],
-            "conflict_spans": [],
+            "conflict_evidence": [],
             "explanation": "test support",
         }
 
@@ -116,9 +116,9 @@ class _DifferentEventJudge:
         body = request.principal_body_segments[0].text
         return {
             "relation": "DIFFERENT_EVENT",
-            "support_spans": [],
-            "conflict_spans": [
-                {"segment_id": "body-0001", "start": 0, "end": len(body)}
+            "support_evidence": [],
+            "conflict_evidence": [
+                {"segment_id": "body-0001", "exact_quote": body}
             ],
             "explanation": "test mismatch",
         }

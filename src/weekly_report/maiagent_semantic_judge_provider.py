@@ -28,8 +28,8 @@ from .semantic_judge import JudgeMetadata, SemanticJudgeInput
 
 
 TASK_IDENTITY = "evidence_source_candidate_match"
-PROMPT_VERSION = "evidence-source-candidate-match-v1"
-SCHEMA_VERSION = "evidence-semantic-judge-response-v1"
+PROMPT_VERSION = "evidence-source-candidate-match-v2"
+SCHEMA_VERSION = "evidence-semantic-judge-response-v2"
 HELPER_VERSION = "maiagent-structured-helper-semantic-judge-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-evidence-semantic-judge"
 
@@ -50,35 +50,33 @@ MAIAGENT_SEMANTIC_JUDGE_RESPONSE_SCHEMA: dict[str, Any] = {
             "type": "string",
             "enum": ["SAME_EVENT", "DIFFERENT_EVENT", "UNCERTAIN"],
         },
-        "support_spans": {
+        "support_evidence": {
             "type": "array",
             "items": {
                 "type": "object",
                 "additionalProperties": False,
                 "properties": {
                     "segment_id": {"type": "string"},
-                    "start": {"type": "integer"},
-                    "end": {"type": "integer"},
+                    "exact_quote": {"type": "string", "minLength": 1},
                 },
-                "required": ["segment_id", "start", "end"],
+                "required": ["segment_id", "exact_quote"],
             },
         },
-        "conflict_spans": {
+        "conflict_evidence": {
             "type": "array",
             "items": {
                 "type": "object",
                 "additionalProperties": False,
                 "properties": {
                     "segment_id": {"type": "string"},
-                    "start": {"type": "integer"},
-                    "end": {"type": "integer"},
+                    "exact_quote": {"type": "string", "minLength": 1},
                 },
-                "required": ["segment_id", "start", "end"],
+                "required": ["segment_id", "exact_quote"],
             },
         },
         "explanation": {"type": "string"},
     },
-    "required": ["relation", "support_spans", "conflict_spans", "explanation"],
+    "required": ["relation", "support_evidence", "conflict_evidence", "explanation"],
 }
 
 # Keep the private spelling available for focused tests and mechanical callers.
@@ -92,13 +90,17 @@ SEMANTIC_JUDGE_INSTRUCTIONS = (
     "Compare the Candidate discovery context against the authoritative principal body supplied in this request.",
     "candidate_title and document_level_headlines are comparison context only.",
     "Authoritative semantic support and conflict evidence must come from principal_body_segments.",
-    "support_spans and conflict_spans may reference only principal_body_segments and must use exact segment-relative Python Unicode half-open [start, end) offsets.",
+    "Select semantic support and conflict evidence from the supplied principal_body_segments only.",
+    "Copy every selected support or conflict quote exactly unchanged from its named principal_body_segment.",
+    "support_evidence and conflict_evidence locators contain only segment_id and exact_quote.",
+    "Do not calculate numeric coordinates; Python derives canonical start/end spans.",
     "Do not treat title or headline text as authoritative factual support.",
     "Return SAME_EVENT only when the supplied principal body substantively establishes the same event as the Candidate context.",
     "Return DIFFERENT_EVENT when the supplied principal body substantively establishes a different event.",
     "Return UNCERTAIN when the supplied principal body is insufficient to establish sameness or difference.",
     "Use no external knowledge and do not infer from publisher, domain, URL, geography, language, or any other unsupplied fact.",
     "Do not browse, search, use RAG, use tools, or retrieve external information.",
+    "Do not normalize, repair, retry, fall back, or rescue malformed or unsupported evidence.",
     "Do not decide Evidence READY or REJECTED; EvidenceService remains the authoritative decision owner.",
     "Return JSON only, with no Markdown, no prose outside JSON, and no extra fields.",
 )

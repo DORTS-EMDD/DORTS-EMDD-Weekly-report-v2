@@ -34,10 +34,10 @@ class _SameEventJudge:
         body = request.principal_body_segments[0].text
         return {
             "relation": "SAME_EVENT",
-            "support_spans": [
-                {"segment_id": "body-0001", "start": 0, "end": len(body)}
+            "support_evidence": [
+                {"segment_id": "body-0001", "exact_quote": body}
             ],
-            "conflict_spans": [],
+            "conflict_evidence": [],
             "explanation": "The fixture body describes the Candidate event.",
         }
 

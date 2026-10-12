@@ -77,16 +77,13 @@ def _candidate() -> CanonicalCandidate:
 
 
 def _same_event_response(request: SemanticJudgeInput) -> dict[str, object]:
+    segment = request.principal_body_segments[0]
     return {
         "relation": "SAME_EVENT",
-        "support_spans": [
-            {
-                "segment_id": request.principal_body_segments[0].segment_id,
-                "start": 0,
-                "end": len(request.principal_body_segments[0].text),
-            }
+        "support_evidence": [
+            {"segment_id": segment.segment_id, "exact_quote": segment.text}
         ],
-        "conflict_spans": [],
+        "conflict_evidence": [],
         "explanation": "The supplied principal body establishes the event.",
     }
 
@@ -188,6 +185,17 @@ class MaiAgentSemanticJudgeProviderTests(unittest.TestCase):
             MAIAGENT_SEMANTIC_JUDGE_RESPONSE_SCHEMA,
         )
         self.assertEqual(
+            MAIAGENT_SEMANTIC_JUDGE_RESPONSE_SCHEMA["required"],
+            ["relation", "support_evidence", "conflict_evidence", "explanation"],
+        )
+        self.assertNotIn("support_spans", MAIAGENT_SEMANTIC_JUDGE_RESPONSE_SCHEMA["properties"])
+        self.assertNotIn("conflict_spans", MAIAGENT_SEMANTIC_JUDGE_RESPONSE_SCHEMA["properties"])
+        self.assertNotIn("start", json.dumps(MAIAGENT_SEMANTIC_JUDGE_RESPONSE_SCHEMA))
+        self.assertNotIn("end", json.dumps(MAIAGENT_SEMANTIC_JUDGE_RESPONSE_SCHEMA))
+        self.assertIn("exact_quote", json.dumps(MAIAGENT_SEMANTIC_JUDGE_RESPONSE_SCHEMA))
+        self.assertIn("Do not calculate numeric coordinates", " ".join(SEMANTIC_JUDGE_INSTRUCTIONS))
+        self.assertIn("Do not browse, search, use RAG", " ".join(SEMANTIC_JUDGE_INSTRUCTIONS))
+        self.assertEqual(
             set(model_input["semantic_judge_request"]),
             {"candidate_id", "candidate_title", "document_level_headlines", "principal_body_segments"},
         )
@@ -259,13 +267,13 @@ class MaiAgentSemanticJudgeProviderTests(unittest.TestCase):
             with self.subTest(relation=relation):
                 raw = {
                     "relation": relation,
-                    "support_spans": [],
-                    "conflict_spans": [],
+                    "support_evidence": [],
+                    "conflict_evidence": [],
                     "explanation": "raw proposal",
                 }
                 transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(raw)))
                 self.assertEqual(MaiAgentSemanticJudgeProvider(_config(), transport=transport)(_request()), raw)
-        wrong = {"relation": "SAME_EVENT", "support_spans": [], "conflict_spans": []}
+        wrong = {"relation": "SAME_EVENT", "support_evidence": [], "conflict_evidence": []}
         transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(wrong)))
         self.assertEqual(MaiAgentSemanticJudgeProvider(_config(), transport=transport)(_request()), wrong)
 
@@ -314,8 +322,8 @@ class MaiAgentSemanticJudgeProviderTests(unittest.TestCase):
                 request = _request()
                 raw = {
                     "relation": relation,
-                    "support_spans": ([{"segment_id": "body-0001", "start": 0, "end": len(text)}] if relation == "SAME_EVENT" else []),
-                    "conflict_spans": ([{"segment_id": "body-0001", "start": 0, "end": 1}] if relation == "DIFFERENT_EVENT" else []),
+                    "support_evidence": ([{"segment_id": "body-0001", "exact_quote": text}] if relation == "SAME_EVENT" else []),
+                    "conflict_evidence": ([{"segment_id": "body-0001", "exact_quote": text}] if relation == "DIFFERENT_EVENT" else []),
                     "explanation": "bounded",
                 }
                 transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(raw)))
@@ -344,10 +352,10 @@ class MaiAgentSemanticJudgeProviderTests(unittest.TestCase):
         )
         raw = {
             "relation": "SAME_EVENT",
-            "support_spans": [
-                {"segment_id": "body-0001", "start": 0, "end": len(text) + 1}
+            "support_evidence": [
+                {"segment_id": "body-0001", "exact_quote": "not present in this body"}
             ],
-            "conflict_spans": [],
+            "conflict_evidence": [],
             "explanation": "syntactically valid but out-of-range support",
         }
         transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(raw)))
