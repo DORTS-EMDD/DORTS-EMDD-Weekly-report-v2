@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 from unittest import TestCase
 
 from src.weekly_report.report_service import ReportService
 from src.weekly_report.writer import (
+    MaiAgentWriterProviderConfig,
     ReportWriter,
     WriterPopulationError,
     WriterReportBlock,
@@ -14,6 +17,44 @@ from test_report_service import _workflow_result
 
 
 class ReportWriterTests(TestCase):
+    def test_dotenv_loading_builds_distinct_writer_configuration(self) -> None:
+        dotenv_file = NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            suffix=".env",
+            dir=Path(__file__).resolve().parents[1],
+            delete=False,
+        )
+        dotenv_path = Path(dotenv_file.name)
+        try:
+            dotenv_file.write(
+                "\n".join(
+                    (
+                        "MAIAGENT_API_BASE=https://example.invalid",
+                        "MAIAGENT_API_KEY=test-key",
+                        "MAIAGENT_CHATBOT_ID=writer-test",
+                        "MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID=helper-test",
+                    )
+                )
+                + "\n"
+            )
+            dotenv_file.close()
+
+            config = MaiAgentWriterProviderConfig.from_environment(
+                {},
+                dotenv_path=dotenv_path,
+            )
+        finally:
+            if not dotenv_file.closed:
+                dotenv_file.close()
+            dotenv_path.unlink(missing_ok=True)
+
+        self.assertIsNotNone(config)
+        assert config is not None
+        self.assertEqual(config.api_base, "https://example.invalid")
+        self.assertEqual(config.api_key, "test-key")
+        self.assertEqual(config.chatbot_id, "writer-test")
+
     def test_zero_input_makes_no_provider_call(self) -> None:
         calls = []
         writer = ReportWriter(provider=lambda request: calls.append(request))
