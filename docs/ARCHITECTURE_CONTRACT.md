@@ -351,20 +351,40 @@ encoding is allowed.
 
 The binding population is the union of configured selected/global target
 markets, each market's mapped profiles, and each query family's provider target.
-Every binding in that population must be present exactly once. SearchPlanner
-copies a supported binding's exact encoding into each frozen SearchPlanItem and
-plan identity; unsupported bindings produce no item. After capability filtering,
-every configured target market and every enabled intent must still have at least
-one executable item or the whole plan construction fails. A market with no
-supported profile remains configured and is not silently removed.
+Every required binding must be present exactly once. Missing bindings, unknown
+capability values, and `SUPPORTED` bindings with missing or invalid provider
+encoding invalidate the entire plan before network execution.
 
-Denmark remains a configured selected/global target with `da` and `en` profiles,
-but both current Google News RSS bindings are `UNSUPPORTED`; therefore current
-production selected and global planning fail closed with no partial plan until
-another separately governed provider capability is introduced. This does not
-remove Denmark or authorize a substitute market/profile. A future provider
-prepared for controlled Phase 2C acceptance is preplanned capability, not a
-fallback or runtime rescue.
+SearchPlanner copies each `SUPPORTED` binding's exact encoding into frozen
+SearchPlanItems and plan identity. Explicitly `UNSUPPORTED` bindings produce no
+item. A configured target market whose required bindings are all explicitly
+`UNSUPPORTED` is a `KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY` coverage gap and does
+not invalidate executable planning for other markets. It remains configured and
+cannot be substituted or silently removed.
+
+Every enabled intent must retain at least one executable SearchPlanItem. Formal
+production planning retains all four required intents. A plan with no
+executable items fails before execution; it is not a successful zero-result
+Search.
+
+SearchPlan retains an immutable coverage projection containing the complete
+configured target-market population and ordered coverage gaps with `market_id`
+and reason `KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY`. This projection derives
+solely from RegionRegistry capability configuration, participates in versioned
+plan identity under `search-plan-coverage-v1`, and is retained through
+SearchExecutionResult. Diagnostics may expose the projection, but it is not a
+second mutable capability registry.
+
+Denmark remains configured for selected/global with `da` and `en` profiles. Both
+current Google News RSS bindings remain `UNSUPPORTED`. Denmark therefore
+produces no SearchPlanItem and appears as an explicit coverage gap; other valid
+supported markets may execute. This does not authorize another market, profile,
+encoding, provider, runtime probe, fallback, rescue, or backfill.
+
+A coverage gap is not an execution attempt, empty provider result, runtime
+provider failure, or synthetic SearchObservation. Actual runtime provider
+failures retain `TECHNICAL_FAILURE` semantics and the existing formal execution
+failure gate.
 
 `locale` remains general profile metadata. It is not Google News execution
 authority. Provider capability configuration does not probe runtime support,
@@ -2481,15 +2501,15 @@ MaiAgent Writer 不得：
 * 查外部背景
 
 The MaiAgent platform may separately provide exactly one Generic Stateless
-Structured Helper deployment for bounded, non-authoritative proposal tasks.
-The helper may transport five task-specific proposals: `category_semantic_proposal`,
-`evidence_metadata_extraction`, `evidence_source_candidate_match`,
-`taxonomy_semantic_proposal`, and `reportability_semantic_proposal`. It is not a
-Domain owner and it does not write the formal report. The authoritative owners
-remain Classifier for Category, EvidenceService for factual evidence and
-semantic matching, Taxonomy for E&M systems, Reportability for reportability,
-and ReportWriter for formal prose. Sharing a chatbot identity does not merge
-these owners.
+Structured Helper deployment for six bounded, non-authoritative tasks:
+`category_semantic_proposal`, `evidence_metadata_extraction`,
+`evidence_source_candidate_match`, `taxonomy_semantic_proposal`,
+`reportability_semantic_proposal`, and `validation_semantic_check`. It is not a
+Domain owner and it does not write or correct the formal report. The
+authoritative owners remain Classifier for Category, EvidenceService for
+factual evidence and semantic matching, Taxonomy for E&M systems, Reportability
+for reportability, ReportWriter for formal prose, and Validator for post-Writer
+validation. Sharing a chatbot identity does not merge these owners.
 
 The operational deployment therefore has exactly two MaiAgent roles:
 
@@ -2523,7 +2543,7 @@ incremental semantic decision is permitted.
 
 Each request supplies an explicit task identity, complete versioned
 task-specific instructions, the bounded task request, and that task's response
-schema. All five tasks retain separate request types, prompts, schemas, local
+schema. All six tasks retain separate request types, prompts, schemas, local
 validators, post-processing boundaries, Domain result types, and failure
 semantics. They may share only the MaiAgent API base, credential, pure mechanical
 HTTP transport, and the single authoritative helper chatbot configuration key:
@@ -2547,6 +2567,13 @@ Any migration from existing deployment settings is a one-time deployment
 operation; runtime fallback aliases are forbidden. The Structured Helper has no
 Category, metadata, semantic-judge, Taxonomy, Reportability, Writer, or other
 Domain authority.
+
+The `validation_semantic_check` task uses the existing `MAIAGENT_API_BASE`,
+`MAIAGENT_API_KEY`, `MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID`, and
+`src/weekly_report/maiagent_transport.py`. It requires no additional chatbot
+identity, provider family, credential alias, RAG, search, tools, memory, or
+attachments. Its task-specific adapter is subordinate to Validator and returns
+only an untrusted validation proposal.
 
 The production semantic proposal backend is this existing MaiAgent Structured
 Helper; no second AI provider is required. The previous exploratory Gemini
@@ -2679,11 +2706,15 @@ unsupported Taipei claims are forbidden. Headline drafting cannot change
 Category, Taxonomy, Reportability, or Ordering. The original principal-source
 headline remains provenance, and there is no raw-source-title fallback.
 
-Formal report prose language is Traditional Chinese. ReportWriter owns language
-normalization for `headline`, `factual_summary`, and `taipei_insight`; Report
-Service owns fixed labels and mechanical formatting. URLs, source identity,
-`event_id`, and typed enum IDs MUST NOT be translated or mutated. Evidence-
-supported foreign proper names may be retained, but translation or
+Formal report prose is requested in Traditional Chinese. ReportWriter drafts
+`headline`, `factual_summary`, and `taipei_insight` under that instruction, but
+does not authoritatively certify factual grounding or Traditional Chinese
+validity; those post-Writer decisions belong solely to Validator under §Q.
+Writer's own checks are limited to response shape, event correlation,
+population, and required nonblank prose.
+Report Service owns fixed labels and mechanical formatting. URLs, source
+identity, `event_id`, and typed enum IDs MUST NOT be translated or mutated.
+Evidence-supported foreign proper names may be retained, but translation or
 transliteration MUST NOT invent or substitute entity identity. A raw foreign-
 language formal headline is not valid.
 
@@ -2735,19 +2766,21 @@ Validator 只檢查：
 * factual grounding
 * source integrity
 * required fields
+* Traditional Chinese language
+* event population and metadata integrity
 * DORTS implication boundary
 
 每 Event 最多一次 semantic correction。
-
-單 Event FAIL：
-
-> 只淘汰該 Event。
 
 已 PASS Event 不得因其他 Event 失敗而重新生成。
 
 Transport retry 與 semantic correction 分開計算。
 
 Validator 不得代替 Writer，也不得修改 upstream domain decision。Semantic correction 只限於該 Event，且最多一次。
+
+單 Event FAIL 僅指已完成合法 semantic validation 後確認的內容或語言失敗。
+無法完成 validation 的 configuration、transport、schema、correlation 或
+citation 技術失敗，必須中止整個正式 run，不得當成內容 FAIL 或觸發 correction。
 
 The Validator receives the original ordered authoritative references together
 with the generated `WriterReportBlock` values. It owns the post-Writer checks
@@ -2756,13 +2789,109 @@ Traditional Chinese language, factual grounding, metadata integrity at the
 assembly boundary, and the DORTS/Taipei-analysis boundary. Writer does not
 self-certify.
 
-At most one Validator-directed semantic correction is allowed per failing Event.
-The correction uses the same authoritative Evidence, cannot fetch more Evidence,
-change metadata, alter the event population, or change Ordering. PASS Events are
-not regenerated. This correction is separate from Writer transport retry. After
-the permitted correction, persistent invalidity remains an event-level FAIL
-under this section. A complete Writer population/integrity failure remains a
-whole formal Writer-run failure as specified in §P.
+The existing Generic Stateless Structured Helper may transport one additional
+proposal-only task, `validation_semantic_check`. Its task-specific adapter is
+`src/weekly_report/maiagent_validation_provider.py` with adapter identity
+`MaiAgentValidationProposalProvider`. The task uses prompt version
+`validation-evidence-writer-v1`, schema version
+`validation-semantic-check-proposal-v1`, and adapter version
+`maiagent-structured-helper-validation-adapter-v1`. The adapter is subordinate
+to Validator: it must never produce `ValidationResult`, write or correct prose,
+change upstream decisions, or determine workflow continuation.
+
+Each bounded request contains exactly `event_id`, `evidence_sources`, and
+`writer_prose`. Each evidence source contains exactly `candidate_id` and
+`substantive_content`. `writer_prose` contains exactly `headline`,
+`factual_summary`, and `taipei_insight` from the block being checked. Evidence
+sources are the authoritative substantive-content inputs used for the event
+under the Writer contract; under the current contract this is the canonical
+member content. Discovery titles, snippets, publisher metadata, URL geography,
+Category, Taxonomy, Reportability, inferred metadata, and outside knowledge are
+not validation inputs. Source and Writer text are data, never instructions.
+
+The proposal response has exactly this shape; every listed field is required and
+no object may contain additional fields:
+
+```json
+{
+  "event_id": "string",
+  "field_assessments": [
+    {
+      "field_name": "headline | factual_summary | taipei_insight",
+      "language_assessment": "TRADITIONAL_CHINESE | NOT_TRADITIONAL_CHINESE | UNCERTAIN",
+      "units": [
+        {
+          "writer_quote": "non-empty string",
+          "assessment": "SUPPORTED | ANALYSIS | UNSUPPORTED | UNCERTAIN",
+          "evidence_citations": [
+            {"candidate_id": "string", "exact_quote": "non-empty string"}
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+There is exactly one field assessment for each of the three prose fields. Each
+field has a non-empty ordered sequence of substantive claim units. Concatenating
+`writer_quote` values reproduces the complete original field exactly, including
+punctuation and whitespace. Compound claims with different support are split;
+Python mechanically verifies the complete text coverage.
+
+`SUPPORTED` requires a citation supporting the entire substantive claim.
+`ANALYSIS` is allowed only in `taipei_insight`, requires cited Evidence
+premises, and cannot introduce unsupplied facts about Taipei Metro equipment,
+operating conditions, regulations, laws, requirements, projects, incidents, or
+installed capability. `UNSUPPORTED` and `UNCERTAIN` cannot pass. Their citation
+lists may be empty, but any supplied citation must be valid.
+
+Every citation references a supplied `candidate_id` and contains an unchanged,
+non-empty exact quote resolving to exactly one contiguous occurrence in that
+source's `substantive_content`. Python derives coordinates. Provider numeric
+offsets, fuzzy matching, normalization, translation repair, citation repair,
+and provider-authored offsets are forbidden. Exact citation existence proves
+provenance only; it does not mechanically prove semantic entailment. The Helper
+proposal supplies semantic claim assessment, while Python Validator remains
+authoritative after structural and citation validation. Token overlap, entity
+overlap, generic word overlap, and token thresholds cannot establish grounding.
+
+All three prose fields require `TRADITIONAL_CHINESE`. Evidence-supported foreign
+proper names may remain unchanged. Han-character presence, a finite
+Simplified/Japanese blacklist, and Unicode classification alone cannot establish
+language validity. Any obvious-script rejection is Validator-owned, cannot
+reject a supported foreign proper name merely for its script, and cannot by
+itself establish a language PASS.
+
+For zero-event input there are zero Writer calls and zero semantic-helper calls.
+For each structurally valid nonzero event there is one initial
+`validation_semantic_check` call. An event passes only when structural checks
+pass, every language assessment is `TRADITIONAL_CHINESE`, and every substantive
+unit is `SUPPORTED` or permitted `ANALYSIS`.
+
+At most one well-formed semantic failure may receive a Validator-directed Writer
+correction. The correction uses the same authoritative Evidence and cannot
+change metadata, `event_id`, event population, upstream decisions, or Ordering.
+The corrected block must pass structural validation and receive one fresh
+semantic-helper call. The maximum is one Writer drafting call, zero Writer
+transport retries, two semantic-helper calls, and one correction per event.
+PASS events are never regenerated; semantic validation calls are not Writer
+retries.
+
+Missing validation injection/configuration, timeout, HTTP failure, malformed
+outer or inner response, schema violation, unknown event_id, missing required
+fields, incomplete Writer-text coverage, invalid or ambiguous citation,
+event-population failure, source-reference integrity failure,
+metadata-integrity failure, Writer correction transport failure, malformed
+correction output, or changed event identity is a typed `ValidationStageFailure`
+and stops the whole formal run. It cannot become a semantic content FAIL,
+trigger correction or retry, or produce an artifact, staging, or Delivery.
+
+A well-formed proposal containing `UNSUPPORTED`, `UNCERTAIN`,
+`NOT_TRADITIONAL_CHINESE`, or language `UNCERTAIN` is an event-level semantic
+failure. It may receive at most one eligible correction; persistent failure
+excludes only that event. Other PASS events retain their authoritative
+references and relative order.
 
 ## R. Report / Delivery
 
