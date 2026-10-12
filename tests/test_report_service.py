@@ -138,6 +138,29 @@ def _workflow_result(
     return ReportWorkflowResult(decision, reportability)
 
 
+def _semantic_provider(request):
+    source = request.evidence_sources[0]
+    return {
+        "event_id": request.event_id,
+        "field_assessments": [
+            {
+                "field_name": field_name,
+                "language_assessment": "TRADITIONAL_CHINESE",
+                "units": [
+                    {
+                        "writer_quote": value,
+                        "assessment": "ANALYSIS" if field_name == "taipei_insight" else "SUPPORTED",
+                        "evidence_citations": [
+                            {"candidate_id": source.candidate_id, "exact_quote": source.substantive_content}
+                        ],
+                    }
+                ],
+            }
+            for field_name, value in request.writer_prose.as_mapping().items()
+        ],
+    }
+
+
 class ReportServiceTests(TestCase):
     def setUp(self) -> None:
         self.service = ReportService()
@@ -148,7 +171,7 @@ class ReportServiceTests(TestCase):
     def test_final_assembly_combines_metadata_without_model_overwrite(self) -> None:
         result = _workflow_result()
         metadata = self.service.project_formal_metadata((result,))
-        validation = Validator().validate(
+        validation = Validator(semantic_provider=_semantic_provider).validate(
             (result,),
             metadata,
             (WriterReportBlock("E1", "事件標題", "事件摘要 Taiwan Metro", "可供臺北捷運評估規劃方向"),),
@@ -162,7 +185,7 @@ class ReportServiceTests(TestCase):
     def test_zero_pass_assembles_official_no_event_artifact(self) -> None:
         result = _workflow_result()
         metadata = self.service.project_formal_metadata((result,))
-        validation = Validator().validate((result,), metadata, (WriterReportBlock("E1", "事件標題", "事件摘要 Taiwan Metro", "可供臺北捷運評估規劃方向"),))
+        validation = Validator(semantic_provider=_semantic_provider).validate((result,), metadata, (WriterReportBlock("E1", "事件標題", "事件摘要 Taiwan Metro", "可供臺北捷運評估規劃方向"),))
         # The failed population is represented by an empty ValidationResult
         # only after Validator has applied its event-level outcome.
         from src.weekly_report.validator import ValidationResult

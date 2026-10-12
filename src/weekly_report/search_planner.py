@@ -11,6 +11,9 @@ from .contracts import (
     ProviderProfileEligibility,
     QueryFamilyConfig,
     RegionMode,
+    SearchCoverageGap,
+    SearchCoverageGapReason,
+    SearchCoverageProjection,
     SearchPlan,
     SearchPlanItem,
 )
@@ -38,18 +41,24 @@ class SearchPlanner:
         mode = RegionMode(mode)
         selected_intents = self._canonical_intents(intents)
         items: list[SearchPlanItem] = []
-        market_item_counts = {market.market_id: 0 for market in self._registry.markets_for(mode)}
+        configured_markets = self._registry.markets_for(mode)
+        configured_market_ids = tuple(market.market_id for market in configured_markets)
         intent_item_counts = {intent: 0 for intent in selected_intents}
-        for market in self._registry.markets_for(mode):
+        coverage_gaps: list[SearchCoverageGap] = []
+        for market in configured_markets:
             profiles = self._registry.profiles_for_market(market)
+            market_has_supported_binding = False
+            market_binding_count = 0
             for intent in selected_intents:
                 for profile_id in profiles:
                     for family in self._registry.query_families:
+                        market_binding_count += 1
                         binding = self._registry.provider_profile_binding(
                             market.market_id, profile_id, family.provider_target
                         )
                         if binding.eligibility is ProviderProfileEligibility.UNSUPPORTED:
                             continue
+                        market_has_supported_binding = True
                         encoding = binding.encoding
                         if encoding is None:
                             raise ValueError("supported provider profile binding has no encoding")
@@ -85,15 +94,22 @@ class SearchPlanner:
                                     provider_encoding=encoding,
                                 )
                             )
-                            market_item_counts[market.market_id] += 1
                             intent_item_counts[intent] += 1
                             if len(items) > self._registry.planning_limits.max_plan_items:
                                 raise ValueError("Search plan exceeds bounded item limit")
-
-        if any(count == 0 for count in market_item_counts.values()):
-            raise ValueError("Search plan has a configured market with no executable provider coverage")
+            if market_binding_count == 0:
+                raise ValueError("Search plan market has no required provider bindings")
+            if not market_has_supported_binding:
+                coverage_gaps.append(
+                    SearchCoverageGap(
+                        market.market_id,
+                        SearchCoverageGapReason.KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY,
+                    )
+                )
         if any(count == 0 for count in intent_item_counts.values()):
             raise ValueError("Search plan has an enabled intent with no executable provider coverage")
+        if not items:
+            raise ValueError("Search plan has no executable provider coverage")
 
         # The loops consume ordered tuples from the registry. Sorting here is
         # an explicit final canonical order and cannot depend on hash iteration.
@@ -104,6 +120,11 @@ class SearchPlanner:
         plan_payload = {
             "configuration_version": self._registry.configuration_version,
             "region_mode": mode.value,
+            "coverage": SearchCoverageProjection(
+                SearchCoverageProjection.VERSION,
+                configured_market_ids,
+                tuple(coverage_gaps),
+            ).as_mapping(),
             "items": [
                 {
                     "plan_item_id": item.plan_item_id,
@@ -123,11 +144,17 @@ class SearchPlanner:
                 for item in items
             ],
         }
+        coverage = SearchCoverageProjection(
+            SearchCoverageProjection.VERSION,
+            configured_market_ids,
+            tuple(coverage_gaps),
+        )
         return SearchPlan(
             configuration_version=self._registry.configuration_version,
             region_mode=mode,
             items=tuple(items),
             plan_id=f"plan_{_stable_digest(plan_payload)}",
+            coverage=coverage,
         )
 
     @staticmethod

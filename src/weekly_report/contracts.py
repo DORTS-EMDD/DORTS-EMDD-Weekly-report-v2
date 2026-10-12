@@ -1333,6 +1333,72 @@ class ProviderProfileEligibility(StrEnum):
     UNSUPPORTED = "UNSUPPORTED"
 
 
+class SearchCoverageGapReason(StrEnum):
+    """Finite reasons for an observable configured-market coverage gap."""
+
+    KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY = "KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY"
+
+
+@dataclass(frozen=True, slots=True)
+class SearchCoverageGap:
+    """One configured market with no executable governed provider capability."""
+
+    market_id: str
+    reason: SearchCoverageGapReason | str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.market_id, str) or not self.market_id.strip():
+            raise ValueError("SearchCoverageGap requires market_id")
+        try:
+            reason = SearchCoverageGapReason(self.reason)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("SearchCoverageGap requires a canonical reason") from exc
+        object.__setattr__(self, "reason", reason)
+
+    def as_mapping(self) -> dict[str, str]:
+        return {"market_id": self.market_id, "reason": self.reason.value}
+
+
+@dataclass(frozen=True, slots=True)
+class SearchCoverageProjection:
+    """Immutable configured-market coverage retained by a frozen SearchPlan."""
+
+    version: str
+    configured_market_ids: tuple[str, ...]
+    gaps: tuple[SearchCoverageGap, ...] = ()
+
+    VERSION = "search-plan-coverage-v1"
+
+    def __post_init__(self) -> None:
+        if self.version != self.VERSION:
+            raise ValueError(f"SearchCoverageProjection version must be {self.VERSION}")
+        market_ids = tuple(self.configured_market_ids)
+        if any(not isinstance(value, str) or not value.strip() for value in market_ids):
+            raise ValueError("SearchCoverageProjection market IDs must be non-empty strings")
+        if len(market_ids) != len(set(market_ids)):
+            raise ValueError("SearchCoverageProjection market IDs must be unique")
+        gaps = tuple(self.gaps)
+        if any(not isinstance(gap, SearchCoverageGap) for gap in gaps):
+            raise TypeError("SearchCoverageProjection gaps must be SearchCoverageGap values")
+        gap_ids = tuple(gap.market_id for gap in gaps)
+        if len(gap_ids) != len(set(gap_ids)):
+            raise ValueError("SearchCoverageProjection gaps must be unique")
+        if any(market_id not in set(market_ids) for market_id in gap_ids):
+            raise ValueError("SearchCoverageProjection gaps must use configured market IDs")
+        order = {market_id: index for index, market_id in enumerate(market_ids)}
+        if gap_ids != tuple(sorted(gap_ids, key=order.__getitem__)):
+            raise ValueError("SearchCoverageProjection gaps must preserve configured order")
+        object.__setattr__(self, "configured_market_ids", market_ids)
+        object.__setattr__(self, "gaps", gaps)
+
+    def as_mapping(self) -> dict[str, object]:
+        return {
+            "version": self.version,
+            "configured_market_ids": list(self.configured_market_ids),
+            "gaps": [gap.as_mapping() for gap in self.gaps],
+        }
+
+
 @dataclass(frozen=True, slots=True)
 class GoogleNewsRssEncoding:
     """Exact Google News RSS parameters frozen by provider capability config."""
@@ -1623,6 +1689,7 @@ class SearchPlan:
     region_mode: RegionMode
     items: tuple[SearchPlanItem, ...]
     plan_id: str
+    coverage: SearchCoverageProjection | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.configuration_version, str) or not self.configuration_version.strip():
@@ -1643,12 +1710,29 @@ class SearchPlan:
         object.__setattr__(self, "items", items)
         if not isinstance(self.plan_id, str) or not self.plan_id.strip():
             raise ValueError("SearchPlan requires plan_id")
+        coverage = self.coverage
+        if coverage is None:
+            configured_market_ids: list[str] = []
+            for item in items:
+                if item.market_id not in configured_market_ids:
+                    configured_market_ids.append(item.market_id)
+            coverage = SearchCoverageProjection(
+                SearchCoverageProjection.VERSION,
+                tuple(configured_market_ids),
+                (),
+            )
+        if not isinstance(coverage, SearchCoverageProjection):
+            raise TypeError("SearchPlan coverage must be a SearchCoverageProjection")
+        if any(item.market_id not in coverage.configured_market_ids for item in items):
+            raise ValueError("SearchPlan items must use configured coverage market IDs")
+        object.__setattr__(self, "coverage", coverage)
 
     def as_mapping(self) -> dict[str, Any]:
         return {
             "configuration_version": self.configuration_version,
             "region_mode": self.region_mode.value,
             "plan_id": self.plan_id,
+            "coverage": self.coverage.as_mapping(),
             "items": [
                 {
                     "plan_item_id": item.plan_item_id,

@@ -7,7 +7,7 @@ from src.weekly_report.report_service import ReportService
 from src.weekly_report.validator import Validator
 from src.weekly_report.writer import WriterReportBlock
 
-from test_report_service import _workflow_result
+from test_report_service import _semantic_provider, _workflow_result
 
 
 class DeliveryServiceTests(TestCase):
@@ -15,7 +15,7 @@ class DeliveryServiceTests(TestCase):
         result = _workflow_result()
         service = ReportService()
         metadata = service.project_formal_metadata((result,))
-        validation = Validator().validate(
+        validation = Validator(semantic_provider=_semantic_provider).validate(
             (result,), metadata,
             (WriterReportBlock("E1", "事件標題", "事件摘要 Taiwan Metro", "可供臺北捷運評估規劃方向"),),
         )

@@ -211,10 +211,12 @@ class ProviderCapabilityTests(unittest.TestCase):
         mapped_item = next(entry for entry in mapped["items"] if entry["plan_item_id"] == item.plan_item_id)
         self.assertEqual(mapped_item["provider_encoding"], {"hl": "ko", "gl": "KR", "ceid": "KR:ko"})
 
-    def test_configured_market_without_supported_binding_fails_whole_plan(self) -> None:
+    def test_configured_market_without_supported_binding_is_observable_gap(self) -> None:
         registry = RegionRegistry.from_mapping(self.source)
-        with self.assertRaises(ValueError):
-            SearchPlanner(registry).plan("selected")
+        plan = SearchPlanner(registry).plan("selected")
+        self.assertEqual(tuple(gap.market_id for gap in plan.coverage.gaps), ("denmark",))
+        self.assertEqual(plan.coverage.gaps[0].reason.value, "KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY")
+        self.assertEqual(sum(item.market_id == "denmark" for item in plan.items), 0)
 
 
 if __name__ == "__main__":

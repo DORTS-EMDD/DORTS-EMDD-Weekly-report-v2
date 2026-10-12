@@ -7,7 +7,11 @@ import json
 import unittest
 from dataclasses import FrozenInstanceError
 
-from src.weekly_report.contracts import DiscoveryIntent, RegionMode
+from src.weekly_report.contracts import (
+    DiscoveryIntent,
+    RegionMode,
+    SearchCoverageGapReason,
+)
 from src.weekly_report.region_registry import RegionRegistry
 from src.weekly_report.search_planner import SearchPlanner
 
@@ -65,13 +69,42 @@ class SearchPlannerTests(unittest.TestCase):
         )
         self.assertEqual(len(plan.items), expected_count)
 
-    def test_production_selected_planning_fails_closed_for_denmark_without_support(self) -> None:
-        with self.assertRaises(ValueError):
-            SearchPlanner(self.production_registry).plan("selected")
+    def test_production_selected_planning_exposes_denmark_coverage_gap(self) -> None:
+        plan = SearchPlanner(self.production_registry).plan("selected")
+        configured = tuple(market.market_id for market in self.production_registry.selected_markets)
+        self.assertIn("denmark", configured)
+        self.assertEqual(plan.coverage.configured_market_ids, configured)
+        self.assertEqual(tuple(gap.market_id for gap in plan.coverage.gaps), ("denmark",))
+        self.assertEqual(
+            plan.coverage.gaps[0].reason,
+            SearchCoverageGapReason.KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY,
+        )
+        self.assertEqual(sum(item.market_id == "denmark" for item in plan.items), 0)
+        self.assertEqual(len({item.market_id for item in plan.items}), 18)
 
-    def test_production_global_planning_fails_closed_for_denmark_without_support(self) -> None:
+    def test_production_global_planning_exposes_denmark_coverage_gap(self) -> None:
+        plan = SearchPlanner(self.production_registry).plan("global")
+        self.assertIn("denmark", plan.coverage.configured_market_ids)
+        self.assertEqual(tuple(gap.market_id for gap in plan.coverage.gaps), ("denmark",))
+        self.assertEqual(sum(item.market_id == "denmark" for item in plan.items), 0)
+
+    def test_coverage_is_in_plan_mapping_and_identity(self) -> None:
+        plan = SearchPlanner(self.production_registry).plan("selected")
+        mapping = plan.as_mapping()
+        self.assertEqual(mapping["coverage"]["version"], "search-plan-coverage-v1")
+        self.assertEqual(mapping["coverage"]["gaps"][0]["market_id"], "denmark")
+        source = copy.deepcopy(self.source)
+        source["selected_markets"][0]["display_name"] += " changed"
+        changed = SearchPlanner(RegionRegistry.from_mapping(source)).plan("selected")
+        self.assertNotEqual(plan.plan_id, changed.plan_id)
+
+    def test_all_explicitly_unsupported_markets_fail_before_execution(self) -> None:
+        source = copy.deepcopy(self.source)
+        for binding in source["provider_profile_bindings"]:
+            binding["eligibility"] = "UNSUPPORTED"
+            binding["encoding"] = None
         with self.assertRaises(ValueError):
-            SearchPlanner(self.production_registry).plan("global")
+            SearchPlanner(RegionRegistry.from_mapping(source)).plan("selected")
 
     def test_concrete_requests_from_one_family_have_distinct_stable_ids(self) -> None:
         source = copy.deepcopy(self.source)

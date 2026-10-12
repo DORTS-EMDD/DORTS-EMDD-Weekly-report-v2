@@ -64,6 +64,20 @@ class ReportWriterTests(TestCase):
             ReportWriter(provider=provider).write(results)
         self.assertEqual(len(calls), 2)
 
+    def test_japanese_and_simplified_structural_prose_cross_writer_boundary(self) -> None:
+        result = _workflow_result("E1")
+        for headline in ("大阪メトロ新型車両を導入", "该地铁已完成信号系统升级"):
+            with self.subTest(headline=headline):
+                def provider(request, headline=headline):
+                    return {
+                        "event_id": request["writer_request"]["event_id"],
+                        "headline": headline,
+                        "factual_summary": "事件摘要 Taiwan Metro",
+                        "taipei_insight": "可供臺北捷運評估相關規劃方向",
+                    }
+                blocks = ReportWriter(provider=provider).write((result,))
+                self.assertEqual(blocks[0].headline, headline)
+
     def test_writer_block_has_exact_fields(self) -> None:
         block = WriterReportBlock("E1", "標題", "摘要", "啟示")
         self.assertEqual(set(block.__dataclass_fields__), {"event_id", "headline", "factual_summary", "taipei_insight"})

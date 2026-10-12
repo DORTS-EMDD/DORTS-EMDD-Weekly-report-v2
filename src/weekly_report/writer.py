@@ -14,7 +14,6 @@ import json
 import math
 import os
 from pathlib import Path
-import re
 from typing import Any, Protocol
 from urllib.parse import quote, urlsplit
 
@@ -282,12 +281,6 @@ class MaiAgentWriterProvider:
             raise WriterResponseError("MaiAgent Writer provider response was invalid") from None
 
 
-def _contains_traditional_chinese(value: str) -> bool:
-    # A conservative language gate: formal Writer prose must contain Han
-    # characters.  Semantic grounding remains the Validator's responsibility.
-    return bool(re.search(r"[\u3400-\u4dbf\u4e00-\u9fff]", value))
-
-
 class ReportWriter:
     """Sole Writer owner for an already ordered REPORTABLE population."""
 
@@ -344,8 +337,6 @@ class ReportWriter:
                 block = raw if isinstance(raw, WriterReportBlock) else WriterReportBlock.from_mapping(raw)  # type: ignore[arg-type]
                 if block.event_id != event_id:
                     raise ValueError("Writer response event_id does not match request")
-                if any(not _contains_traditional_chinese(getattr(block, name)) for name in ("headline", "factual_summary", "taipei_insight")):
-                    raise ValueError("Writer response must use Traditional Chinese formal prose")
                 blocks.append(block)
             except Exception as exc:
                 failures.append(f"{event_id}:{type(exc).__name__}")
@@ -379,8 +370,6 @@ class ReportWriter:
         corrected = raw if isinstance(raw, WriterReportBlock) else WriterReportBlock.from_mapping(raw)  # type: ignore[arg-type]
         if corrected.event_id != result.event_group.event_id:
             raise WriterResponseError("Writer correction event_id does not match request")
-        if any(not _contains_traditional_chinese(getattr(corrected, name)) for name in ("headline", "factual_summary", "taipei_insight")):
-            raise WriterResponseError("Writer correction must use Traditional Chinese formal prose")
         return corrected
 
 

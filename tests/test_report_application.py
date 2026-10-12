@@ -69,6 +69,25 @@ def _registry() -> RegionRegistry:
     return RegionRegistry.from_file()
 
 
+def _semantic_provider(request):
+    source = request.evidence_sources[0]
+    return {
+        "event_id": request.event_id,
+        "field_assessments": [
+            {
+                "field_name": field_name,
+                "language_assessment": "TRADITIONAL_CHINESE",
+                "units": [{
+                    "writer_quote": value,
+                    "assessment": "ANALYSIS" if field_name == "taipei_insight" else "SUPPORTED",
+                    "evidence_citations": [{"candidate_id": source.candidate_id, "exact_quote": source.substantive_content}],
+                }],
+            }
+            for field_name, value in request.writer_prose.as_mapping().items()
+        ],
+    }
+
+
 def _fixture_plan() -> SearchPlan:
     items = tuple(
         SearchPlanItem(
@@ -1347,7 +1366,7 @@ class ReportApplicationTests(TestCase):
             ordering=RecordingOrdering(),
             report_service=report_service,
             writer=ReportWriter(provider=writer_provider),
-            validator=Validator(),
+            validator=Validator(semantic_provider=_semantic_provider),
             delivery=DeliveryService(),
             delivery_recipient="staging@example.test",
         ).run("selected")
