@@ -37,12 +37,13 @@ from src.weekly_report.production_runner import (  # noqa: E402
     ProductionRunner,
     _SearchFailureDiagnosticCollector,
 )
+from src.weekly_report.report_application import SearchRuntimeAcceptance  # noqa: E402
 from src.weekly_report.region_registry import RegionRegistry  # noqa: E402
 from src.weekly_report.report_service import FinalReportArtifact  # noqa: E402
 from src.weekly_report.search_planner import SearchPlanner  # noqa: E402
 
 
-def _application_result(*, technical: bool = False, artifact=None):
+def _application_result(*, technical: bool = False, artifact=None, acceptance=None):
     plan = SimpleNamespace(items=())
     attempt = (
         SearchAttemptResult(
@@ -77,6 +78,11 @@ def _application_result(*, technical: bool = False, artifact=None):
         validation_result=None,
         final_report=artifact,
         delivery_result=None,
+        search_runtime_acceptance=(
+            SearchRuntimeAcceptance.BLOCK
+            if technical
+            else SearchRuntimeAcceptance.LEGAL_COMPLETED_SEARCH
+        ) if acceptance is None else acceptance,
     )
 
 
@@ -126,7 +132,65 @@ def _complete_failure_application_result():
     result = _application_result(technical=False)
     result.plan = plan
     result.execution = execution
+    result.search_runtime_acceptance = SearchRuntimeAcceptance.BLOCK
     return result
+
+
+def _mixed_application_result(*, artifact):
+    encoding = GoogleNewsRssEncoding("en-US", "US", "US:en")
+    items = (
+        SearchPlanItem(
+            "item-1", "market-a", RegionMode.SELECTED, DiscoveryIntent.TECHNOLOGY,
+            "profile-a", "family-a", SearchProviderId.GOOGLE_NEWS_RSS,
+            "secret query one", encoding, "en-US",
+        ),
+        SearchPlanItem(
+            "item-2", "market-b", RegionMode.SELECTED, DiscoveryIntent.PROCUREMENT,
+            "profile-b", "family-b", SearchProviderId.GOOGLE_NEWS_RSS,
+            "secret query two", encoding, "en-US",
+        ),
+    )
+    plan = SearchPlan("test-config", RegionMode.SELECTED, items, "test-plan")
+    attempts = (
+        SearchAttemptResult("item-1", SearchTerminalStatus.SUCCESS_ZERO_RESULTS),
+        SearchAttemptResult(
+            "item-2", SearchTerminalStatus.TECHNICAL_FAILURE,
+            technical_failure_class=SearchTechnicalFailureClass.INVALID_RESPONSE,
+        ),
+    )
+    observations = (
+        SearchObservation(
+            "item-1", "market-a", DiscoveryIntent.TECHNOLOGY, "profile-a", "family-a",
+            SearchProviderId.GOOGLE_NEWS_RSS, True, True,
+            SearchTerminalStatus.SUCCESS_ZERO_RESULTS, 0, None, None,
+        ),
+        SearchObservation(
+            "item-2", "market-b", DiscoveryIntent.PROCUREMENT, "profile-b", "family-b",
+            SearchProviderId.GOOGLE_NEWS_RSS, True, True,
+            SearchTerminalStatus.TECHNICAL_FAILURE, 0,
+            SearchTechnicalFailureClass.INVALID_RESPONSE, None,
+        ),
+    )
+    execution = SearchExecutionResult(plan, attempts, observations=observations)
+    return SimpleNamespace(
+        plan=plan,
+        execution=execution,
+        acquisitions=(),
+        normalized_observations=observations,
+        evidence_results=(),
+        scope_results=(),
+        temporal_results=(),
+        event_identity_records=(),
+        category_results=(),
+        downstream_results=(),
+        ordered_results=(),
+        formal_metadata=(),
+        writer_blocks=(),
+        validation_result=None,
+        final_report=artifact,
+        delivery_result=None,
+        search_runtime_acceptance=SearchRuntimeAcceptance.PASS_WITH_GAPS,
+    )
 
 
 class _FakeApplication:
@@ -215,6 +279,31 @@ class ProductionRunnerTests(unittest.TestCase):
         )
         self.assertTrue(result.successful)
         self.assertEqual(result.final_report.event_count, 0)
+
+    def test_pass_with_gaps_can_finish_successfully_with_safe_diagnostics(self):
+        artifact = FinalReportArtifact("report-gap", "artifact-gap", "v1", (), (), "No events")
+        collector = _SearchFailureDiagnosticCollector()
+        class _RecordingApplication(_FakeApplication):
+            def run(self, mode, *, period_start, period_end):
+                collector.record(
+                    GoogleNewsRssDiagnostic(
+                        "item-2", GoogleNewsRssDiagnosticReason.HTTP_OTHER_NON_200, 503
+                    )
+                )
+                return super().run(mode, period_start=period_start, period_end=period_end)
+
+        result = ProductionRunner(
+            _RecordingApplication(_mixed_application_result(artifact=artifact)),
+            diagnostic_collector=collector,
+        ).run(period_start="2026-10-01", period_end="2026-10-07")
+        self.assertEqual(result.status, ProductionRunStatus.SUCCESS)
+        self.assertEqual(result.search_failure_count, 1)
+        self.assertEqual(dict(result.search_failure_class_distribution), {"INVALID_RESPONSE": 1})
+        self.assertEqual(dict(result.search_failure_reason_distribution), {"HTTP_OTHER_NON_200": 1})
+        self.assertEqual(dict(result.search_failure_http_status_distribution), {"503": 1})
+        summary = result.summary()
+        self.assertIn("search_failure_count=1", summary)
+        self.assertIn("search_failure_item=", summary)
 
 
 class GoogleNewsHealthCheckTests(unittest.TestCase):

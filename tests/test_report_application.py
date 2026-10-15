@@ -43,8 +43,11 @@ from src.weekly_report.contracts import (
     candidate_id_for_url,
 )
 from src.weekly_report.region_registry import RegionRegistry
-from src.weekly_report.report_application import ReportApplication
-from src.weekly_report.report_application import build_report_application
+from src.weekly_report.report_application import (
+    ReportApplication,
+    SearchRuntimeAcceptance,
+    build_report_application,
+)
 from src.weekly_report.evidence_service import EvidenceService
 from src.weekly_report.search_executor import SearchExecutor
 from src.weekly_report.search_planner import SearchPlanner
@@ -161,6 +164,16 @@ class ZeroResultProvider(FakeProvider):
     def execute(self, item):
         self.calls.append(item.plan_item_id)
         return SearchAttemptResult(item.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
+
+
+class AllFailureProvider(FakeProvider):
+    def execute(self, item):
+        self.calls.append(item.plan_item_id)
+        return SearchAttemptResult(
+            item.plan_item_id,
+            SearchTerminalStatus.TECHNICAL_FAILURE,
+            technical_failure_class=SearchTechnicalFailureClass.TIMEOUT,
+        )
 
 
 class FormalResultProvider(FakeProvider):
@@ -656,24 +669,49 @@ class ReportApplicationTests(TestCase):
     def test_planner_executor_normalizer_path_and_projection(self) -> None:
         provider = FakeProvider()
         result = self._app(provider).run("selected")
+        self.assertIs(result.search_runtime_acceptance, SearchRuntimeAcceptance.LEGAL_COMPLETED_SEARCH)
         self.assertTrue(result.downstream_ready)
         self.assertEqual(len(result.normalized_candidates), 1)
         self.assertEqual(tuple(item.normalized_result_count for item in result.normalized_observations), (1, 0))
         self.assertEqual(result.execution.observations[0].normalized_result_count, None)
         self.assertEqual(provider.calls, ["item-0", "item-1"])
 
-    def test_technical_failure_blocks_downstream(self) -> None:
+    def test_mixed_technical_failure_is_accepted_with_runtime_gap(self) -> None:
         result = self._app(FakeProvider(failure_item="item-1")).run("selected")
-        self.assertFalse(result.downstream_ready)
-        self.assertIsNone(result.normalization_result)
+        self.assertIs(result.search_runtime_acceptance, SearchRuntimeAcceptance.PASS_WITH_GAPS)
+        self.assertTrue(result.downstream_ready)
+        self.assertIsNotNone(result.normalization_result)
+        self.assertEqual(len(result.acquisitions), 1)
+        self.assertTrue(result.evidence_stage_completed)
+        self.assertEqual(
+            tuple(item.normalized_result_count for item in result.normalized_observations),
+            (1, None),
+        )
+        failed_observation = result.normalized_observations[1]
+        self.assertIs(failed_observation.terminal_status, SearchTerminalStatus.TECHNICAL_FAILURE)
+        self.assertIs(
+            failed_observation.technical_failure_class,
+            SearchTechnicalFailureClass.TIMEOUT,
+        )
 
     def test_infrastructure_failure_and_incomplete_execution_block(self) -> None:
         result = self._app(FakeProvider(infrastructure=True)).run("selected")
+        self.assertIs(result.search_runtime_acceptance, SearchRuntimeAcceptance.BLOCK)
         self.assertFalse(result.downstream_ready)
         self.assertFalse(result.execution.execution_complete)
         result = self._app(FakeProvider(), dispatch=False).run("selected")
+        self.assertIs(result.search_runtime_acceptance, SearchRuntimeAcceptance.BLOCK)
         self.assertFalse(result.downstream_ready)
         self.assertFalse(result.execution.execution_complete)
+
+    def test_all_technical_failures_block_before_normalization_or_evidence(self) -> None:
+        service = RecordingEvidenceService()
+        result = self._app(AllFailureProvider(), evidence_service=service).run("selected")
+        self.assertIs(result.search_runtime_acceptance, SearchRuntimeAcceptance.BLOCK)
+        self.assertFalse(result.downstream_ready)
+        self.assertIsNone(result.normalization_result)
+        self.assertIsNone(result.evidence_results)
+        self.assertEqual(service.calls, [])
 
     def test_all_zero_search_is_valid_and_produces_zero_candidates(self) -> None:
         class ZeroProvider(FakeProvider):
@@ -682,6 +720,7 @@ class ReportApplicationTests(TestCase):
                 return SearchAttemptResult(item.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
 
         result = self._app(ZeroProvider()).run("selected")
+        self.assertIs(result.search_runtime_acceptance, SearchRuntimeAcceptance.LEGAL_COMPLETED_SEARCH)
         self.assertTrue(result.downstream_ready)
         self.assertEqual(result.normalized_candidates, ())
         self.assertEqual(tuple(item.normalized_result_count for item in result.normalized_observations), (0, 0))
@@ -751,12 +790,13 @@ class ReportApplicationTests(TestCase):
         )
         self.assertEqual(origins[0].record.plan_item.plan_item_id, "item-0")
 
-    def test_search_failure_does_not_call_evidence(self) -> None:
+    def test_accepted_search_gap_reaches_evidence_without_failed_acquisition(self) -> None:
         service = RecordingEvidenceService()
         result = self._app(FakeProvider(failure_item="item-1"), evidence_service=service).run("selected")
 
-        self.assertFalse(result.evidence_stage_completed)
-        self.assertEqual(service.calls, [])
+        self.assertTrue(result.evidence_stage_completed)
+        self.assertEqual(len(service.calls), 1)
+        self.assertEqual(result.evidence_results[0].candidate_id, result.normalized_candidates[0].candidate.candidate_id)
 
     def test_normalization_failure_does_not_call_evidence(self) -> None:
         service = RecordingEvidenceService()
@@ -808,11 +848,12 @@ class ReportApplicationTests(TestCase):
     def test_evidence_results_require_successful_search_execution(self) -> None:
         valid = self._app(MultiResultProvider()).run("selected")
         incomplete = self._app(MultiResultProvider(), dispatch=False).run("selected").execution
-        technical_failure = self._app(FakeProvider(failure_item="item-1")).run("selected").execution
+        with self.assertRaises(ValueError):
+            replace(valid, execution=incomplete)
 
-        for execution in (incomplete, technical_failure):
-            with self.assertRaises(ValueError):
-                replace(valid, execution=execution)
+        accepted_gap = self._app(FakeProvider(failure_item="item-1")).run("selected")
+        self.assertIs(accepted_gap.search_runtime_acceptance, SearchRuntimeAcceptance.PASS_WITH_GAPS)
+        self.assertTrue(accepted_gap.evidence_stage_completed)
 
         self.assertTrue(valid.downstream_ready)
         self.assertTrue(valid.evidence_stage_completed)

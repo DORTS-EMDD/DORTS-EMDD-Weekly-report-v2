@@ -41,7 +41,12 @@ from .maiagent_transport import MaiAgentJsonHttpTransport
 from .maiagent_validation_provider import build_maiagent_validation_provider
 from .ordering import Ordering
 from .region_registry import RegionRegistry
-from .report_application import ReportApplication, ReportApplicationResult, build_report_application
+from .report_application import (
+    ReportApplication,
+    ReportApplicationResult,
+    SearchRuntimeAcceptance,
+    build_report_application,
+)
 from .report_service import FinalReportArtifact, ReportService
 from .report_workflow import build_report_workflow
 from .scope_classifier import ScopeClassifier
@@ -533,8 +538,21 @@ class ProductionRunner:
                 failure_class="INVALID_RESULT",
                 diagnostic="application returned an invalid result",
             )
+        acceptance = getattr(result, "search_runtime_acceptance", None)
+        if not isinstance(acceptance, SearchRuntimeAcceptance):
+            return ProductionRunResult(
+                ProductionRunStatus.APPLICATION_FAILURE,
+                start,
+                end,
+                mode,
+                {},
+                failure_stage="application",
+                failure_class="INVALID_RESULT",
+                diagnostic="application returned no Search runtime acceptance",
+            )
         counts = _stage_counts(result)
-        if not result.execution.execution_complete or result.execution.has_technical_failures:
+        failure_projection = None
+        if acceptance is SearchRuntimeAcceptance.BLOCK:
             (
                 search_failure_count,
                 class_distribution,
@@ -562,7 +580,21 @@ class ProductionRunner:
                 search_failure_http_status_distribution=status_distribution,
                 search_failure_details=failure_details,
             )
+        if acceptance is SearchRuntimeAcceptance.PASS_WITH_GAPS:
+            failure_projection = _search_failure_projection(
+                result,
+                None
+                if self._diagnostic_collector is None
+                else self._diagnostic_collector.snapshot(),
+            )
         if result.final_report is None:
+            diagnostic_fields = {} if failure_projection is None else {
+                "search_failure_count": failure_projection[0],
+                "search_failure_class_distribution": failure_projection[1],
+                "search_failure_reason_distribution": failure_projection[2],
+                "search_failure_http_status_distribution": failure_projection[3],
+                "search_failure_details": failure_projection[4],
+            }
             return ProductionRunResult(
                 ProductionRunStatus.APPLICATION_FAILURE,
                 start,
@@ -572,7 +604,15 @@ class ProductionRunner:
                 failure_stage="final_report",
                 failure_class="ARTIFACT_UNAVAILABLE",
                 diagnostic="final formal report artifact was not produced",
+                **diagnostic_fields,
             )
+        diagnostic_fields = {} if failure_projection is None else {
+            "search_failure_count": failure_projection[0],
+            "search_failure_class_distribution": failure_projection[1],
+            "search_failure_reason_distribution": failure_projection[2],
+            "search_failure_http_status_distribution": failure_projection[3],
+            "search_failure_details": failure_projection[4],
+        }
         return ProductionRunResult(
             ProductionRunStatus.SUCCESS,
             start,
@@ -581,6 +621,7 @@ class ProductionRunner:
             counts,
             final_report=result.final_report,
             delivery_result=result.delivery_result,
+            **diagnostic_fields,
         )
 
 

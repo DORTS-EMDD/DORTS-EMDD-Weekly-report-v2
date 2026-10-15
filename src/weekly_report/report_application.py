@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
+from enum import StrEnum
 
 from .candidate_normalizer import CandidateNormalizationError, CandidateNormalizer
 from .classifier import Classifier
@@ -44,6 +45,42 @@ from .validator import ValidationResult, Validator
 from .delivery import DeliveryReceipt, DeliveryService
 
 
+class SearchRuntimeAcceptance(StrEnum):
+    """Application-owned continuation outcome for one Search execution."""
+
+    BLOCK = "BLOCK"
+    LEGAL_COMPLETED_SEARCH = "LEGAL_COMPLETED_SEARCH"
+    PASS_WITH_GAPS = "PASS_WITH_GAPS"
+
+
+def determine_search_runtime_acceptance(
+    execution: SearchExecutionResult,
+) -> SearchRuntimeAcceptance:
+    """Apply the locked Model C Search continuation rule exactly once."""
+
+    if not isinstance(execution, SearchExecutionResult):
+        raise TypeError("search runtime acceptance requires SearchExecutionResult")
+    if (
+        not execution.execution_complete
+        or execution.unattempted_items
+        or execution.infrastructure_failure is not None
+    ):
+        return SearchRuntimeAcceptance.BLOCK
+    legal_success_count = sum(
+        attempt.status
+        in {
+            SearchTerminalStatus.SUCCESS_WITH_RESULTS,
+            SearchTerminalStatus.SUCCESS_ZERO_RESULTS,
+        }
+        for attempt in execution.attempt_results
+    )
+    if legal_success_count == 0:
+        return SearchRuntimeAcceptance.BLOCK
+    if execution.has_technical_failures:
+        return SearchRuntimeAcceptance.PASS_WITH_GAPS
+    return SearchRuntimeAcceptance.LEGAL_COMPLETED_SEARCH
+
+
 @dataclass(frozen=True, slots=True)
 class ReportApplicationResult:
     """Immutable shared application result through the Event Identity boundary."""
@@ -71,6 +108,10 @@ class ReportApplicationResult:
     validation_result: ValidationResult | None = None
     final_report: FinalReportArtifact | None = None
     delivery_result: DeliveryReceipt | None = None
+
+    @property
+    def search_runtime_acceptance(self) -> SearchRuntimeAcceptance:
+        return determine_search_runtime_acceptance(self.execution)
 
     def __post_init__(self) -> None:
         if not isinstance(self.plan, SearchPlan):
@@ -101,8 +142,8 @@ class ReportApplicationResult:
             raise ValueError("normalization result and failure are mutually exclusive")
         evidence_results = self.evidence_results
         if evidence_results is not None:
-            if not self.execution.execution_complete or self.execution.has_technical_failures:
-                raise ValueError("Evidence results require successful Search execution")
+            if self.search_runtime_acceptance is SearchRuntimeAcceptance.BLOCK:
+                raise ValueError("Evidence results require accepted Search execution")
             evidence_results = tuple(evidence_results)
             if self.normalization_result is None or self.normalization_failure is not None:
                 raise ValueError("Evidence results require completed normalization")
@@ -354,8 +395,7 @@ class ReportApplicationResult:
     @property
     def downstream_ready(self) -> bool:
         return (
-            self.execution.execution_complete
-            and not self.execution.has_technical_failures
+            self.search_runtime_acceptance is not SearchRuntimeAcceptance.BLOCK
             and self.normalization_result is not None
             and self.normalization_failure is None
         )
@@ -531,7 +571,7 @@ class ReportApplication:
         self._temporal_rule.validate_period(period_start, period_end)
         plan = self._planner.plan(mode, intents=intents)
         execution = self._executor.execute(plan)
-        if not execution.execution_complete or execution.has_technical_failures:
+        if determine_search_runtime_acceptance(execution) is SearchRuntimeAcceptance.BLOCK:
             return ReportApplicationResult(
                 plan,
                 execution,
@@ -976,5 +1016,7 @@ def build_report_application(
 __all__ = [
     "ReportApplication",
     "ReportApplicationResult",
+    "SearchRuntimeAcceptance",
     "build_report_application",
+    "determine_search_runtime_acceptance",
 ]
