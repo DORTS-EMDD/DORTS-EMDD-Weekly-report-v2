@@ -176,6 +176,16 @@ class AllFailureProvider(FakeProvider):
         )
 
 
+class AllResultsProvider(FakeProvider):
+    def execute(self, item):
+        self.calls.append(item.plan_item_id)
+        return SearchAttemptResult(
+            item.plan_item_id,
+            SearchTerminalStatus.SUCCESS_WITH_RESULTS,
+            (DiscoveryResult(item.plan_item_id, f"https://example.test/{item.plan_item_id}"),),
+        )
+
+
 class FormalResultProvider(FakeProvider):
     def execute(self, item):
         self.calls.append(item.plan_item_id)
@@ -675,6 +685,12 @@ class ReportApplicationTests(TestCase):
         self.assertEqual(tuple(item.normalized_result_count for item in result.normalized_observations), (1, 0))
         self.assertEqual(result.execution.observations[0].normalized_result_count, None)
         self.assertEqual(provider.calls, ["item-0", "item-1"])
+
+    def test_all_success_with_results_is_a_legal_completed_search(self) -> None:
+        result = self._app(AllResultsProvider()).run("selected")
+        self.assertIs(result.search_runtime_acceptance, SearchRuntimeAcceptance.LEGAL_COMPLETED_SEARCH)
+        self.assertTrue(result.downstream_ready)
+        self.assertEqual(len(result.acquisitions), 2)
 
     def test_mixed_technical_failure_is_accepted_with_runtime_gap(self) -> None:
         result = self._app(FakeProvider(failure_item="item-1")).run("selected")
