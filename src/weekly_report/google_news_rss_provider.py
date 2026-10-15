@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from enum import StrEnum
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -41,6 +42,50 @@ class RssTransportResponse:
 RssTransport = Callable[[str, float], RssTransportResponse]
 
 
+class GoogleNewsRssDiagnosticReason(StrEnum):
+    """Finite, mechanical reasons retained for provider failure forensics."""
+
+    HTTP_OTHER_NON_200 = "HTTP_OTHER_NON_200"
+    REDIRECT_OR_FINAL_URL_MISMATCH = "REDIRECT_OR_FINAL_URL_MISMATCH"
+    RSS_PARSE_OR_SCHEMA_FAILURE = "RSS_PARSE_OR_SCHEMA_FAILURE"
+    NETWORK = "NETWORK"
+    TIMEOUT = "TIMEOUT"
+    RATE_LIMIT = "RATE_LIMIT"
+    AUTHENTICATION = "AUTHENTICATION"
+    UNKNOWN = "UNKNOWN"
+
+
+@dataclass(frozen=True, slots=True)
+class GoogleNewsRssDiagnostic:
+    """Secret-free provider observation; it has no Search authority."""
+
+    plan_item_id: str
+    reason_code: GoogleNewsRssDiagnosticReason | str
+    http_status: int | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.plan_item_id, str) or not self.plan_item_id.strip():
+            raise ValueError("GoogleNewsRssDiagnostic requires plan_item_id")
+        try:
+            reason = GoogleNewsRssDiagnosticReason(self.reason_code)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("GoogleNewsRssDiagnostic requires a finite reason code") from exc
+        object.__setattr__(self, "reason_code", reason)
+        if self.http_status is not None and (
+            isinstance(self.http_status, bool)
+            or not isinstance(self.http_status, int)
+            or not 100 <= self.http_status <= 599
+        ):
+            raise ValueError("GoogleNewsRssDiagnostic http_status must be a valid HTTP status")
+
+
+GoogleNewsRssDiagnosticSink = Callable[[GoogleNewsRssDiagnostic], object]
+
+
+class _TransportResponseValidationError(ValueError):
+    """A local transport-shape failure, distinct from malformed RSS content."""
+
+
 class _NoRedirectHandler(HTTPRedirectHandler):
     """Make redirect responses terminal instead of following them."""
 
@@ -68,12 +113,47 @@ def _default_transport(url: str, timeout_seconds: float) -> RssTransportResponse
         )
 
 
-def _failure(item: SearchPlanItem, failure_class: SearchTechnicalFailureClass) -> SearchAttemptResult:
-    return SearchAttemptResult(
+def _emit_diagnostic(
+    sink: GoogleNewsRssDiagnosticSink | None,
+    diagnostic: GoogleNewsRssDiagnostic,
+) -> None:
+    if sink is None:
+        return
+    try:
+        sink(diagnostic)
+    except Exception:
+        # Observability is passive and must never alter Search behavior.
+        return
+
+
+def _failure(
+    item: SearchPlanItem,
+    failure_class: SearchTechnicalFailureClass,
+    *,
+    diagnostic_sink: GoogleNewsRssDiagnosticSink | None,
+    reason_code: GoogleNewsRssDiagnosticReason,
+    http_status: int | None = None,
+) -> SearchAttemptResult:
+    result = SearchAttemptResult(
         item.plan_item_id,
         SearchTerminalStatus.TECHNICAL_FAILURE,
         technical_failure_class=failure_class,
     )
+    _emit_diagnostic(
+        diagnostic_sink,
+        GoogleNewsRssDiagnostic(item.plan_item_id, reason_code, _safe_http_status(http_status)),
+    )
+    return result
+
+
+def _safe_http_status(value: object) -> int | None:
+    if (
+        isinstance(value, int)
+        and not isinstance(value, bool)
+        and 100 <= value <= 599
+    ):
+        return value
+    return None
 
 
 def _failure_class_for_status(status_code: int) -> SearchTechnicalFailureClass:
@@ -84,22 +164,30 @@ def _failure_class_for_status(status_code: int) -> SearchTechnicalFailureClass:
     return SearchTechnicalFailureClass.INVALID_RESPONSE
 
 
+def _diagnostic_reason_for_status(status_code: int) -> GoogleNewsRssDiagnosticReason:
+    if status_code in {401, 403}:
+        return GoogleNewsRssDiagnosticReason.AUTHENTICATION
+    if status_code == 429:
+        return GoogleNewsRssDiagnosticReason.RATE_LIMIT
+    return GoogleNewsRssDiagnosticReason.HTTP_OTHER_NON_200
+
+
 def _response_parts(value: RssTransportResponse, request_url: str) -> tuple[bytes, int, str, Mapping[str, str]]:
     """Consume only the explicit transport contract; reject other shapes."""
 
     if not isinstance(value, RssTransportResponse):
-        raise TypeError("RSS transport requires RssTransportResponse")
+        raise _TransportResponseValidationError("RSS transport requires RssTransportResponse")
     body = value.body
     status = value.status_code
     final_url = request_url if value.final_url == "" else value.final_url
     headers = {} if value.headers is None else value.headers
 
     if not isinstance(body, (bytes, str)) or not isinstance(status, int) or isinstance(status, bool):
-        raise ValueError("invalid RSS transport response")
+        raise _TransportResponseValidationError("invalid RSS transport response")
     if not isinstance(final_url, str) or not final_url:
-        raise ValueError("invalid RSS response URL")
+        raise _TransportResponseValidationError("invalid RSS response URL")
     if not isinstance(headers, Mapping):
-        raise ValueError("invalid RSS response headers")
+        raise _TransportResponseValidationError("invalid RSS response headers")
     return (body.encode("utf-8") if isinstance(body, str) else body), status, final_url, headers
 
 
@@ -151,11 +239,15 @@ class GoogleNewsRssProvider(SearchProvider):
         transport: RssTransport | None = None,
         *,
         timeout_seconds: float = 10.0,
+        diagnostic_sink: GoogleNewsRssDiagnosticSink | None = None,
     ) -> None:
         if isinstance(timeout_seconds, bool) or float(timeout_seconds) <= 0:
             raise ValueError("timeout_seconds must be positive")
         self._timeout_seconds = float(timeout_seconds)
         self._transport = transport or _default_transport
+        if diagnostic_sink is not None and not callable(diagnostic_sink):
+            raise TypeError("diagnostic_sink must be callable or None")
+        self._diagnostic_sink = diagnostic_sink
 
     @staticmethod
     def request_url(item: SearchPlanItem) -> str:
@@ -182,11 +274,23 @@ class GoogleNewsRssProvider(SearchProvider):
             response = self._transport(url, self._timeout_seconds)
             body, status, final_url, headers = _response_parts(response, url)
             if status != 200:
-                return _failure(request, _failure_class_for_status(status))
+                return _failure(
+                    request,
+                    _failure_class_for_status(status),
+                    diagnostic_sink=self._diagnostic_sink,
+                    reason_code=_diagnostic_reason_for_status(status),
+                    http_status=status,
+                )
             if final_url != url or any(
                 str(key).casefold() == "location" for key in headers
             ):
-                return _failure(request, SearchTechnicalFailureClass.INVALID_RESPONSE)
+                return _failure(
+                    request,
+                    SearchTechnicalFailureClass.INVALID_RESPONSE,
+                    diagnostic_sink=self._diagnostic_sink,
+                    reason_code=GoogleNewsRssDiagnosticReason.REDIRECT_OR_FINAL_URL_MISMATCH,
+                    http_status=status,
+                )
             results = _parse_rss(body)
             if not results:
                 return SearchAttemptResult(request.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
@@ -196,26 +300,69 @@ class GoogleNewsRssProvider(SearchProvider):
                 results,
             )
         except HTTPError as exc:
-            return _failure(request, _failure_class_for_status(exc.code))
+            return _failure(
+                request,
+                _failure_class_for_status(exc.code),
+                diagnostic_sink=self._diagnostic_sink,
+                reason_code=_diagnostic_reason_for_status(exc.code),
+                http_status=exc.code,
+            )
         except TimeoutError:
-            return _failure(request, SearchTechnicalFailureClass.TIMEOUT)
+            return _failure(
+                request,
+                SearchTechnicalFailureClass.TIMEOUT,
+                diagnostic_sink=self._diagnostic_sink,
+                reason_code=GoogleNewsRssDiagnosticReason.TIMEOUT,
+            )
         except URLError as exc:
             reason = getattr(exc, "reason", None)
             if isinstance(reason, TimeoutError):
                 failure_class = SearchTechnicalFailureClass.TIMEOUT
+                diagnostic_reason = GoogleNewsRssDiagnosticReason.TIMEOUT
             else:
                 failure_class = SearchTechnicalFailureClass.NETWORK
-            return _failure(request, failure_class)
+                diagnostic_reason = GoogleNewsRssDiagnosticReason.NETWORK
+            return _failure(
+                request,
+                failure_class,
+                diagnostic_sink=self._diagnostic_sink,
+                reason_code=diagnostic_reason,
+            )
+        except _TransportResponseValidationError:
+            return _failure(
+                request,
+                SearchTechnicalFailureClass.INVALID_RESPONSE,
+                diagnostic_sink=self._diagnostic_sink,
+                reason_code=GoogleNewsRssDiagnosticReason.RSS_PARSE_OR_SCHEMA_FAILURE,
+            )
         except (ElementTree.ParseError, ValueError, TypeError, UnicodeError):
-            return _failure(request, SearchTechnicalFailureClass.INVALID_RESPONSE)
+            return _failure(
+                request,
+                SearchTechnicalFailureClass.INVALID_RESPONSE,
+                diagnostic_sink=self._diagnostic_sink,
+                reason_code=GoogleNewsRssDiagnosticReason.RSS_PARSE_OR_SCHEMA_FAILURE,
+            )
         except OSError:
-            return _failure(request, SearchTechnicalFailureClass.NETWORK)
+            return _failure(
+                request,
+                SearchTechnicalFailureClass.NETWORK,
+                diagnostic_sink=self._diagnostic_sink,
+                reason_code=GoogleNewsRssDiagnosticReason.NETWORK,
+            )
         except Exception:
-            return _failure(request, SearchTechnicalFailureClass.UNKNOWN)
+            return _failure(
+                request,
+                SearchTechnicalFailureClass.UNKNOWN,
+                diagnostic_sink=self._diagnostic_sink,
+                reason_code=GoogleNewsRssDiagnosticReason.UNKNOWN,
+            )
 
 
 __all__ = [
     "GOOGLE_NEWS_RSS_ENDPOINT",
     "GoogleNewsRssProvider",
+    "GoogleNewsRssDiagnostic",
+    "GoogleNewsRssDiagnosticReason",
+    "GoogleNewsRssDiagnosticSink",
     "RssTransportResponse",
 ]

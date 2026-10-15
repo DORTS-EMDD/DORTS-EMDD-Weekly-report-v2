@@ -9,7 +9,7 @@ policy of its own.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, timedelta
 from enum import StrEnum
 import os
@@ -28,7 +28,11 @@ from .contracts import (
 from .delivery import DeliveryReceipt, DeliveryService
 from .evidence_service import EvidenceService
 from .event_identity import EventIdentity
-from .google_news_rss_provider import GoogleNewsRssProvider
+from .google_news_rss_provider import (
+    GoogleNewsRssDiagnostic,
+    GoogleNewsRssDiagnosticReason,
+    GoogleNewsRssProvider,
+)
 from .maiagent_evidence_metadata_provider import build_maiagent_evidence_metadata_extractor
 from .maiagent_reportability_provider import build_maiagent_reportability_provider
 from .maiagent_semantic_judge_provider import build_maiagent_semantic_judge
@@ -64,6 +68,120 @@ class ProductionRunStatus(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class SearchFailureDiagnostic:
+    """Safe deployment-level projection of one authoritative failed attempt."""
+
+    ordinal: int
+    plan_item_id: str
+    market_id: str
+    language_profile: str
+    intent: str
+    query_family_id: str
+    terminal_status: str
+    technical_failure_class: str
+    reason_code: str
+    http_status: int | None = None
+
+    def __post_init__(self) -> None:
+        if isinstance(self.ordinal, bool) or not isinstance(self.ordinal, int) or self.ordinal < 1:
+            raise ValueError("SearchFailureDiagnostic ordinal must be positive")
+        for field_name in (
+            "plan_item_id",
+            "market_id",
+            "language_profile",
+            "intent",
+            "query_family_id",
+            "terminal_status",
+            "technical_failure_class",
+            "reason_code",
+        ):
+            value = getattr(self, field_name)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"SearchFailureDiagnostic requires {field_name}")
+        if self.http_status is not None and (
+            isinstance(self.http_status, bool)
+            or not isinstance(self.http_status, int)
+            or not 100 <= self.http_status <= 599
+        ):
+            raise ValueError("SearchFailureDiagnostic http_status must be a valid HTTP status")
+
+
+class _SearchFailureDiagnosticCollector:
+    """Per-run passive provider observation channel."""
+
+    def __init__(self) -> None:
+        self._items: dict[str, GoogleNewsRssDiagnostic] = {}
+
+    def clear(self) -> None:
+        self._items.clear()
+
+    def record(self, diagnostic: GoogleNewsRssDiagnostic) -> None:
+        if not isinstance(diagnostic, GoogleNewsRssDiagnostic):
+            return
+        # One SearchPlanItem is attempted once.  Keeping the first observation
+        # avoids an observer becoming an alternative source of truth if a
+        # caller reuses the provider outside the normal runner path.
+        self._items.setdefault(diagnostic.plan_item_id, diagnostic)
+
+    def snapshot(self) -> Mapping[str, GoogleNewsRssDiagnostic]:
+        return dict(self._items)
+
+
+def _search_failure_projection(
+    result: ReportApplicationResult,
+    diagnostics: Mapping[str, GoogleNewsRssDiagnostic] | None,
+) -> tuple[int, Mapping[str, int], Mapping[str, int], Mapping[str, int], tuple[SearchFailureDiagnostic, ...]]:
+    """Project safe failure facts from the authoritative Search result."""
+
+    item_by_id = {item.plan_item_id: (ordinal, item) for ordinal, item in enumerate(result.plan.items, 1)}
+    class_distribution: dict[str, int] = {}
+    reason_distribution: dict[str, int] = {}
+    status_distribution: dict[str, int] = {}
+    details: list[SearchFailureDiagnostic] = []
+    for attempt in result.execution.attempt_results:
+        if attempt.status is not SearchTerminalStatus.TECHNICAL_FAILURE:
+            continue
+        failure_class = str(attempt.technical_failure_class or "UNKNOWN")
+        class_distribution[failure_class] = class_distribution.get(failure_class, 0) + 1
+        diagnostic = diagnostics.get(attempt.plan_item_id) if diagnostics is not None else None
+        reason_code = (
+            str(diagnostic.reason_code)
+            if diagnostic is not None
+            else GoogleNewsRssDiagnosticReason.UNKNOWN.value
+        )
+        reason_distribution[reason_code] = reason_distribution.get(reason_code, 0) + 1
+        if diagnostic is not None and diagnostic.http_status is not None:
+            status_key = str(diagnostic.http_status)
+            status_distribution[status_key] = status_distribution.get(status_key, 0) + 1
+        ordinal, item = item_by_id.get(attempt.plan_item_id, (None, None))
+        if item is None or ordinal is None:
+            # SearchExecutionResult normally guarantees this cannot occur.  A
+            # malformed test double must not make the observer authoritative.
+            continue
+        details.append(
+            SearchFailureDiagnostic(
+                ordinal=ordinal,
+                plan_item_id=item.plan_item_id,
+                market_id=item.market_id,
+                language_profile=item.language_profile,
+                intent=item.intent.value,
+                query_family_id=item.query_family_id,
+                terminal_status=attempt.status.value,
+                technical_failure_class=failure_class,
+                reason_code=reason_code,
+                http_status=None if diagnostic is None else diagnostic.http_status,
+            )
+        )
+    return (
+        sum(class_distribution.values()),
+        dict(class_distribution),
+        dict(reason_distribution),
+        dict(status_distribution),
+        tuple(details),
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class ProductionRunResult:
     """Secret-free mechanical result consumed by all production shells."""
 
@@ -77,6 +195,11 @@ class ProductionRunResult:
     failure_stage: str | None = None
     failure_class: str | None = None
     diagnostic: str | None = None
+    search_failure_count: int | None = None
+    search_failure_class_distribution: Mapping[str, int] = field(default_factory=dict)
+    search_failure_reason_distribution: Mapping[str, int] = field(default_factory=dict)
+    search_failure_http_status_distribution: Mapping[str, int] = field(default_factory=dict)
+    search_failure_details: tuple[SearchFailureDiagnostic, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "status", ProductionRunStatus(self.status))
@@ -96,6 +219,32 @@ class ProductionRunResult:
         ):
             raise ValueError("ProductionRunResult stage_counts must be non-negative integers")
         object.__setattr__(self, "stage_counts", MappingProxyType(counts))
+        if self.search_failure_count is not None and (
+            isinstance(self.search_failure_count, bool)
+            or not isinstance(self.search_failure_count, int)
+            or self.search_failure_count < 0
+        ):
+            raise ValueError("search_failure_count must be a non-negative integer when present")
+        for field_name in (
+            "search_failure_class_distribution",
+            "search_failure_reason_distribution",
+            "search_failure_http_status_distribution",
+        ):
+            values = dict(getattr(self, field_name))
+            if any(
+                not isinstance(key, str)
+                or not key.strip()
+                or isinstance(value, bool)
+                or not isinstance(value, int)
+                or value < 0
+                for key, value in values.items()
+            ):
+                raise ValueError(f"{field_name} must contain non-negative integer counts")
+            object.__setattr__(self, field_name, MappingProxyType(values))
+        details = tuple(self.search_failure_details)
+        if any(not isinstance(detail, SearchFailureDiagnostic) for detail in details):
+            raise TypeError("search_failure_details must contain SearchFailureDiagnostic values")
+        object.__setattr__(self, "search_failure_details", details)
         for field_name in ("failure_stage", "failure_class", "diagnostic"):
             value = getattr(self, field_name)
             if value is not None and (not isinstance(value, str) or not value.strip()):
@@ -127,7 +276,46 @@ class ProductionRunResult:
             parts.append(f"failure_class={self.failure_class}")
         if self.diagnostic:
             parts.append(f"diagnostic={self.diagnostic}")
+        if self.search_failure_count is not None:
+            parts.append(f"search_failure_count={self.search_failure_count}")
+            if self.search_failure_class_distribution:
+                parts.append(
+                    "search_failure_classes="
+                    + _format_distribution(self.search_failure_class_distribution)
+                )
+            if self.search_failure_reason_distribution:
+                parts.append(
+                    "search_failure_reasons="
+                    + _format_distribution(self.search_failure_reason_distribution)
+                )
+            if self.search_failure_http_status_distribution:
+                parts.append(
+                    "search_failure_http_statuses="
+                    + _format_distribution(self.search_failure_http_status_distribution)
+                )
+            for detail in self.search_failure_details:
+                parts.append(
+                    "search_failure_item="
+                    + ",".join(
+                        (
+                            f"ordinal={detail.ordinal}",
+                            f"plan_item_id={detail.plan_item_id}",
+                            f"market={detail.market_id}",
+                            f"profile={detail.language_profile}",
+                            f"intent={detail.intent}",
+                            f"query_family={detail.query_family_id}",
+                            f"terminal_status={detail.terminal_status}",
+                            f"technical_failure_class={detail.technical_failure_class}",
+                            f"reason_code={detail.reason_code}",
+                            f"http_status={detail.http_status if detail.http_status is not None else 'NONE'}",
+                        )
+                    )
+                )
         return " ".join(parts)
+
+
+def _format_distribution(values: Mapping[str, int]) -> str:
+    return ",".join(f"{key}={values[key]}" for key in sorted(values))
 
 
 class RunnerApplication(Protocol):
@@ -213,6 +401,7 @@ class ProductionRunner:
         application: RunnerApplication,
         *,
         delivery_recipient: str | None = None,
+        diagnostic_collector: _SearchFailureDiagnosticCollector | None = None,
     ) -> None:
         if not callable(getattr(application, "run", None)):
             raise TypeError("ProductionRunner requires a ReportApplication-compatible application")
@@ -222,6 +411,7 @@ class ProductionRunner:
             raise ValueError("delivery_recipient must be non-empty when present")
         self._application = application
         self._delivery_recipient = delivery_recipient.strip() if delivery_recipient else None
+        self._diagnostic_collector = diagnostic_collector
 
     @classmethod
     def from_environment(
@@ -235,7 +425,11 @@ class ProductionRunner:
 
         values = os.environ if environ is None else environ
         registry = RegionRegistry.from_file()
-        provider = GoogleNewsRssProvider(rss_transport)
+        diagnostic_collector = _SearchFailureDiagnosticCollector()
+        provider = GoogleNewsRssProvider(
+            rss_transport,
+            diagnostic_sink=diagnostic_collector.record,
+        )
         # Search providers are keyed by the canonical enum, not an adapter-owned name.
         from .contracts import SearchProviderId
 
@@ -290,7 +484,11 @@ class ProductionRunner:
             delivery=delivery if recipient else None,
             delivery_recipient=recipient,
         )
-        return cls(application, delivery_recipient=recipient)
+        return cls(
+            application,
+            delivery_recipient=recipient,
+            diagnostic_collector=diagnostic_collector,
+        )
 
     @property
     def application(self) -> RunnerApplication:
@@ -309,6 +507,8 @@ class ProductionRunner:
         end = default_end if period_end is None else date.fromisoformat(str(period_end))
         if end < start:
             raise ValueError("period_end must not precede period_start")
+        if self._diagnostic_collector is not None:
+            self._diagnostic_collector.clear()
         try:
             result = self._application.run(mode, period_start=start, period_end=end)
         except Exception as exc:
@@ -335,6 +535,18 @@ class ProductionRunner:
             )
         counts = _stage_counts(result)
         if not result.execution.execution_complete or result.execution.has_technical_failures:
+            (
+                search_failure_count,
+                class_distribution,
+                reason_distribution,
+                status_distribution,
+                failure_details,
+            ) = _search_failure_projection(
+                result,
+                None
+                if self._diagnostic_collector is None
+                else self._diagnostic_collector.snapshot(),
+            )
             return ProductionRunResult(
                 ProductionRunStatus.TECHNICAL_FAILURE,
                 start,
@@ -344,6 +556,11 @@ class ProductionRunner:
                 failure_stage="search",
                 failure_class=_technical_class(result),
                 diagnostic="Search execution did not reach a successful terminal state",
+                search_failure_count=search_failure_count,
+                search_failure_class_distribution=class_distribution,
+                search_failure_reason_distribution=reason_distribution,
+                search_failure_http_status_distribution=status_distribution,
+                search_failure_details=failure_details,
             )
         if result.final_report is None:
             return ProductionRunResult(
@@ -456,5 +673,6 @@ __all__ = [
     "ProductionRunResult",
     "ProductionRunStatus",
     "ProductionRunner",
+    "SearchFailureDiagnostic",
     "default_period",
 ]

@@ -12,12 +12,21 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.weekly_report.contracts import (  # noqa: E402
+    DiscoveryIntent,
+    GoogleNewsRssEncoding,
     RegionMode,
     SearchAttemptResult,
+    SearchExecutionResult,
+    SearchObservation,
+    SearchPlan,
+    SearchPlanItem,
+    SearchProviderId,
     SearchTerminalStatus,
     SearchTechnicalFailureClass,
 )
 from src.weekly_report.google_news_rss_provider import (  # noqa: E402
+    GoogleNewsRssDiagnostic,
+    GoogleNewsRssDiagnosticReason,
     GoogleNewsRssProvider,
     RssTransportResponse,
 )
@@ -26,6 +35,7 @@ from src.weekly_report.production_runner import (  # noqa: E402
     HEALTH_PROBE_ORDINALS,
     ProductionRunStatus,
     ProductionRunner,
+    _SearchFailureDiagnosticCollector,
 )
 from src.weekly_report.region_registry import RegionRegistry  # noqa: E402
 from src.weekly_report.report_service import FinalReportArtifact  # noqa: E402
@@ -70,6 +80,55 @@ def _application_result(*, technical: bool = False, artifact=None):
     )
 
 
+def _complete_failure_application_result():
+    encoding = GoogleNewsRssEncoding("en-US", "US", "US:en")
+    items = (
+        SearchPlanItem(
+            "item-1", "market-a", RegionMode.SELECTED, DiscoveryIntent.TECHNOLOGY,
+            "profile-a", "family-a", SearchProviderId.GOOGLE_NEWS_RSS,
+            "secret query one", encoding, "en-US",
+        ),
+        SearchPlanItem(
+            "item-2", "market-b", RegionMode.SELECTED, DiscoveryIntent.PROCUREMENT,
+            "profile-b", "family-b", SearchProviderId.GOOGLE_NEWS_RSS,
+            "secret query two", encoding, "en-US",
+        ),
+    )
+    plan = SearchPlan("test-config", RegionMode.SELECTED, items, "test-plan")
+    attempts = (
+        SearchAttemptResult(
+            "item-1", SearchTerminalStatus.TECHNICAL_FAILURE,
+            technical_failure_class=SearchTechnicalFailureClass.TIMEOUT,
+        ),
+        SearchAttemptResult(
+            "item-2", SearchTerminalStatus.TECHNICAL_FAILURE,
+            technical_failure_class=SearchTechnicalFailureClass.INVALID_RESPONSE,
+        ),
+    )
+    observations = tuple(
+        SearchObservation(
+            item.plan_item_id,
+            item.market_id,
+            item.intent,
+            item.language_profile,
+            item.query_family_id,
+            item.provider_target,
+            True,
+            True,
+            attempt.status,
+            0,
+            attempt.technical_failure_class,
+            None,
+        )
+        for item, attempt in zip(items, attempts)
+    )
+    execution = SearchExecutionResult(plan, attempts, observations=observations)
+    result = _application_result(technical=False)
+    result.plan = plan
+    result.execution = execution
+    return result
+
+
 class _FakeApplication:
     def __init__(self, result):
         self.result = result
@@ -106,6 +165,48 @@ class ProductionRunnerTests(unittest.TestCase):
         self.assertEqual(result.status, ProductionRunStatus.TECHNICAL_FAILURE)
         self.assertEqual(result.failure_stage, "search")
         self.assertEqual(result.failure_class, "TIMEOUT")
+
+    def test_search_failure_projection_uses_authoritative_attempts_and_safe_plan_metadata(self):
+        collector = _SearchFailureDiagnosticCollector()
+
+        class _RecordingApplication(_FakeApplication):
+            def run(self, mode, *, period_start, period_end):
+                collector.record(
+                    GoogleNewsRssDiagnostic(
+                        "item-2", GoogleNewsRssDiagnosticReason.HTTP_OTHER_NON_200, 503
+                    )
+                )
+                return super().run(mode, period_start=period_start, period_end=period_end)
+
+        app = _RecordingApplication(_complete_failure_application_result())
+        result = ProductionRunner(app, diagnostic_collector=collector).run(
+            period_start="2026-10-01", period_end="2026-10-07"
+        )
+        self.assertEqual(app.calls, 1)
+        self.assertEqual(result.status, ProductionRunStatus.TECHNICAL_FAILURE)
+        self.assertEqual(result.search_failure_count, 2)
+        self.assertEqual(dict(result.search_failure_class_distribution), {
+            "TIMEOUT": 1,
+            "INVALID_RESPONSE": 1,
+        })
+        self.assertEqual(dict(result.search_failure_reason_distribution), {
+            "UNKNOWN": 1,
+            "HTTP_OTHER_NON_200": 1,
+        })
+        self.assertEqual(dict(result.search_failure_http_status_distribution), {"503": 1})
+        self.assertEqual([item.ordinal for item in result.search_failure_details], [1, 2])
+        self.assertEqual(result.search_failure_details[0].reason_code, "UNKNOWN")
+        self.assertEqual(result.search_failure_details[1].http_status, 503)
+        summary = result.summary()
+        self.assertIn("search_failure_count=2", summary)
+        self.assertIn("search_failure_classes=INVALID_RESPONSE=1,TIMEOUT=1", summary)
+        self.assertIn("search_failure_reasons=HTTP_OTHER_NON_200=1,UNKNOWN=1", summary)
+        self.assertIn("search_failure_http_statuses=503=1", summary)
+        self.assertIn("ordinal=1,plan_item_id=item-1,market=market-a", summary)
+        self.assertIn("ordinal=2,plan_item_id=item-2,market=market-b", summary)
+        self.assertNotIn("secret query", summary)
+        self.assertNotIn("https://", summary)
+        self.assertNotIn("MAIAGENT_API_KEY", summary)
 
     def test_legal_zero_event_artifact_is_success(self):
         artifact = FinalReportArtifact("report-0", "artifact-0", "v1", (), (), "No events")

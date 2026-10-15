@@ -15,6 +15,7 @@ from src.weekly_report.contracts import (
     SearchTerminalStatus,
 )
 from src.weekly_report.google_news_rss_provider import (
+    GoogleNewsRssDiagnosticReason,
     GoogleNewsRssProvider,
     RssTransportResponse,
 )
@@ -164,3 +165,64 @@ class GoogleNewsRssProviderTests(TestCase):
         self.assertEqual(result.results[0].publisher, " Publisher ")
         self.assertEqual(result.results[0].published_at, " 2026-01-01 ")
         self.assertEqual(result.results[0].snippet, " Snippet ")
+
+    def test_failure_diagnostics_preserve_reason_and_status_without_changing_result(self) -> None:
+        cases = (
+            (RssTransportResponse(b"", status_code=503), SearchTechnicalFailureClass.INVALID_RESPONSE,
+             GoogleNewsRssDiagnosticReason.HTTP_OTHER_NON_200, 503),
+            (RssTransportResponse(b"", status_code=401), SearchTechnicalFailureClass.AUTHENTICATION,
+             GoogleNewsRssDiagnosticReason.AUTHENTICATION, 401),
+            (RssTransportResponse(b"", status_code=429), SearchTechnicalFailureClass.RATE_LIMIT,
+             GoogleNewsRssDiagnosticReason.RATE_LIMIT, 429),
+            (RssTransportResponse(VALID_RSS, status_code=200, final_url="https://other.example"),
+             SearchTechnicalFailureClass.INVALID_RESPONSE,
+             GoogleNewsRssDiagnosticReason.REDIRECT_OR_FINAL_URL_MISMATCH, 200),
+            (RssTransportResponse(b"<rss>"), SearchTechnicalFailureClass.INVALID_RESPONSE,
+             GoogleNewsRssDiagnosticReason.RSS_PARSE_OR_SCHEMA_FAILURE, None),
+        )
+        for response, expected_class, expected_reason, expected_status in cases:
+            with self.subTest(expected_reason=expected_reason):
+                diagnostics = []
+                result = GoogleNewsRssProvider(
+                    lambda url, timeout, response=response: response,
+                    diagnostic_sink=diagnostics.append,
+                ).execute(_item())
+                self.assertEqual(result.status, SearchTerminalStatus.TECHNICAL_FAILURE)
+                self.assertEqual(result.technical_failure_class, expected_class)
+                self.assertEqual(len(diagnostics), 1)
+                self.assertEqual(diagnostics[0].plan_item_id, "item-1")
+                self.assertEqual(diagnostics[0].reason_code, expected_reason)
+                self.assertEqual(diagnostics[0].http_status, expected_status)
+
+    def test_timeout_network_unknown_and_schema_diagnostics_are_finite(self) -> None:
+        cases = (
+            (TimeoutError("secret"), SearchTechnicalFailureClass.TIMEOUT, GoogleNewsRssDiagnosticReason.TIMEOUT),
+            (OSError("secret"), SearchTechnicalFailureClass.NETWORK, GoogleNewsRssDiagnosticReason.NETWORK),
+            (RuntimeError("secret"), SearchTechnicalFailureClass.UNKNOWN, GoogleNewsRssDiagnosticReason.UNKNOWN),
+        )
+        for error, expected_class, expected_reason in cases:
+            with self.subTest(expected_reason=expected_reason):
+                diagnostics = []
+                result = GoogleNewsRssProvider(
+                    lambda url, timeout, error=error: (_ for _ in ()).throw(error),
+                    diagnostic_sink=diagnostics.append,
+                ).execute(_item())
+                self.assertEqual(result.technical_failure_class, expected_class)
+                self.assertEqual(diagnostics[0].reason_code, expected_reason)
+                self.assertIsNone(diagnostics[0].http_status)
+
+    def test_diagnostic_callback_failure_and_provider_request_count_are_passive(self) -> None:
+        calls = 0
+
+        def transport(url: str, timeout: float):
+            nonlocal calls
+            calls += 1
+            return RssTransportResponse(b"", status_code=503)
+
+        def failing_sink(_diagnostic):
+            raise RuntimeError("observer must be passive")
+
+        result = GoogleNewsRssProvider(transport, diagnostic_sink=failing_sink).execute(_item())
+        self.assertEqual(result.status, SearchTerminalStatus.TECHNICAL_FAILURE)
+        self.assertEqual(result.technical_failure_class, SearchTechnicalFailureClass.INVALID_RESPONSE)
+        self.assertEqual(calls, 1)
