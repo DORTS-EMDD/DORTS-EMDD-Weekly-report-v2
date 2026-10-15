@@ -220,12 +220,99 @@ ReportApplication 建立新的 immutable projection，不得回頭 mutation exec
 aggregate；`None` 表示未執行，0 表示已完成且輸出為零。
 
 Item `TECHNICAL_FAILURE` 與 executor infrastructure failure 必須分開。Item failure
-仍須繼續 remaining frozen items；infrastructure failure 或 incomplete execution
-時，application execution gate 必須 fail closed。Gate 只消費 validated
-`SearchExecutionResult`，不得消費 Debug observation；任何 technical failure、
-infrastructure failure 或 incomplete execution 都禁止 formal artifact、PDF 與
-Email。完整且無失敗的 `SUCCESS_ZERO_RESULTS` execution 是合法的 completed search，
-可產生零 Candidate，不得 fallback、rescue、backfill 或 fabricate Candidate。
+仍須繼續 remaining frozen items。Search runtime coverage acceptance 的唯一
+Domain Rule 為以下 Domain Owner 已批准的 Model C；它取代過去任一 item
+technical failure 即中止整個正式 run 的 all-success gate。
+
+```text
+SEARCH_RUNTIME_COVERAGE_ACCEPTANCE_OWNER = Search execution / application contract
+REPORTAPPLICATION_CONTINUATION_OWNER = ReportApplication
+SEARCH_EXECUTION_COMPLETENESS_REQUIRED = YES
+SEARCH_PROVIDER_SUCCESS_COMPLETENESS_REQUIRED = NO
+MINIMUM_SUCCESS_REQUIREMENT = AT_LEAST_ONE_LEGAL_SUCCESSFUL_EXECUTABLE_ATTEMPT
+```
+
+`SearchExecutionResult` remains the authoritative immutable mechanical record of
+attempt population, terminal statuses, technical failures, unattempted items,
+and infrastructure failure state. It does not decide formal continuation.
+`ReportApplication` alone consumes that validated aggregate and permits
+downstream execution if and only if all of the following hold:
+
+1. The frozen SearchPlan is valid.
+2. Every executable frozen SearchPlanItem has exactly one terminal attempt.
+3. No executable frozen item remains unattempted.
+4. No SearchExecutor infrastructure failure or abort occurred.
+5. At least one executable attempt has the legal terminal state
+   `SUCCESS_WITH_RESULTS` or `SUCCESS_ZERO_RESULTS`.
+
+Search execution completeness requires the valid frozen plan and complete,
+exactly-once execution above. Provider success completeness would require every
+individual request to succeed; V2 does not require it. An invalid plan or
+SearchExecutionResult, foreign/duplicate/missing attempt, any unattempted item,
+infrastructure failure/abort, malformed mechanical aggregate, zero successful
+executable attempts, or configuration failure still blocks formal downstream
+execution, artifact, PDF, and Email. These conditions must fail closed.
+
+A `RUNTIME_SEARCH_COVERAGE_GAP` is an executable frozen SearchPlanItem that was
+actually attempted exactly once and terminated as `TECHNICAL_FAILURE`. Discovery
+coverage for that specific request is unknown/unavailable for that run. This is
+a coverage/diagnostic concept, not another terminal status or Domain owner.
+The item retains its original failure status, class, and provenance. It must
+not become `SUCCESS_ZERO_RESULTS`, `SUCCESS_WITH_RESULTS`, or
+`KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY`, and must not produce a DiscoveryResult,
+acquisition, Candidate, Evidence, Event, or formal claim. A runtime gap is not a
+valid empty response, excluded Candidate, Evidence failure, or missing market
+configuration. Configuration-only and runtime gaps remain distinct and cannot
+be converted into or compensate for one another.
+
+For a valid complete execution without infrastructure failure:
+
+| Attempt population | Search runtime acceptance |
+| --- | --- |
+| All `TECHNICAL_FAILURE` | BLOCK: zero valid discovery responses |
+| All `SUCCESS_ZERO_RESULTS` | LEGAL_COMPLETED_SEARCH; zero Candidates is legal |
+| Legal success mixed with `TECHNICAL_FAILURE` | PASS_WITH_GAPS; retain every failure as a runtime coverage gap |
+| Only legal successful terminal states | LEGAL_COMPLETED_SEARCH |
+
+No additional minimum successful count, success percentage, maximum failure
+count/percentage, per-market, per-market/profile, per-market/profile/intent,
+per-intent success requirement, article count, or Candidate count is authorized.
+In particular, a whole market or enabled intent having no successful response
+is disclosed as unavailable runtime coverage; it is not an additional gate.
+All four intents remain required to be planned and attempted under §F.
+
+The rule applies to Search provider technical availability regardless of HTTP
+status, timeout/network failure, provider, market, language, intent, or ordinal.
+All frozen executable items remain mandatory to attempt exactly once; hidden
+retry, replacement query, alternate-provider fallback, rescue, backfill,
+adaptive reduction, and extra pacing experiments are not authorized.
+
+An accepted degraded execution projects only successful discovery results into
+the existing Candidate Normalizer boundary. It changes discovery completeness /
+recall, not factual grounding: Authoritative Evidence and Validator remain
+required. Candidate Normalization, Evidence, Scope, Temporal, Event Identity,
+Category, Taxonomy, Reportability, Ordering, Formal Metadata, Writer, Validator,
+and Delivery rules are unchanged. No failed request fabricates discovery data;
+no downstream eligibility or factual-grounding requirement is relaxed.
+
+ProductionRunner only projects the application outcome and diagnostics; it must
+not retain a parallel all-success gate or independently decide continuation.
+Application result invariants and readiness projections must follow this same
+acceptance rule. Debug/RunTrace is observational and never a continuation
+authority; disclosure is governed by §S.
+
+This documentation checkpoint locks the target contract only. Baseline
+`d6f1cf5679b345573a668df9af3a0861ab50b125` still implements the previous strict
+gate; runtime implementation and acceptance remain separate subsequent work.
+Under Model C, historical run `38671226088` (449 attempted, zero unattempted,
+435 legal successes, 14 technical failures) and run `38673121960` (449 attempted,
+zero unattempted, 363 legal successes, 86 technical failures), both complete
+without infrastructure failure, would each have `PASS_WITH_GAPS` Search
+acceptance. This is contract interpretation only, not evidence that downstream
+ran or passed. Fixed 1.0s pacing mitigation remains REJECTED; experiment commit
+`e87d628b299c371624789768d4dcbe4d42e2514a` on
+`experiment/search-pacing-1s-20261015` must not be merged and remains for audit
+until runtime coverage implementation and acceptance are complete.
 
 每個 provider item 只允許一個 request；不得 hidden transport retry。Redirect
 follow count 固定為 0；redirect response 視為 safe technical failure。每 item
@@ -381,10 +468,12 @@ produces no SearchPlanItem and appears as an explicit coverage gap; other valid
 supported markets may execute. This does not authorize another market, profile,
 encoding, provider, runtime probe, fallback, rescue, or backfill.
 
-A coverage gap is not an execution attempt, empty provider result, runtime
-provider failure, or synthetic SearchObservation. Actual runtime provider
-failures retain `TECHNICAL_FAILURE` semantics and the existing formal execution
-failure gate.
+The configuration-only `KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY` gap described
+above is not an execution attempt, empty provider result, runtime provider
+failure, or synthetic SearchObservation. Actual runtime failures retain
+`TECHNICAL_FAILURE` semantics and are `RUNTIME_SEARCH_COVERAGE_GAP` records;
+continuation is governed solely by the Model C acceptance rule in §C's
+Phase 2B-A execution contract, not by configuration-gap treatment.
 
 `locale` remains general profile metadata. It is not Google News execution
 authority. Provider capability configuration does not probe runtime support,
@@ -2903,6 +2992,15 @@ Final report count = Validation PASS count
 
 > 本期無符合正式報導條件之事件。
 
+This zero-event artifact rule applies only after Search runtime acceptance
+under §C and all existing downstream prerequisites pass. Zero valid discovery
+responses must not be represented as a successful zero-event report. Accepted
+runtime Search gaps do not require individual technical warnings or a format
+change in ordinary formal weekly-report prose; their disclosure belongs to
+RunTrace, Engineering Summary, and Developer Debug under §S. The formal report
+must not claim exhaustive international coverage, success of every configured
+query, or complete discovery of all relevant events.
+
 Report Service 唯一負責：
 
 * PASS events assembly
@@ -3025,6 +3123,31 @@ final_events
 artifacts
 declared_maiagent_role_version
 ```
+
+For runtime Search coverage, this same single authoritative RunTrace must retain
+or support mechanical projections from the validated SearchPlan and
+SearchExecutionResult of:
+
+* SearchPlan identity and planned executable population/count;
+* attempted population/count;
+* successful-with-results population/count;
+* successful-zero-results population/count;
+* technical-failure population/count;
+* unattempted population/count and infrastructure failure state;
+* every runtime gap's `plan_item_id`, market, `language_profile`, intent,
+  query family, provider, terminal status, and technical failure class;
+* safe provider diagnostic facts, including reason and HTTP status when available.
+
+Each runtime gap remains linked to its original frozen item and terminal
+attempt. Engineering Summary must explicitly disclose degraded Search coverage,
+including accepted degraded runs; Developer Debug exposes the same retained
+provenance. Configuration-only known-unsupported gaps and runtime technical
+gaps remain separately identifiable. All populations, counts, and gap
+projections derive from the same validated records, not a second mutable
+registry or independently recalculated Debug truth. Debug never determines
+Search acceptance or workflow continuation; the sole acceptance rule is in
+§C's Phase 2B-A execution contract. This is a conceptual disclosure requirement,
+not a RunTrace implementation in this checkpoint.
 
 Candidate counts 與 Event counts 必須分開。
 
