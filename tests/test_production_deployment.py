@@ -373,6 +373,39 @@ class ShellIntegrationTests(unittest.TestCase):
         self.assertNotIn("ReportApplication", workflow)
         self.assertIn("workflow_dispatch:", workflow)
 
+    def test_production_health_gate_is_on_same_runner_before_cli(self):
+        workflow = (ROOT / ".github" / "workflows" / "weekly-report.yml").read_text(encoding="utf-8")
+        offline, production = workflow.split("\n  production:\n", 1)
+
+        self.assertIn("offline-regression:", offline)
+        self.assertNotIn("google_news_health_check", offline)
+        self.assertIn("needs: offline-regression", production)
+        self.assertIn("if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_production == true }}", production)
+        self.assertEqual(production.count("python -m scripts.google_news_health_check"), 1)
+        self.assertEqual(production.count("python main.py"), 1)
+        self.assertLess(
+            production.index("python -m scripts.google_news_health_check"),
+            production.index("python main.py"),
+        )
+        self.assertNotIn("continue-on-error", production)
+        self.assertNotIn("if: always()", production)
+        self.assertNotIn("rerun", workflow.lower())
+        self.assertNotIn("pacing", workflow.lower())
+        self.assertNotIn("fallback", workflow.lower())
+
+    def test_production_secrets_are_scoped_to_cli_step(self):
+        workflow = (ROOT / ".github" / "workflows" / "weekly-report.yml").read_text(encoding="utf-8")
+        production = workflow.split("\n  production:\n", 1)[1]
+        production_steps = production.split("\n      - name: ")
+        health_step = next(step for step in production_steps if step.startswith("Google News RSS six-probe health check"))
+        cli_step = next(step for step in production_steps if step.startswith("Run shared production CLI"))
+
+        self.assertNotIn("MAIAGENT_", health_step)
+        self.assertIn("MAIAGENT_API_BASE", cli_step)
+        self.assertIn("MAIAGENT_API_KEY", cli_step)
+        self.assertIn("MAIAGENT_CHATBOT_ID", cli_step)
+        self.assertIn("MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID", cli_step)
+
 
 if __name__ == "__main__":
     unittest.main()
