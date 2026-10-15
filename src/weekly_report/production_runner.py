@@ -433,7 +433,10 @@ class ProductionRunner:
         # Search providers are keyed by the canonical enum, not an adapter-owned name.
         from .contracts import SearchProviderId
 
-        executor = SearchExecutor({SearchProviderId.GOOGLE_NEWS_RSS: provider})
+        executor = SearchExecutor(
+            {SearchProviderId.GOOGLE_NEWS_RSS: provider},
+            pacing_seconds=1.0,
+        )
 
         judge = build_maiagent_semantic_judge(
             model_identifier=PRODUCTION_METADATA_MODEL,
