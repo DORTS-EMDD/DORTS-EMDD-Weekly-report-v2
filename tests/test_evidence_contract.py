@@ -6,6 +6,7 @@ import copy
 import socket
 import unittest
 from unittest.mock import patch
+from urllib.error import HTTPError
 
 from src.weekly_report.contracts import (
     CanonicalCandidate,
@@ -455,6 +456,86 @@ class EvidenceContractTests(unittest.TestCase):
         self.assertEqual(result.state, EvidenceState.REJECTED)
         self.assertEqual(result.reject_reason, RejectReason.URL_UNRESOLVED)
         self.assertEqual(fetcher.calls, [])
+        self.assertEqual(result.provenance["evidence_rejection_gate"], "URL_VALIDATION")
+
+    def test_rejection_gate_is_preserved_for_transport_failure(self):
+        result = EvidenceService(_FixtureFetcher(RuntimeError("connection failed"))).evaluate(
+            _candidate()
+        )
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.reject_reason, RejectReason.CONTENT_UNAVAILABLE)
+        self.assertEqual(result.provenance["evidence_rejection_gate"], "FETCH_TRANSPORT")
+        self.assertEqual(result.provenance["transport_error"], "RuntimeError")
+
+    def test_http_error_status_is_preserved_without_changing_evidence_decision(self):
+        error = HTTPError(
+            "https://source.test/article/line-4-control?secret=query",
+            503,
+            "unavailable",
+            {},
+            None,
+        )
+        result = EvidenceService(_FixtureFetcher(error)).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.reject_reason, RejectReason.CONTENT_UNAVAILABLE)
+        self.assertEqual(result.provenance["evidence_rejection_gate"], "FETCH_TRANSPORT")
+        self.assertEqual(result.provenance["status_code"], 503)
+        self.assertEqual(result.provenance["transport_error"], "HTTPError")
+        self.assertNotIn("source.test", result.provenance["transport_error"])
+
+    def test_rejection_gate_is_preserved_for_unsupported_content_type(self):
+        result = _service("binary payload", content_type="application/pdf").evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.provenance["evidence_rejection_gate"], "CONTENT_TYPE")
+
+    def test_rejection_gate_is_preserved_for_source_provenance_mismatch(self):
+        result = _service(
+            "<html><body><article><p>The airport authority opened a new bus terminal after construction finished in 2026.</p></article></body></html>",
+            url="https://source.test/article/unrelated",
+            judge=_DifferentEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.provenance["evidence_rejection_gate"], "SOURCE_PROVENANCE")
+
+    def test_rejection_gate_is_preserved_for_principal_document_failure(self):
+        result = _service(
+            "<html><head><title>Metro operator commissions Line 4</title></head><body></body></html>"
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.provenance["evidence_rejection_gate"], "PRINCIPAL_DOCUMENT")
+
+    def test_rejection_gate_is_preserved_for_factual_substance_failure(self):
+        title = "東京メトロ、新型信号システムを導入"
+        result = _service(
+            f"<html><body><h1>{title}</h1><article><p>{title}</p></article></body></html>"
+        ).evaluate(_candidate(title=title))
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.reject_reason, RejectReason.INSUFFICIENT_SUBSTANCE)
+        self.assertEqual(result.provenance["evidence_rejection_gate"], "FACTUAL_SUBSTANCE")
+
+    def test_rejection_gate_is_preserved_for_semantic_mismatch(self):
+        result = _service(
+            "<html><body><article><p>The operator reported annual ridership increased after fare policy changes.</p></article></body></html>",
+            judge=_DifferentEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.provenance["evidence_rejection_gate"], "SEMANTIC_MATCH")
+
+    def test_ready_result_has_no_rejection_gate(self):
+        result = _service(
+            "<html><body><article><p>Metro operator commissioned a moving-block train control system on Line 4 after integration testing was completed in September 2026.</p></article></body></html>"
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertIsNone(result.reject_reason)
+        self.assertNotIn("evidence_rejection_gate", result.provenance)
 
     def test_query_parameter_difference_is_not_same_resource(self):
         html = (

@@ -13,7 +13,10 @@ if str(ROOT) not in sys.path:
 
 from src.weekly_report.contracts import (  # noqa: E402
     DiscoveryIntent,
+    EvidenceResult,
+    EvidenceState,
     GoogleNewsRssEncoding,
+    RejectReason,
     RegionMode,
     SearchAttemptResult,
     SearchExecutionResult,
@@ -205,6 +208,126 @@ class _FakeApplication:
 
 
 class ProductionRunnerTests(unittest.TestCase):
+    def test_evidence_projection_aggregates_authoritative_results_without_raw_content(self):
+        artifact = FinalReportArtifact("report-evidence", "artifact-evidence", "v1", (), (), "No events")
+        app_result = _application_result(artifact=artifact)
+        app_result.evidence_results = (
+            EvidenceResult(
+                "ready",
+                EvidenceState.READY,
+                substantive_content="private article body",
+                provenance={
+                    "candidate_url": "https://news.example/article/private-query?token=secret",
+                    "resolved_url": "https://news.example/article/private-query?token=secret",
+                    "content_type": "text/html; charset=utf-8",
+                    "principal_document_status": "PRINCIPAL_DOCUMENT_ESTABLISHED",
+                    "source_provenance": True,
+                    "canonical_related": True,
+                    "body_text_available": True,
+                    "factual_substance": True,
+                    "raw_relation": "SAME_EVENT",
+                    "response_validation_result": "valid",
+                    "metadata_extraction_status": "valid_metadata",
+                    "provenance_path": (
+                        "https://news.example/article/private-query?token=secret",
+                    ),
+                },
+            ),
+            EvidenceResult(
+                "http",
+                EvidenceState.REJECTED,
+                reject_reason=RejectReason.CONTENT_UNAVAILABLE,
+                provenance={
+                    "evidence_rejection_gate": "HTTP_STATUS",
+                    "status_code": 503,
+                    "content_type": "text/html",
+                    "candidate_hostname": "news.example",
+                    "resolved_hostname": "news.example",
+                },
+            ),
+            EvidenceResult(
+                "semantic",
+                EvidenceState.REJECTED,
+                reject_reason=RejectReason.SOURCE_PAGE_MISMATCH,
+                provenance={
+                    "evidence_rejection_gate": "SEMANTIC_MATCH",
+                    "source_provenance": True,
+                    "canonical_related": True,
+                    "body_text_available": True,
+                    "factual_substance": True,
+                    "raw_relation": "DIFFERENT_EVENT",
+                    "response_validation_result": "valid",
+                },
+            ),
+        )
+        result = ProductionRunner(_FakeApplication(app_result)).run(
+            period_start="2026-10-01", period_end="2026-10-07"
+        )
+
+        self.assertEqual(result.evidence_ready_count, 1)
+        self.assertEqual(result.evidence_rejected_count, 2)
+        self.assertEqual(dict(result.evidence_reject_reason_distribution), {
+            "CONTENT_UNAVAILABLE": 1,
+            "SOURCE_PAGE_MISMATCH": 1,
+        })
+        self.assertEqual(dict(result.evidence_rejection_gate_distribution), {
+            "HTTP_STATUS": 1,
+            "SEMANTIC_MATCH": 1,
+        })
+        self.assertEqual(dict(result.evidence_reason_gate_distribution), {
+            "CONTENT_UNAVAILABLE|HTTP_STATUS": 1,
+            "SOURCE_PAGE_MISMATCH|SEMANTIC_MATCH": 1,
+        })
+        self.assertEqual(dict(result.evidence_http_status_distribution), {"503": 1})
+        self.assertEqual(dict(result.evidence_semantic_relation_distribution), {
+            "DIFFERENT_EVENT": 1,
+            "NOT_REACHED": 1,
+            "SAME_EVENT": 1,
+        })
+        self.assertEqual(dict(result.evidence_host_transition_distribution), {
+            "RESOLVED_HOST_MISSING": 1,
+            "SAME_HOST": 2,
+        })
+        summary = result.summary()
+        self.assertIn("evidence_ready=1", summary)
+        self.assertIn("evidence_rejected=2", summary)
+        self.assertIn("evidence_reason_gates=CONTENT_UNAVAILABLE|HTTP_STATUS=1,SOURCE_PAGE_MISMATCH|SEMANTIC_MATCH=1", summary)
+        for secret in (
+            "https://news.example/article/private-query?token=secret",
+            "private article body",
+            "secret",
+            "MAIAGENT_API_KEY",
+        ):
+            self.assertNotIn(secret, summary)
+
+    def test_successful_zero_event_shape_exposes_4794_rejections(self):
+        artifact = FinalReportArtifact("report-zero", "artifact-zero", "v1", (), (), "No events")
+        app_result = _application_result(artifact=artifact)
+        app_result.evidence_results = tuple(
+            EvidenceResult(
+                f"candidate-{index}",
+                EvidenceState.REJECTED,
+                reject_reason=RejectReason.CONTENT_UNAVAILABLE,
+                provenance={
+                    "evidence_rejection_gate": "FETCH_TRANSPORT",
+                    "transport_error": "TimeoutError",
+                },
+            )
+            for index in range(4794)
+        )
+        result = ProductionRunner(_FakeApplication(app_result)).run(
+            period_start="2026-10-01", period_end="2026-10-07"
+        )
+
+        self.assertTrue(result.successful)
+        self.assertEqual(result.final_report.event_count, 0)
+        self.assertEqual(result.evidence_ready_count, 0)
+        self.assertEqual(result.evidence_rejected_count, 4794)
+        self.assertEqual(dict(result.evidence_reject_reason_distribution), {"CONTENT_UNAVAILABLE": 4794})
+        self.assertEqual(dict(result.evidence_rejection_gate_distribution), {"FETCH_TRANSPORT": 4794})
+        self.assertEqual(dict(result.evidence_transport_error_distribution), {"TimeoutError": 4794})
+        self.assertIn("evidence_rejected=4794", result.summary())
+
     def test_runner_invokes_one_shared_application_and_propagates_artifact(self):
         artifact = FinalReportArtifact("report-1", "artifact-1", "v1", (), (), "# empty")
         app = _FakeApplication(_application_result(artifact=artifact))

@@ -57,6 +57,14 @@ class _UnsafeDestinationError(RuntimeError):
     """The default transport refused a non-public network destination."""
 
 
+class _EvidenceFetchError(RuntimeError):
+    """Safe transport failure retaining only an HTTP status when available."""
+
+    def __init__(self, status_code: int | None = None) -> None:
+        super().__init__("evidence fetch failed")
+        self.status_code = status_code
+
+
 def _candidate(value: CanonicalCandidate | Mapping[str, Any]) -> CanonicalCandidate:
     if isinstance(value, CanonicalCandidate):
         return value
@@ -76,6 +84,14 @@ def _normalise_url(value: str) -> str:
         return ""
     query = _normalise_query(parsed.query)
     return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, query, ""))
+
+
+def _safe_hostname(value: object) -> str:
+    try:
+        hostname = urlsplit(str(value or "")).hostname or ""
+    except ValueError:
+        return ""
+    return hostname.casefold()
 
 
 def _normalise_query(value: str) -> str:
@@ -355,7 +371,7 @@ def _default_fetcher(url: str, timeout_seconds: float) -> FetchedSource:
                 redirect_chain=tuple(redirect_chain),
             )
     except HTTPError as exc:
-        raise RuntimeError(f"HTTP {exc.code}") from exc
+        raise _EvidenceFetchError(exc.code) from exc
 
 
 class EvidenceService:
@@ -384,15 +400,38 @@ class EvidenceService:
         item = _candidate(candidate)
         input_url = _normalise_url(item.url)
         if not input_url:
-            return self._rejected(item, RejectReason.URL_UNRESOLVED, {})
+            return self._rejected(
+                item,
+                RejectReason.URL_UNRESOLVED,
+                {},
+                evidence_rejection_gate="URL_VALIDATION",
+            )
 
         try:
             fetched = _coerce_source(self._fetcher(input_url), input_url)
+        except _EvidenceFetchError as exc:
+            provenance: dict[str, Any] = {"transport_error": "HTTPError"}
+            if exc.status_code is not None:
+                provenance["status_code"] = exc.status_code
+            return self._rejected(
+                item,
+                RejectReason.CONTENT_UNAVAILABLE,
+                provenance,
+                evidence_rejection_gate="FETCH_TRANSPORT",
+            )
+        except HTTPError as exc:
+            return self._rejected(
+                item,
+                RejectReason.CONTENT_UNAVAILABLE,
+                {"transport_error": "HTTPError", "status_code": int(exc.code)},
+                evidence_rejection_gate="FETCH_TRANSPORT",
+            )
         except Exception as exc:
             return self._rejected(
                 item,
                 RejectReason.CONTENT_UNAVAILABLE,
                 {"transport_error": type(exc).__name__},
+                evidence_rejection_gate="FETCH_TRANSPORT",
             )
 
         resolved_url = _normalise_url(fetched.url) or input_url
@@ -400,7 +439,12 @@ class EvidenceService:
             return self._rejected(
                 item,
                 RejectReason.CONTENT_UNAVAILABLE,
-                {"resolved_url": resolved_url, "status_code": fetched.status_code},
+                {
+                    "resolved_url": resolved_url,
+                    "status_code": fetched.status_code,
+                    "content_type": fetched.content_type,
+                },
+                evidence_rejection_gate="HTTP_STATUS",
                 canonical_source_url=resolved_url,
             )
         if fetched.content_type and not self._textual_content_type(fetched.content_type):
@@ -408,6 +452,7 @@ class EvidenceService:
                 item,
                 RejectReason.CONTENT_UNAVAILABLE,
                 {"resolved_url": resolved_url, "content_type": fetched.content_type},
+                evidence_rejection_gate="CONTENT_TYPE",
                 canonical_source_url=resolved_url,
             )
         assessment = assess_document(
@@ -423,10 +468,18 @@ class EvidenceService:
         )
         body = assessment.body_text
         document_level_headlines = list(assessment.document_level_headlines)
+        structural_provenance = assessment.as_provenance()
+        structural_provenance["content_type"] = fetched.content_type
+        structural_provenance["body_text_available"] = bool(body)
         canonical_url = self._canonical_url(list(assessment.canonical_values), resolved_url)
         source_url = canonical_url or resolved_url
         if not _normalise_url(source_url):
-            return self._rejected(item, RejectReason.URL_UNRESOLVED, {})
+            return self._rejected(
+                item,
+                RejectReason.URL_UNRESOLVED,
+                {},
+                evidence_rejection_gate="URL_VALIDATION",
+            )
 
         source_provenance, provenance_signals = _source_provenance(
             input_url,
@@ -447,11 +500,12 @@ class EvidenceService:
                     "source_provenance": False,
                     "source_to_candidate_match": False,
                     **provenance_signals,
+                    **structural_provenance,
                 },
+                evidence_rejection_gate="SOURCE_PROVENANCE",
                 canonical_source_url=source_url,
             )
 
-        structural_provenance = assessment.as_provenance()
         if assessment.principal_document_status is not PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_ESTABLISHED:
             if assessment.reject_reason == "TITLE_ONLY":
                 reason = RejectReason.TITLE_ONLY
@@ -483,6 +537,7 @@ class EvidenceService:
                     "source_to_candidate_match": False,
                     **structural_provenance,
                 },
+                evidence_rejection_gate="PRINCIPAL_DOCUMENT",
                 canonical_source_url=source_url,
             )
 
@@ -500,6 +555,7 @@ class EvidenceService:
                     "body_text_available": False,
                     **structural_provenance,
                 },
+                evidence_rejection_gate="BODY_AVAILABILITY",
                 canonical_source_url=source_url,
             )
 
@@ -521,6 +577,7 @@ class EvidenceService:
                     **provenance_signals,
                     **structural_provenance,
                 },
+                evidence_rejection_gate="FACTUAL_SUBSTANCE",
                 canonical_source_url=source_url,
             )
 
@@ -545,6 +602,7 @@ class EvidenceService:
                     **semantic_signals,
                     "EvidenceService_final_decision": EvidenceState.REJECTED.value,
                 },
+                evidence_rejection_gate="SEMANTIC_MATCH",
                 canonical_source_url=source_url,
             )
 
@@ -794,14 +852,40 @@ class EvidenceService:
         reason: RejectReason,
         provenance: Mapping[str, Any],
         *,
+        evidence_rejection_gate: str,
         canonical_source_url: str = "",
     ) -> EvidenceResult:
+        allowed_gates = {
+            "URL_VALIDATION",
+            "FETCH_TRANSPORT",
+            "HTTP_STATUS",
+            "CONTENT_TYPE",
+            "SOURCE_PROVENANCE",
+            "PRINCIPAL_DOCUMENT",
+            "BODY_AVAILABILITY",
+            "FACTUAL_SUBSTANCE",
+            "SEMANTIC_MATCH",
+        }
+        if evidence_rejection_gate not in allowed_gates:
+            raise ValueError("unknown Evidence rejection gate")
+        diagnostic = dict(provenance)
+        diagnostic["evidence_rejection_gate"] = evidence_rejection_gate
+        candidate_host = _safe_hostname(candidate.url)
+        resolved_value = canonical_source_url or diagnostic.get("resolved_url", "")
+        resolved_host = _safe_hostname(resolved_value)
+        if candidate_host:
+            diagnostic["candidate_hostname"] = candidate_host
+        if resolved_host:
+            diagnostic["resolved_hostname"] = resolved_host
+        path = diagnostic.get("provenance_path")
+        if isinstance(path, (list, tuple)):
+            diagnostic["redirect_hop_count"] = max(0, len(path) - 1)
         return EvidenceResult(
             candidate_id=candidate.candidate_id,
             state=EvidenceState.REJECTED,
             canonical_source_url=canonical_source_url,
             source_type=candidate.source_type or "web_source",
             substantive_content="",
-            provenance=dict(provenance),
+            provenance=diagnostic,
             reject_reason=reason,
         )
