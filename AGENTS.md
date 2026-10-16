@@ -365,6 +365,13 @@ V2 不要求輸出與 V1 相同。
 
 > Tests passing alone 不代表完成。
 
+### Real E2E admission
+
+昂貴 Real E2E dispatch 前，`FAILURE_EXPLAINABILITY` 必須通過 offline acceptance：
+已完成階段的安全診斷須能在後續 application failure 或 process hard termination
+後保留。所選 execution environment 的 runtime capacity fit 必須另外成立；
+trace implementation 或 tests passing 單獨不授權 Real E2E。
+
 ## STATUS
 
 ```text

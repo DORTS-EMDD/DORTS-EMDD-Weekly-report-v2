@@ -13,11 +13,11 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from enum import StrEnum
 import os
-from urllib.parse import urlsplit
 from types import MappingProxyType
 from typing import Any, Protocol
 
 from .category_semantic_provider import build_maiagent_category_classifier
+from .debug_service import evidence_projection, execution_trace
 from .classifier import Classifier
 from .contracts import (
     EvidenceResult,
@@ -189,251 +189,8 @@ def _search_failure_projection(
     )
 
 
-_EVIDENCE_GATE_ORDER = {
-    "URL_VALIDATION": 1,
-    "FETCH_TRANSPORT": 2,
-    "HTTP_STATUS": 3,
-    "CONTENT_TYPE": 4,
-    "SOURCE_PROVENANCE": 5,
-    "PRINCIPAL_DOCUMENT": 6,
-    "BODY_AVAILABILITY": 7,
-    "FACTUAL_SUBSTANCE": 8,
-    "SEMANTIC_MATCH": 9,
-}
-
-
-def _safe_diag_token(value: object, *, allowed: set[str] | None = None) -> str | None:
-    if isinstance(value, bool):
-        token = "TRUE" if value else "FALSE"
-    elif value is None:
-        return None
-    else:
-        token = str(value).strip()
-    if not token:
-        return None
-    if allowed is not None:
-        return token if token in allowed else "UNKNOWN"
-    if len(token) > 96 or any(
-        not (char.isalnum() or char in "._:+/-") for char in token
-    ):
-        return "OTHER"
-    return token
-
-
-def _safe_host(value: object) -> str | None:
-    try:
-        host = urlsplit(str(value or "")).hostname or ""
-    except ValueError:
-        return None
-    return _safe_diag_token(host.casefold())
-
-
-def _add_distribution(target: dict[str, int], value: str | None) -> None:
-    if value is None:
-        return
-    target[value] = target.get(value, 0) + 1
-
-
-def _field_diagnostic(
-    provenance: Mapping[str, Any],
-    key: str,
-    *,
-    gate: str,
-    reached_after_gate: int,
-    allowed: set[str] | None = None,
-) -> str | None:
-    if key in provenance:
-        return _safe_diag_token(provenance.get(key), allowed=allowed)
-    if _EVIDENCE_GATE_ORDER.get(gate, 0) < reached_after_gate:
-        return "NOT_REACHED"
-    return None
-
-
 def _evidence_projection(result: ReportApplicationResult) -> dict[str, Any]:
-    """Project safe counts from the EvidenceResult objects already produced."""
-
-    evidence_results = result.evidence_results
-    if evidence_results is None:
-        return {}
-
-    distributions: dict[str, dict[str, int]] = {
-        "evidence_reject_reason_distribution": {},
-        "evidence_rejection_gate_distribution": {},
-        "evidence_reason_gate_distribution": {},
-        "evidence_http_status_distribution": {},
-        "evidence_transport_error_distribution": {},
-        "evidence_content_type_distribution": {},
-        "evidence_principal_document_status_distribution": {},
-        "evidence_page_kind_distribution": {},
-        "evidence_source_provenance_distribution": {},
-        "evidence_canonical_related_distribution": {},
-        "evidence_body_available_distribution": {},
-        "evidence_factual_substance_distribution": {},
-        "evidence_semantic_relation_distribution": {},
-        "evidence_semantic_response_validation_distribution": {},
-        "evidence_metadata_extraction_status_distribution": {},
-        "evidence_candidate_hostname_distribution": {},
-        "evidence_resolved_hostname_distribution": {},
-        "evidence_redirect_hop_count_distribution": {},
-        "evidence_host_transition_distribution": {},
-        "evidence_rejection_signature_distribution": {},
-    }
-    ready_count = 0
-    rejected_count = 0
-    semantic_relations = {"SAME_EVENT", "DIFFERENT_EVENT", "UNCERTAIN"}
-    semantic_validation = {
-        "valid",
-        "invalid",
-        "timeout",
-        "transport_error",
-        "not_configured",
-        "not_attempted",
-    }
-    for evidence in evidence_results:
-        if not isinstance(evidence, EvidenceResult):
-            continue
-        provenance = evidence.provenance
-        gate = str(provenance.get("evidence_rejection_gate", "UNKNOWN"))
-        gate_order = _EVIDENCE_GATE_ORDER.get(gate, 0)
-        if evidence.state is EvidenceState.READY:
-            ready_count += 1
-        else:
-            rejected_count += 1
-            reason = str(evidence.reject_reason or "UNKNOWN")
-            _add_distribution(distributions["evidence_reject_reason_distribution"], reason)
-            _add_distribution(distributions["evidence_rejection_gate_distribution"], gate)
-            _add_distribution(
-                distributions["evidence_reason_gate_distribution"],
-                f"{reason}|{gate}",
-            )
-
-        http_status = provenance.get("status_code")
-        if isinstance(http_status, int) and not isinstance(http_status, bool):
-            _add_distribution(distributions["evidence_http_status_distribution"], str(http_status))
-        _add_distribution(
-            distributions["evidence_transport_error_distribution"],
-            _field_diagnostic(provenance, "transport_error", gate=gate, reached_after_gate=2),
-        )
-        content_type = provenance.get("content_type")
-        if isinstance(content_type, str) and content_type:
-            _add_distribution(
-                distributions["evidence_content_type_distribution"],
-                _safe_diag_token(content_type.split(";", 1)[0].casefold()),
-            )
-        _add_distribution(
-            distributions["evidence_principal_document_status_distribution"],
-            _field_diagnostic(provenance, "principal_document_status", gate=gate, reached_after_gate=6),
-        )
-        _add_distribution(
-            distributions["evidence_page_kind_distribution"],
-            _safe_diag_token(provenance.get("page_kind")),
-        )
-        _add_distribution(
-            distributions["evidence_source_provenance_distribution"],
-            _field_diagnostic(provenance, "source_provenance", gate=gate, reached_after_gate=5),
-        )
-        _add_distribution(
-            distributions["evidence_canonical_related_distribution"],
-            _field_diagnostic(provenance, "canonical_related", gate=gate, reached_after_gate=5),
-        )
-        _add_distribution(
-            distributions["evidence_body_available_distribution"],
-            _field_diagnostic(provenance, "body_text_available", gate=gate, reached_after_gate=6),
-        )
-        _add_distribution(
-            distributions["evidence_factual_substance_distribution"],
-            _field_diagnostic(provenance, "factual_substance", gate=gate, reached_after_gate=8),
-        )
-        _add_distribution(
-            distributions["evidence_semantic_relation_distribution"],
-            _field_diagnostic(
-                provenance,
-                "raw_relation",
-                gate=gate,
-                reached_after_gate=9,
-                allowed=semantic_relations,
-            ),
-        )
-        _add_distribution(
-            distributions["evidence_semantic_response_validation_distribution"],
-            _field_diagnostic(
-                provenance,
-                "response_validation_result",
-                gate=gate,
-                reached_after_gate=9,
-                allowed=semantic_validation,
-            ),
-        )
-        metadata_status = _safe_diag_token(provenance.get("metadata_extraction_status"))
-        if metadata_status is not None:
-            _add_distribution(
-                distributions["evidence_metadata_extraction_status_distribution"],
-                metadata_status,
-            )
-        elif evidence.state is EvidenceState.REJECTED:
-            _add_distribution(
-                distributions["evidence_metadata_extraction_status_distribution"],
-                "NOT_REACHED",
-            )
-
-        candidate_host = _safe_host(provenance.get("candidate_url")) or _safe_diag_token(
-            provenance.get("candidate_hostname")
-        )
-        resolved_host = _safe_host(provenance.get("resolved_url")) or _safe_diag_token(
-            provenance.get("resolved_hostname")
-        )
-        _add_distribution(distributions["evidence_candidate_hostname_distribution"], candidate_host)
-        _add_distribution(distributions["evidence_resolved_hostname_distribution"], resolved_host)
-        hop_count = provenance.get("redirect_hop_count")
-        if isinstance(hop_count, int) and not isinstance(hop_count, bool) and hop_count >= 0:
-            _add_distribution(distributions["evidence_redirect_hop_count_distribution"], str(hop_count))
-        elif isinstance(provenance.get("provenance_path"), (list, tuple)):
-            _add_distribution(
-                distributions["evidence_redirect_hop_count_distribution"],
-                str(max(0, len(provenance["provenance_path"]) - 1)),
-            )
-        if candidate_host and resolved_host:
-            transition = "SAME_HOST" if candidate_host == resolved_host else "CHANGED_HOST"
-        else:
-            transition = "RESOLVED_HOST_MISSING"
-        _add_distribution(distributions["evidence_host_transition_distribution"], transition)
-
-        if evidence.state is EvidenceState.REJECTED:
-            signature_parts = [
-                f"reject_reason={str(evidence.reject_reason or 'UNKNOWN')}",
-                f"evidence_rejection_gate={gate}",
-            ]
-            for key in (
-                "status_code",
-                "transport_error",
-                "principal_document_status",
-                "page_kind",
-                "source_provenance",
-                "canonical_related",
-                "body_text_available",
-                "factual_substance",
-                "raw_relation",
-                "response_validation_result",
-            ):
-                if key not in provenance:
-                    continue
-                value = _safe_diag_token(provenance.get(key), allowed=(
-                    semantic_relations if key == "raw_relation" else
-                    semantic_validation if key == "response_validation_result" else None
-                ))
-                if value is not None:
-                    signature_parts.append(f"{key}={value}")
-            _add_distribution(
-                distributions["evidence_rejection_signature_distribution"],
-                ";".join(signature_parts),
-            )
-
-    projection: dict[str, Any] = {
-        "evidence_ready_count": ready_count,
-        "evidence_rejected_count": rejected_count,
-    }
-    projection.update(distributions)
-    return projection
+    return evidence_projection(result.evidence_results)
 
 
 @dataclass(frozen=True, slots=True)
@@ -825,6 +582,23 @@ class ProductionRunner:
         return self._application
 
     def run(
+        self,
+        *,
+        region_mode: RegionMode | str = RegionMode.SELECTED,
+        period_start: date | str | None = None,
+        period_end: date | str | None = None,
+    ) -> ProductionRunResult:
+        with execution_trace() as trace:
+            result = self._run(
+                region_mode=region_mode, period_start=period_start, period_end=period_end
+            )
+            trace.outcome(
+                result.successful,
+                None if result.final_report is None else result.final_report.report_id,
+            )
+            return result
+
+    def _run(
         self,
         *,
         region_mode: RegionMode | str = RegionMode.SELECTED,

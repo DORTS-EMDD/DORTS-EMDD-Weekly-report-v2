@@ -23,6 +23,7 @@ from .contracts import (
     TaxonomyResult,
     TaxonomyState,
 )
+from .debug_service import observe_stage
 from .reportability import Reportability
 from .taxonomy import Taxonomy, TaxonomySemanticProposalProvider
 
@@ -133,36 +134,44 @@ class ReportWorkflow:
         member_values = self._align_values(member_records, groups, "member_records")
         category_values = self._align_values(category_results, groups, "category_results")
 
-        decisions: list[EventDecisionRecord] = []
-        for group, records, category_result in zip(
-            groups,
-            member_values,
-            category_values,
-            strict=True,
-        ):
-            taxonomy_result = self._taxonomy.evaluate(group, records, category_result)
-            decisions.append(
-                EventDecisionRecord(
-                    event_group=group,
-                    member_records=tuple(records),
-                    category_result=category_result,
-                    taxonomy_result=taxonomy_result,
+        with observe_stage("Taxonomy", len(groups)) as observation:
+            decisions: list[EventDecisionRecord] = []
+            for group, records, category_result in zip(
+                groups,
+                member_values,
+                category_values,
+                strict=True,
+            ):
+                taxonomy_result = self._taxonomy.evaluate(group, records, category_result)
+                decisions.append(
+                    EventDecisionRecord(
+                        event_group=group,
+                        member_records=tuple(records),
+                        category_result=category_result,
+                        taxonomy_result=taxonomy_result,
+                    )
                 )
-            )
+                observation.observe(decisions)
+            observation.observe(decisions, final=True)
+
         if self._reportability is None:
             return tuple(decisions)
 
-        results: list[ReportWorkflowResult] = []
-        for decision in decisions:
-            category_state = decision.category_result.category_state
-            taxonomy_state = decision.taxonomy_result.taxonomy_state
-            reportability_result: ReportabilityResult | None = None
-            if (
-                category_state is CategoryState.CATEGORY_ASSIGNED
-                and taxonomy_state is TaxonomyState.TAXONOMY_EVALUATED
-            ):
-                reportability_result = self._reportability.evaluate(decision)
-            results.append(ReportWorkflowResult(decision, reportability_result))
+        with observe_stage("Reportability", len(decisions)) as observation:
+            results: list[ReportWorkflowResult] = []
+            for decision in decisions:
+                category_state = decision.category_result.category_state
+                taxonomy_state = decision.taxonomy_result.taxonomy_state
+                reportability_result: ReportabilityResult | None = None
+                if (
+                    category_state is CategoryState.CATEGORY_ASSIGNED
+                    and taxonomy_state is TaxonomyState.TAXONOMY_EVALUATED
+                ):
+                    reportability_result = self._reportability.evaluate(decision)
+                results.append(ReportWorkflowResult(decision, reportability_result))
+                observation.observe(results)
+            observation.observe(results, final=True)
+
         return tuple(results)
 
     @staticmethod

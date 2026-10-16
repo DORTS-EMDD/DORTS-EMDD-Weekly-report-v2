@@ -14,6 +14,7 @@ if str(SRC) not in sys.path:
 
 from weekly_report.contracts import RegionMode  # noqa: E402
 from weekly_report.production_runner import ProductionRunner  # noqa: E402
+from weekly_report.debug_service import execution_trace  # noqa: E402
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -29,6 +30,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    with execution_trace() as trace:
+        code = _main(argv)
+        trace.outcome(code == 0)
+        return code
+
+
+def _main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         runner = ProductionRunner.from_environment()

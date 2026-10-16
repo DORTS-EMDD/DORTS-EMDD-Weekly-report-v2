@@ -6,6 +6,8 @@ from collections.abc import Mapping
 from time import sleep
 from types import MappingProxyType
 
+from .debug_service import observe_progress
+
 from .contracts import (
     SearchAttemptResult,
     SearchExecutionResult,
@@ -77,6 +79,7 @@ class SearchExecutor:
                 )
                 attempts.append(value)
                 observations[item.plan_item_id] = self._attempt_observation(item, value)
+                observe_progress("Search", attempts)
                 infrastructure_failure = SearchInfrastructureFailure(
                     SearchInfrastructureFailureClass.EXECUTION_ABORTED,
                     SearchInfrastructureStage.EXECUTION,
@@ -92,6 +95,7 @@ class SearchExecutor:
                 )
             attempts.append(value)
             observations[item.plan_item_id] = self._attempt_observation(item, value)
+            observe_progress("Search", attempts)
 
         for item in unattempted:
             observations[item.plan_item_id] = self._unattempted_observation(item)

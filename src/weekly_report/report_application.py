@@ -8,6 +8,7 @@ from datetime import date
 from enum import StrEnum
 
 from .candidate_normalizer import CandidateNormalizationError, CandidateNormalizer
+from .debug_service import observe_stage
 from .classifier import Classifier
 from .contracts import (
     AcquisitionRecord,
@@ -569,8 +570,12 @@ class ReportApplication:
         period_end: date | str,
     ) -> ReportApplicationResult:
         self._temporal_rule.validate_period(period_start, period_end)
-        plan = self._planner.plan(mode, intents=intents)
-        execution = self._executor.execute(plan)
+        with observe_stage("Search") as observation:
+            plan = self._planner.plan(mode, intents=intents)
+            observation.input_count = len(plan.items)
+            execution = self._executor.execute(plan)
+            observation.observe(execution, final=True)
+
         if determine_search_runtime_acceptance(execution) is SearchRuntimeAcceptance.BLOCK:
             return ReportApplicationResult(
                 plan,
@@ -578,32 +583,42 @@ class ReportApplication:
                 normalized_observations=execution.observations,
             )
 
-        acquisitions = self._project_acquisitions(execution)
-        try:
-            normalized = self._normalizer.normalize(acquisitions)
-        except CandidateNormalizationError as exc:
-            return ReportApplicationResult(
-                plan,
-                execution,
-                acquisitions=acquisitions,
-                normalized_observations=self._normalized_observations(
-                    execution, acquisitions, None
-                ),
-                normalization_failure=exc.failure,
-            )
+        with observe_stage("Acquisition", len(execution.attempt_results)) as observation:
+            acquisitions = self._project_acquisitions(execution)
+            observation.observe(acquisitions, final=True)
 
-        evidence_results: list[EvidenceResult] = []
-        for normalized_candidate in normalized.normalized_candidates:
-            evidence = self._evidence_service.evaluate(normalized_candidate.candidate)
-            if not isinstance(evidence, EvidenceResult):
-                raise TypeError("EvidenceService must return an EvidenceResult")
-            if not isinstance(evidence.state, EvidenceState):
-                raise TypeError("EvidenceResult state must be an EvidenceState")
-            if evidence.candidate_id != normalized_candidate.candidate.candidate_id:
-                raise ValueError("EvidenceResult candidate_id does not match candidate")
-            evidence_results.append(evidence)
+        with observe_stage("Normalization", len(acquisitions)) as observation:
+            try:
+                normalized = self._normalizer.normalize(acquisitions)
+            except CandidateNormalizationError as exc:
+                observation.fail(exc)
+                return ReportApplicationResult(
+                    plan,
+                    execution,
+                    acquisitions=acquisitions,
+                    normalized_observations=self._normalized_observations(
+                        execution, acquisitions, None
+                    ),
+                    normalization_failure=exc.failure,
+                )
+            observation.observe(normalized, final=True)
 
-        evidence_tuple = tuple(evidence_results)
+        with observe_stage("Evidence", len(normalized.normalized_candidates)) as observation:
+            evidence_results: list[EvidenceResult] = []
+            for normalized_candidate in normalized.normalized_candidates:
+                evidence = self._evidence_service.evaluate(normalized_candidate.candidate)
+                if not isinstance(evidence, EvidenceResult):
+                    raise TypeError("EvidenceService must return an EvidenceResult")
+                if not isinstance(evidence.state, EvidenceState):
+                    raise TypeError("EvidenceResult state must be an EvidenceState")
+                if evidence.candidate_id != normalized_candidate.candidate.candidate_id:
+                    raise ValueError("EvidenceResult candidate_id does not match candidate")
+                evidence_results.append(evidence)
+                observation.observe(evidence_results)
+
+            evidence_tuple = tuple(evidence_results)
+            observation.observe(evidence_tuple, final=True)
+
         ready_pairs = tuple(
             (normalized_candidate, evidence)
             for normalized_candidate, evidence in zip(
@@ -611,47 +626,55 @@ class ReportApplication:
             )
             if evidence.state is EvidenceState.READY
         )
-        scope_results: list[ScopeResult] = []
-        for normalized_candidate, evidence in ready_pairs:
-            scope = self._scope_classifier.classify(
-                evidence,
-                candidate_title=normalized_candidate.candidate.title,
-            )
-            if not isinstance(scope, ScopeResult):
-                raise TypeError("ScopeClassifier must return a ScopeResult")
-            if not isinstance(scope.state, ScopeState):
-                raise TypeError("ScopeResult state must be a ScopeState")
-            if scope.candidate_id != normalized_candidate.candidate.candidate_id:
-                raise ValueError("ScopeResult candidate_id does not match candidate")
-            scope_results.append(scope)
+        with observe_stage("Scope", len(ready_pairs)) as observation:
+            scope_results: list[ScopeResult] = []
+            for normalized_candidate, evidence in ready_pairs:
+                scope = self._scope_classifier.classify(
+                    evidence,
+                    candidate_title=normalized_candidate.candidate.title,
+                )
+                if not isinstance(scope, ScopeResult):
+                    raise TypeError("ScopeClassifier must return a ScopeResult")
+                if not isinstance(scope.state, ScopeState):
+                    raise TypeError("ScopeResult state must be a ScopeState")
+                if scope.candidate_id != normalized_candidate.candidate.candidate_id:
+                    raise ValueError("ScopeResult candidate_id does not match candidate")
+                scope_results.append(scope)
+                observation.observe(scope_results)
 
-        scope_tuple = tuple(scope_results)
+            scope_tuple = tuple(scope_results)
+            observation.observe(scope_tuple, final=True)
+
         scope_by_id = {result.candidate_id: result for result in scope_tuple}
         ready_by_id = {
             normalized_candidate.candidate.candidate_id: (normalized_candidate, evidence)
             for normalized_candidate, evidence in ready_pairs
         }
-        temporal_results: list[TemporalResult] = []
-        for scope in scope_tuple:
-            if scope.state is not ScopeState.IN_SCOPE:
-                continue
-            normalized_candidate, evidence = ready_by_id[scope.candidate_id]
-            temporal = self._temporal_rule.evaluate(
-                scope.candidate_id,
-                evidence.source_date_facts,
-                period_start,
-                period_end,
-                source_type=evidence.source_type,
-                discovery_published_at=normalized_candidate.candidate.published_at,
-                scope_result=scope,
-            )
-            if not isinstance(temporal, TemporalResult):
-                raise TypeError("TemporalRule must return a TemporalResult")
-            if temporal.candidate_id != scope.candidate_id:
-                raise ValueError("TemporalResult candidate_id does not match candidate")
-            temporal_results.append(temporal)
+        with observe_stage("Temporal", sum(scope.state is ScopeState.IN_SCOPE for scope in scope_tuple)) as observation:
+            temporal_results: list[TemporalResult] = []
+            for scope in scope_tuple:
+                if scope.state is not ScopeState.IN_SCOPE:
+                    continue
+                normalized_candidate, evidence = ready_by_id[scope.candidate_id]
+                temporal = self._temporal_rule.evaluate(
+                    scope.candidate_id,
+                    evidence.source_date_facts,
+                    period_start,
+                    period_end,
+                    source_type=evidence.source_type,
+                    discovery_published_at=normalized_candidate.candidate.published_at,
+                    scope_result=scope,
+                )
+                if not isinstance(temporal, TemporalResult):
+                    raise TypeError("TemporalRule must return a TemporalResult")
+                if temporal.candidate_id != scope.candidate_id:
+                    raise ValueError("TemporalResult candidate_id does not match candidate")
+                temporal_results.append(temporal)
+                observation.observe(temporal_results)
 
-        temporal_tuple = tuple(temporal_results)
+            temporal_tuple = tuple(temporal_results)
+            observation.observe(temporal_tuple, final=True)
+
         event_identity_records = tuple(
             EventIdentityRecord(
                 candidate=ready_by_id[temporal.candidate_id][0].candidate,
@@ -662,9 +685,12 @@ class ReportApplication:
             for temporal in temporal_tuple
             if temporal.date_valid is True
         )
-        event_identity_run = self._event_identity.evaluate(event_identity_records)
-        if not isinstance(event_identity_run, EventIdentityRun):
-            raise TypeError("EventIdentity must return an EventIdentityRun")
+        with observe_stage("EventIdentity", len(event_identity_records)) as observation:
+            event_identity_run = self._event_identity.evaluate(event_identity_records)
+            if not isinstance(event_identity_run, EventIdentityRun):
+                raise TypeError("EventIdentity must return an EventIdentityRun")
+            observation.observe(event_identity_run, final=True)
+
         category_results = self._classify_event_groups(
             event_identity_run,
             event_identity_records,
@@ -717,24 +743,36 @@ class ReportApplication:
             return None, None, None, None
         if ordered_results is None or formal_metadata is None:
             return None, None, None, None
-        writer_blocks = self._writer.write(ordered_results)
-        if not isinstance(writer_blocks, tuple):
-            raise TypeError("ReportWriter must return a tuple")
-        validation_result = self._validator.validate(
-            ordered_results, formal_metadata, writer_blocks
-        )
-        if not isinstance(validation_result, ValidationResult):
-            raise TypeError("Validator must return a ValidationResult")
+        with observe_stage("Writer", len(ordered_results)) as observation:
+            writer_blocks = self._writer.write(ordered_results)
+            if not isinstance(writer_blocks, tuple):
+                raise TypeError("ReportWriter must return a tuple")
+            observation.observe(writer_blocks, final=True)
+
+        with observe_stage("Validator", len(ordered_results)) as observation:
+            validation_result = self._validator.validate(
+                ordered_results, formal_metadata, writer_blocks
+            )
+            if not isinstance(validation_result, ValidationResult):
+                raise TypeError("Validator must return a ValidationResult")
+            observation.observe(validation_result, final=True)
+
         if self._report_service is None:
             raise ValueError("final pipeline requires ReportService")
-        final_report = self._report_service.assemble_final_report(validation_result)
-        if not isinstance(final_report, FinalReportArtifact):
-            raise TypeError("ReportService must return a FinalReportArtifact")
+        with observe_stage("Assembly", validation_result.pass_count) as observation:
+            final_report = self._report_service.assemble_final_report(validation_result)
+            if not isinstance(final_report, FinalReportArtifact):
+                raise TypeError("ReportService must return a FinalReportArtifact")
+            observation.observe(final_report, final=True)
+
         delivery_result = None
         if self._delivery is not None and self._delivery_recipient is not None:
-            delivery_result = self._delivery.deliver(final_report, self._delivery_recipient)
-            if not isinstance(delivery_result, DeliveryReceipt):
-                raise TypeError("DeliveryService must return a DeliveryReceipt")
+            with observe_stage("Delivery", 1) as observation:
+                delivery_result = self._delivery.deliver(final_report, self._delivery_recipient)
+                if not isinstance(delivery_result, DeliveryReceipt):
+                    raise TypeError("DeliveryService must return a DeliveryReceipt")
+                observation.observe(delivery_result, final=True)
+
         return writer_blocks, validation_result, final_report, delivery_result
 
     def _run_formal_metadata_projection(
@@ -743,9 +781,12 @@ class ReportApplication:
     ) -> tuple[FormalReportMetadata, ...] | None:
         if self._report_service is None or ordered_results is None:
             return None
-        formal_metadata = self._report_service.project_formal_metadata(ordered_results)
-        if not isinstance(formal_metadata, tuple):
-            raise TypeError("ReportService must return a tuple of formal metadata")
+        with observe_stage("FormalMetadata", len(ordered_results)) as observation:
+            formal_metadata = self._report_service.project_formal_metadata(ordered_results)
+            if not isinstance(formal_metadata, tuple):
+                raise TypeError("ReportService must return a tuple of formal metadata")
+            observation.observe(formal_metadata, final=True)
+
         return formal_metadata
 
     def _run_downstream_workflow(
@@ -759,6 +800,11 @@ class ReportApplication:
         if self._report_workflow is None:
             return None
         if not event_identity_run.groups:
+            with observe_stage("Taxonomy", 0) as observation:
+                observation.observe((), final=True)
+            if self._report_workflow.reportability is not None:
+                with observe_stage("Reportability", 0) as observation:
+                    observation.observe((), final=True)
             return ()
         record_by_id = {
             record.candidate.candidate_id: record for record in event_identity_records
@@ -800,8 +846,11 @@ class ReportApplication:
         eligible_results = tuple(
             result for result in downstream_results if result.downstream_eligible
         )
-        ordered_results = self._ordering.order(eligible_results)
-        self._validate_ordering_output(eligible_results, ordered_results)
+        with observe_stage("Ordering", len(eligible_results)) as observation:
+            ordered_results = self._ordering.order(eligible_results)
+            self._validate_ordering_output(eligible_results, ordered_results)
+            observation.observe(ordered_results, final=True)
+
         return ordered_results
 
     @staticmethod
@@ -827,58 +876,62 @@ class ReportApplication:
         event_identity_run: EventIdentityRun,
         event_identity_records: tuple[EventIdentityRecord, ...],
     ) -> tuple[CategoryResult, ...]:
-        groups = event_identity_run.groups
-        if not isinstance(groups, tuple):
-            raise TypeError("Category EventIdentityRun groups must be a tuple")
-        if any(not isinstance(group, EventGroup) for group in groups):
-            raise TypeError("Category EventIdentityRun groups must contain EventGroup values")
+        with observe_stage("Category") as observation:
+            groups = event_identity_run.groups
+            if not isinstance(groups, tuple):
+                raise TypeError("Category EventIdentityRun groups must be a tuple")
+            if any(not isinstance(group, EventGroup) for group in groups):
+                raise TypeError("Category EventIdentityRun groups must contain EventGroup values")
 
-        record_by_id: dict[str, EventIdentityRecord] = {}
-        for record in event_identity_records:
-            if not isinstance(record, EventIdentityRecord):
-                raise TypeError("Category Event Identity records must be typed")
-            candidate_id = record.candidate.candidate_id
-            if candidate_id in record_by_id:
-                raise ValueError("Event Identity records contain duplicate candidate IDs")
-            record_by_id[candidate_id] = record
+            record_by_id: dict[str, EventIdentityRecord] = {}
+            for record in event_identity_records:
+                if not isinstance(record, EventIdentityRecord):
+                    raise TypeError("Category Event Identity records must be typed")
+                candidate_id = record.candidate.candidate_id
+                if candidate_id in record_by_id:
+                    raise ValueError("Event Identity records contain duplicate candidate IDs")
+                record_by_id[candidate_id] = record
 
-        group_ids = tuple(group.event_id for group in groups)
-        if len(group_ids) != len(set(group_ids)):
-            raise ValueError("Category EventGroups must have unique event IDs")
-        expected_member_ids = tuple(
-            candidate_id
-            for group in groups
-            for candidate_id in group.member_candidate_ids
-        )
-        if len(expected_member_ids) != len(set(expected_member_ids)):
-            raise ValueError("Category EventGroups must not overlap")
-        if set(expected_member_ids) != set(record_by_id):
-            raise ValueError("Category EventGroups must cover EventIdentity records exactly")
+            observation.input_count = len(groups)
+            group_ids = tuple(group.event_id for group in groups)
+            if len(group_ids) != len(set(group_ids)):
+                raise ValueError("Category EventGroups must have unique event IDs")
+            expected_member_ids = tuple(
+                candidate_id
+                for group in groups
+                for candidate_id in group.member_candidate_ids
+            )
+            if len(expected_member_ids) != len(set(expected_member_ids)):
+                raise ValueError("Category EventGroups must not overlap")
+            if set(expected_member_ids) != set(record_by_id):
+                raise ValueError("Category EventGroups must cover EventIdentity records exactly")
 
-        projections: list[tuple[EventGroup, tuple[EventIdentityRecord, ...]]] = []
-        for event_group in groups:
-            try:
-                member_records = tuple(
-                    record_by_id[candidate_id]
-                    for candidate_id in event_group.member_candidate_ids
-                )
-            except KeyError as exc:
-                raise ValueError(
-                    "Category member projection does not match EventGroup"
-                ) from exc
-            projections.append((event_group, member_records))
+            projections: list[tuple[EventGroup, tuple[EventIdentityRecord, ...]]] = []
+            for event_group in groups:
+                try:
+                    member_records = tuple(
+                        record_by_id[candidate_id]
+                        for candidate_id in event_group.member_candidate_ids
+                    )
+                except KeyError as exc:
+                    raise ValueError(
+                        "Category member projection does not match EventGroup"
+                    ) from exc
+                projections.append((event_group, member_records))
 
-        results: list[CategoryResult] = []
-        for event_group, member_records in projections:
-            result = self._classifier.classify(event_group, member_records)
-            if not isinstance(result, CategoryResult):
-                raise TypeError("Classifier must return a CategoryResult")
-            if result.category_state is CategoryState.NOT_EVALUATED:
-                raise ValueError("invoked Classifier cannot return NOT_EVALUATED")
-            if result.event_id != event_group.event_id:
-                raise ValueError("CategoryResult event_id does not match EventGroup")
-            results.append(result)
-        return tuple(results)
+            results: list[CategoryResult] = []
+            for event_group, member_records in projections:
+                result = self._classifier.classify(event_group, member_records)
+                if not isinstance(result, CategoryResult):
+                    raise TypeError("Classifier must return a CategoryResult")
+                if result.category_state is CategoryState.NOT_EVALUATED:
+                    raise ValueError("invoked Classifier cannot return NOT_EVALUATED")
+                if result.event_id != event_group.event_id:
+                    raise ValueError("CategoryResult event_id does not match EventGroup")
+                results.append(result)
+                observation.observe(results)
+            observation.observe(results, final=True)
+            return tuple(results)
 
     @staticmethod
     def _project_acquisitions(execution: SearchExecutionResult) -> tuple[AcquisitionRecord, ...]:
