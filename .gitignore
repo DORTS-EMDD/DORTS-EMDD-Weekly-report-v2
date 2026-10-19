@@ -1,6 +1,8 @@
 .env
 .env.*
 !.env.example
+/.scope-acceptance-*.json
+/.scope-acceptance-*.tmp
 /docs/category-v4-final-seal/category-deployment-snapshot-v1.json
 /docs/category-v4-final-seal/category-deployment-snapshot-v1.metadata.json
 /docs/category-v4-final-seal/category-final-seal-round1.json

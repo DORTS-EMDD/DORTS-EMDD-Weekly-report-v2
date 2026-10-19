@@ -117,6 +117,10 @@ def build_maiagent_scope_model_input(request: ScopeSemanticRequest) -> dict[str,
 class MaiAgentScopeProviderFailure(RuntimeError):
     """Safe technical provider failure without provider-controlled details."""
 
+    def __init__(self, message: str, *, failure_category: str = "PROVIDER_FAILURE") -> None:
+        super().__init__(message)
+        self.failure_category = failure_category
+
 
 class MaiAgentScopeProposalProvider:
     def __init__(self, config: MaiAgentScopeProviderConfig, *, transport: MaiAgentJsonHttpTransport | None = None) -> None:
@@ -135,13 +139,13 @@ class MaiAgentScopeProposalProvider:
         except TimeoutError:
             raise TimeoutError("MaiAgent Scope request timed out") from None
         except Exception:
-            raise MaiAgentScopeProviderFailure("MaiAgent Scope provider transport failed") from None
+            raise MaiAgentScopeProviderFailure("MaiAgent Scope provider transport failed", failure_category="TRANSPORT") from None
         if not isinstance(response, MaiAgentHttpResponse) or response.status_code != 200:
-            raise MaiAgentScopeProviderFailure("MaiAgent Scope provider request failed")
+            raise MaiAgentScopeProviderFailure("MaiAgent Scope provider request failed", failure_category="HTTP_STATUS")
         try:
             return parse_maiagent_response(response.body)
         except MaiAgentResponseError:
-            raise MaiAgentScopeProviderFailure("MaiAgent Scope provider response was invalid") from None
+            raise MaiAgentScopeProviderFailure("MaiAgent Scope provider response was invalid", failure_category="RESPONSE_PARSE") from None
 
 
 MaiAgentScopeProvider = MaiAgentScopeProposalProvider

@@ -21,7 +21,8 @@ def _evidence(content: str, *, candidate_id: str = "C1", **provenance) -> Eviden
     return EvidenceResult(candidate_id=candidate_id, state=EvidenceState.READY, substantive_content=content, provenance=provenance)
 
 
-def _proposal(request, *, decision="IN_SCOPE_SUPPORT", mode="METRO", diagnostic="NONE", quote=None):
+def _mechanical_schema_proposal(request, *, decision="IN_SCOPE_SUPPORT", mode="METRO", diagnostic="NONE", quote=None):
+    """Quarter-sliced endpoint fields are for mechanical contract tests only."""
     content = request.principal_content
     quote = content if quote is None else quote
     width = max(1, len(quote) // 4)
@@ -47,13 +48,15 @@ def _proposal(request, *, decision="IN_SCOPE_SUPPORT", mode="METRO", diagnostic=
 
 
 class _ProposalHelper:
+    """Mechanical proposal factory; its endpoint text is not semantic proof."""
+
     def __init__(self, *, mode="METRO", decision="IN_SCOPE_SUPPORT", diagnostic="NONE"):
         self.mode = mode
         self.decision = decision
         self.diagnostic = diagnostic
 
     def __call__(self, request):
-        return _proposal(request, mode=self.mode, decision=self.decision, diagnostic=self.diagnostic)
+        return _mechanical_schema_proposal(request, mode=self.mode, decision=self.decision, diagnostic=self.diagnostic)
 
 
 class ScopeClassifierTests(unittest.TestCase):
@@ -89,7 +92,7 @@ class ScopeClassifierTests(unittest.TestCase):
         self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
         self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
 
-    def test_helper_positive_result_is_deterministic(self):
+    def test_mechanical_helper_result_is_deterministic(self):
         content = "The identified Metro system commissioned a new signalling controller on its central line."
         classifier = ScopeClassifier(_ProposalHelper())
         self.assertEqual(classifier.classify(_evidence(content)), classifier.classify(_evidence(content)))
@@ -107,7 +110,7 @@ class ScopeClassifierTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             ScopeClassifier().classify(_evidence("No eligible mode is established."), scope_facts={"mode": "Metro"})
 
-    def test_complete_event_target_system_proposal_is_accepted(self):
+    def test_mechanical_schema_proposal_with_complete_records_is_accepted(self):
         content = "The operator installed platform doors on the Metro line."
         result = ScopeClassifier(_ProposalHelper()).classify(_evidence(content))
         self.assertEqual(result.state, ScopeState.IN_SCOPE)
@@ -115,7 +118,7 @@ class ScopeClassifierTests(unittest.TestCase):
         self.assertEqual(result.provenance["decision_basis"], "scope_semantic_proposal")
         self.assertIn("relation_support", result.provenance)
 
-    def test_exact_nine_contract_mode_families_are_accepted(self):
+    def test_mechanical_schema_accepts_the_nine_contract_mode_enums(self):
         content = "The operator installed platform doors on the eligible urban rail system."
         for mode in SUPPORTED_SCOPE_MODE_FAMILIES:
             result = ScopeClassifier(_ProposalHelper(mode=mode)).classify(_evidence(content))
@@ -125,7 +128,7 @@ class ScopeClassifierTests(unittest.TestCase):
         content = "The city installed public sculptures at the Metro station."
 
         def helper(request):
-            proposal = _proposal(request)
+            proposal = _mechanical_schema_proposal(request)
             for field in ("action", "target", "system"):
                 proposal[field] = {"label": content, "quote": content}
             return proposal
@@ -152,7 +155,7 @@ class ScopeClassifierTests(unittest.TestCase):
 
         def helper(request):
             first, second = content.split(". ")
-            proposal = _proposal(request, quote=first + ".")
+            proposal = _mechanical_schema_proposal(request, quote=first + ".")
             # The candidate focus is the second event while the relation cites
             # the first event; owner validation must reject the cross-event mix.
             proposal["event_focus"] = {"status": "RESOLVED", "quote": second}
@@ -166,7 +169,7 @@ class ScopeClassifierTests(unittest.TestCase):
         content = "The city installed public sculptures at the Metro station."
 
         def helper(request):
-            proposal = _proposal(request)
+            proposal = _mechanical_schema_proposal(request)
             proposal["target_system"] = {"status": "ESTABLISHED", "relation": "LOCATED_AT", "quote": content}
             return proposal
 
@@ -178,7 +181,7 @@ class ScopeClassifierTests(unittest.TestCase):
         content = "The operator installed platform doors on the Metro line."
 
         def helper(request):
-            proposal = _proposal(request)
+            proposal = _mechanical_schema_proposal(request)
             proposal["noneligible_kind"] = "NON_URBAN_RAIL"
             return proposal
 
@@ -190,14 +193,14 @@ class ScopeClassifierTests(unittest.TestCase):
         content = "The operator installed platform doors on the Metro line."
 
         def invalid(request):
-            proposal = _proposal(request)
+            proposal = _mechanical_schema_proposal(request)
             proposal["candidate_id"] = "wrong"
             return proposal
 
         self.assertEqual(ScopeClassifier(invalid).classify(_evidence(content)).state, ScopeState.OUT_OF_SCOPE)
 
         def ambiguous(request):
-            proposal = _proposal(request, quote="Metro")
+            proposal = _mechanical_schema_proposal(request, quote="Metro")
             return proposal
 
         repeated = _evidence("Metro action. Metro action.")
@@ -207,7 +210,7 @@ class ScopeClassifierTests(unittest.TestCase):
         content = "The operator may install signalling equipment on the Metro line."
 
         def helper(request):
-            proposal = _proposal(request)
+            proposal = _mechanical_schema_proposal(request)
             proposal["event_status"] = "CONDITIONAL"
             return proposal
 
@@ -221,7 +224,7 @@ class ScopeClassifierTests(unittest.TestCase):
         self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
         self.assertEqual(result.diagnostic, ScopeDiagnostic.NON_URBAN_RAIL)
 
-    def test_golden_g22_g35_expected_states_use_structured_proposals(self):
+    def test_golden_g22_g35_states_remain_compatible_with_mechanical_proposals(self):
         manifest = json.loads((ROOT / "golden/manifest.json").read_text(encoding="utf-8"))
         for entry in manifest["cases"]:
             if not 22 <= int(entry["case_id"][1:]) <= 35:

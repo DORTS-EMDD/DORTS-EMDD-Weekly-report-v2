@@ -93,7 +93,7 @@ class _OfflineSemanticJudge:
 
 
 class _OfflineScopeProposal:
-    """Deterministic proposal fixture; ScopeClassifier remains authoritative."""
+    """Quarter-sliced mechanical fixture for composition; not semantic evidence."""
 
     def __call__(self, request):
         content = request.principal_content
