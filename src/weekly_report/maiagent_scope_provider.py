@@ -31,7 +31,7 @@ from .scope_classifier import (
 
 
 TASK_IDENTITY = "scope_semantic_proposal"
-PROMPT_VERSION = "scope-event-target-system-v2"
+PROMPT_VERSION = "scope-event-target-system-v3"
 SCHEMA_VERSION = SCOPE_PROPOSAL_SCHEMA_VERSION
 HELPER_VERSION = "maiagent-structured-helper-scope-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-scope"
@@ -45,16 +45,23 @@ MAIAGENT_SCOPE_PROVIDER_IDENTIFIER = PROVIDER_IDENTIFIER
 SCOPE_SEMANTIC_INSTRUCTIONS = (
     "You are a stateless proposal-only semantic helper for the Python ScopeClassifier.",
     "Use only the supplied authoritative principal_content and same-document metadata.",
-    "Resolve the candidate event, its asserted action, actual affected target, and the transport system that target belongs to.",
-    "Use exactly one canonical eligible_mode_family: METRO, MRT, SUBWAY, LIGHT_RAIL, TRAM, URBAN_RAIL, AGT, MONORAIL, or PEOPLE_MOVER. Urban maglev maps to URBAN_RAIL; AGT and People Mover remain distinct choices.",
+    "Interpret in order: identify the Candidate event, its asserted action, what the action actually affects, and the transport system that affected target belongs to or for which it functions; only then propose an eligible mode if supported.",
+    "The affected target is not automatically the operator, owner, city, publisher, nearby station, route, or whole Metro system. For example, installed platform-door equipment is the target, and irrigation near a station remains irrigation equipment. Do not infer target-system membership from transport vocabulary or proximity.",
+    "When the source supports eligibility, use exactly one canonical eligible_mode_family: METRO, MRT, SUBWAY, LIGHT_RAIL, TRAM, URBAN_RAIL, AGT, MONORAIL, or PEOPLE_MOVER. Urban maglev maps to URBAN_RAIL; AGT and People Mover remain distinct. NON_ELIGIBLE and UNKNOWN are valid when their respective noneligible or unresolved status is supported; do not force an eligible family.",
     "Citation policy: event_focus requires a nonempty exact quotation for RESOLVED or CONFLICTING and may be empty for UNRESOLVED. The asserted action and claimed affected target each require their own nonempty exact source quotation.",
     "system, action_target, and target_system require nonempty exact quotations when their relation status is ESTABLISHED or CONFLICTING. Their quotations may be empty when status is UNESTABLISHED and no affirmative relation is established. ambiguity requires a quotation only for CONFLICTING; NONE and UNRESOLVED may be empty. noneligible_relation requires a quotation only for PRESENT; ABSENT and UNRESOLVED may be empty.",
-    "Every nonempty quotation, including optional quotations, must be copied exactly from principal_content and occur exactly once. It must identify only the evidence it actually supports. Never invent a quotation or offsets to represent absence or uncertainty.",
-    "For an ESTABLISHED or CONFLICTING action_target relation, its quotation must identify the exact action and affected-target endpoints. For an ESTABLISHED or CONFLICTING target_system relation, its quotation must identify the actual target and system endpoints within the selected event. A noneligible PRESENT quotation must identify the target or system involved.",
+    "Each nonempty action.label, target.label, and system.label must be an exact source-surface substring within its own endpoint quote. Do not translate, paraphrase, normalize, conjugate, nominalize, replace with a synonym, or invent endpoint labels; retain the original language and surface form.",
+    "Every nonempty quotation, including optional quotations, must be a contiguous exact substring copied from principal_content, occur exactly once, preserve spelling and punctuation, and identify only evidence it supports. Never invent or reconstruct a quotation or offsets to represent absence or uncertainty.",
+    "For an ESTABLISHED or CONFLICTING action_target relation, its quotation must contain the exact selected action.quote and target.quote endpoints. For an ESTABLISHED or CONFLICTING target_system relation, its quotation must contain the exact selected target.quote and system.quote endpoints within the selected event. A noneligible PRESENT quotation must identify the target or system involved.",
+    "A bounded relation quotation may span multiple sentences only when the source genuinely expresses the relation across them. Select a relevant contiguous excerpt rather than the whole source, and do not choose an action endpoint broader than the relation quotation can contain.",
+    "The selected event_focus.quote must encompass the source material supporting the established relationships attributed to that Candidate event. Do not borrow support from a separate independent event in the same document.",
     "IN_SCOPE_SUPPORT requires a RESOLVED Candidate event, an ASSERTED action, an established AFFECTS action-to-target relation, and an established eligible target-to-system relation supported by exact endpoint quotations.",
-    "A location, operator, ownership identity, generic equipment word, or nearby station is not target-to-system membership. Use AFFECTS only for action-to-target evidence; use BELONGS_TO, PART_OF, or FUNCTIONS_FOR for eligible membership. LOCATED_AT, OWNED_BY, and OPERATED_BY never establish eligibility.",
+    "A location, operator identity, ownership identity, generic equipment word, or nearby station is not target-to-system membership. Use AFFECTS only for action-to-target evidence; use BELONGS_TO, PART_OF, or FUNCTIONS_FOR for eligible membership. LOCATED_AT, OWNED_BY, and OPERATED_BY never establish eligibility.",
+    "Interpret source-grounded anaphora, demonstratives, possessives, component relationships, and cross-sentence grammatical references, including Japanese and French constructions. These may support a relationship only when the supplied source clearly connects the actual affected target to the system; preserve UNCERTAIN if the antecedent or relation remains ambiguous, and do not use outside knowledge.",
+    "Interpret action-to-target independently from target eligibility: when the source clearly establishes an action affecting a target, mark action_target ESTABLISHED even if target_system is UNESTABLISHED or a supported noneligible relationship. Do not mark a clear action unresolved merely because overall Scope is negative.",
+    "When noneligible_relation.status is ABSENT, noneligible_kind must be NONE. When status is PRESENT, provide exact supporting evidence, use mode NON_ELIGIBLE, and choose only a supported kind: EXCLUDED_TRANSPORT_MODE or NON_URBAN_RAIL. For a genuinely unresolved noneligible relationship, use UNRESOLVED status and kind consistently; do not invent a negative relationship to force a diagnostic.",
     "Record noneligible, ambiguous, contradictory, negated, conditional, and unasserted events explicitly. Use UNESTABLISHED or UNRESOLVED when evidence does not establish a relation; do not label uncertainty as an affirmative relation merely to fill a citation field.",
-    "Do not output IN_SCOPE_SUPPORT to satisfy a benchmark. A complete citation is evidence for the proposal, not independent proof of a semantic relation.",
+    "Do not force a positive proposal or output IN_SCOPE_SUPPORT to satisfy a benchmark. A complete citation is a necessary mechanical condition, not independent proof of a semantic relation.",
     "Do not search, browse, use tools, retrieve external knowledge, or return a ScopeResult or diagnostic.",
     "Return exactly the supplied JSON schema with no extra fields and no prose outside JSON.",
 )
