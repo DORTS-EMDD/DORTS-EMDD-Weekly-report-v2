@@ -145,6 +145,62 @@ class ScopeClassifierTests(unittest.TestCase):
         self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
         self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
 
+    def test_authoritative_content_reaches_positive_scope_without_helper(self):
+        manifest = json.loads((ROOT / "golden/manifest.json").read_text(encoding="utf-8"))
+        for entry in manifest["cases"]:
+            if not 22 <= int(entry["case_id"][1:]) <= 35:
+                continue
+            fixture = json.loads((ROOT / "golden" / entry["file"]).read_text(encoding="utf-8"))
+            candidate = fixture["candidates"][0]
+            result = ScopeClassifier().classify(
+                _evidence(candidate["source_content"], candidate_id=candidate["candidate_id"]),
+                candidate_title=candidate["title"],
+            )
+            expected = fixture["expected"]
+            self.assertEqual(result.state.value, expected["scope"], entry["case_id"])
+            self.assertEqual(result.diagnostic.value, expected["scope_diagnostic"], entry["case_id"])
+
+    def test_non_authoritative_signals_cannot_promote_scope(self):
+        cases = (
+            _evidence(
+                "The principal document describes a railway equipment change but does not establish a mode.",
+                search_snippet="Metro platform upgrade",
+                discovery_intent="technology",
+            ),
+            _evidence(
+                "The publisher operates a Metro system but upgraded conventional intercity railway signalling.",
+            ),
+            _evidence("The railway upgraded signalling equipment on a conventional corridor."),
+        )
+        for evidence in cases:
+            result = ScopeClassifier().classify(evidence, candidate_title="Metro opens Line 4")
+            self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
+
+    def test_mixed_mode_unresolved_and_explicit_exclusion_remain_fail_closed(self):
+        mixed = _evidence(
+            "The shared corridor carries Metro and conventional railway services. "
+            "The operator upgraded control equipment without identifying which mode received the upgrade."
+        )
+        mixed_result = ScopeClassifier().classify(mixed)
+        self.assertEqual(mixed_result.state, ScopeState.OUT_OF_SCOPE)
+        self.assertEqual(mixed_result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
+
+        excluded = _evidence(
+            "The funicular installed a new traction controller for its cable-hauled hillside railway."
+        )
+        excluded_result = ScopeClassifier().classify(excluded)
+        self.assertEqual(excluded_result.state, ScopeState.OUT_OF_SCOPE)
+        self.assertEqual(excluded_result.diagnostic, ScopeDiagnostic.EXCLUDED_TRANSPORT_MODE)
+
+    def test_positive_scope_decision_is_deterministic(self):
+        evidence = _evidence(
+            "The identified Metro system commissioned a new signalling controller on its central line."
+        )
+        first = ScopeClassifier().classify(evidence)
+        second = ScopeClassifier().classify(evidence)
+        self.assertEqual(first, second)
+        self.assertEqual(first.state, ScopeState.IN_SCOPE)
+
     def test_arbitrary_scope_facts_cannot_bypass_evidence(self):
         evidence = _evidence(
             "No eligible urban-rail mode is established.",
