@@ -201,6 +201,70 @@ class ScopeClassifierTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertEqual(first.state, ScopeState.IN_SCOPE)
 
+    def test_event_relation_rejects_operator_location_and_beneficiary_cooccurrence(self):
+        cases = {
+            "A": "The Metro system installed new charging stations for its bus fleet.",
+            "B": "At the Metro station, the operator replaced the buses used for airport shuttles.",
+            "C": "The Metro system announced a deployment of electric buses at its terminal.",
+            "D": "The Metro station is next to the airport, and the airport installed new aircraft guidance systems.",
+            "E": "地下鉄とバスの運営会社はバス用の充電設備を導入した。",
+        }
+        for case_id, content in cases.items():
+            result = ScopeClassifier().classify(_evidence(content))
+            self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE, case_id)
+            self.assertEqual(result.diagnostic, ScopeDiagnostic.NON_URBAN_RAIL, case_id)
+
+    def test_event_relation_rejects_independent_preposition_false_positives(self):
+        cases = (
+            "A notice mentioning Metro at the airport announced the purchase of aircraft.",
+            "The airline installed aircraft guidance systems at an airport near Metro.",
+        )
+        results = [ScopeClassifier().classify(_evidence(content)) for content in cases]
+        self.assertEqual(results[0].state, ScopeState.OUT_OF_SCOPE)
+        self.assertEqual(results[0].diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
+        self.assertEqual(results[1].state, ScopeState.OUT_OF_SCOPE)
+        self.assertEqual(results[1].diagnostic, ScopeDiagnostic.NON_URBAN_RAIL)
+
+    def test_bounded_event_relation_supports_voice_cross_clause_and_languages(self):
+        cases = (
+            "The operator installed platform doors on the Metro line.",
+            "The signalling system of the Metro was renewed.",
+            "The line is the Metro system. The operator renewed the signalling controller on that line.",
+            "Le métro a renouvelé son système de signalisation.",
+            "Le système de signalisation du métro a été renouvelé.",
+            "地下鉄路線の信号設備を更新した。",
+        )
+        for content in cases:
+            result = ScopeClassifier().classify(_evidence(content))
+            self.assertEqual(result.state, ScopeState.IN_SCOPE, content)
+            self.assertEqual(result.diagnostic, ScopeDiagnostic.NONE, content)
+            relation_support = result.provenance["relation_support"]
+            for role in ("action", "target", "eligible_mode", "relation"):
+                span = relation_support[role]
+                self.assertTrue(content[span["start"] : span["end"]], (content, role))
+
+    def test_location_only_and_ownership_only_do_not_bind_the_event(self):
+        cases = (
+            "At the Metro station, the operator replaced buses.",
+            "The Metro operator renewed its signalling equipment.",
+        )
+        for content in cases:
+            result = ScopeClassifier().classify(_evidence(content))
+            self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE, content)
+            self.assertEqual(result.diagnostic, ScopeDiagnostic.NON_URBAN_RAIL if "buses" in content else ScopeDiagnostic.SCOPE_NOT_ESTABLISHED, content)
+
+    def test_negated_conditional_and_unresolved_relations_fail_closed(self):
+        cases = (
+            "The Metro system did not install signalling equipment.",
+            "The operator may install signalling equipment on the Metro line.",
+            "The operator proposed installing signalling equipment on the Metro line.",
+            "The shared corridor carries Metro and conventional railway services, but the operator upgraded control equipment without identifying which mode received the upgrade.",
+        )
+        for content in cases:
+            result = ScopeClassifier().classify(_evidence(content))
+            self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE, content)
+            self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED, content)
+
     def test_arbitrary_scope_facts_cannot_bypass_evidence(self):
         evidence = _evidence(
             "No eligible urban-rail mode is established.",
