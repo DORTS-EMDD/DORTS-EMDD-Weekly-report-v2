@@ -67,4 +67,5 @@ jobs:
           MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID: ${{ secrets.MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
+          DEFAULT_RECIPIENTS: ${{ secrets.DEFAULT_RECIPIENTS }}
           LIVE_EMAIL_SEND: "0"

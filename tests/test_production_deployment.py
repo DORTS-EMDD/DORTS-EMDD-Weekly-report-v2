@@ -524,10 +524,16 @@ class ShellIntegrationTests(unittest.TestCase):
         cli_step = next(step for step in production_steps if step.startswith("Run shared production CLI"))
 
         self.assertNotIn("MAIAGENT_", health_step)
+        self.assertNotIn("GMAIL_", health_step)
+        self.assertNotIn("DEFAULT_RECIPIENTS", health_step)
         self.assertIn("MAIAGENT_API_BASE", cli_step)
         self.assertIn("MAIAGENT_API_KEY", cli_step)
         self.assertIn("MAIAGENT_CHATBOT_ID", cli_step)
         self.assertIn("MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID", cli_step)
+        self.assertIn("GMAIL_USER: ${{ secrets.GMAIL_USER }}", cli_step)
+        self.assertIn("GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}", cli_step)
+        self.assertIn("DEFAULT_RECIPIENTS: ${{ secrets.DEFAULT_RECIPIENTS }}", cli_step)
+        self.assertIn('LIVE_EMAIL_SEND: "0"', cli_step)
 
 
 if __name__ == "__main__":
