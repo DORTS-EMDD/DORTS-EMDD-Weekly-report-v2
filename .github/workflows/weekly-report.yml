@@ -65,3 +65,6 @@ jobs:
           MAIAGENT_API_KEY: ${{ secrets.MAIAGENT_API_KEY }}
           MAIAGENT_CHATBOT_ID: ${{ secrets.MAIAGENT_CHATBOT_ID }}
           MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID: ${{ secrets.MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
+          LIVE_EMAIL_SEND: "0"

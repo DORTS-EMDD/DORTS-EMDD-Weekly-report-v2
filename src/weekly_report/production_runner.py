@@ -31,6 +31,12 @@ from .contracts import (
 from .delivery import DeliveryReceipt, DeliveryService
 from .evidence_service import EvidenceService
 from .event_identity import EventIdentity
+from .gmail_smtp import (
+    GmailSmtpConfigurationError,
+    build_gmail_smtp_sender,
+    load_delivery_values,
+    parse_recipient_target,
+)
 from .google_news_rss_provider import (
     GoogleNewsRssDiagnostic,
     GoogleNewsRssDiagnosticReason,
@@ -67,6 +73,38 @@ HEALTH_PROBE_ORDINALS = (1, 10, 225, 230, 440, 449)
 
 class ProductionConfigurationError(RuntimeError):
     """Production configuration was not complete enough to compose V2."""
+
+
+def _delivery_configuration(
+    environ: Mapping[str, str] | None,
+) -> tuple[DeliveryService, str | None]:
+    """Compose the sole DeliveryService with an explicit Gmail opt-in."""
+
+    values = load_delivery_values(environ)
+    raw_live = values.get("LIVE_EMAIL_SEND")
+    live_value = "" if raw_live is None else str(raw_live).strip()
+    if live_value not in {"", "0", "1"}:
+        raise ProductionConfigurationError("LIVE_EMAIL_SEND must be 0 or 1")
+    live_email_send = live_value == "1"
+
+    raw_recipient = values.get("DEFAULT_RECIPIENTS")
+    recipient = raw_recipient.strip() if isinstance(raw_recipient, str) and raw_recipient.strip() else None
+    if live_email_send:
+        if recipient is None:
+            raise ProductionConfigurationError(
+                "LIVE_EMAIL_SEND requires DEFAULT_RECIPIENTS"
+            )
+        try:
+            # Validate the target before composition so a live run cannot reach
+            # SMTP with an ambiguous or malformed authorized recipient.
+            parse_recipient_target(recipient)
+            sender = build_gmail_smtp_sender(values)
+        except GmailSmtpConfigurationError as exc:
+            raise ProductionConfigurationError("Gmail SMTP configuration unavailable") from exc
+        return DeliveryService(sender=sender, live_email_send=True), recipient
+
+    # Missing Gmail credentials are intentionally irrelevant while staged.
+    return DeliveryService(live_email_send=False), recipient
 
 
 class ProductionRunStatus(StrEnum):
@@ -556,9 +594,7 @@ class ProductionRunner:
         if writer is None or validation_provider is None:
             raise ProductionConfigurationError("Writer and Validator configuration is unavailable")
         validator = Validator(semantic_provider=validation_provider)
-        delivery = DeliveryService(live_email_send=False)
-        recipient = values.get("DEFAULT_RECIPIENTS") if isinstance(values, Mapping) else None
-        recipient = recipient.strip() if isinstance(recipient, str) and recipient.strip() else None
+        delivery, recipient = _delivery_configuration(values)
         application = build_report_application(
             registry,
             executor,
