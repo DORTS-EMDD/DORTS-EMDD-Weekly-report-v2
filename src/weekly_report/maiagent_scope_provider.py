@@ -31,7 +31,7 @@ from .scope_classifier import (
 
 
 TASK_IDENTITY = "scope_semantic_proposal"
-PROMPT_VERSION = "scope-event-target-system-v1"
+PROMPT_VERSION = "scope-event-target-system-v2"
 SCHEMA_VERSION = SCOPE_PROPOSAL_SCHEMA_VERSION
 HELPER_VERSION = "maiagent-structured-helper-scope-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-scope"
@@ -47,11 +47,14 @@ SCOPE_SEMANTIC_INSTRUCTIONS = (
     "Use only the supplied authoritative principal_content and same-document metadata.",
     "Resolve the candidate event, its asserted action, actual affected target, and the transport system that target belongs to.",
     "Use exactly one canonical eligible_mode_family: METRO, MRT, SUBWAY, LIGHT_RAIL, TRAM, URBAN_RAIL, AGT, MONORAIL, or PEOPLE_MOVER. Urban maglev maps to URBAN_RAIL; AGT and People Mover remain distinct choices.",
-    "IN_SCOPE_SUPPORT requires source-grounded action-to-target and target-to-system relations for an eligible urban-rail family.",
-    "A location, operator, ownership identity, generic equipment word, or nearby station is not a target-to-system relation.",
-    "Use AFFECTS only for action-to-target evidence; use BELONGS_TO, PART_OF, or FUNCTIONS_FOR for an eligible target-to-system relation. LOCATED_AT, OWNED_BY, and OPERATED_BY do not establish eligibility.",
-    "Record noneligible, ambiguous, contradictory, negated, conditional, and unasserted events explicitly.",
-    "Copy exact source quotations for the event focus and every material relationship; do not emit offsets.",
+    "Citation policy: event_focus requires a nonempty exact quotation for RESOLVED or CONFLICTING and may be empty for UNRESOLVED. The asserted action and claimed affected target each require their own nonempty exact source quotation.",
+    "system, action_target, and target_system require nonempty exact quotations when their relation status is ESTABLISHED or CONFLICTING. Their quotations may be empty when status is UNESTABLISHED and no affirmative relation is established. ambiguity requires a quotation only for CONFLICTING; NONE and UNRESOLVED may be empty. noneligible_relation requires a quotation only for PRESENT; ABSENT and UNRESOLVED may be empty.",
+    "Every nonempty quotation, including optional quotations, must be copied exactly from principal_content and occur exactly once. It must identify only the evidence it actually supports. Never invent a quotation or offsets to represent absence or uncertainty.",
+    "For an ESTABLISHED or CONFLICTING action_target relation, its quotation must identify the exact action and affected-target endpoints. For an ESTABLISHED or CONFLICTING target_system relation, its quotation must identify the actual target and system endpoints within the selected event. A noneligible PRESENT quotation must identify the target or system involved.",
+    "IN_SCOPE_SUPPORT requires a RESOLVED Candidate event, an ASSERTED action, an established AFFECTS action-to-target relation, and an established eligible target-to-system relation supported by exact endpoint quotations.",
+    "A location, operator, ownership identity, generic equipment word, or nearby station is not target-to-system membership. Use AFFECTS only for action-to-target evidence; use BELONGS_TO, PART_OF, or FUNCTIONS_FOR for eligible membership. LOCATED_AT, OWNED_BY, and OPERATED_BY never establish eligibility.",
+    "Record noneligible, ambiguous, contradictory, negated, conditional, and unasserted events explicitly. Use UNESTABLISHED or UNRESOLVED when evidence does not establish a relation; do not label uncertainty as an affirmative relation merely to fill a citation field.",
+    "Do not output IN_SCOPE_SUPPORT to satisfy a benchmark. A complete citation is evidence for the proposal, not independent proof of a semantic relation.",
     "Do not search, browse, use tools, retrieve external knowledge, or return a ScopeResult or diagnostic.",
     "Return exactly the supplied JSON schema with no extra fields and no prose outside JSON.",
 )

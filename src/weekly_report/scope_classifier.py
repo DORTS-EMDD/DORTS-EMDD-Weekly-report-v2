@@ -72,19 +72,20 @@ SUPPORTED_SCOPE_MODE_FAMILIES = (
 
 SCOPE_SEMANTIC_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
+    "description": "Conditional quotation obligations are stated on each quote field. Every nonempty quotation must be an exact source substring occurring exactly once in principal_content.",
     "additionalProperties": False,
     "properties": {
         "candidate_id": {"type": "string"},
         "schema_version": {"type": "string", "enum": [SCOPE_PROPOSAL_SCHEMA_VERSION]},
-        "event_focus": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["RESOLVED", "UNRESOLVED", "CONFLICTING"]}, "quote": {"type": "string"}}, "required": ["status", "quote"]},
-        "action": {"type": "object", "additionalProperties": False, "properties": {"label": {"type": "string"}, "quote": {"type": "string"}}, "required": ["label", "quote"]},
-        "target": {"type": "object", "additionalProperties": False, "properties": {"label": {"type": "string"}, "quote": {"type": "string"}}, "required": ["label", "quote"]},
-        "system": {"type": "object", "additionalProperties": False, "properties": {"label": {"type": "string"}, "quote": {"type": "string"}}, "required": ["label", "quote"]},
+        "event_focus": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["RESOLVED", "UNRESOLVED", "CONFLICTING"]}, "quote": {"type": "string", "description": "Required as a nonempty exact source quotation for RESOLVED or CONFLICTING; empty is allowed for UNRESOLVED. Every nonempty value is validated."}}, "required": ["status", "quote"]},
+        "action": {"type": "object", "additionalProperties": False, "properties": {"label": {"type": "string"}, "quote": {"type": "string", "description": "Required as a nonempty exact source quotation for the asserted action."}}, "required": ["label", "quote"]},
+        "target": {"type": "object", "additionalProperties": False, "properties": {"label": {"type": "string"}, "quote": {"type": "string", "description": "Required as a nonempty exact source quotation for the claimed affected target."}}, "required": ["label", "quote"]},
+        "system": {"type": "object", "additionalProperties": False, "properties": {"label": {"type": "string"}, "quote": {"type": "string", "description": "Required as a nonempty exact source quotation when a target-system relation is ESTABLISHED or CONFLICTING; otherwise empty is allowed when the system is unknown or unestablished. Every nonempty value is validated."}}, "required": ["label", "quote"]},
         "eligible_mode_family": {"type": "string", "enum": [*SUPPORTED_SCOPE_MODE_FAMILIES, "NON_ELIGIBLE", "UNKNOWN"]},
-        "action_target": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["ESTABLISHED", "UNESTABLISHED", "CONFLICTING"]}, "relation": {"type": "string", "enum": ["AFFECTS", "LOCATED_AT", "MENTIONS", "UNRESOLVED"]}, "quote": {"type": "string"}}, "required": ["status", "relation", "quote"]},
-        "target_system": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["ESTABLISHED", "UNESTABLISHED", "CONFLICTING"]}, "relation": {"type": "string", "enum": ["BELONGS_TO", "PART_OF", "FUNCTIONS_FOR", "LOCATED_AT", "OWNED_BY", "OPERATED_BY", "UNRESOLVED"]}, "quote": {"type": "string"}}, "required": ["status", "relation", "quote"]},
-        "ambiguity": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["NONE", "UNRESOLVED", "CONFLICTING"]}, "quote": {"type": "string"}}, "required": ["status", "quote"]},
-        "noneligible_relation": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["ABSENT", "PRESENT", "UNRESOLVED"]}, "quote": {"type": "string"}}, "required": ["status", "quote"]},
+        "action_target": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["ESTABLISHED", "UNESTABLISHED", "CONFLICTING"]}, "relation": {"type": "string", "enum": ["AFFECTS", "LOCATED_AT", "MENTIONS", "UNRESOLVED"]}, "quote": {"type": "string", "description": "Required as a nonempty exact source quotation when status is ESTABLISHED or CONFLICTING; empty is allowed for UNESTABLISHED. Every nonempty value is validated. An ESTABLISHED or CONFLICTING relation quotation must contain the quoted action and target endpoints."}}, "required": ["status", "relation", "quote"]},
+        "target_system": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["ESTABLISHED", "UNESTABLISHED", "CONFLICTING"]}, "relation": {"type": "string", "enum": ["BELONGS_TO", "PART_OF", "FUNCTIONS_FOR", "LOCATED_AT", "OWNED_BY", "OPERATED_BY", "UNRESOLVED"]}, "quote": {"type": "string", "description": "Required as a nonempty exact source quotation when status is ESTABLISHED or CONFLICTING; empty is allowed for UNESTABLISHED. Every nonempty value is validated. For an ESTABLISHED or CONFLICTING relation, the quotation must identify the actual target and system endpoints. Only BELONGS_TO, PART_OF, and FUNCTIONS_FOR can support eligible membership."}}, "required": ["status", "relation", "quote"]},
+        "ambiguity": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["NONE", "UNRESOLVED", "CONFLICTING"]}, "quote": {"type": "string", "description": "Required as a nonempty exact source quotation for CONFLICTING; empty is allowed for NONE or UNRESOLVED. Every nonempty value is validated."}}, "required": ["status", "quote"]},
+        "noneligible_relation": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["ABSENT", "PRESENT", "UNRESOLVED"]}, "quote": {"type": "string", "description": "Required as a nonempty exact source quotation for PRESENT; empty is allowed for ABSENT or UNRESOLVED. A PRESENT quotation must identify the target or system involved. Every nonempty value is validated."}}, "required": ["status", "quote"]},
         "noneligible_kind": {"type": "string", "enum": ["NONE", "EXCLUDED_TRANSPORT_MODE", "NON_URBAN_RAIL", "UNRESOLVED"]},
         "event_status": {"type": "string", "enum": ["ASSERTED", "NEGATED", "CONDITIONAL", "UNASSERTED"]},
         "decision": {"type": "string", "enum": ["IN_SCOPE_SUPPORT", "OUT_OF_SCOPE_SUPPORT", "UNCERTAIN"]},
@@ -157,57 +158,106 @@ def _proposal_support(
     assert focus is not None and action is not None and target is not None and system is not None
     assert action_target is not None and target_system is not None and ambiguity is not None and noneligible is not None
 
-    content = request.principal_content
-    spans: dict[str, ScopeSupportSpan] = {}
-    for name, record in (("event_focus", focus), ("action", action), ("target", target), ("system", system), ("action_target", action_target), ("target_system", target_system), ("ambiguity", ambiguity), ("noneligible_relation", noneligible)):
-        span, quote_failure = _locate_quote(content, record["quote"])
-        if span is None:
-            return reject(quote_failure or "QUOTE_NOT_FOUND")
-        spans[name] = span
-    labels = {name: _text(record["label"]) for name, record in (("action", action), ("target", target), ("system", system))}
-    if any(value is None for value in labels.values()):
-        return reject("ENDPOINT_LABEL")
-    endpoint_quotes = (action["quote"], target["quote"], system["quote"])
-    if len(set(endpoint_quotes)) != 3:
-        return reject("ENDPOINT_QUOTE_DISTINCTNESS")
-    for name, label in labels.items():
-        if label.casefold() not in content[spans[name].start:spans[name].end].casefold():
-            return reject("ENDPOINT_LABEL")
-
-    # Every material relation must be inside the selected event focus. This
-    # blocks borrowing an eligible span from a separate independent event.
-    focus_start, focus_end = spans["event_focus"].start, spans["event_focus"].end
-    for name in ("action", "target", "system", "action_target", "target_system"):
-        span = spans[name]
-        if not (focus_start <= span.start and span.end <= focus_end):
-            return reject("EVENT_FOCUS_CONTAINMENT")
-    relation_text = content[spans["action_target"].start:spans["action_target"].end]
-    system_text = content[spans["target_system"].start:spans["target_system"].end]
-    if action["quote"] not in relation_text or target["quote"] not in relation_text:
-        return reject("ACTION_TARGET_CONTAINMENT")
-    if target["quote"] not in system_text or system["quote"] not in system_text:
-        return reject("TARGET_SYSTEM_CONTAINMENT")
-
     statuses = {"focus": focus["status"], "action_target": action_target["status"], "target_system": target_system["status"], "ambiguity": ambiguity["status"], "noneligible": noneligible["status"]}
     if statuses["focus"] not in {"RESOLVED", "UNRESOLVED", "CONFLICTING"} or statuses["action_target"] not in {"ESTABLISHED", "UNESTABLISHED", "CONFLICTING"} or statuses["target_system"] not in {"ESTABLISHED", "UNESTABLISHED", "CONFLICTING"} or statuses["ambiguity"] not in {"NONE", "UNRESOLVED", "CONFLICTING"} or statuses["noneligible"] not in {"ABSENT", "PRESENT", "UNRESOLVED"}:
         return reject("STATUS_CONSISTENCY")
     if action_target["relation"] not in {"AFFECTS", "LOCATED_AT", "MENTIONS", "UNRESOLVED"} or target_system["relation"] not in {"BELONGS_TO", "PART_OF", "FUNCTIONS_FOR", "LOCATED_AT", "OWNED_BY", "OPERATED_BY", "UNRESOLVED"}:
         return reject("RELATION_TYPE")
     kind = proposal["noneligible_kind"]
+
+    content = request.principal_content
+    quote_required = {
+        "event_focus": statuses["focus"] in {"RESOLVED", "CONFLICTING"},
+        "action": True,
+        "target": True,
+        "system": statuses["target_system"] in {"ESTABLISHED", "CONFLICTING"},
+        "action_target": statuses["action_target"] in {"ESTABLISHED", "CONFLICTING"},
+        "target_system": statuses["target_system"] in {"ESTABLISHED", "CONFLICTING"},
+        "ambiguity": statuses["ambiguity"] == "CONFLICTING",
+        "noneligible_relation": statuses["noneligible"] == "PRESENT",
+    }
+    spans: dict[str, ScopeSupportSpan] = {}
+    records = (("event_focus", focus), ("action", action), ("target", target), ("system", system), ("action_target", action_target), ("target_system", target_system), ("ambiguity", ambiguity), ("noneligible_relation", noneligible))
+    for name, record in records:
+        quote = record["quote"]
+        if quote == "" and not quote_required[name]:
+            continue
+        span, quote_failure = _locate_quote(content, quote)
+        if span is None:
+            return reject(quote_failure or "QUOTE_NOT_FOUND")
+        spans[name] = span
+
     if statuses["noneligible"] == "ABSENT" and kind != "NONE":
         return reject("NONELIGIBLE_CONSISTENCY")
     if statuses["noneligible"] == "PRESENT" and (mode != "NON_ELIGIBLE" or kind not in {"EXCLUDED_TRANSPORT_MODE", "NON_URBAN_RAIL"}):
         return reject("NONELIGIBLE_CONSISTENCY")
+
+    labels = {name: _text(record["label"]) for name, record in (("action", action), ("target", target))}
+    if any(value is None for value in labels.values()):
+        return reject("ENDPOINT_LABEL")
+    system_label = _text(system["label"])
+    if "system" in spans and system_label is None:
+        return reject("ENDPOINT_LABEL")
+    endpoint_quotes = [action["quote"], target["quote"]]
+    if "system" in spans:
+        endpoint_quotes.append(system["quote"])
+    if len(set(endpoint_quotes)) != len(endpoint_quotes):
+        return reject("ENDPOINT_QUOTE_DISTINCTNESS")
+    for name, label in labels.items():
+        if label.casefold() not in content[spans[name].start:spans[name].end].casefold():
+            return reject("ENDPOINT_LABEL")
+    if "system" in spans and system_label.casefold() not in content[spans["system"].start:spans["system"].end].casefold():
+        return reject("ENDPOINT_LABEL")
+
+    # Established relation claims must cite both endpoints; an unestablished
+    # relation does not need fabricated coordinates.
+    if statuses["action_target"] in {"ESTABLISHED", "CONFLICTING"}:
+        relation_text = content[spans["action_target"].start:spans["action_target"].end]
+        if action["quote"] not in relation_text or target["quote"] not in relation_text:
+            return reject("ACTION_TARGET_CONTAINMENT")
+    if statuses["target_system"] in {"ESTABLISHED", "CONFLICTING"}:
+        system_text = content[spans["target_system"].start:spans["target_system"].end]
+        if target["quote"] not in system_text or system["quote"] not in system_text:
+            return reject("TARGET_SYSTEM_CONTAINMENT")
+
+    focus_span = spans.get("event_focus")
+    if focus_span is not None and statuses["focus"] == "RESOLVED":
+        focus_start, focus_end = focus_span.start, focus_span.end
+        for name in ("action", "target"):
+            span = spans[name]
+            if not (focus_start <= span.start and span.end <= focus_end):
+                return reject("EVENT_FOCUS_CONTAINMENT")
+        if statuses["action_target"] == "ESTABLISHED":
+            span = spans["action_target"]
+            if not (focus_start <= span.start and span.end <= focus_end):
+                return reject("EVENT_FOCUS_CONTAINMENT")
+        if statuses["target_system"] == "ESTABLISHED":
+            for name in ("system", "target_system"):
+                span = spans[name]
+                if not (focus_start <= span.start and span.end <= focus_end):
+                    return reject("EVENT_FOCUS_CONTAINMENT")
+
+    if statuses["noneligible"] == "PRESENT":
+        noneligible_text = content[spans["noneligible_relation"].start:spans["noneligible_relation"].end]
+        endpoint_quotes = [target["quote"]]
+        if "system" in spans:
+            endpoint_quotes.append(system["quote"])
+        if not any(quote in noneligible_text for quote in endpoint_quotes):
+            return reject("NONELIGIBLE_RELATION_ENDPOINT")
+        if focus_span is not None and statuses["focus"] == "RESOLVED":
+            span = spans["noneligible_relation"]
+            if not (focus_span.start <= span.start and span.end <= focus_span.end):
+                return reject("NONELIGIBLE_EVENT_FOCUS")
 
     positive = (decision == ScopeSemanticSupport.IN_SCOPE_SUPPORT.value and statuses["focus"] == "RESOLVED" and proposal["event_status"] == "ASSERTED" and statuses["action_target"] == "ESTABLISHED" and action_target["relation"] == "AFFECTS" and statuses["target_system"] == "ESTABLISHED" and target_system["relation"] in {"BELONGS_TO", "PART_OF", "FUNCTIONS_FOR"} and statuses["ambiguity"] == "NONE" and statuses["noneligible"] == "ABSENT" and mode in SUPPORTED_SCOPE_MODE_FAMILIES)
     if decision == ScopeSemanticSupport.IN_SCOPE_SUPPORT.value and not positive:
         reject("POSITIVE_ACCEPTANCE_CONDITION")
     support = ScopeSemanticSupport.IN_SCOPE_SUPPORT if positive else ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT
     diagnostic = ScopeDiagnostic.NONE if positive else ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
-    if not positive and decision == ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT.value and mode == "NON_ELIGIBLE" and statuses["noneligible"] == "PRESENT":
+    if not positive and decision == ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT.value and mode == "NON_ELIGIBLE" and statuses["noneligible"] == "PRESENT" and statuses["focus"] == "RESOLVED" and proposal["event_status"] == "ASSERTED":
         diagnostic = ScopeDiagnostic(proposal["noneligible_kind"]) if proposal["noneligible_kind"] in {item.value for item in ScopeDiagnostic} else ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
     relation_support = {role: {"start": span.start, "end": span.end} for role, span in spans.items()}
-    return support, diagnostic, {"decision_basis": "scope_semantic_proposal", "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION, "candidate_event_focus": relation_support["event_focus"], "eligible_mode_family": mode, "action_target_relation": action_target["relation"], "target_system_relation": target_system["relation"], "relation_support": relation_support}
+    return support, diagnostic, {"decision_basis": "scope_semantic_proposal", "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION, "candidate_event_focus": relation_support.get("event_focus"), "eligible_mode_family": mode, "action_target_relation": action_target["relation"], "target_system_relation": target_system["relation"], "relation_support": relation_support}
 
 
 def _coerce_response(value: object) -> ScopeSemanticResponse | None:

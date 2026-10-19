@@ -9,6 +9,8 @@ from src.weekly_report.maiagent_scope_provider import (
     MAIAGENT_SCOPE_RESPONSE_SCHEMA,
     MaiAgentScopeProviderConfig,
     MaiAgentScopeProviderFailure,
+    PROMPT_VERSION,
+    SCOPE_SEMANTIC_INSTRUCTIONS,
     build_maiagent_scope_model_input,
     build_maiagent_scope_provider,
 )
@@ -26,6 +28,26 @@ def test_scope_model_input_is_versioned_and_task_specific():
     assert payload["schema_version"] == SCOPE_PROPOSAL_SCHEMA_VERSION
     assert payload["scope_request"]["candidate_id"] == "C1"
     assert payload["authoritative_response_contract"]["json_schema"] is MAIAGENT_SCOPE_RESPONSE_SCHEMA
+
+
+def test_prompt_and_schema_express_conditional_quote_obligations():
+    payload = build_maiagent_scope_model_input(_request())
+    instructions = " ".join(payload["instructions"])
+    schema = MAIAGENT_SCOPE_RESPONSE_SCHEMA["properties"]
+    assert PROMPT_VERSION == "scope-event-target-system-v2"
+    assert "occurring exactly once" in MAIAGENT_SCOPE_RESPONSE_SCHEMA["description"]
+    assert "may be empty for UNRESOLVED" in instructions
+    assert "Every nonempty quotation" in instructions
+    assert "actual target and system endpoints" in instructions
+    assert "LOCATED_AT, OWNED_BY, and OPERATED_BY never establish eligibility" in instructions
+    assert "UNRESOLVED" in schema["event_focus"]["properties"]["quote"]["description"]
+    assert "asserted action" in schema["action"]["properties"]["quote"]["description"]
+    assert "claimed affected target" in schema["target"]["properties"]["quote"]["description"]
+    assert "ESTABLISHED or CONFLICTING" in schema["action_target"]["properties"]["quote"]["description"]
+    assert "UNESTABLISHED" in schema["target_system"]["properties"]["quote"]["description"]
+    assert "actual target and system endpoints" in schema["target_system"]["properties"]["quote"]["description"]
+    assert "NONE or UNRESOLVED" in schema["ambiguity"]["properties"]["quote"]["description"]
+    assert "ABSENT or UNRESOLVED" in schema["noneligible_relation"]["properties"]["quote"]["description"]
 
 
 def test_scope_provider_uses_shared_configuration_and_stateless_call():

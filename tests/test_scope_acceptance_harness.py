@@ -165,6 +165,205 @@ def test_relation_endpoint_mismatch_and_contradictory_statuses_fail_closed():
     assert observations[0].first_rejection_predicate == "POSITIVE_ACCEPTANCE_CONDITION"
 
 
+def test_status_conditional_empty_quotes_are_accepted_without_fabricated_spans():
+    proposal = _semantic_proposal(POSITIVE_SOURCE)
+    proposal["ambiguity"]["quote"] = ""
+    proposal["noneligible_relation"]["quote"] = ""
+    observations = []
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
+    )
+    assert result.state is ScopeState.IN_SCOPE
+    assert observations[0].first_rejection_predicate is None
+    assert "ambiguity" not in result.provenance["relation_support"]
+    assert "noneligible_relation" not in result.provenance["relation_support"]
+
+
+def test_unestablished_target_system_accepts_empty_quotes_and_fails_closed():
+    content = "The operator installed platform doors near an unidentified transit facility."
+    proposal = _semantic_proposal(content, decision="UNCERTAIN")
+    proposal["system"] = {"label": "", "quote": ""}
+    proposal["target_system"] = {"status": "UNESTABLISHED", "relation": "UNRESOLVED", "quote": ""}
+    observations = []
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(content), observation_hook=observations.append
+    )
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
+    assert observations[0].first_rejection_predicate is None
+    assert "system" not in result.provenance["relation_support"]
+    assert "target_system" not in result.provenance["relation_support"]
+
+
+def test_unestablished_action_target_accepts_empty_relation_quote():
+    proposal = _semantic_proposal(POSITIVE_SOURCE, decision="UNCERTAIN")
+    proposal["action_target"] = {"status": "UNESTABLISHED", "relation": "UNRESOLVED", "quote": ""}
+    observations = []
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
+    )
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert observations[0].first_rejection_predicate is None
+    assert "action_target" not in result.provenance["relation_support"]
+
+
+def test_established_positive_target_system_requires_exact_quote():
+    proposal = _semantic_proposal(POSITIVE_SOURCE)
+    proposal["target_system"]["quote"] = ""
+    observations = []
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
+    )
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert observations[0].first_rejection_predicate == "QUOTE_MISSING"
+
+
+def test_positive_relation_with_nonexistent_quote_is_rejected():
+    proposal = _semantic_proposal(POSITIVE_SOURCE)
+    proposal["action_target"]["quote"] = "installed the signal doors on the Metro line"
+    observations = []
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
+    )
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert observations[0].first_rejection_predicate == "QUOTE_NOT_FOUND"
+
+
+def test_established_relation_with_wrong_endpoint_is_rejected():
+    content = "The operator installed platform doors. The Metro line serves the central district."
+    proposal = _semantic_proposal(
+        content,
+        action="installed",
+        target="platform doors",
+        system="Metro line",
+    )
+    proposal["target_system"]["quote"] = "The Metro line serves the central district."
+    observations = []
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(content), observation_hook=observations.append
+    )
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert observations[0].first_rejection_predicate == "TARGET_SYSTEM_CONTAINMENT"
+
+
+def test_location_only_relation_cannot_promote_scope():
+    content = "The city installed public sculptures at the Metro station for the neighboring park."
+    proposal = _semantic_proposal(
+        content,
+        decision="IN_SCOPE_SUPPORT",
+        action="installed",
+        target="public sculptures",
+        system="Metro station",
+    )
+    proposal["target_system"] = {
+        "status": "ESTABLISHED",
+        "relation": "LOCATED_AT",
+        "quote": "public sculptures at the Metro station",
+    }
+    result = ScopeClassifier(lambda _request: proposal).classify(_evidence(content))
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
+
+
+@pytest.mark.parametrize("relation", ["OWNED_BY", "OPERATED_BY"])
+def test_operator_or_ownership_relation_cannot_promote_scope(relation):
+    proposal = _semantic_proposal(POSITIVE_SOURCE)
+    proposal["target_system"]["relation"] = relation
+    result = ScopeClassifier(lambda _request: proposal).classify(_evidence(POSITIVE_SOURCE))
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
+
+
+def test_nonempty_optional_quote_is_still_validated():
+    proposal = _semantic_proposal(POSITIVE_SOURCE)
+    proposal["ambiguity"]["quote"] = "no ambiguity is stated here"
+    observations = []
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
+    )
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert observations[0].first_rejection_predicate == "QUOTE_NOT_FOUND"
+
+
+def test_conflicting_relation_requires_a_source_quotation():
+    proposal = _semantic_proposal(POSITIVE_SOURCE, decision="UNCERTAIN")
+    proposal["action_target"] = {"status": "CONFLICTING", "relation": "AFFECTS", "quote": ""}
+    observations = []
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
+    )
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert observations[0].first_rejection_predicate == "QUOTE_MISSING"
+
+
+def test_noneligible_diagnostic_requires_relevant_source_quote():
+    content = "The city installed public sculptures at the Metro station for the neighboring park."
+    proposal = _semantic_proposal(
+        content,
+        decision="OUT_OF_SCOPE_SUPPORT",
+        mode="NON_ELIGIBLE",
+        action="installed",
+        target="public sculptures",
+        system="Metro station",
+        noneligible_status="PRESENT",
+        noneligible_kind="NON_URBAN_RAIL",
+    )
+    proposal["noneligible_relation"]["quote"] = "for the neighboring park"
+    observations = []
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(content), observation_hook=observations.append
+    )
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
+    assert observations[0].first_rejection_predicate == "NONELIGIBLE_RELATION_ENDPOINT"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("event_status", "CONDITIONAL"),
+        ("event_status", "NEGATED"),
+        ("ambiguity.status", "CONFLICTING"),
+    ],
+)
+def test_conflicting_conditional_and_negated_claims_remain_fail_closed(field, value):
+    proposal = _semantic_proposal(POSITIVE_SOURCE)
+    if field == "ambiguity.status":
+        proposal["ambiguity"]["status"] = value
+        proposal["ambiguity"]["quote"] = "The operator installed platform doors on the Metro line."
+    else:
+        proposal[field] = value
+    observations = []
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
+    )
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert observations[0].first_rejection_predicate == "POSITIVE_ACCEPTANCE_CONDITION"
+
+
+def test_meaningful_action_target_and_system_quotes_preserve_positive_acceptance():
+    content = "The operator fitted platform doors as a component of the Metro line."
+    proposal = {
+        "candidate_id": "C1",
+        "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION,
+        "event_focus": {"status": "RESOLVED", "quote": content},
+        "action": {"label": "fitted", "quote": "fitted"},
+        "target": {"label": "platform doors", "quote": "platform doors"},
+        "system": {"label": "Metro line", "quote": "Metro line"},
+        "eligible_mode_family": "METRO",
+        "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "quote": "fitted platform doors"},
+        "target_system": {"status": "ESTABLISHED", "relation": "PART_OF", "quote": "platform doors as a component of the Metro line"},
+        "ambiguity": {"status": "NONE", "quote": ""},
+        "noneligible_relation": {"status": "ABSENT", "quote": ""},
+        "noneligible_kind": "NONE",
+        "event_status": "ASSERTED",
+        "decision": "IN_SCOPE_SUPPORT",
+    }
+    result = ScopeClassifier(lambda _request: proposal).classify(_evidence(content))
+    assert result.state is ScopeState.IN_SCOPE
+    assert result.diagnostic is ScopeDiagnostic.NONE
+
+
 def test_existing_citation_can_pass_mechanical_checks_without_proving_semantics(capture_artifact):
     # The quote exists, but "at the Metro station" supports location only.
     # The current owner checks structure and relation labels, not semantic truth.
