@@ -57,7 +57,7 @@ class ScopeSemanticHelper(Protocol):
 
 SCOPE_PROPOSAL_SCHEMA_VERSION = "scope-semantic-proposal-v1"
 SUPPORTED_SCOPE_MODE_FAMILIES = (
-    "METRO", "SUBWAY", "TRAM", "LIGHT_RAIL", "AGT_PEOPLE_MOVER", "MONORAIL", "URBAN_RAIL_MAGLEV"
+    "METRO", "MRT", "SUBWAY", "LIGHT_RAIL", "TRAM", "URBAN_RAIL", "AGT", "MONORAIL", "PEOPLE_MOVER"
 )
 
 SCOPE_SEMANTIC_RESPONSE_SCHEMA: dict[str, Any] = {
@@ -144,6 +144,9 @@ def _proposal_support(proposal: Mapping[str, Any], request: ScopeSemanticRequest
     labels = {name: _text(record["label"]) for name, record in (("action", action), ("target", target), ("system", system))}
     if any(value is None for value in labels.values()):
         return None
+    endpoint_quotes = (action["quote"], target["quote"], system["quote"])
+    if len(set(endpoint_quotes)) != 3:
+        return None
     for name, label in labels.items():
         if label.casefold() not in content[spans[name].start:spans[name].end].casefold():
             return None
@@ -155,11 +158,11 @@ def _proposal_support(proposal: Mapping[str, Any], request: ScopeSemanticRequest
         span = spans[name]
         if not (focus_start <= span.start and span.end <= focus_end):
             return None
-    relation_text = content[spans["action_target"].start:spans["action_target"].end].casefold()
-    system_text = content[spans["target_system"].start:spans["target_system"].end].casefold()
-    if labels["action"].casefold() not in relation_text or labels["target"].casefold() not in relation_text:
+    relation_text = content[spans["action_target"].start:spans["action_target"].end]
+    system_text = content[spans["target_system"].start:spans["target_system"].end]
+    if action["quote"] not in relation_text or target["quote"] not in relation_text:
         return None
-    if labels["target"].casefold() not in system_text or labels["system"].casefold() not in system_text:
+    if target["quote"] not in system_text or system["quote"] not in system_text:
         return None
 
     statuses = {"focus": focus["status"], "action_target": action_target["status"], "target_system": target_system["status"], "ambiguity": ambiguity["status"], "noneligible": noneligible["status"]}

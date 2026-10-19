@@ -7,7 +7,12 @@ import unittest
 from pathlib import Path
 
 from src.weekly_report.contracts import EvidenceResult, EvidenceState, ScopeDiagnostic, ScopeState
-from src.weekly_report.scope_classifier import ScopeClassifier, ScopeSemanticResponse, SCOPE_PROPOSAL_SCHEMA_VERSION
+from src.weekly_report.scope_classifier import (
+    SCOPE_PROPOSAL_SCHEMA_VERSION,
+    SUPPORTED_SCOPE_MODE_FAMILIES,
+    ScopeClassifier,
+    ScopeSemanticResponse,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,13 +24,17 @@ def _evidence(content: str, *, candidate_id: str = "C1", **provenance) -> Eviden
 def _proposal(request, *, decision="IN_SCOPE_SUPPORT", mode="METRO", diagnostic="NONE", quote=None):
     content = request.principal_content
     quote = content if quote is None else quote
+    width = max(1, len(quote) // 4)
+    action_quote = quote[:width]
+    target_quote = quote[width : width * 2]
+    system_quote = quote[width * 2 : width * 3] or quote[width * 2 :]
     return {
         "candidate_id": request.candidate_id,
         "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION,
         "event_focus": {"status": "RESOLVED", "quote": quote},
-        "action": {"label": quote, "quote": quote},
-        "target": {"label": quote, "quote": quote},
-        "system": {"label": quote, "quote": quote},
+        "action": {"label": action_quote, "quote": action_quote},
+        "target": {"label": target_quote, "quote": target_quote},
+        "system": {"label": system_quote, "quote": system_quote},
         "eligible_mode_family": mode,
         "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "quote": quote},
         "target_system": {"status": "ESTABLISHED", "relation": "BELONGS_TO", "quote": quote},
@@ -105,6 +114,25 @@ class ScopeClassifierTests(unittest.TestCase):
         self.assertEqual(result.diagnostic, ScopeDiagnostic.NONE)
         self.assertEqual(result.provenance["decision_basis"], "scope_semantic_proposal")
         self.assertIn("relation_support", result.provenance)
+
+    def test_exact_nine_contract_mode_families_are_accepted(self):
+        content = "The operator installed platform doors on the eligible urban rail system."
+        for mode in SUPPORTED_SCOPE_MODE_FAMILIES:
+            result = ScopeClassifier(_ProposalHelper(mode=mode)).classify(_evidence(content))
+            self.assertEqual(result.state, ScopeState.IN_SCOPE, mode)
+
+    def test_whole_document_endpoint_quotes_do_not_bypass_consistency(self):
+        content = "The city installed public sculptures at the Metro station."
+
+        def helper(request):
+            proposal = _proposal(request)
+            for field in ("action", "target", "system"):
+                proposal[field] = {"label": content, "quote": content}
+            return proposal
+
+        result = ScopeClassifier(helper).classify(_evidence(content))
+        self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
+        self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
 
     def test_location_operator_and_generic_equipment_false_positives_fail_closed(self):
         cases = (

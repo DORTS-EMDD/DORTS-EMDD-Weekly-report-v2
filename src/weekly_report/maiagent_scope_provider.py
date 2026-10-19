@@ -46,6 +46,7 @@ SCOPE_SEMANTIC_INSTRUCTIONS = (
     "You are a stateless proposal-only semantic helper for the Python ScopeClassifier.",
     "Use only the supplied authoritative principal_content and same-document metadata.",
     "Resolve the candidate event, its asserted action, actual affected target, and the transport system that target belongs to.",
+    "Use exactly one canonical eligible_mode_family: METRO, MRT, SUBWAY, LIGHT_RAIL, TRAM, URBAN_RAIL, AGT, MONORAIL, or PEOPLE_MOVER. Urban maglev maps to URBAN_RAIL; AGT and People Mover remain distinct choices.",
     "IN_SCOPE_SUPPORT requires source-grounded action-to-target and target-to-system relations for an eligible urban-rail family.",
     "A location, operator, ownership identity, generic equipment word, or nearby station is not a target-to-system relation.",
     "Use AFFECTS only for action-to-target evidence; use BELONGS_TO, PART_OF, or FUNCTIONS_FOR for an eligible target-to-system relation. LOCATED_AT, OWNED_BY, and OPERATED_BY do not establish eligibility.",

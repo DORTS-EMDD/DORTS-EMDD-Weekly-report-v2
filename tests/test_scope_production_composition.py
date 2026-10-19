@@ -99,13 +99,17 @@ class _OfflineScopeProposal:
         content = request.principal_content
         negative = "conventional" in content.casefold() or "intercity" in content.casefold()
         quote = content
+        width = max(1, len(quote) // 4)
+        action_quote = quote[:width]
+        target_quote = quote[width : width * 2]
+        system_quote = quote[width * 2 : width * 3] or quote[width * 2 :]
         return {
             "candidate_id": request.candidate_id,
             "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION,
             "event_focus": {"status": "RESOLVED", "quote": quote},
-            "action": {"label": quote, "quote": quote},
-            "target": {"label": quote, "quote": quote},
-            "system": {"label": quote, "quote": quote},
+            "action": {"label": action_quote, "quote": action_quote},
+            "target": {"label": target_quote, "quote": target_quote},
+            "system": {"label": system_quote, "quote": system_quote},
             "eligible_mode_family": "NON_ELIGIBLE" if negative else "METRO",
             "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "quote": quote},
             "target_system": {"status": "ESTABLISHED", "relation": "BELONGS_TO", "quote": quote},
@@ -243,13 +247,17 @@ def test_real_production_factory_offline_pairs_scope_and_temporal_without_live_i
             scope_request = request["scope_request"]
             content = scope_request["principal_content"]
             negative = "conventional" in content.casefold() or "intercity" in content.casefold()
+            width = max(1, len(content) // 4)
+            action_quote = content[:width]
+            target_quote = content[width : width * 2]
+            system_quote = content[width * 2 : width * 3] or content[width * 2 :]
             proposal = {
                 "candidate_id": scope_request["candidate_id"],
                 "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION,
                 "event_focus": {"status": "RESOLVED", "quote": content},
-                "action": {"label": content, "quote": content},
-                "target": {"label": content, "quote": content},
-                "system": {"label": content, "quote": content},
+                "action": {"label": action_quote, "quote": action_quote},
+                "target": {"label": target_quote, "quote": target_quote},
+                "system": {"label": system_quote, "quote": system_quote},
                 "eligible_mode_family": "NON_ELIGIBLE" if negative else "METRO",
                 "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "quote": content},
                 "target_system": {"status": "ESTABLISHED", "relation": "BELONGS_TO", "quote": content},
