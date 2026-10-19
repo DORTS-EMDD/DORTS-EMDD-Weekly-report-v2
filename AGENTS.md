@@ -166,7 +166,7 @@ MaiAgent Writer 只有一個 production responsibility：
 
 MaiAgent Writer 不得搜尋、選題、Fetch、Dedup、補 Evidence、修改 Scope、修改 Temporal、修改 Event Identity、修改 Category、修改 Taxonomy、修改 Reportability、修改 Ordering、猜缺漏 metadata 或自行查外部背景資訊。
 
-MaiAgent 平台另可提供一個 Generic Stateless Structured Helper，作為下列六個
+MaiAgent 平台另可提供一個 Generic Stateless Structured Helper，作為下列七個
 proposal-only task 的執行 transport：
 
 * `category_semantic_proposal`
@@ -175,6 +175,7 @@ proposal-only task 的執行 transport：
 * `taxonomy_semantic_proposal`
 * `reportability_semantic_proposal`
 * `validation_semantic_check`
+* `scope_semantic_proposal`
 
 這個 helper 不是 Domain owner、不寫正式週報、不取代任何 Python
 authoritative owner，也不得搜尋、使用外部知識、補充 Evidence 或作
@@ -192,7 +193,7 @@ proposal；Classifier、EvidenceService、Taxonomy、Reportability 與 Validator
 `ReportabilityResult` 或 `ValidationResult`、修改 owner state、略過 local
 validation 或直接決定 workflow continuation。
 
-六個 Structured Helper task 的共用設定鍵固定為：
+七個 Structured Helper task 的共用設定鍵固定為：
 
 ```text
 MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID

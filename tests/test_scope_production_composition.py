@@ -26,6 +26,7 @@ from src.weekly_report.report_application import ReportApplication
 from src.weekly_report.search_executor import SearchExecutor
 from src.weekly_report.search_planner import SearchPlanner
 from src.weekly_report.scope_classifier import ScopeClassifier
+from src.weekly_report.scope_classifier import SCOPE_PROPOSAL_SCHEMA_VERSION
 from src.weekly_report.temporal_rule import TemporalRule
 
 
@@ -91,6 +92,31 @@ class _OfflineSemanticJudge:
         }
 
 
+class _OfflineScopeProposal:
+    """Deterministic proposal fixture; ScopeClassifier remains authoritative."""
+
+    def __call__(self, request):
+        content = request.principal_content
+        negative = "conventional" in content.casefold() or "intercity" in content.casefold()
+        quote = content
+        return {
+            "candidate_id": request.candidate_id,
+            "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION,
+            "event_focus": {"status": "RESOLVED", "quote": quote},
+            "action": {"label": quote, "quote": quote},
+            "target": {"label": quote, "quote": quote},
+            "system": {"label": quote, "quote": quote},
+            "eligible_mode_family": "NON_ELIGIBLE" if negative else "METRO",
+            "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "quote": quote},
+            "target_system": {"status": "ESTABLISHED", "relation": "BELONGS_TO", "quote": quote},
+            "ambiguity": {"status": "NONE", "quote": quote},
+            "noneligible_relation": {"status": "PRESENT" if negative else "ABSENT", "quote": quote},
+            "noneligible_kind": "NON_URBAN_RAIL" if negative else "NONE",
+            "event_status": "ASSERTED",
+            "decision": "OUT_OF_SCOPE_SUPPORT" if negative else "IN_SCOPE_SUPPORT",
+        }
+
+
 def _run_offline_application(body: str, title: str):
     registry = RegionRegistry.from_file()
     planner = _OfflinePlanner(registry)
@@ -113,6 +139,7 @@ def _run_offline_application(body: str, title: str):
             fetcher=fetcher,
             semantic_judge=_OfflineSemanticJudge(),
         ),
+        scope_classifier=ScopeClassifier(_OfflineScopeProposal()),
     )
     result = application.run(
         RegionMode.SELECTED,
@@ -130,7 +157,7 @@ def test_real_offline_composition_reaches_temporal_without_scope_helper():
     )
 
     assert type(application.scope_classifier) is ScopeClassifier
-    assert getattr(application.scope_classifier, "_semantic_helper") is None
+    assert getattr(application.scope_classifier, "_semantic_helper") is not None
     assert result.evidence_results[0].state.value == "EVIDENCE_READY"
     assert result.scope_results[0].state is ScopeState.IN_SCOPE
     assert len(result.temporal_results) == 1
@@ -144,7 +171,7 @@ def test_real_offline_composition_keeps_unresolved_mixed_mode_out_of_temporal():
     )
 
     assert type(application.scope_classifier) is ScopeClassifier
-    assert getattr(application.scope_classifier, "_semantic_helper") is None
+    assert getattr(application.scope_classifier, "_semantic_helper") is not None
     assert result.evidence_results[0].state.value == "EVIDENCE_READY"
     assert result.scope_results[0].state is ScopeState.OUT_OF_SCOPE
     assert result.temporal_results == ()
@@ -212,6 +239,26 @@ def test_real_production_factory_offline_pairs_scope_and_temporal_without_live_i
             }
         elif task == "evidence_metadata_extraction":
             proposal = {"observations": []}
+        elif task == "scope_semantic_proposal":
+            scope_request = request["scope_request"]
+            content = scope_request["principal_content"]
+            negative = "conventional" in content.casefold() or "intercity" in content.casefold()
+            proposal = {
+                "candidate_id": scope_request["candidate_id"],
+                "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION,
+                "event_focus": {"status": "RESOLVED", "quote": content},
+                "action": {"label": content, "quote": content},
+                "target": {"label": content, "quote": content},
+                "system": {"label": content, "quote": content},
+                "eligible_mode_family": "NON_ELIGIBLE" if negative else "METRO",
+                "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "quote": content},
+                "target_system": {"status": "ESTABLISHED", "relation": "BELONGS_TO", "quote": content},
+                "ambiguity": {"status": "NONE", "quote": content},
+                "noneligible_relation": {"status": "PRESENT" if negative else "ABSENT", "quote": content},
+                "noneligible_kind": "NON_URBAN_RAIL" if negative else "NONE",
+                "event_status": "ASSERTED",
+                "decision": "OUT_OF_SCOPE_SUPPORT" if negative else "IN_SCOPE_SUPPORT",
+            }
         else:
             raise AssertionError(f"unexpected live-like helper task: {task}")
         return MaiAgentHttpResponse(200, json.dumps({"content": json.dumps(proposal)}).encode())
@@ -254,7 +301,7 @@ def test_real_production_factory_offline_pairs_scope_and_temporal_without_live_i
             sys.setprofile(original_profile)
 
     assert type(runner.application.scope_classifier) is ScopeClassifier
-    assert getattr(runner.application.scope_classifier, "_semantic_helper") is None
+    assert getattr(runner.application.scope_classifier, "_semantic_helper") is not None
     assert [item.state.value for item in result.evidence_results] == [
         "EVIDENCE_READY",
         "EVIDENCE_READY",
@@ -275,3 +322,4 @@ def test_real_production_factory_offline_pairs_scope_and_temporal_without_live_i
     }
     assert helper_tasks.count("evidence_source_candidate_match") == 2
     assert helper_tasks.count("evidence_metadata_extraction") == 2
+    assert helper_tasks.count("scope_semantic_proposal") == 2

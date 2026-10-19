@@ -271,17 +271,24 @@ Allowed helper input is limited to:
 Allowed helper output is:
 
 ```text
-IN_SCOPE_SUPPORT
-OUT_OF_SCOPE_SUPPORT
-UNCERTAIN
+one versioned scope-semantic proposal containing:
+candidate event focus, asserted action, actual affected target,
+transport system, eligible mode family, action-to-target evidence,
+target-to-system evidence, ambiguity/conflict, explicit noneligible
+relationship, event negation/conditions, and a proposal decision
 ```
 
-Any support must cite validated spans from supplied content. The helper must
-not search, fetch, use external facts, infer from publisher reputation, or
-decide Date, Event Identity, Category, E&M Taxonomy, Reportability, or the
-final Scope state.
+The `scope_semantic_proposal` task is proposal-only. Every material positive
+relationship must carry an exact quotation from the supplied principal
+content. ScopeClassifier validates the candidate identity, versioned strict
+shape, relationship endpoints, event focus, same-document quotations, and
+mechanically derives any coordinates. A valid citation alone is not semantic
+proof; the complete action-to-target-to-system relation is required. The
+helper must not search, fetch, use external facts, infer from publisher
+reputation, or decide Date, Event Identity, Category, E&M Taxonomy,
+Reportability, diagnostics, or the final Scope state.
 
-`UNCERTAIN`, malformed output, invalid spans, timeout, and provider failure
+`UNCERTAIN`, malformed output, invalid quotations, timeout, and provider failure
 cannot be repaired by keywords, retried until a desired answer appears, or
 rescued downstream. When eligible mode support remains unestablished, the
 Scope Classifier returns `OUT_OF_SCOPE` with `SCOPE_NOT_ESTABLISHED`.

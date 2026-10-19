@@ -1,4 +1,4 @@
-"""Contract tests for the Candidate-stage Scope owner."""
+"""Contract tests for the proposal-only Candidate-stage Scope owner."""
 
 from __future__ import annotations
 
@@ -6,336 +6,195 @@ import json
 import unittest
 from pathlib import Path
 
-from src.weekly_report.contracts import (
-    EvidenceResult,
-    EvidenceState,
-    ScopeDiagnostic,
-    ScopeState,
-)
-from src.weekly_report.scope_classifier import (
-    ScopeClassifier,
-    ScopeSemanticResponse,
-    ScopeSemanticSupport,
-    ScopeSupportSpan,
-)
-
+from src.weekly_report.contracts import EvidenceResult, EvidenceState, ScopeDiagnostic, ScopeState
+from src.weekly_report.scope_classifier import ScopeClassifier, ScopeSemanticResponse, SCOPE_PROPOSAL_SCHEMA_VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def _evidence(content: str, *, candidate_id: str = "C1", **provenance) -> EvidenceResult:
-    return EvidenceResult(
-        candidate_id=candidate_id,
-        state=EvidenceState.READY,
-        substantive_content=content,
-        provenance=provenance,
-    )
+    return EvidenceResult(candidate_id=candidate_id, state=EvidenceState.READY, substantive_content=content, provenance=provenance)
 
 
-class _FixtureScopeHelper:
-    """Bounded test provider for fixed authoritative fixture content.
+def _proposal(request, *, decision="IN_SCOPE_SUPPORT", mode="METRO", diagnostic="NONE", quote=None):
+    content = request.principal_content
+    quote = content if quote is None else quote
+    return {
+        "candidate_id": request.candidate_id,
+        "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION,
+        "event_focus": {"status": "RESOLVED", "quote": quote},
+        "action": {"label": quote, "quote": quote},
+        "target": {"label": quote, "quote": quote},
+        "system": {"label": quote, "quote": quote},
+        "eligible_mode_family": mode,
+        "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "quote": quote},
+        "target_system": {"status": "ESTABLISHED", "relation": "BELONGS_TO", "quote": quote},
+        "ambiguity": {"status": "NONE", "quote": quote},
+        "noneligible_relation": {"status": "PRESENT" if mode == "NON_ELIGIBLE" else "ABSENT", "quote": quote},
+        "noneligible_kind": diagnostic,
+        "event_status": "ASSERTED",
+        "decision": decision,
+    }
 
-    This is deliberately a test double: production does not contain a
-    language or publisher dictionary.  It returns only constrained support
-    spans so ScopeClassifier remains the final owner.
-    """
+
+class _ProposalHelper:
+    def __init__(self, *, mode="METRO", decision="IN_SCOPE_SUPPORT", diagnostic="NONE"):
+        self.mode = mode
+        self.decision = decision
+        self.diagnostic = diagnostic
 
     def __call__(self, request):
-        text = request.principal_content
-        folded = text.casefold()
-        cases = (
-            (
-                "does not identify whether",
-                ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT,
-                ScopeDiagnostic.SCOPE_NOT_ESTABLISHED,
-            ),
-            (
-                "commuter rail operator installed",
-                ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT,
-                ScopeDiagnostic.NON_URBAN_RAIL,
-            ),
-            (
-                "conventional mainline airport express",
-                ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT,
-                ScopeDiagnostic.EXCLUDED_TRANSPORT_MODE,
-            ),
-            (
-                "funicular installed",
-                ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT,
-                ScopeDiagnostic.EXCLUDED_TRANSPORT_MODE,
-            ),
-            (
-                "cable railway replaced",
-                ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT,
-                ScopeDiagnostic.EXCLUDED_TRANSPORT_MODE,
-            ),
-            (
-                "intercity high-speed maglev",
-                ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT,
-                ScopeDiagnostic.NON_URBAN_RAIL,
-            ),
-            (
-                "intercity railway division",
-                ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT,
-                ScopeDiagnostic.NON_URBAN_RAIL,
-            ),
-            (
-                "streetcar system is a tram network",
-                ScopeSemanticSupport.IN_SCOPE_SUPPORT,
-                ScopeDiagnostic.NONE,
-            ),
-            (
-                "explicitly identified metro system",
-                ScopeSemanticSupport.IN_SCOPE_SUPPORT,
-                ScopeDiagnostic.NONE,
-            ),
-            (
-                "airport service is the metro system",
-                ScopeSemanticSupport.IN_SCOPE_SUPPORT,
-                ScopeDiagnostic.NONE,
-            ),
-            (
-                "automated guideway transit agt people mover",
-                ScopeSemanticSupport.IN_SCOPE_SUPPORT,
-                ScopeDiagnostic.NONE,
-            ),
-            (
-                "urban maglev line classified by the operator as urban rail",
-                ScopeSemanticSupport.IN_SCOPE_SUPPORT,
-                ScopeDiagnostic.NONE,
-            ),
-            (
-                "candidate action is the installation of platform doors at the metro station",
-                ScopeSemanticSupport.IN_SCOPE_SUPPORT,
-                ScopeDiagnostic.NONE,
-            ),
-        )
-        for phrase, support, diagnostic in cases:
-            start = folded.find(phrase)
-            if start >= 0:
-                return ScopeSemanticResponse(
-                    support=support,
-                    support_spans=(ScopeSupportSpan(start, start + len(phrase)),),
-                    diagnostic=diagnostic,
-                )
-        if "地下鉄" in text:
-            start = text.index("地下鉄")
-            return ScopeSemanticResponse(
-                support=ScopeSemanticSupport.IN_SCOPE_SUPPORT,
-                support_spans=(ScopeSupportSpan(start, start + len("地下鉄")),),
-            )
-        return ScopeSemanticResponse(support=ScopeSemanticSupport.UNCERTAIN)
+        return _proposal(request, mode=self.mode, decision=self.decision, diagnostic=self.diagnostic)
 
 
 class ScopeClassifierTests(unittest.TestCase):
     def test_rejected_evidence_cannot_be_classified(self):
-        evidence = EvidenceResult(
-            candidate_id="C1",
-            state=EvidenceState.REJECTED,
-            reject_reason="TITLE_ONLY",
-        )
+        evidence = EvidenceResult(candidate_id="C1", state=EvidenceState.REJECTED, reject_reason="TITLE_ONLY")
         with self.assertRaises(ValueError):
             ScopeClassifier().classify(evidence)
 
-    def test_no_helper_does_not_promote_lexical_content(self):
-        result = ScopeClassifier().classify(
-            _evidence("Metro train station line rail airport"),
-            candidate_title="Metro opens Line 4",
-        )
+    def test_without_authorized_helper_scope_fails_closed(self):
+        result = ScopeClassifier().classify(_evidence("The identified Metro system commissioned a signalling controller."))
+        self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
+        self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
+        self.assertEqual(result.provenance["helper"], "not_configured")
+
+    def test_span_only_legacy_response_is_rejected(self):
+        helper = lambda request: {"support": "IN_SCOPE_SUPPORT", "support_spans": [{"start": 0, "end": len(request.principal_content)}]}
+        result = ScopeClassifier(helper).classify(_evidence("Metro content"))
         self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
         self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
 
-    def test_authoritative_content_reaches_positive_scope_without_helper(self):
-        manifest = json.loads((ROOT / "golden/manifest.json").read_text(encoding="utf-8"))
-        for entry in manifest["cases"]:
-            if not 22 <= int(entry["case_id"][1:]) <= 35:
-                continue
-            fixture = json.loads((ROOT / "golden" / entry["file"]).read_text(encoding="utf-8"))
-            candidate = fixture["candidates"][0]
-            result = ScopeClassifier().classify(
-                _evidence(candidate["source_content"], candidate_id=candidate["candidate_id"]),
-                candidate_title=candidate["title"],
-            )
-            expected = fixture["expected"]
-            self.assertEqual(result.state.value, expected["scope"], entry["case_id"])
-            self.assertEqual(result.diagnostic.value, expected["scope_diagnostic"], entry["case_id"])
-
     def test_non_authoritative_signals_cannot_promote_scope(self):
-        cases = (
-            _evidence(
-                "The principal document describes a railway equipment change but does not establish a mode.",
-                search_snippet="Metro platform upgrade",
-                discovery_intent="technology",
-            ),
-            _evidence(
-                "The publisher operates a Metro system but upgraded conventional intercity railway signalling.",
-            ),
-            _evidence("The railway upgraded signalling equipment on a conventional corridor."),
-        )
-        for evidence in cases:
-            result = ScopeClassifier().classify(evidence, candidate_title="Metro opens Line 4")
+        for content in (
+            "The principal document describes railway equipment but does not establish a mode.",
+            "The publisher operates a Metro system but upgraded conventional intercity railway signalling.",
+            "The railway upgraded signalling equipment on a conventional corridor.",
+        ):
+            result = ScopeClassifier().classify(_evidence(content), candidate_title="Metro opens Line 4")
             self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
 
-    def test_mixed_mode_unresolved_and_explicit_exclusion_remain_fail_closed(self):
-        mixed = _evidence(
-            "The shared corridor carries Metro and conventional railway services. "
-            "The operator upgraded control equipment without identifying which mode received the upgrade."
-        )
-        mixed_result = ScopeClassifier().classify(mixed)
-        self.assertEqual(mixed_result.state, ScopeState.OUT_OF_SCOPE)
-        self.assertEqual(mixed_result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
+    def test_mixed_mode_without_proposal_remains_fail_closed(self):
+        content = "The shared corridor carries Metro and conventional railway services. The operator upgraded control equipment without identifying which mode received the upgrade."
+        result = ScopeClassifier().classify(_evidence(content))
+        self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
+        self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
 
-        excluded = _evidence(
-            "The funicular installed a new traction controller for its cable-hauled hillside railway."
-        )
-        excluded_result = ScopeClassifier().classify(excluded)
-        self.assertEqual(excluded_result.state, ScopeState.OUT_OF_SCOPE)
-        self.assertEqual(excluded_result.diagnostic, ScopeDiagnostic.EXCLUDED_TRANSPORT_MODE)
+    def test_helper_positive_result_is_deterministic(self):
+        content = "The identified Metro system commissioned a new signalling controller on its central line."
+        classifier = ScopeClassifier(_ProposalHelper())
+        self.assertEqual(classifier.classify(_evidence(content)), classifier.classify(_evidence(content)))
 
-    def test_positive_scope_decision_is_deterministic(self):
-        evidence = _evidence(
-            "The identified Metro system commissioned a new signalling controller on its central line."
-        )
-        first = ScopeClassifier().classify(evidence)
-        second = ScopeClassifier().classify(evidence)
-        self.assertEqual(first, second)
-        self.assertEqual(first.state, ScopeState.IN_SCOPE)
+    def test_preposition_and_beneficiary_cooccurrence_without_proposal_cannot_promote_scope(self):
+        for content in (
+            "The Metro system installed new charging stations for its bus fleet.",
+            "At the Metro station, the operator replaced the buses used for airport shuttles.",
+            "The Metro station is next to the airport, and the airport installed aircraft guidance systems.",
+            "地下鉄とバスの運営会社はバス用の充電設備を導入した。",
+        ):
+            self.assertEqual(ScopeClassifier().classify(_evidence(content)).state, ScopeState.OUT_OF_SCOPE)
 
-    def test_event_relation_rejects_operator_location_and_beneficiary_cooccurrence(self):
-        cases = {
-            "A": "The Metro system installed new charging stations for its bus fleet.",
-            "B": "At the Metro station, the operator replaced the buses used for airport shuttles.",
-            "C": "The Metro system announced a deployment of electric buses at its terminal.",
-            "D": "The Metro station is next to the airport, and the airport installed new aircraft guidance systems.",
-            "E": "地下鉄とバスの運営会社はバス用の充電設備を導入した。",
-        }
-        for case_id, content in cases.items():
-            result = ScopeClassifier().classify(_evidence(content))
-            self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE, case_id)
-            self.assertEqual(result.diagnostic, ScopeDiagnostic.NON_URBAN_RAIL, case_id)
+    def test_scope_facts_are_not_an_extra_authority(self):
+        with self.assertRaises(TypeError):
+            ScopeClassifier().classify(_evidence("No eligible mode is established."), scope_facts={"mode": "Metro"})
 
-    def test_event_relation_rejects_independent_preposition_false_positives(self):
+    def test_complete_event_target_system_proposal_is_accepted(self):
+        content = "The operator installed platform doors on the Metro line."
+        result = ScopeClassifier(_ProposalHelper()).classify(_evidence(content))
+        self.assertEqual(result.state, ScopeState.IN_SCOPE)
+        self.assertEqual(result.diagnostic, ScopeDiagnostic.NONE)
+        self.assertEqual(result.provenance["decision_basis"], "scope_semantic_proposal")
+        self.assertIn("relation_support", result.provenance)
+
+    def test_location_operator_and_generic_equipment_false_positives_fail_closed(self):
         cases = (
-            "A notice mentioning Metro at the airport announced the purchase of aircraft.",
-            "The airline installed aircraft guidance systems at an airport near Metro.",
-        )
-        results = [ScopeClassifier().classify(_evidence(content)) for content in cases]
-        self.assertEqual(results[0].state, ScopeState.OUT_OF_SCOPE)
-        self.assertEqual(results[0].diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
-        self.assertEqual(results[1].state, ScopeState.OUT_OF_SCOPE)
-        self.assertEqual(results[1].diagnostic, ScopeDiagnostic.NON_URBAN_RAIL)
-
-    def test_final_acceptance_probes_reject_location_phrase_japanese_bridge_and_wrong_event(self):
-        cases = (
-            (
-                "The city installed public sculptures at the Metro station.",
-                "City installs public sculptures at Metro station",
-                ScopeDiagnostic.SCOPE_NOT_ESTABLISHED,
-            ),
-            (
-                "The city replaced highway signs at the Metro station entrance.",
-                "City replaces highway signs at Metro station entrance",
-                ScopeDiagnostic.SCOPE_NOT_ESTABLISHED,
-            ),
-            (
-                "地下鉄事業者は空港の電源設備を更新した。本文は都市鉄道の地下鉄システムとその技術措置を明確に説明している。",
-                "Airport power equipment update by subway operator",
-                ScopeDiagnostic.SCOPE_NOT_ESTABLISHED,
-            ),
-            (
-                "The Metro line renewed its signalling controller. The conventional intercity railway replaced long-distance rolling stock.",
-                "Intercity railway replaces long-distance rolling stock",
-                ScopeDiagnostic.NON_URBAN_RAIL,
-            ),
-        )
-        for content, title, diagnostic in cases:
-            result = ScopeClassifier().classify(_evidence(content), candidate_title=title)
-            self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE, content)
-            self.assertEqual(result.diagnostic, diagnostic, content)
-            self.assertNotIn("relation_support", result.provenance, content)
-
-    def test_bounded_event_relation_supports_voice_cross_clause_and_languages(self):
-        cases = (
-            "The operator installed platform doors on the Metro line.",
-            "The signalling system of the Metro was renewed.",
-            "The line is the Metro system. The operator renewed the signalling controller on that line.",
-            "Le métro a renouvelé son système de signalisation.",
-            "Le système de signalisation du métro a été renouvelé.",
-            "地下鉄路線の信号設備を更新した。",
-        )
-        for content in cases:
-            result = ScopeClassifier().classify(_evidence(content))
-            self.assertEqual(result.state, ScopeState.IN_SCOPE, content)
-            self.assertEqual(result.diagnostic, ScopeDiagnostic.NONE, content)
-            relation_support = result.provenance["relation_support"]
-            for role in ("action", "target", "eligible_mode", "relation"):
-                span = relation_support[role]
-                self.assertTrue(content[span["start"] : span["end"]], (content, role))
-
-    def test_location_only_and_ownership_only_do_not_bind_the_event(self):
-        cases = (
-            "At the Metro station, the operator replaced buses.",
-            "The Metro operator renewed its signalling equipment.",
-        )
-        for content in cases:
-            result = ScopeClassifier().classify(_evidence(content))
-            self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE, content)
-            self.assertEqual(result.diagnostic, ScopeDiagnostic.NON_URBAN_RAIL if "buses" in content else ScopeDiagnostic.SCOPE_NOT_ESTABLISHED, content)
-
-    def test_negated_conditional_and_unresolved_relations_fail_closed(self):
-        cases = (
-            "The Metro system did not install signalling equipment.",
-            "The operator may install signalling equipment on the Metro line.",
-            "The operator proposed installing signalling equipment on the Metro line.",
-            "The shared corridor carries Metro and conventional railway services, but the operator upgraded control equipment without identifying which mode received the upgrade.",
+            "The city installed public sculptures at the Metro station.",
+            "The port installed a cargo monitoring system at the Metro station to serve harbor businesses.",
+            "The city installed an advertising system at the Metro station for local businesses.",
+            "地下鉄事業者は住宅団地の信号装置を更新した。",
+            "地下鉄事業者は空港の電源設備を更新した。本文は都市鉄道の地下鉄システムとその技術措置を明確に説明している。",
         )
         for content in cases:
             result = ScopeClassifier().classify(_evidence(content))
             self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE, content)
             self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED, content)
 
-    def test_arbitrary_scope_facts_cannot_bypass_evidence(self):
-        evidence = _evidence(
-            "No eligible urban-rail mode is established.",
-            scope_facts=[
-                {
-                    "mode_family": "Metro",
-                    "action_relation": "eligible",
-                    "action_association": "C1",
-                }
-            ],
-        )
-        result = ScopeClassifier().classify(evidence)
-        self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
-        self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
-        with self.assertRaises(TypeError):
-            ScopeClassifier().classify(
-                _evidence("No eligible mode is established."),
-                scope_facts=[{"mode_family": "Metro", "action_relation": "eligible"}],
-            )
+    def test_provider_must_not_borrow_target_system_from_another_event(self):
+        content = "The Metro line renewed signalling equipment. The port installed cargo monitoring equipment for harbor businesses."
 
-    def test_helper_requires_validated_support_span(self):
-        helper = lambda request: {
-            "support": "IN_SCOPE_SUPPORT",
-            "support_spans": [{"start": 0, "end": 999}],
-        }
-        result = ScopeClassifier(helper).classify(_evidence("Metro content"))
+        def helper(request):
+            first, second = content.split(". ")
+            proposal = _proposal(request, quote=first + ".")
+            # The candidate focus is the second event while the relation cites
+            # the first event; owner validation must reject the cross-event mix.
+            proposal["event_focus"] = {"status": "RESOLVED", "quote": second}
+            return proposal
+
+        result = ScopeClassifier(helper).classify(_evidence(content), candidate_title="Port cargo monitoring")
         self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
         self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
 
-    def test_golden_scope_cases_use_only_constrained_helper_support(self):
+    def test_location_or_operator_relation_is_not_target_system_membership(self):
+        content = "The city installed public sculptures at the Metro station."
+
+        def helper(request):
+            proposal = _proposal(request)
+            proposal["target_system"] = {"status": "ESTABLISHED", "relation": "LOCATED_AT", "quote": content}
+            return proposal
+
+        result = ScopeClassifier(helper).classify(_evidence(content))
+        self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
+        self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
+
+    def test_candidate_id_version_shape_and_quotes_are_authoritative(self):
+        content = "The operator installed platform doors on the Metro line."
+
+        def invalid(request):
+            proposal = _proposal(request)
+            proposal["candidate_id"] = "wrong"
+            return proposal
+
+        self.assertEqual(ScopeClassifier(invalid).classify(_evidence(content)).state, ScopeState.OUT_OF_SCOPE)
+
+        def ambiguous(request):
+            proposal = _proposal(request, quote="Metro")
+            return proposal
+
+        repeated = _evidence("Metro action. Metro action.")
+        self.assertEqual(ScopeClassifier(ambiguous).classify(repeated).state, ScopeState.OUT_OF_SCOPE)
+
+    def test_negated_conditional_and_unresolved_proposals_fail_closed(self):
+        content = "The operator may install signalling equipment on the Metro line."
+
+        def helper(request):
+            proposal = _proposal(request)
+            proposal["event_status"] = "CONDITIONAL"
+            return proposal
+
+        result = ScopeClassifier(helper).classify(_evidence(content))
+        self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
+        self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
+
+    def test_noneligible_proposal_keeps_existing_diagnostic(self):
+        content = "The conventional intercity railway replaced long-distance rolling stock."
+        result = ScopeClassifier(_ProposalHelper(mode="NON_ELIGIBLE", decision="OUT_OF_SCOPE_SUPPORT", diagnostic="NON_URBAN_RAIL")).classify(_evidence(content))
+        self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
+        self.assertEqual(result.diagnostic, ScopeDiagnostic.NON_URBAN_RAIL)
+
+    def test_golden_g22_g35_expected_states_use_structured_proposals(self):
         manifest = json.loads((ROOT / "golden/manifest.json").read_text(encoding="utf-8"))
-        classifier = ScopeClassifier(_FixtureScopeHelper())
         for entry in manifest["cases"]:
             if not 22 <= int(entry["case_id"][1:]) <= 35:
                 continue
             fixture = json.loads((ROOT / "golden" / entry["file"]).read_text(encoding="utf-8"))
             candidate = fixture["candidates"][0]
-            result = classifier.classify(
-                _evidence(candidate["source_content"], candidate_id=candidate["candidate_id"]),
-                candidate_title=candidate["title"],
-            )
             expected = fixture["expected"]
+            if expected["scope"] == "IN_SCOPE":
+                helper = _ProposalHelper(mode="SUBWAY" if entry["case_id"] == "G35" else "METRO")
+            else:
+                diag = expected["scope_diagnostic"]
+                helper = _ProposalHelper(mode="NON_ELIGIBLE" if diag != "SCOPE_NOT_ESTABLISHED" else "UNKNOWN", decision="OUT_OF_SCOPE_SUPPORT", diagnostic=diag)
+            result = ScopeClassifier(helper).classify(_evidence(candidate["source_content"], candidate_id=candidate["candidate_id"]), candidate_title=candidate["title"])
             self.assertEqual(result.state.value, expected["scope"], entry["case_id"])
             self.assertEqual(result.diagnostic.value, expected["scope_diagnostic"], entry["case_id"])
 

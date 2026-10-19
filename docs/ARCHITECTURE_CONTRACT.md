@@ -2590,10 +2590,11 @@ MaiAgent Writer 不得：
 * 查外部背景
 
 The MaiAgent platform may separately provide exactly one Generic Stateless
-Structured Helper deployment for six bounded, non-authoritative tasks:
+Structured Helper deployment for seven bounded, non-authoritative tasks:
 `category_semantic_proposal`, `evidence_metadata_extraction`,
 `evidence_source_candidate_match`, `taxonomy_semantic_proposal`,
-`reportability_semantic_proposal`, and `validation_semantic_check`. It is not a
+`reportability_semantic_proposal`, `validation_semantic_check`, and
+`scope_semantic_proposal`. It is not a
 Domain owner and it does not write or correct the formal report. The
 authoritative owners remain Classifier for Category, EvidenceService for
 factual evidence and semantic matching, Taxonomy for E&M systems, Reportability
@@ -2632,7 +2633,7 @@ incremental semantic decision is permitted.
 
 Each request supplies an explicit task identity, complete versioned
 task-specific instructions, the bounded task request, and that task's response
-schema. All six tasks retain separate request types, prompts, schemas, local
+schema. All seven tasks retain separate request types, prompts, schemas, local
 validators, post-processing boundaries, Domain result types, and failure
 semantics. They may share only the MaiAgent API base, credential, pure mechanical
 HTTP transport, and the single authoritative helper chatbot configuration key:
@@ -2887,6 +2888,13 @@ proposal-only task, `validation_semantic_check`. Its task-specific adapter is
 `maiagent-structured-helper-validation-adapter-v1`. The adapter is subordinate
 to Validator: it must never produce `ValidationResult`, write or correct prose,
 change upstream decisions, or determine workflow continuation.
+
+The same Generic Stateless Structured Helper may transport the authorized
+`scope_semantic_proposal` task. Its task-specific adapter is
+`src/weekly_report/maiagent_scope_provider.py`; it is subordinate to
+`ScopeClassifier`, which alone validates the complete action-to-target-to-
+eligible-system relation and produces the authoritative ScopeResult. The
+adapter must not return ScopeResult, diagnostic, or a span-only positive.
 
 Each bounded request contains exactly `event_id`, `evidence_sources`, and
 `writer_prose`. Each evidence source contains exactly `candidate_id` and

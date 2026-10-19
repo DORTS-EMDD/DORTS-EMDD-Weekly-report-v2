@@ -38,6 +38,7 @@ from .google_news_rss_provider import (
 )
 from .maiagent_evidence_metadata_provider import build_maiagent_evidence_metadata_extractor
 from .maiagent_reportability_provider import build_maiagent_reportability_provider
+from .maiagent_scope_provider import build_maiagent_scope_provider
 from .maiagent_semantic_judge_provider import build_maiagent_semantic_judge
 from .maiagent_taxonomy_provider import build_maiagent_taxonomy_provider
 from .maiagent_transport import MaiAgentJsonHttpTransport
@@ -547,6 +548,9 @@ class ProductionRunner:
             taxonomy_proposal_provider=taxonomy_provider,
             reportability_proposal_provider=reportability_provider,
         )
+        scope_provider = build_maiagent_scope_provider(transport=transport, environ=values)
+        if scope_provider is None:
+            raise ProductionConfigurationError("Scope semantic proposal provider configuration is unavailable")
         writer = ReportWriter.from_environment(environ=values, transport=transport)
         validation_provider = build_maiagent_validation_provider(transport=transport, environ=values)
         if writer is None or validation_provider is None:
@@ -559,7 +563,7 @@ class ProductionRunner:
             registry,
             executor,
             evidence_service=evidence_service,
-            scope_classifier=ScopeClassifier(),
+            scope_classifier=ScopeClassifier(scope_provider),
             temporal_rule=TemporalRule(),
             event_identity=EventIdentity(),
             classifier=classifier,
