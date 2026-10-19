@@ -146,6 +146,18 @@ class ScopeClassifierTests(unittest.TestCase):
         self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
         self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
 
+    def test_contradictory_noneligible_fields_fail_closed(self):
+        content = "The operator installed platform doors on the Metro line."
+
+        def helper(request):
+            proposal = _proposal(request)
+            proposal["noneligible_kind"] = "NON_URBAN_RAIL"
+            return proposal
+
+        result = ScopeClassifier(helper).classify(_evidence(content))
+        self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
+        self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
+
     def test_candidate_id_version_shape_and_quotes_are_authoritative(self):
         content = "The operator installed platform doors on the Metro line."
 

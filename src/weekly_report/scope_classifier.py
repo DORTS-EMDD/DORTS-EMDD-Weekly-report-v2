@@ -167,6 +167,11 @@ def _proposal_support(proposal: Mapping[str, Any], request: ScopeSemanticRequest
         return None
     if action_target["relation"] not in {"AFFECTS", "LOCATED_AT", "MENTIONS", "UNRESOLVED"} or target_system["relation"] not in {"BELONGS_TO", "PART_OF", "FUNCTIONS_FOR", "LOCATED_AT", "OWNED_BY", "OPERATED_BY", "UNRESOLVED"}:
         return None
+    kind = proposal["noneligible_kind"]
+    if statuses["noneligible"] == "ABSENT" and kind != "NONE":
+        return None
+    if statuses["noneligible"] == "PRESENT" and (mode != "NON_ELIGIBLE" or kind not in {"EXCLUDED_TRANSPORT_MODE", "NON_URBAN_RAIL"}):
+        return None
 
     positive = (decision == ScopeSemanticSupport.IN_SCOPE_SUPPORT.value and statuses["focus"] == "RESOLVED" and proposal["event_status"] == "ASSERTED" and statuses["action_target"] == "ESTABLISHED" and action_target["relation"] == "AFFECTS" and statuses["target_system"] == "ESTABLISHED" and target_system["relation"] in {"BELONGS_TO", "PART_OF", "FUNCTIONS_FOR"} and statuses["ambiguity"] == "NONE" and statuses["noneligible"] == "ABSENT" and mode in SUPPORTED_SCOPE_MODE_FAMILIES)
     support = ScopeSemanticSupport.IN_SCOPE_SUPPORT if positive else ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT
