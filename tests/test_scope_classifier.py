@@ -225,6 +225,35 @@ class ScopeClassifierTests(unittest.TestCase):
         self.assertEqual(results[1].state, ScopeState.OUT_OF_SCOPE)
         self.assertEqual(results[1].diagnostic, ScopeDiagnostic.NON_URBAN_RAIL)
 
+    def test_final_acceptance_probes_reject_location_phrase_japanese_bridge_and_wrong_event(self):
+        cases = (
+            (
+                "The city installed public sculptures at the Metro station.",
+                "City installs public sculptures at Metro station",
+                ScopeDiagnostic.SCOPE_NOT_ESTABLISHED,
+            ),
+            (
+                "The city replaced highway signs at the Metro station entrance.",
+                "City replaces highway signs at Metro station entrance",
+                ScopeDiagnostic.SCOPE_NOT_ESTABLISHED,
+            ),
+            (
+                "地下鉄事業者は空港の電源設備を更新した。本文は都市鉄道の地下鉄システムとその技術措置を明確に説明している。",
+                "Airport power equipment update by subway operator",
+                ScopeDiagnostic.SCOPE_NOT_ESTABLISHED,
+            ),
+            (
+                "The Metro line renewed its signalling controller. The conventional intercity railway replaced long-distance rolling stock.",
+                "Intercity railway replaces long-distance rolling stock",
+                ScopeDiagnostic.NON_URBAN_RAIL,
+            ),
+        )
+        for content, title, diagnostic in cases:
+            result = ScopeClassifier().classify(_evidence(content), candidate_title=title)
+            self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE, content)
+            self.assertEqual(result.diagnostic, diagnostic, content)
+            self.assertNotIn("relation_support", result.provenance, content)
+
     def test_bounded_event_relation_supports_voice_cross_clause_and_languages(self):
         cases = (
             "The operator installed platform doors on the Metro line.",

@@ -101,6 +101,7 @@ _EQUIPMENT = re.compile(
     re.IGNORECASE,
 )
 _EQUIPMENT_JP = re.compile(r"設備|装置|機器|システム|ホームドア|信号|充電")
+_JP_SYSTEM_COMPONENT = re.compile(r"駅|ホーム|路線|線|信号|車両|運行|列車|軌道|停車|プラットフォーム")
 _ACTION = re.compile(
     r"\b(?:install(?:ed|s|ation)?|commission(?:ed|s)?|upgrade(?:d|s)?|"
     r"open(?:ed|s|ing)?|deploy(?:ed|s|ment)?|pilot(?:ed|s|ing)?|"
@@ -189,6 +190,14 @@ class _Relation:
     mode: _ModeMention
     link_start: int
     link_end: int
+
+
+@dataclass(frozen=True, slots=True)
+class _EventInterpretation:
+    action: _ActionMention
+    target: _Target
+    status: str
+    relation: _Relation | None = None
 
 
 def _content_sentences(content: str) -> tuple[_Sentence, ...]:
@@ -427,6 +436,8 @@ def _target_for_action(content: str, action: _ActionMention) -> _Target:
     full_clause = content[clause_start:clause_end]
     status, equipment = _target_status(full_clause)
     if not status:
+        _, equipment = _target_status(target_text)
+    if not status:
         for match in re.finditer(
             r"\b(?:for|on|at|to|within|along|between|of|from|inside)\b",
             content[action.end:clause_end],
@@ -471,6 +482,8 @@ def _mode_relation_for_action(
             return mode, mode.start, target.end
 
     for mode in local_modes:
+        if mode.role == "location" and not target.equipment:
+            continue
         if mode.role == "location" and not re.search(
             r"\b(?:station|line|route|segment|system|network)\b",
             content[mode.start : min(clause_end, mode.end + 50)],
@@ -553,11 +566,12 @@ def _japanese_relation(
         prefix = content[action.clause_start : target.start]
         if re.search(r"地下鉄(?:路線|線|システム)の", prefix):
             return "eligible", _Relation(action, target, mode, mode.start, target.end)
-    if "地下鉄システム" in content and re.search(
-        r"その技術措置|技術措置.*(?:説明|明確)", content
+    if (
+        re.search(r"(?:地下鉄|都市鉄道)(?:システム|路線|線|事業者)", content)
+        and _JP_SYSTEM_COMPONENT.search(target.text)
     ):
         mode = next((item for item in local_modes if not item.negated), None)
-        if mode is not None and _EQUIPMENT_JP.search(target.text):
+        if mode is not None and target.equipment:
             return "eligible", _Relation(action, target, mode, mode.start, target.end)
     return "ambiguous", None
 
@@ -569,7 +583,6 @@ def _interpret_authoritative_content(
 ) -> tuple[ScopeSemanticSupport, ScopeDiagnostic, tuple[ScopeSupportSpan, ...], Mapping[str, Any]]:
     """Interpret bounded action→target→mode relations in principal content."""
 
-    del candidate_title  # comparison context cannot create missing event facts
     sentences = _content_sentences(content)
     sentence_modes = {sentence.index: _mode_mentions(sentence) for sentence in sentences}
     groups: list[tuple[int, tuple[_ModeMention, ...]]] = []
@@ -580,8 +593,7 @@ def _interpret_authoritative_content(
         if usable:
             groups.append((index, usable))
 
-    relations: list[_Relation] = []
-    statuses: list[str] = []
+    events: list[_EventInterpretation] = []
     action_count = 0
     for sentence in sentences:
         modes = sentence_modes.get(sentence.index, ())
@@ -589,7 +601,7 @@ def _interpret_authoritative_content(
             action_count += 1
             if _action_not_asserted(content, action):
                 target = _target_for_action(content, action)
-                statuses.append(target.status or "ambiguous")
+                events.append(_EventInterpretation(action, target, target.status or "ambiguous"))
                 continue
             target = _target_for_action(content, action)
             if action.japanese:
@@ -611,9 +623,59 @@ def _interpret_authoritative_content(
                             status = "eligible"
                         else:
                             status = "ambiguous"
-            if relation is not None:
-                relations.append(relation)
-            statuses.append(status)
+            events.append(_EventInterpretation(action, target, status, relation))
+
+    selected_events = tuple(events)
+    focus_unresolved = False
+    if len(events) > 1 and any(event.relation is not None for event in events):
+        terms: list[str] = []
+        for raw in re.findall(
+            r"[A-Za-z0-9]+|[\u3040-\u30ff\u4e00-\u9fff]+", candidate_title.casefold()
+        ):
+            if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", raw):
+                terms.extend(
+                    part
+                    for part in re.split(
+                        r"(?:が|は|を|に|の|へ|と|で|や|も|から|まで)", raw
+                    )
+                    if len(part) >= 2
+                )
+            elif len(raw) > 2 and raw not in {
+                "the", "and", "for", "with", "from", "while"
+            }:
+                terms.append(raw)
+        terms = list(dict.fromkeys(terms))
+        if not terms:
+            focus_unresolved = True
+        else:
+            scores = [
+                sum(
+                    term in (
+                        content[event.action.clause_start : event.action.clause_end]
+                        + " "
+                        + event.target.text
+                    ).casefold()
+                    for term in terms
+                )
+                for event in events
+            ]
+            best = max(scores, default=0)
+            if best <= 0 or scores.count(best) != 1:
+                focus_unresolved = True
+            else:
+                selected_events = (events[scores.index(best)],)
+    if focus_unresolved:
+        return (
+            ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT,
+            ScopeDiagnostic.SCOPE_NOT_ESTABLISHED,
+            (),
+            {
+                "decision_basis": "authoritative_event_mode_relation",
+                "event_focus": "candidate_event_unresolved",
+            },
+        )
+    relations = [event.relation for event in selected_events if event.relation is not None]
+    statuses = [event.status for event in selected_events]
 
     if relations:
         support_spans: list[ScopeSupportSpan] = []
