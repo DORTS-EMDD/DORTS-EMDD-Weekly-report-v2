@@ -198,16 +198,38 @@ def _proposal_support(
     system_label = _text(system["label"])
     if "system" in spans and system_label is None:
         return reject("ENDPOINT_LABEL")
-    endpoint_quotes = [action["quote"], target["quote"]]
-    if "system" in spans:
-        endpoint_quotes.append(system["quote"])
-    if len(set(endpoint_quotes)) != len(endpoint_quotes):
-        return reject("ENDPOINT_QUOTE_DISTINCTNESS")
     for name, label in labels.items():
         if label.casefold() not in content[spans[name].start:spans[name].end].casefold():
             return reject("ENDPOINT_LABEL")
     if "system" in spans and system_label.casefold() not in content[spans["system"].start:spans["system"].end].casefold():
         return reject("ENDPOINT_LABEL")
+
+    endpoint_roles = [
+        ("action", action["quote"], labels["action"]),
+        ("target", target["quote"], labels["target"]),
+    ]
+    if "system" in spans:
+        endpoint_roles.append(("system", system["quote"], system_label))
+    for index, (_, quote, label) in enumerate(endpoint_roles):
+        for _, other_quote, other_label in endpoint_roles[index + 1 :]:
+            if quote != other_quote:
+                continue
+            folded_quote = quote.casefold()
+            folded_label = label.casefold()
+            folded_other_label = other_label.casefold()
+            label_start = folded_quote.find(folded_label)
+            other_label_start = folded_quote.find(folded_other_label)
+            if (
+                label_start < 0
+                or folded_quote.find(folded_label, label_start + 1) >= 0
+                or other_label_start < 0
+                or folded_quote.find(folded_other_label, other_label_start + 1) >= 0
+                or (
+                    label_start < other_label_start + len(folded_other_label)
+                    and other_label_start < label_start + len(folded_label)
+                )
+            ):
+                return reject("ENDPOINT_ROLE_DISTINCTNESS")
 
     # Established relation claims must cite both endpoints; an unestablished
     # relation does not need fabricated coordinates.

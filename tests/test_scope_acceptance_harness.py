@@ -109,6 +109,78 @@ def test_semantic_endpoints_support_a_real_positive_and_valid_negative():
     assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
 
 
+def test_shared_exact_endpoint_quote_accepts_distinguishable_source_roles():
+    source = "The operator installs platform doors on the Metro system."
+    shared_quote = "installs platform doors"
+    proposal = _semantic_proposal(
+        source,
+        action="installs",
+        target="platform doors",
+        system="Metro system",
+    )
+    proposal["action"]["quote"] = shared_quote
+    proposal["target"]["quote"] = shared_quote
+    proposal["action_target"]["quote"] = shared_quote
+    proposal["target_system"]["quote"] = "installs platform doors on the Metro system"
+    observations = []
+
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(source), observation_hook=observations.append
+    )
+
+    assert result.state is ScopeState.IN_SCOPE
+    assert observations[0].first_rejection_predicate is None
+
+
+def test_shared_endpoint_quote_does_not_bypass_label_within_quote_validation():
+    source = "The operator installs platform doors on the Metro system."
+    proposal = _semantic_proposal(
+        source,
+        action="installs",
+        target="Metro",
+        system="Metro system",
+    )
+    proposal["action"]["quote"] = "installs platform doors"
+    proposal["target"]["quote"] = "installs platform doors"
+    observations = []
+
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(source), observation_hook=observations.append
+    )
+
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert observations[0].first_rejection_predicate == "ENDPOINT_LABEL"
+
+
+def test_uncertain_proposal_with_shared_distinguishable_quotes_remains_out_of_scope():
+    source = "合成技術公告。地下鉄事業者は駅のホームドア監視システムを導入し、試験結果と運用開始を発表した。本文は都市鉄道の地下鉄システムとその技術措置を明確に説明している。"
+    event = "地下鉄事業者は駅のホームドア監視システムを導入し"
+    proposal = _semantic_proposal(
+        source,
+        decision="UNCERTAIN",
+        mode="UNKNOWN",
+        action="導入",
+        target="ホームドア監視システム",
+        system="地下鉄システム",
+    )
+    proposal["event_focus"] = {"status": "RESOLVED", "quote": event}
+    proposal["action"]["quote"] = event
+    proposal["target"]["quote"] = event
+    proposal["action_target"]["quote"] = event
+    proposal["system"]["quote"] = "本文は都市鉄道の地下鉄システムとその技術措置を明確に説明している。"
+    proposal["target_system"] = {"status": "UNESTABLISHED", "relation": "UNRESOLVED", "quote": ""}
+    observations = []
+
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(source), observation_hook=observations.append
+    )
+
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
+    assert observations[0].first_rejection_predicate is None
+    assert observations[0].response_status == "OWNER_VALIDATED"
+
+
 def test_first_actual_rejection_is_recorded_for_invalid_quotes_and_candidate_identity():
     bad_quote = _semantic_proposal(POSITIVE_SOURCE)
     bad_quote["action_target"]["quote"] = "not present in the source"
@@ -244,6 +316,31 @@ def test_established_relation_with_wrong_endpoint_is_rejected():
     )
     assert result.state is ScopeState.OUT_OF_SCOPE
     assert observations[0].first_rejection_predicate == "TARGET_SYSTEM_CONTAINMENT"
+
+
+def test_positive_relation_cannot_borrow_system_from_another_event():
+    source = "The Metro line renewed signalling equipment. The port installed cargo monitors for harbor businesses."
+    candidate_event = "The port installed cargo monitors for harbor businesses."
+    shared_quote = "installed cargo monitors"
+    proposal = _semantic_proposal(
+        source,
+        action="installed",
+        target="cargo monitors",
+        system="Metro line",
+    )
+    proposal["event_focus"] = {"status": "RESOLVED", "quote": candidate_event}
+    proposal["action"]["quote"] = shared_quote
+    proposal["target"]["quote"] = shared_quote
+    proposal["action_target"]["quote"] = candidate_event
+    proposal["target_system"]["quote"] = source
+    observations = []
+
+    result = ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(source), observation_hook=observations.append
+    )
+
+    assert result.state is ScopeState.OUT_OF_SCOPE
+    assert observations[0].first_rejection_predicate == "EVENT_FOCUS_CONTAINMENT"
 
 
 def test_location_only_relation_cannot_promote_scope():

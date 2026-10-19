@@ -126,6 +126,7 @@ class ScopeClassifierTests(unittest.TestCase):
 
     def test_whole_document_endpoint_quotes_do_not_bypass_consistency(self):
         content = "The city installed public sculptures at the Metro station."
+        observations = []
 
         def helper(request):
             proposal = _mechanical_schema_proposal(request)
@@ -133,9 +134,10 @@ class ScopeClassifierTests(unittest.TestCase):
                 proposal[field] = {"label": content, "quote": content}
             return proposal
 
-        result = ScopeClassifier(helper).classify(_evidence(content))
+        result = ScopeClassifier(helper).classify(_evidence(content), observation_hook=observations.append)
         self.assertEqual(result.state, ScopeState.OUT_OF_SCOPE)
         self.assertEqual(result.diagnostic, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED)
+        self.assertEqual(observations[0].first_rejection_predicate, "ENDPOINT_ROLE_DISTINCTNESS")
 
     def test_location_operator_and_generic_equipment_false_positives_fail_closed(self):
         cases = (
