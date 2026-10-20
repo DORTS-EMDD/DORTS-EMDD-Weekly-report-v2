@@ -58,11 +58,26 @@ class _UnsafeDestinationError(RuntimeError):
 
 
 class _EvidenceFetchError(RuntimeError):
-    """Safe transport failure retaining only an HTTP status when available."""
+    """Safe transport failure retaining bounded transport observations."""
 
-    def __init__(self, status_code: int | None = None) -> None:
+    def __init__(
+        self,
+        status_code: int | None = None,
+        *,
+        request_url: str = "",
+        failing_url: str = "",
+        redirect_hop_count: int | None = None,
+    ) -> None:
         super().__init__("evidence fetch failed")
         self.status_code = status_code
+        self.request_hostname = _safe_hostname(request_url) or None
+        self.failing_endpoint_hostname = _safe_hostname(failing_url) or None
+        self.redirect_hop_count = (
+            redirect_hop_count
+            if isinstance(redirect_hop_count, int) and not isinstance(redirect_hop_count, bool)
+            and redirect_hop_count >= 0
+            else None
+        )
 
 
 def _candidate(value: CanonicalCandidate | Mapping[str, Any]) -> CanonicalCandidate:
@@ -163,6 +178,65 @@ def _normalise_redirect_chain(values: tuple[str, ...]) -> list[str] | None:
     return normalised
 
 
+def _acquisition_observation(
+    input_url: str,
+    elapsed_ms: int,
+    *,
+    fetched: FetchedSource | None = None,
+    error: BaseException | None = None,
+) -> dict[str, Any]:
+    """Return bounded transport facts without making an Evidence decision."""
+
+    initial_hostname = _safe_hostname(input_url) or "UNKNOWN"
+    observation: dict[str, Any] = {
+        "acquisition_elapsed_ms": max(0, int(elapsed_ms)),
+        "acquisition_initial_hostname": initial_hostname,
+        "acquisition_redirect_hop_count": "UNKNOWN",
+        "acquisition_path": "UNKNOWN",
+        "acquisition_final_endpoint": "UNKNOWN",
+        "acquisition_redirect_consistency": "UNKNOWN",
+        "acquisition_failing_endpoint_hostname": "UNKNOWN",
+    }
+    if fetched is not None:
+        chain = tuple(fetched.redirect_chain or ())
+        resolved_url = _normalise_url(fetched.url)
+        hop_count = max(0, len(chain) - 1) if chain else 0
+        direct = not chain and resolved_url == input_url
+        observation.update(
+            {
+                "acquisition_redirect_hop_count": hop_count if direct or chain else "UNKNOWN",
+                "acquisition_path": (
+                    "REDIRECTED" if chain else "DIRECT" if direct else "UNKNOWN"
+                ),
+                "acquisition_final_endpoint": (
+                    "OBSERVED" if resolved_url else "UNKNOWN"
+                ),
+                "acquisition_failing_endpoint_hostname": "NOT_APPLICABLE",
+            }
+        )
+        return observation
+
+    if isinstance(error, _EvidenceFetchError):
+        if error.redirect_hop_count is not None:
+            observation["acquisition_redirect_hop_count"] = error.redirect_hop_count
+            observation["acquisition_path"] = (
+                "REDIRECTED" if error.redirect_hop_count else "DIRECT"
+            )
+        if error.failing_endpoint_hostname:
+            observation["acquisition_failing_endpoint_hostname"] = (
+                error.failing_endpoint_hostname
+            )
+        return observation
+
+    if isinstance(error, HTTPError):
+        failing_hostname = _safe_hostname(getattr(error, "url", ""))
+        if failing_hostname:
+            observation["acquisition_failing_endpoint_hostname"] = failing_hostname
+        return observation
+
+    return observation
+
+
 def _source_provenance(
     candidate_url: str,
     resolved_url: str,
@@ -177,15 +251,37 @@ def _source_provenance(
         "provenance_path": chain or [],
         "provenance_mode": "direct" if candidate_key == resolved_key else "redirect_chain",
     }
-    if candidate_key is None or resolved_key is None or chain is None:
+    if candidate_key is None:
+        signals["source_provenance_mismatch_reason"] = "INVALID_CANDIDATE_RESOURCE_KEY"
+        return False, signals
+    if resolved_key is None:
+        signals["source_provenance_mismatch_reason"] = "INVALID_RESOLVED_RESOURCE_KEY"
+        return False, signals
+    if chain is None:
+        signals["source_provenance_mismatch_reason"] = "INVALID_REDIRECT_CHAIN"
         return False, signals
     if candidate_key == resolved_key:
-        if chain and (_resource_key(chain[0]) != candidate_key or _resource_key(chain[-1]) != resolved_key):
+        if chain and _resource_key(chain[0]) != candidate_key:
+            signals["source_provenance_mismatch_reason"] = "FIRST_REDIRECT_ENDPOINT_MISMATCH"
             return False, signals
+        if chain and _resource_key(chain[-1]) != resolved_key:
+            signals["source_provenance_mismatch_reason"] = "FINAL_REDIRECT_ENDPOINT_MISMATCH"
+            return False, signals
+        signals["acquisition_redirect_consistency"] = "CONSISTENT" if chain else "NOT_APPLICABLE"
+        signals["redirect_hop_count"] = max(0, len(chain) - 1)
         return True, signals
     if not chain:
+        signals["source_provenance_mismatch_reason"] = "MISSING_REDIRECT_CHAIN"
         return False, signals
-    return _resource_key(chain[0]) == candidate_key and _resource_key(chain[-1]) == resolved_key, signals
+    if _resource_key(chain[0]) != candidate_key:
+        signals["source_provenance_mismatch_reason"] = "FIRST_REDIRECT_ENDPOINT_MISMATCH"
+        return False, signals
+    if _resource_key(chain[-1]) != resolved_key:
+        signals["source_provenance_mismatch_reason"] = "FINAL_REDIRECT_ENDPOINT_MISMATCH"
+        return False, signals
+    signals["acquisition_redirect_consistency"] = "CONSISTENT"
+    signals["redirect_hop_count"] = max(0, len(chain) - 1)
+    return True, signals
 
 
 def _canonical_is_related(
@@ -371,7 +467,12 @@ def _default_fetcher(url: str, timeout_seconds: float) -> FetchedSource:
                 redirect_chain=tuple(redirect_chain),
             )
     except HTTPError as exc:
-        raise _EvidenceFetchError(exc.code) from exc
+        raise _EvidenceFetchError(
+            exc.code,
+            request_url=url,
+            failing_url=getattr(exc, "url", ""),
+            redirect_hop_count=len(redirect_handler.redirect_urls),
+        ) from exc
 
 
 class EvidenceService:
@@ -407,10 +508,16 @@ class EvidenceService:
                 evidence_rejection_gate="URL_VALIDATION",
             )
 
+        fetch_started = perf_counter()
         try:
             fetched = _coerce_source(self._fetcher(input_url), input_url)
         except _EvidenceFetchError as exc:
-            provenance: dict[str, Any] = {"transport_error": "HTTPError"}
+            provenance: dict[str, Any] = _acquisition_observation(
+                input_url,
+                int((perf_counter() - fetch_started) * 1000),
+                error=exc,
+            )
+            provenance["transport_error"] = "HTTPError"
             if exc.status_code is not None:
                 provenance["status_code"] = exc.status_code
             return self._rejected(
@@ -420,19 +527,39 @@ class EvidenceService:
                 evidence_rejection_gate="FETCH_TRANSPORT",
             )
         except HTTPError as exc:
+            provenance = _acquisition_observation(
+                input_url,
+                int((perf_counter() - fetch_started) * 1000),
+                error=exc,
+            )
+            provenance.update(
+                {"transport_error": "HTTPError", "status_code": int(exc.code)}
+            )
             return self._rejected(
                 item,
                 RejectReason.CONTENT_UNAVAILABLE,
-                {"transport_error": "HTTPError", "status_code": int(exc.code)},
+                provenance,
                 evidence_rejection_gate="FETCH_TRANSPORT",
             )
         except Exception as exc:
+            provenance = _acquisition_observation(
+                input_url,
+                int((perf_counter() - fetch_started) * 1000),
+                error=exc,
+            )
+            provenance["transport_error"] = type(exc).__name__
             return self._rejected(
                 item,
                 RejectReason.CONTENT_UNAVAILABLE,
-                {"transport_error": type(exc).__name__},
+                provenance,
                 evidence_rejection_gate="FETCH_TRANSPORT",
             )
+
+        fetch_observation = _acquisition_observation(
+            input_url,
+            int((perf_counter() - fetch_started) * 1000),
+            fetched=fetched,
+        )
 
         resolved_url = _normalise_url(fetched.url) or input_url
         if fetched.status_code >= 400:
@@ -440,6 +567,7 @@ class EvidenceService:
                 item,
                 RejectReason.CONTENT_UNAVAILABLE,
                 {
+                    **fetch_observation,
                     "resolved_url": resolved_url,
                     "status_code": fetched.status_code,
                     "content_type": fetched.content_type,
@@ -451,7 +579,11 @@ class EvidenceService:
             return self._rejected(
                 item,
                 RejectReason.CONTENT_UNAVAILABLE,
-                {"resolved_url": resolved_url, "content_type": fetched.content_type},
+                {
+                    **fetch_observation,
+                    "resolved_url": resolved_url,
+                    "content_type": fetched.content_type,
+                },
                 evidence_rejection_gate="CONTENT_TYPE",
                 canonical_source_url=resolved_url,
             )
@@ -489,8 +621,13 @@ class EvidenceService:
         if canonical_url and not _canonical_is_related(canonical_url, resolved_url, fetched.redirect_chain):
             source_provenance = False
             provenance_signals["canonical_related"] = False
+            provenance_signals["source_provenance_mismatch_reason"] = "CANONICAL_RESOURCE_MISMATCH"
         else:
             provenance_signals["canonical_related"] = True
+            if source_provenance and "acquisition_redirect_consistency" not in provenance_signals:
+                provenance_signals["acquisition_redirect_consistency"] = (
+                    "CONSISTENT" if fetched.redirect_chain else "NOT_APPLICABLE"
+                )
         if not source_provenance:
             return self._rejected(
                 item,
@@ -499,6 +636,7 @@ class EvidenceService:
                     "resolved_url": source_url,
                     "source_provenance": False,
                     "source_to_candidate_match": False,
+                    **fetch_observation,
                     **provenance_signals,
                     **structural_provenance,
                 },
@@ -535,6 +673,7 @@ class EvidenceService:
                     "resolved_url": source_url,
                     "source_provenance": True,
                     "source_to_candidate_match": False,
+                    **fetch_observation,
                     **structural_provenance,
                 },
                 evidence_rejection_gate="PRINCIPAL_DOCUMENT",
@@ -553,6 +692,7 @@ class EvidenceService:
                 {
                     "resolved_url": source_url,
                     "body_text_available": False,
+                    **fetch_observation,
                     **structural_provenance,
                 },
                 evidence_rejection_gate="BODY_AVAILABILITY",
@@ -574,6 +714,7 @@ class EvidenceService:
                     "page_event_identity": False,
                     "source_to_candidate_match": False,
                     "factual_substance": False,
+                    **fetch_observation,
                     **provenance_signals,
                     **structural_provenance,
                 },
@@ -597,6 +738,7 @@ class EvidenceService:
                     "page_event_identity": False,
                     "source_to_candidate_match": False,
                     "factual_substance": True,
+                    **fetch_observation,
                     **provenance_signals,
                     **structural_provenance,
                     **semantic_signals,
@@ -619,6 +761,7 @@ class EvidenceService:
             source_type=item.source_type or "web_source",
             substantive_content=body,
             provenance={
+                **fetch_observation,
                 "candidate_url": input_url,
                 "resolved_url": source_url,
                 "content_type": fetched.content_type,

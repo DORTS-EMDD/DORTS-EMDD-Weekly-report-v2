@@ -17,7 +17,7 @@ from src.weekly_report.contracts import EvidenceResult, EvidenceState, RejectRea
 from src.weekly_report.contracts import CandidateNormalizationFailure
 from src.weekly_report.candidate_normalizer import CandidateNormalizer, CandidateNormalizationError
 from src.weekly_report.debug_service import (
-    CHECKPOINT_ITEMS, STAGES, ExecutionTrace, execution_trace, observe_stage,
+    CHECKPOINT_ITEMS, STAGES, ExecutionTrace, evidence_projection, execution_trace, observe_stage,
 )
 from src.weekly_report.production_runner import ProductionRunner
 from src.weekly_report.report_service import ReportService
@@ -159,6 +159,52 @@ def test_trace_never_projects_raw_evidence_or_provider_fields():
     assert completed["terminal_distribution"] == {"EVIDENCE_READY": 1, "EVIDENCE_REJECTED": 1}
     assert completed["reason_distribution"] == {"CONTENT_UNAVAILABLE": 1}
     assert completed["technical_distribution"]["HTTP_STATUS:503"] == 1
+
+
+def test_evidence_diagnostics_are_bounded_and_secret_free():
+    values = [
+        EvidenceResult(
+            f"candidate-{index}",
+            EvidenceState.REJECTED,
+            reject_reason=RejectReason.CONTENT_UNAVAILABLE,
+            provenance={
+                "evidence_rejection_gate": "FETCH_TRANSPORT",
+                "status_code": 503,
+                "acquisition_elapsed_ms": 1000 + index,
+                "acquisition_initial_hostname": f"source-{index}.example",
+                "acquisition_failing_endpoint_hostname": (
+                    "redirect.example" if index == 0 else f"edge-{index}.example"
+                ),
+                "acquisition_redirect_hop_count": 1,
+                "acquisition_path": "REDIRECTED",
+                "acquisition_final_endpoint": "UNKNOWN",
+                "acquisition_redirect_consistency": "UNKNOWN",
+                "source_provenance_mismatch_reason": "MISSING_REDIRECT_CHAIN",
+                "candidate_url": f"https://source-{index}.example/a?token=SECRET-{index}",
+                "resolved_url": f"https://edge-{index}.example/final?cookie=SECRET-{index}",
+            },
+        )
+        for index in range(100)
+    ]
+
+    projection = evidence_projection(tuple(values))
+
+    assert len(projection["evidence_acquisition_initial_hostname_distribution"]) <= 32
+    assert len(projection["evidence_acquisition_failing_endpoint_hostname_distribution"]) <= 32
+    assert "OTHER" in projection["evidence_acquisition_initial_hostname_distribution"]
+    assert projection["evidence_acquisition_path_distribution"] == {"REDIRECTED": 100}
+    assert projection["evidence_acquisition_final_endpoint_distribution"] == {"UNKNOWN": 100}
+    assert projection["evidence_acquisition_latency_bucket_distribution"] == {"1000-4999ms": 100}
+    lines = []
+    with execution_trace(ExecutionTrace(sink=lines.append)):
+        with observe_stage("Evidence", len(values)) as stage:
+            stage.observe(values, final=True)
+    output = "".join(lines)
+    assert "https://" not in output
+    assert "SECRET-" not in output
+    completed = next(row for row in records(lines) if row["event"] == "STAGE_COMPLETED")
+    assert completed["technical_distribution"]["evidence_acquisition_path_distribution:REDIRECTED"] == 100
+    assert completed["technical_distribution"]["evidence_acquisition_latency_bucket_distribution:1000-4999ms"] == 100
 
 
 def test_failed_sink_is_disabled_without_retries_or_fabricated_completion():

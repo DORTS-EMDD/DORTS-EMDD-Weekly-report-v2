@@ -273,6 +273,13 @@ class ProductionRunResult:
     evidence_redirect_hop_count_distribution: Mapping[str, int] = field(default_factory=dict)
     evidence_host_transition_distribution: Mapping[str, int] = field(default_factory=dict)
     evidence_rejection_signature_distribution: Mapping[str, int] = field(default_factory=dict)
+    evidence_acquisition_latency_bucket_distribution: Mapping[str, int] = field(default_factory=dict)
+    evidence_acquisition_path_distribution: Mapping[str, int] = field(default_factory=dict)
+    evidence_acquisition_final_endpoint_distribution: Mapping[str, int] = field(default_factory=dict)
+    evidence_acquisition_redirect_consistency_distribution: Mapping[str, int] = field(default_factory=dict)
+    evidence_acquisition_initial_hostname_distribution: Mapping[str, int] = field(default_factory=dict)
+    evidence_acquisition_failing_endpoint_hostname_distribution: Mapping[str, int] = field(default_factory=dict)
+    evidence_source_provenance_mismatch_distribution: Mapping[str, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "status", ProductionRunStatus(self.status))
@@ -328,6 +335,13 @@ class ProductionRunResult:
             "evidence_redirect_hop_count_distribution",
             "evidence_host_transition_distribution",
             "evidence_rejection_signature_distribution",
+            "evidence_acquisition_latency_bucket_distribution",
+            "evidence_acquisition_path_distribution",
+            "evidence_acquisition_final_endpoint_distribution",
+            "evidence_acquisition_redirect_consistency_distribution",
+            "evidence_acquisition_initial_hostname_distribution",
+            "evidence_acquisition_failing_endpoint_hostname_distribution",
+            "evidence_source_provenance_mismatch_distribution",
         ):
             values = dict(getattr(self, field_name))
             if any(
@@ -434,6 +448,13 @@ class ProductionRunResult:
                 ("evidence_redirect_hops", self.evidence_redirect_hop_count_distribution),
                 ("evidence_host_transitions", self.evidence_host_transition_distribution),
                 ("evidence_rejection_signatures", self.evidence_rejection_signature_distribution),
+                ("evidence_acquisition_latency", self.evidence_acquisition_latency_bucket_distribution),
+                ("evidence_acquisition_paths", self.evidence_acquisition_path_distribution),
+                ("evidence_acquisition_final_endpoints", self.evidence_acquisition_final_endpoint_distribution),
+                ("evidence_acquisition_redirect_consistency", self.evidence_acquisition_redirect_consistency_distribution),
+                ("evidence_acquisition_initial_hosts", self.evidence_acquisition_initial_hostname_distribution),
+                ("evidence_acquisition_failing_hosts", self.evidence_acquisition_failing_endpoint_hostname_distribution),
+                ("evidence_source_provenance_mismatches", self.evidence_source_provenance_mismatch_distribution),
             )
             for label, values in evidence_fields:
                 parts.append(f"{label}={_format_distribution(values) or 'NONE'}")

@@ -97,10 +97,29 @@ def _facts(stage: str, values: Any, input_count: int | None) -> dict[str, Any]:
                 "not_configured", "timeout", "transport_error", "invalid_response",
                 "valid_zero_metadata", "valid_metadata", "NOT_REACHED",
             },
+            "evidence_acquisition_path_distribution": _ACQUISITION_PATHS,
+            "evidence_acquisition_final_endpoint_distribution": _ACQUISITION_FINAL_ENDPOINTS,
+            "evidence_acquisition_redirect_consistency_distribution": _ACQUISITION_REDIRECT_STATES,
+            "evidence_source_provenance_mismatch_distribution": _SOURCE_PROVENANCE_FAILURES,
+            "evidence_acquisition_latency_bucket_distribution": _LATENCY_BUCKETS,
+            "evidence_redirect_hop_count_distribution": {
+                *(str(index) for index in range(21)), "20+", "UNKNOWN",
+            },
+            "evidence_host_transition_distribution": {
+                "SAME_HOST", "CHANGED_HOST", "RESOLVED_HOST_MISSING",
+            },
         }
         for field, vocabulary in allowed.items():
             for key, count in projection[field].items():
                 safe_key = key if key in vocabulary else "UNKNOWN"
+                token = field + ":" + safe_key
+                technical[token] = technical.get(token, 0) + count
+        for field in (
+            "evidence_acquisition_initial_hostname_distribution",
+            "evidence_acquisition_failing_endpoint_hostname_distribution",
+        ):
+            for key, count in projection[field].items():
+                safe_key = _safe_diag_token(key) or "UNKNOWN"
                 token = field + ":" + safe_key
                 technical[token] = technical.get(token, 0) + count
         for key, count in projection["evidence_http_status_distribution"].items():
@@ -385,10 +404,78 @@ def _safe_host(value: object) -> str | None:
     return _safe_diag_token(host.casefold())
 
 
-def _add_distribution(target: dict[str, int], value: str | None) -> None:
+def _add_distribution(
+    target: dict[str, int],
+    value: str | None,
+    *,
+    max_distinct: int | None = None,
+) -> None:
     if value is None:
         return
+    if (
+        max_distinct is not None
+        and value not in target
+        and len(target) >= max_distinct - 1
+    ):
+        value = "OTHER"
     target[value] = target.get(value, 0) + 1
+
+
+_ACQUISITION_PATHS = {"DIRECT", "REDIRECTED", "UNKNOWN"}
+_ACQUISITION_FINAL_ENDPOINTS = {"OBSERVED", "NOT_OBSERVED", "UNKNOWN"}
+_ACQUISITION_REDIRECT_STATES = {
+    "CONSISTENT", "MISMATCH", "UNKNOWN", "NOT_APPLICABLE",
+}
+_SOURCE_PROVENANCE_FAILURES = {
+    "INVALID_CANDIDATE_RESOURCE_KEY",
+    "INVALID_RESOLVED_RESOURCE_KEY",
+    "INVALID_REDIRECT_CHAIN",
+    "MISSING_REDIRECT_CHAIN",
+    "FIRST_REDIRECT_ENDPOINT_MISMATCH",
+    "FINAL_REDIRECT_ENDPOINT_MISMATCH",
+    "CANONICAL_RESOURCE_MISMATCH",
+}
+_LATENCY_BUCKETS = {
+    "0-9ms", "10-49ms", "50-99ms", "100-249ms", "250-499ms",
+    "500-999ms", "1000-4999ms", "5000-9999ms", "10000ms+",
+}
+_MAX_HOST_KEYS = 32
+
+
+def _latency_bucket(value: object) -> str | None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    if value < 10:
+        return "0-9ms"
+    if value < 50:
+        return "10-49ms"
+    if value < 100:
+        return "50-99ms"
+    if value < 250:
+        return "100-249ms"
+    if value < 500:
+        return "250-499ms"
+    if value < 1000:
+        return "500-999ms"
+    if value < 5000:
+        return "1000-4999ms"
+    if value < 10000:
+        return "5000-9999ms"
+    return "10000ms+"
+
+
+def _hop_bucket(value: object) -> str | None:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    return str(value) if value <= 20 else "20+"
+
+
+def _safe_host_value(value: object) -> str | None:
+    if isinstance(value, str) and value.upper() in {
+        "UNKNOWN", "NOT_APPLICABLE", "NOT_AVAILABLE",
+    }:
+        return value.upper()
+    return _safe_host(value) or _safe_diag_token(value)
 
 
 def _field_diagnostic(
@@ -433,6 +520,13 @@ def evidence_projection(evidence_results: tuple[EvidenceResult, ...] | None) -> 
         "evidence_redirect_hop_count_distribution": {},
         "evidence_host_transition_distribution": {},
         "evidence_rejection_signature_distribution": {},
+        "evidence_acquisition_latency_bucket_distribution": {},
+        "evidence_acquisition_path_distribution": {},
+        "evidence_acquisition_final_endpoint_distribution": {},
+        "evidence_acquisition_redirect_consistency_distribution": {},
+        "evidence_acquisition_initial_hostname_distribution": {},
+        "evidence_acquisition_failing_endpoint_hostname_distribution": {},
+        "evidence_source_provenance_mismatch_distribution": {},
     }
     ready_count = 0
     rejected_count = 0
@@ -538,21 +632,84 @@ def evidence_projection(evidence_results: tuple[EvidenceResult, ...] | None) -> 
         resolved_host = _safe_host(provenance.get("resolved_url")) or _safe_diag_token(
             provenance.get("resolved_hostname")
         )
-        _add_distribution(distributions["evidence_candidate_hostname_distribution"], candidate_host)
-        _add_distribution(distributions["evidence_resolved_hostname_distribution"], resolved_host)
+        _add_distribution(
+            distributions["evidence_candidate_hostname_distribution"],
+            candidate_host,
+            max_distinct=_MAX_HOST_KEYS,
+        )
+        _add_distribution(
+            distributions["evidence_resolved_hostname_distribution"],
+            resolved_host,
+            max_distinct=_MAX_HOST_KEYS,
+        )
+        _add_distribution(
+            distributions["evidence_acquisition_initial_hostname_distribution"],
+            _safe_host_value(provenance.get("acquisition_initial_hostname")),
+            max_distinct=_MAX_HOST_KEYS,
+        )
+        _add_distribution(
+            distributions["evidence_acquisition_failing_endpoint_hostname_distribution"],
+            _safe_host_value(provenance.get("acquisition_failing_endpoint_hostname")),
+            max_distinct=_MAX_HOST_KEYS,
+        )
         hop_count = provenance.get("redirect_hop_count")
         if isinstance(hop_count, int) and not isinstance(hop_count, bool) and hop_count >= 0:
-            _add_distribution(distributions["evidence_redirect_hop_count_distribution"], str(hop_count))
+            _add_distribution(
+                distributions["evidence_redirect_hop_count_distribution"],
+                _hop_bucket(hop_count),
+            )
         elif isinstance(provenance.get("provenance_path"), (list, tuple)):
             _add_distribution(
                 distributions["evidence_redirect_hop_count_distribution"],
-                str(max(0, len(provenance["provenance_path"]) - 1)),
+                _hop_bucket(max(0, len(provenance["provenance_path"]) - 1)),
+            )
+        acquisition_hop = _hop_bucket(provenance.get("acquisition_redirect_hop_count"))
+        if acquisition_hop is not None and not (
+            isinstance(hop_count, int)
+            and not isinstance(hop_count, bool)
+            and hop_count >= 0
+        ) and not isinstance(provenance.get("provenance_path"), (list, tuple)):
+            _add_distribution(
+                distributions["evidence_redirect_hop_count_distribution"],
+                acquisition_hop,
             )
         if candidate_host and resolved_host:
             transition = "SAME_HOST" if candidate_host == resolved_host else "CHANGED_HOST"
         else:
             transition = "RESOLVED_HOST_MISSING"
         _add_distribution(distributions["evidence_host_transition_distribution"], transition)
+        _add_distribution(
+            distributions["evidence_acquisition_latency_bucket_distribution"],
+            _latency_bucket(provenance.get("acquisition_elapsed_ms")),
+        )
+        _add_distribution(
+            distributions["evidence_acquisition_path_distribution"],
+            _safe_diag_token(provenance.get("acquisition_path"), allowed=_ACQUISITION_PATHS),
+        )
+        _add_distribution(
+            distributions["evidence_acquisition_final_endpoint_distribution"],
+            _safe_diag_token(
+                provenance.get("acquisition_final_endpoint"),
+                allowed=_ACQUISITION_FINAL_ENDPOINTS,
+            ),
+        )
+        _add_distribution(
+            distributions["evidence_acquisition_redirect_consistency_distribution"],
+            _safe_diag_token(
+                provenance.get("acquisition_redirect_consistency"),
+                allowed=_ACQUISITION_REDIRECT_STATES,
+            ),
+        )
+        _add_distribution(
+            distributions["evidence_source_provenance_mismatch_distribution"],
+            _field_diagnostic(
+                provenance,
+                "source_provenance_mismatch_reason",
+                gate=gate,
+                reached_after_gate=5,
+                allowed=_SOURCE_PROVENANCE_FAILURES,
+            ),
+        )
 
         if evidence.state is EvidenceState.REJECTED:
             signature_parts = [
@@ -570,12 +727,21 @@ def evidence_projection(evidence_results: tuple[EvidenceResult, ...] | None) -> 
                 "factual_substance",
                 "raw_relation",
                 "response_validation_result",
+                "source_provenance_mismatch_reason",
+                "acquisition_path",
+                "acquisition_final_endpoint",
+                "acquisition_redirect_consistency",
             ):
                 if key not in provenance:
                     continue
                 value = _safe_diag_token(provenance.get(key), allowed=(
                     semantic_relations if key == "raw_relation" else
-                    semantic_validation if key == "response_validation_result" else None
+                    semantic_validation if key == "response_validation_result" else
+                    _SOURCE_PROVENANCE_FAILURES if key == "source_provenance_mismatch_reason" else
+                    _ACQUISITION_PATHS if key == "acquisition_path" else
+                    _ACQUISITION_FINAL_ENDPOINTS if key == "acquisition_final_endpoint" else
+                    _ACQUISITION_REDIRECT_STATES if key == "acquisition_redirect_consistency" else
+                    None
                 ))
                 if value is not None:
                     signature_parts.append(f"{key}={value}")

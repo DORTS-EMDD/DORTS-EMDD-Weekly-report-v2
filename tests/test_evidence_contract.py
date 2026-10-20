@@ -485,6 +485,158 @@ class EvidenceContractTests(unittest.TestCase):
         self.assertEqual(result.provenance["transport_error"], "HTTPError")
         self.assertNotIn("source.test", result.provenance["transport_error"])
 
+    @patch("src.weekly_report.evidence_service.perf_counter", side_effect=[10.0, 11.234])
+    def test_direct_http_503_records_bounded_transport_observations(self, _clock):
+        error = HTTPError(
+            "https://source.test/article/line-4-control?secret=query",
+            503,
+            "unavailable",
+            {},
+            None,
+        )
+
+        result = EvidenceService(_FixtureFetcher(error)).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.provenance["evidence_rejection_gate"], "FETCH_TRANSPORT")
+        self.assertEqual(result.provenance["status_code"], 503)
+        self.assertEqual(result.provenance["acquisition_elapsed_ms"], 1234)
+        self.assertEqual(result.provenance["acquisition_initial_hostname"], "source.test")
+        self.assertEqual(result.provenance["acquisition_failing_endpoint_hostname"], "source.test")
+        self.assertEqual(result.provenance["acquisition_redirect_hop_count"], "UNKNOWN")
+        self.assertEqual(result.provenance["acquisition_path"], "UNKNOWN")
+        self.assertEqual(result.provenance["acquisition_final_endpoint"], "UNKNOWN")
+        self.assertNotIn("secret", result.provenance["acquisition_failing_endpoint_hostname"])
+
+    @patch("src.weekly_report.evidence_service.perf_counter", side_effect=[20.0, 20.125])
+    def test_default_http_503_after_redirect_retains_observed_failure_endpoint(self, _clock):
+        class RedirectThenError:
+            def __init__(self):
+                self.handler = None
+
+            def open(self, request, timeout):
+                self.handler.redirect_urls.append("https://redirect.test/intermediate")
+                raise HTTPError(
+                    "https://redirect.test/final?token=secret",
+                    503,
+                    "unavailable",
+                    {},
+                    None,
+                )
+
+        opener = RedirectThenError()
+
+        def build(handler):
+            opener.handler = handler
+            return opener
+
+        with (
+            patch("src.weekly_report.evidence_service._assert_safe_destination"),
+            patch("src.weekly_report.evidence_service.build_opener", side_effect=build),
+        ):
+            result = EvidenceService().evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.provenance["status_code"], 503)
+        self.assertEqual(result.provenance["acquisition_path"], "REDIRECTED")
+        self.assertEqual(result.provenance["acquisition_redirect_hop_count"], 1)
+        self.assertEqual(result.provenance["acquisition_final_endpoint"], "UNKNOWN")
+        self.assertEqual(result.provenance["acquisition_failing_endpoint_hostname"], "redirect.test")
+        self.assertNotIn("token", result.provenance["acquisition_failing_endpoint_hostname"])
+
+    @patch("src.weekly_report.evidence_service.perf_counter", side_effect=[30.0, 30.010])
+    def test_transport_failure_without_status_does_not_invent_endpoint_facts(self, _clock):
+        result = EvidenceService(_FixtureFetcher(RuntimeError("secret transport details"))).evaluate(
+            _candidate()
+        )
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.provenance["acquisition_elapsed_ms"], 10)
+        self.assertEqual(result.provenance["acquisition_path"], "UNKNOWN")
+        self.assertEqual(result.provenance["acquisition_final_endpoint"], "UNKNOWN")
+        self.assertEqual(result.provenance["acquisition_failing_endpoint_hostname"], "UNKNOWN")
+        self.assertEqual(result.provenance["acquisition_redirect_hop_count"], "UNKNOWN")
+        self.assertNotIn("secret transport details", result.provenance.values())
+
+    def test_valid_redirect_records_observed_chain_facts_without_changing_ready(self):
+        candidate_url = "https://source.test/news/line-4-control"
+        resolved_url = "https://publisher.test/article/line-4-control"
+        html = (
+            "<html><body><article><p>Metro operator commissioned a moving-block train control "
+            "system on Line 4 after integration testing in September 2026.</p></article></body></html>"
+        )
+        service = EvidenceService(
+            _FixtureFetcher(FetchedSource(
+                url=resolved_url,
+                content=html,
+                redirect_chain=(candidate_url, resolved_url),
+            )),
+            semantic_judge=_SameEventJudge(),
+        )
+
+        result = service.evaluate(_candidate(url=candidate_url))
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.provenance["acquisition_path"], "REDIRECTED")
+        self.assertEqual(result.provenance["acquisition_redirect_hop_count"], 1)
+        self.assertEqual(result.provenance["acquisition_final_endpoint"], "OBSERVED")
+        self.assertEqual(result.provenance["acquisition_redirect_consistency"], "CONSISTENT")
+
+    def test_redirect_chain_mismatch_has_mechanical_diagnostic(self):
+        candidate_url = "https://source.test/news/line-4-control"
+        resolved_url = "https://publisher.test/article/line-4-control"
+        html = (
+            "<html><body><article><p>Metro operator commissioned a moving-block train control "
+            "system on Line 4 after integration testing in September 2026.</p></article></body></html>"
+        )
+        service = EvidenceService(
+            _FixtureFetcher(FetchedSource(
+                url=resolved_url,
+                content=html,
+                redirect_chain=("https://wrong.test/start", resolved_url),
+            )),
+            semantic_judge=_SameEventJudge(),
+        )
+
+        result = service.evaluate(_candidate(url=candidate_url))
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.provenance["evidence_rejection_gate"], "SOURCE_PROVENANCE")
+        self.assertEqual(
+            result.provenance["source_provenance_mismatch_reason"],
+            "FIRST_REDIRECT_ENDPOINT_MISMATCH",
+        )
+        self.assertEqual(result.provenance["acquisition_redirect_consistency"], "UNKNOWN")
+
+    def test_missing_redirect_metadata_remains_unknown(self):
+        candidate_url = "https://source.test/news/line-4-control"
+        resolved_url = "https://publisher.test/article/line-4-control"
+        html = (
+            "<html><body><article><p>Metro operator commissioned a moving-block train control "
+            "system on Line 4 after integration testing in September 2026.</p></article></body></html>"
+        )
+        result = EvidenceService(
+            _FixtureFetcher(FetchedSource(url=resolved_url, content=html, redirect_chain=())),
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate(url=candidate_url))
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.provenance["source_provenance_mismatch_reason"], "MISSING_REDIRECT_CHAIN")
+        self.assertEqual(result.provenance["acquisition_path"], "UNKNOWN")
+        self.assertEqual(result.provenance["acquisition_redirect_hop_count"], "UNKNOWN")
+
+    def test_canonical_mismatch_is_distinguished_from_redirect_mismatch(self):
+        html = (
+            "<html><head><link rel='canonical' href='/article/unrelated'></head>"
+            "<body><article><p>Metro operator commissioned a moving-block train control "
+            "system on Line 4 after integration testing in September 2026.</p></article></body></html>"
+        )
+        result = _service(html).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.provenance["evidence_rejection_gate"], "SOURCE_PROVENANCE")
+        self.assertEqual(result.provenance["source_provenance_mismatch_reason"], "CANONICAL_RESOURCE_MISMATCH")
+
     def test_rejection_gate_is_preserved_for_unsupported_content_type(self):
         result = _service("binary payload", content_type="application/pdf").evaluate(_candidate())
 
