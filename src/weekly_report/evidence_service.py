@@ -200,13 +200,27 @@ def _acquisition_observation(
     if fetched is not None:
         chain = tuple(fetched.redirect_chain or ())
         resolved_url = _normalise_url(fetched.url)
-        hop_count = max(0, len(chain) - 1) if chain else 0
-        direct = not chain and resolved_url == input_url
+        has_redirect = len(chain) >= 2
+        chain_starts_at_input = (
+            not chain or _normalise_url(chain[0]) == input_url
+        )
+        hop_count = (
+            max(0, len(chain) - 1)
+            if has_redirect or chain_starts_at_input
+            else "UNKNOWN"
+        )
+        direct = (
+            not has_redirect
+            and chain_starts_at_input
+            and resolved_url == input_url
+        )
         observation.update(
             {
-                "acquisition_redirect_hop_count": hop_count if direct or chain else "UNKNOWN",
+                "acquisition_redirect_hop_count": (
+                    hop_count if direct or has_redirect else "UNKNOWN"
+                ),
                 "acquisition_path": (
-                    "REDIRECTED" if chain else "DIRECT" if direct else "UNKNOWN"
+                    "REDIRECTED" if has_redirect else "DIRECT" if direct else "UNKNOWN"
                 ),
                 "acquisition_final_endpoint": (
                     "OBSERVED" if resolved_url else "UNKNOWN"
@@ -267,7 +281,9 @@ def _source_provenance(
         if chain and _resource_key(chain[-1]) != resolved_key:
             signals["source_provenance_mismatch_reason"] = "FINAL_REDIRECT_ENDPOINT_MISMATCH"
             return False, signals
-        signals["acquisition_redirect_consistency"] = "CONSISTENT" if chain else "NOT_APPLICABLE"
+        signals["acquisition_redirect_consistency"] = (
+            "CONSISTENT" if len(chain) >= 2 else "NOT_APPLICABLE"
+        )
         signals["redirect_hop_count"] = max(0, len(chain) - 1)
         return True, signals
     if not chain:
@@ -626,7 +642,9 @@ class EvidenceService:
             provenance_signals["canonical_related"] = True
             if source_provenance and "acquisition_redirect_consistency" not in provenance_signals:
                 provenance_signals["acquisition_redirect_consistency"] = (
-                    "CONSISTENT" if fetched.redirect_chain else "NOT_APPLICABLE"
+                    "CONSISTENT"
+                    if len(tuple(fetched.redirect_chain or ())) >= 2
+                    else "NOT_APPLICABLE"
                 )
         if not source_provenance:
             return self._rejected(

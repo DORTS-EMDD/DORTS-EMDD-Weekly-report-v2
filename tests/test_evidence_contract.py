@@ -582,6 +582,49 @@ class EvidenceContractTests(unittest.TestCase):
         self.assertEqual(result.provenance["acquisition_final_endpoint"], "OBSERVED")
         self.assertEqual(result.provenance["acquisition_redirect_consistency"], "CONSISTENT")
 
+    def test_direct_success_with_empty_chain_records_direct_observation(self):
+        html = (
+            "<html><body><article><p>Metro operator commissioned a moving-block train control "
+            "system on Line 4 after integration testing in September 2026.</p></article></body></html>"
+        )
+        result = EvidenceService(
+            _FixtureFetcher(
+                FetchedSource(
+                    url=_candidate().url,
+                    content=html,
+                    redirect_chain=(),
+                )
+            ),
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(_candidate())
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.provenance["acquisition_path"], "DIRECT")
+        self.assertEqual(result.provenance["acquisition_redirect_hop_count"], 0)
+        self.assertEqual(result.provenance["acquisition_redirect_consistency"], "NOT_APPLICABLE")
+
+    def test_direct_success_with_singleton_chain_records_direct_observation(self):
+        html = (
+            "<html><body><article><p>Metro operator commissioned a moving-block train control "
+            "system on Line 4 after integration testing in September 2026.</p></article></body></html>"
+        )
+        candidate = _candidate()
+        result = EvidenceService(
+            _FixtureFetcher(
+                FetchedSource(
+                    url=candidate.url,
+                    content=html,
+                    redirect_chain=(candidate.url,),
+                )
+            ),
+            semantic_judge=_SameEventJudge(),
+        ).evaluate(candidate)
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(result.provenance["acquisition_path"], "DIRECT")
+        self.assertEqual(result.provenance["acquisition_redirect_hop_count"], 0)
+        self.assertEqual(result.provenance["acquisition_redirect_consistency"], "NOT_APPLICABLE")
+
     def test_redirect_chain_mismatch_has_mechanical_diagnostic(self):
         candidate_url = "https://source.test/news/line-4-control"
         resolved_url = "https://publisher.test/article/line-4-control"
@@ -772,6 +815,9 @@ class EvidenceContractTests(unittest.TestCase):
         self.assertIn("é", result.substantive_content)
         self.assertIn("à", result.substantive_content)
         self.assertNotIn("�", result.substantive_content)
+        self.assertEqual(result.provenance["acquisition_path"], "DIRECT")
+        self.assertEqual(result.provenance["acquisition_redirect_hop_count"], 0)
+        self.assertEqual(result.provenance["acquisition_redirect_consistency"], "NOT_APPLICABLE")
 
     def test_default_transport_blocks_loopback_before_open(self):
         opener = patch("src.weekly_report.evidence_service.build_opener")
