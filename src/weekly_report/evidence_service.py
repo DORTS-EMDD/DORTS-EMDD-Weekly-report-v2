@@ -504,6 +504,34 @@ def _default_fetcher(url: str, timeout_seconds: float) -> FetchedSource:
         ) from exc
 
 
+_AMP_HTML_TAG = re.compile(r"<html\b[^>]*?(?:\s(?:⚡|amp))(?:[\s=>/])", re.IGNORECASE)
+_CANONICAL_LINK = re.compile(r"<link\b[^>]*\brel\s*=\s*[\"']?canonical[\"']?[^>]*>", re.IGNORECASE)
+_HREF = re.compile(r"\bhref\s*=\s*[\"']([^\"']+)[\"']", re.IGNORECASE)
+
+
+def _amp_canonical_url(content: str, resolved_url: str) -> str:
+    """Return the same-host canonical article declared by an AMP page, if any."""
+
+    head = str(content or "")[:20000]
+    if not _AMP_HTML_TAG.search(head):
+        return ""
+    links = _CANONICAL_LINK.findall(head)
+    if len(links) != 1:
+        return ""
+    match = _HREF.search(links[0])
+    if not match:
+        return ""
+    canonical = _normalise_url(urljoin(resolved_url, match.group(1).strip()))
+
+    def host(value: str) -> str:
+        name = _safe_hostname(value).casefold()
+        return name[4:] if name.startswith("www.") else name
+
+    if not canonical or canonical == _normalise_url(resolved_url) or host(canonical) != host(resolved_url):
+        return ""
+    return canonical
+
+
 class EvidenceService:
     """The sole authoritative owner of EVIDENCE_READY / EVIDENCE_REJECTED."""
 
@@ -581,7 +609,7 @@ class EvidenceService:
         result = self._evaluate_source(item, publisher_url)
         return replace(result, provenance={**dict(result.provenance), **link})
 
-    def _evaluate_source(self, item: CanonicalCandidate, input_url: str) -> EvidenceResult:
+    def _evaluate_source(self, item: CanonicalCandidate, input_url: str, *, amp_url: str = "") -> EvidenceResult:
         """Acquire and assess the source page at ``input_url``."""
 
         fetch_started = perf_counter()
@@ -636,6 +664,14 @@ class EvidenceService:
             int((perf_counter() - fetch_started) * 1000),
             fetched=fetched,
         )
+        # RC-13: an AMP page is an alternate rendering of a canonical article.
+        # When it declares a same-host canonical, that canonical article is
+        # acquired once and assessed instead; nothing else is substituted.
+        if not amp_url and fetched.status_code < 400:
+            amp_canonical = _amp_canonical_url(fetched.content, _normalise_url(fetched.url) or input_url)
+            if amp_canonical:
+                result = self._evaluate_source(item, amp_canonical, amp_url=_normalise_url(fetched.url) or input_url)
+                return replace(result, provenance={**dict(result.provenance), "amp_url": _normalise_url(fetched.url) or input_url})
 
         resolved_url = _normalise_url(fetched.url) or input_url
         if fetched.status_code >= 400:

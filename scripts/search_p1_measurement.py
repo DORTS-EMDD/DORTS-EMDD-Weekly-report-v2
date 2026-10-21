@@ -204,7 +204,8 @@ def main() -> int:
     samples: list[dict[str, Any]] = []
     summary["evidence_sample"] = samples
     for candidate in order:
-        if budget.http_used + 3 > args.http_budget - args.reserve:
+        # Link resolution (2) + publisher page + possible AMP canonical.
+        if budget.http_used + 4 > args.http_budget - args.reserve:
             break
         try:
             result = service.evaluate(candidate)
@@ -222,6 +223,7 @@ def main() -> int:
             "link_resolution_detail": provenance.get("link_resolution_detail"),
             "publisher_origin_check": provenance.get("publisher_origin_check"),
             "resolved_url": provenance.get("link_resolved_url"),
+            "amp_url": provenance.get("amp_url"),
             "state": result.state.value,
             "gate": provenance.get("evidence_rejection_gate"),
             "reached_semantic_judge": provenance.get("response_validation_result") == "not_configured" or provenance.get("evidence_rejection_gate") == "SEMANTIC_MATCH",

@@ -236,9 +236,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-12 修訂（2026-10-20～21，使用者核准）
+### RC-3～RC-13 修訂（2026-10-20～21，使用者核准）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.6 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.7 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -275,6 +275,9 @@ Transport retry 與 semantic correction 必須分開計算。
 * RC-12（§A.6）：以 RSS 發布時間過濾期間外結果（缺時間者保留，日期有效性仍由
   Temporal 判定）；運具詞須出現在標題、只用具體意圖詞；新增專業軌道媒體查詢；
   搜尋計畫 207 → 122 次。
+* RC-13（§A.7）：主文件判定不計 script／style 文字；唯一的 schema.org
+  articleBody 可決定主文章；純 header 區塊屬主文件；文章內純連結區塊排除；
+  AMP 頁改取同網域 canonical 文章。
 
 ## 13. Report / Delivery
 
@@ -424,5 +427,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-12 APPLIED (2026-10-21, user-approved)
+CONTRACT_REVISION = RC-3..RC-13 APPLIED (2026-10-21, user-approved)
 ```

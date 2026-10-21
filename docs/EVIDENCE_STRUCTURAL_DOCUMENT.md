@@ -133,6 +133,16 @@ The parser must preserve whether article elements are:
 * related or recommended documents outside the principal document; or
 * sibling independent document units in a collection structure.
 
+RC-13 (2026-10-21): text inside `script`, `style`, `template`, `noscript` and
+`svg` is never document text, so it cannot make a reference widget or an empty
+unit look like a document. When more than one sibling article unit remains
+after the separability facts below, a schema.org `itemprop="articleBody"`
+declaration resolves them only if it is unique in the parsed resource, outside
+excluded regions, non-empty, and owned by exactly one remaining unit; that
+unit is the principal article and the declared body is its own body, not a
+subordinate document. Duplicated, detached or shared declarations resolve
+nothing and the page stays ambiguous.
+
 A main article with a related article remains eligible when the main document
 and related unit are structurally separable. Implemented separability facts
 (2026-10-20): a sibling article unit that is wholly a hyperlink to a different
@@ -165,6 +175,11 @@ principal document, including related or recommended documents, comments and
 replies, sidebars, navigation, site footer content, pagination, and standalone
 interactive controls.
 
+RC-13: whole hyperlink-only blocks that reference other resources are
+excluded from the principal body inside a principal article as well as inside
+a main region; inline anchors in prose and links to the same resource are
+kept.
+
 Exclusion is based on ownership, containment, standards-based region roles,
 and document relationships. It must not depend on phrases such as “Related
 News”, “Read More”, “Contact”, or “Privacy”, nor on class-name dictionaries
@@ -175,6 +190,10 @@ boundary is ambiguous. The implementation must not concatenate the regions
 and ask the Semantic Judge to choose the event document.
 
 ## 9. Headers inside the principal document
+
+RC-13: an untyped block whose entire content is owned by `header` elements is
+the principal document's own header (headline, publication facts); it is not
+a competing generic sibling unit.
 
 A page or site header and a header owned by the selected principal document
 are different structural regions. A global “skip all header elements” rule is
@@ -346,6 +365,11 @@ an opaque page-kind score, or an extractor whose hidden ranking becomes an
 authoritative Evidence decision.
 
 ## 19. EvidenceService boundary
+
+RC-13: an AMP rendering (`<html ⚡>` or `<html amp>`) that declares exactly one
+same-host canonical article is not itself assessed; EvidenceService acquires
+that canonical article once and assesses it, recording `amp_url`. A
+cross-host or missing canonical leaves the AMP page to the normal rules.
 
 The internal responsibility flow is:
 

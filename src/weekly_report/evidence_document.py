@@ -279,15 +279,22 @@ def _lxml_to_tree(element: Any, parent: _Node, counter: list[int]) -> _Node:
     return node
 
 
+_NON_CONTENT_TAGS = frozenset({"script", "style", "template", "noscript", "svg"})
+
+
 def _node_text(node: _Node) -> str:
     parts: list[str] = []
 
     def visit(current: _Node) -> None:
-        parts.extend(current.text_parts)
-        for child in current.children:
-            visit(child)
-            if child.tail_text:
-                parts.append(child.tail_text)
+        # RC-13: script, style, template, noscript and svg text is never
+        # document text, so an inline style block cannot make a reference
+        # widget look like a document unit.
+        if current.tag.casefold() not in _NON_CONTENT_TAGS:
+            parts.extend(current.text_parts)
+            for child in current.children:
+                visit(child)
+                if child.tail_text:
+                    parts.append(child.tail_text)
 
     visit(node)
     return _clean(" ".join(parts))
@@ -358,7 +365,9 @@ def _collect_principal_body(
                 _is_article_node(boundary)
                 and _is_descendant(node, boundary)
             )
-            if nested_in_principal:
+            # RC-13: the principal's declared schema.org articleBody is its
+            # own body, not a subordinate document.
+            if nested_in_principal and not _is_declared_article_body(node):
                 excluded.append(f"{node.node_id}:subordinate_document")
                 return
         if node is not boundary and _is_interactive_only_node(node):
@@ -489,11 +498,42 @@ def _separable_principal_articles(
         if node not in references and not _node_text(node)
     ]
     remaining = [node for node in articles if node not in references and node not in contentless]
+    if len(remaining) > 1:
+        declared = _declared_article_body_owner(remaining, region)
+        if declared is not None:
+            excluded.extend(
+                f"{node.node_id}:outside_declared_article_body" for node in remaining if node is not declared
+            )
+            remaining = [declared]
     if len(remaining) > 1 or (not remaining and references):
         return None
     excluded.extend(f"{node.node_id}:hyperlinked_reference_unit" for node in references)
     excluded.extend(f"{node.node_id}:contentless_article_unit" for node in contentless)
     return remaining
+
+
+def _is_declared_article_body(node: _Node) -> bool:
+    return node.attrs.get("itemprop", "").casefold().split().count("articlebody") == 1
+
+
+def _declared_article_body_owner(units: list[_Node], region: _Node) -> _Node | None:
+    """Return the one unit owning the page's single schema.org articleBody.
+
+    RC-13 (§17): an ``itemprop="articleBody"`` declaration is structural
+    evidence when it is unique in the parsed resource and owned by exactly one
+    candidate unit; duplicated, detached or shared declarations resolve
+    nothing and keep the page ambiguous.
+    """
+
+    bodies = [
+        node for node in _walk(region)
+        if node.attrs.get("itemprop", "").casefold().split().count("articlebody") == 1
+        and _is_excluded_region(node, region) is None
+    ]
+    if len(bodies) != 1 or not _node_text(bodies[0]):
+        return None
+    owners = [unit for unit in units if bodies[0] is unit or _is_descendant(bodies[0], unit)]
+    return owners[0] if len(owners) == 1 else None
 
 
 def _owns_direct_text(node: _Node) -> bool:
@@ -571,8 +611,24 @@ def _is_generic_document_shaped_div(node: _Node) -> bool:
         node.tag.casefold() == "div"
         and not _role(node)
         and not _is_article_node(node)
+        and not _is_header_only(node)
         and _has_owned_headline(node)
         and _has_text_outside_headlines(node)
+    )
+
+
+def _is_header_only(node: _Node) -> bool:
+    """Whether all of a block's content is owned by ``header`` elements.
+
+    RC-13 (§9): such a block carries the principal document's own headline
+    and publication facts; it is not a competing document unit.
+    """
+
+    if _direct_text(node):
+        return False
+    content = [child for child in node.children if _node_text(child) or _clean(child.tail_text)]
+    return bool(content) and all(
+        child.tag.casefold() == "header" and not _clean(child.tail_text) for child in content
     )
 
 
@@ -1280,7 +1336,7 @@ def _assess_tree(
     # hyperlink-only blocks inside it reference other documents (§8).
     reference_blocks = (
         _hyperlink_reference_blocks(boundary, resource_url, resource_identity_checker)
-        if not articles and boundary is region and region is not root
+        if (not articles and boundary is region and region is not root) or articles
         else ()
     )
     assessment = _assessment(

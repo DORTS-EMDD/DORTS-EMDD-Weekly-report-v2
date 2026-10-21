@@ -265,6 +265,23 @@ SEARCH_CONFIGURATION_VERSION = search-discovery-v5
 DISCOVERY_PUBLICATION_WINDOW = PROVIDER_TIMESTAMP ±1 DAY (missing kept)
 ```
 
+### A.7 RC-13 Principal-document detection on real news pages (2026-10-21, user-approved)
+
+P1b showed that 46 of 80 relevant sampled articles were rejected by the
+structural principal-document rules, mainly on Korean news CMS pages and AMP
+pages. Three real pages confirmed the causes: `<article>` used for bylines,
+share bars and related-headline widgets (with inline `<style>` text), header
+blocks treated as competing units, and AMP canonicals. The fixes are
+specified in `docs/EVIDENCE_STRUCTURAL_DOCUMENT.md` §6, §8, §9 and §19 and use
+only structural and standards-based facts: no length, position, class-name or
+phrase rule is introduced. Re-assessing the 18 archived Phase A pages changed
+no principal status; only related links, tag links and share buttons left the
+bodies.
+
+```text
+EVIDENCE_STRUCTURAL_REVISION = RC-13
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
