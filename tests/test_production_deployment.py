@@ -472,6 +472,7 @@ class ShellIntegrationTests(unittest.TestCase):
         artifact = FinalReportArtifact("report", "artifact", "v1", (), (), "ok")
         fake_result = SimpleNamespace(
             successful=True,
+            complete=True,
             summary=lambda: "status=SUCCESS",
         )
 

@@ -8,7 +8,10 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Protocol
 
+from .exact_text import exact_occurrence_offsets
 from .contracts import (
+    SemanticProviderConfigurationFailure,
+    SemanticProviderTechnicalFailure,
     CategoryId,
     CategoryResolutionReason,
     CategoryResult,
@@ -212,16 +215,13 @@ def _citation_from_value(value: object) -> CategoryCitation:
     return CategoryCitation(candidate_id, quote)
 
 
-def _unique_quote_offset(source: str, quote: str) -> int:
-    """Return the sole exact quote occurrence, counting overlaps; fail closed otherwise."""
+def _quote_offsets(source: str, quote: str) -> tuple[int, ...]:
+    """Return every exact quote occurrence (EXACT_TEXT_ALL_OCCURRENCES)."""
 
-    first = source.find(quote)
-    if first < 0:
+    offsets = exact_occurrence_offsets(source, quote)
+    if not offsets:
         raise InvalidCategorySemanticResponse("citation quote does not occur in source content")
-    second = source.find(quote, first + 1)
-    if second >= 0:
-        raise InvalidCategorySemanticResponse("citation quote occurs more than once in source content")
-    return first
+    return offsets
 
 
 def _parse_citations(
@@ -237,11 +237,13 @@ def _parse_citations(
         body = source_text.get(citation.candidate_id)
         if body is None:
             raise InvalidCategorySemanticResponse("citation references an unknown candidate")
-        start = _unique_quote_offset(body, citation.quote)
-        end = start + len(citation.quote)
-        if body[start:end] != citation.quote:
-            raise InvalidCategorySemanticResponse("citation quote does not exactly match source content")
-        spans.append(CategoryEvidenceSpan(citation.candidate_id, start, end))
+        for start in _quote_offsets(body, citation.quote):
+            end = start + len(citation.quote)
+            if body[start:end] != citation.quote:
+                raise InvalidCategorySemanticResponse("citation quote does not exactly match source content")
+            span = CategoryEvidenceSpan(citation.candidate_id, start, end)
+            if span not in spans:
+                spans.append(span)
     return tuple(spans)
 
 
@@ -439,6 +441,9 @@ class Classifier:
 
         try:
             helper_result = self._semantic_helper(request)
+        except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure):
+            # RC-6: never converted into CATEGORY_UNRESOLVED.
+            raise
         except InvalidCategorySemanticResponse as exc:
             return self._unresolved(
                 event_group,

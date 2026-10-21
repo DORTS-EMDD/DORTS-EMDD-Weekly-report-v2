@@ -16,6 +16,8 @@ from .maiagent_transport import (
     UrllibMaiAgentJsonTransport,
     load_shared_maiagent_values,
     parse_maiagent_response,
+    MAIAGENT_HELPER_TIMEOUT_SECONDS,
+    request_maiagent_proposal,
 )
 
 
@@ -75,7 +77,7 @@ class MaiAgentEvidenceMetadataProviderConfig:
     api_base: str
     api_key: str
     chatbot_id: str
-    timeout_seconds: float = 45.0
+    timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS
 
     def __post_init__(self) -> None:
         try:
@@ -192,30 +194,21 @@ class MaiAgentEvidenceMetadataExtractor:
             ensure_ascii=False,
             separators=(",", ":"),
         ).encode("utf-8")
-        try:
-            response = self._transport(
-                self._config.completion_endpoint,
-                headers={
-                    "Authorization": f"Api-Key {self._config.api_key}",
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                },
-                body=body,
-                timeout_seconds=self._config.timeout_seconds,
-            )
-        except TimeoutError:
-            raise
-        except Exception:
-            raise RuntimeError("MaiAgent metadata provider transport failed") from None
-
-        if not isinstance(response, MaiAgentHttpResponse) or response.status_code != 200:
-            raise RuntimeError("MaiAgent metadata provider request failed")
-        try:
-            return parse_maiagent_response(response.body)
-        except MaiAgentResponseError:
-            # Return an invalid raw object so EvidenceService records its
-            # existing invalid_response diagnostic and performs no salvage.
-            return None
+        # Technical failures propagate as typed SemanticProviderTechnicalFailure
+        # after the shared bounded retry; parseable responses are validated by
+        # EvidenceService without repair.
+        return request_maiagent_proposal(
+            self._transport,
+            self._config.completion_endpoint,
+            headers={
+                "Authorization": f"Api-Key {self._config.api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            body=body,
+            timeout_seconds=self._config.timeout_seconds,
+            task="evidence_metadata_extraction",
+        )
 
 
 def build_maiagent_evidence_metadata_extractor(

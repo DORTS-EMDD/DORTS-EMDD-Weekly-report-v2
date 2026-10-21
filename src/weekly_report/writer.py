@@ -8,7 +8,7 @@ owned by :mod:`report_service`.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 import json
 import math
@@ -24,8 +24,16 @@ from .maiagent_transport import (
     MaiAgentResponseError,
     UrllibMaiAgentJsonTransport,
     parse_maiagent_response,
+    MAIAGENT_WRITER_TIMEOUT_SECONDS,
+    request_maiagent_proposal,
 )
 from .report_workflow import ReportWorkflowResult
+from .contracts import (
+    SemanticProviderConfigurationFailure,
+    SemanticProviderTechnicalFailure,
+    TechnicalGap,
+    TechnicalGapKind,
+)
 
 
 WRITER_CHATBOT_ENVIRONMENT_KEY = "MAIAGENT_CHATBOT_ID"
@@ -123,7 +131,7 @@ class MaiAgentWriterProviderConfig:
     api_base: str
     api_key: str = field(repr=False)
     chatbot_id: str = field(repr=False)
-    timeout_seconds: float = 45.0
+    timeout_seconds: float = MAIAGENT_WRITER_TIMEOUT_SECONDS
 
     def __post_init__(self) -> None:
         if any(not isinstance(value, str) for value in (self.api_base, self.api_key, self.chatbot_id)):
@@ -166,7 +174,7 @@ class MaiAgentWriterProviderConfig:
         cls,
         environ: Mapping[str, str] | None = None,
         *,
-        timeout_seconds: float = 45.0,
+        timeout_seconds: float = MAIAGENT_WRITER_TIMEOUT_SECONDS,
         dotenv_path: str | os.PathLike[str] | None = None,
     ) -> "MaiAgentWriterProviderConfig | None":
         values = _load_writer_values(environ, dotenv_path=dotenv_path)
@@ -256,30 +264,22 @@ class MaiAgentWriterProvider:
             separators=(",", ":"),
         ).encode("utf-8")
         self.call_count += 1
-        try:
-            response = self._transport(
-                self._config.completion_endpoint,
-                headers={
-                    "Authorization": f"Api-Key {self._config.api_key}",
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                },
-                body=body,
-                timeout_seconds=float(self._config.timeout_seconds),
-            )
-        except TimeoutError:
-            raise WriterProviderFailure("MaiAgent Writer request timed out") from None
-        except Exception:
-            raise WriterProviderFailure("MaiAgent Writer provider transport failed") from None
-        if not isinstance(response, MaiAgentHttpResponse):
-            raise WriterProviderFailure("MaiAgent Writer provider response was invalid")
-        self.last_status_code = response.status_code
-        if response.status_code != 200:
-            raise WriterProviderFailure("MaiAgent Writer provider request failed")
-        try:
-            return parse_maiagent_response(response.body)
-        except MaiAgentResponseError:
-            raise WriterResponseError("MaiAgent Writer provider response was invalid") from None
+        # Technical failures propagate as typed SemanticProviderTechnicalFailure
+        # after the shared bounded retry (never a semantic redraft).
+        proposal = request_maiagent_proposal(
+            self._transport,
+            self._config.completion_endpoint,
+            headers={
+                "Authorization": f"Api-Key {self._config.api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            body=body,
+            timeout_seconds=float(self._config.timeout_seconds),
+            task="writer",
+        )
+        self.last_status_code = 200
+        return proposal
 
 
 class ReportWriter:
@@ -306,7 +306,7 @@ class ReportWriter:
         cls,
         *,
         environ: Mapping[str, str] | None = None,
-        timeout_seconds: float = 45.0,
+        timeout_seconds: float = MAIAGENT_WRITER_TIMEOUT_SECONDS,
         dotenv_path: str | os.PathLike[str] | None = None,
         transport: MaiAgentJsonHttpTransport | None = None,
     ) -> "ReportWriter | None":
@@ -315,7 +315,21 @@ class ReportWriter:
         )
         return None if config is None else cls(config=config, transport=transport)
 
-    def write(self, ordered_results: tuple[ReportWorkflowResult, ...]) -> tuple[WriterReportBlock, ...]:
+    def write(
+        self,
+        ordered_results: tuple[ReportWorkflowResult, ...],
+        *,
+        on_event_technical_gap: Callable[[TechnicalGap], None] | None = None,
+    ) -> tuple[WriterReportBlock, ...]:
+        """Draft one block per event.
+
+        Without ``on_event_technical_gap`` any event failure fails the whole
+        population.  With it (the formal application), a typed provider
+        technical failure or an invalid response for one event is reported as a
+        TechnicalGap and only that event is omitted (RC-5/RC-6).  Input-build
+        failures and configuration failures still fail the run.
+        """
+
         if not isinstance(ordered_results, tuple):
             raise TypeError("ReportWriter.write requires a tuple")
         if any(not isinstance(result, ReportWorkflowResult) for result in ordered_results):
@@ -327,25 +341,46 @@ class ReportWriter:
 
         blocks: list[WriterReportBlock] = []
         failures: list[str] = []
+        expected_ids: list[str] = []
         for result in ordered_results:
             self.call_count += 1
             event_id = result.event_group.event_id
             try:
                 request = build_maiagent_writer_model_input(result)
-                raw = self._provider(request)
+                try:
+                    raw = self._provider(request)
+                except SemanticProviderConfigurationFailure:
+                    raise
+                except SemanticProviderTechnicalFailure as failure:
+                    if on_event_technical_gap is None:
+                        raise
+                    on_event_technical_gap(TechnicalGap.from_failure("Writer", event_id, failure))
+                    continue
                 if isinstance(self._provider, MaiAgentWriterProvider):
                     self.last_http_status = self._provider.last_status_code
-                block = raw if isinstance(raw, WriterReportBlock) else WriterReportBlock.from_mapping(raw)  # type: ignore[arg-type]
-                if block.event_id != event_id:
-                    raise ValueError("Writer response event_id does not match request")
+                try:
+                    block = raw if isinstance(raw, WriterReportBlock) else WriterReportBlock.from_mapping(raw)  # type: ignore[arg-type]
+                    if block.event_id != event_id:
+                        raise ValueError("Writer response event_id does not match request")
+                except Exception:
+                    if on_event_technical_gap is None:
+                        raise
+                    on_event_technical_gap(
+                        TechnicalGap("Writer", event_id, TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION, "RESPONSE_INVALID", 1)
+                    )
+                    continue
                 blocks.append(block)
+                expected_ids.append(event_id)
+            except SemanticProviderConfigurationFailure:
+                raise
             except Exception as exc:
+                if on_event_technical_gap is not None:
+                    raise
                 failures.append(f"{event_id}:{type(exc).__name__}")
         if failures:
             raise WriterPopulationError("Writer population failed: " + ",".join(failures))
         output_ids = tuple(block.event_id for block in blocks)
-        input_ids = tuple(result.event_group.event_id for result in ordered_results)
-        if output_ids != input_ids or len(output_ids) != len(set(output_ids)):
+        if output_ids != tuple(expected_ids) or len(output_ids) != len(set(output_ids)):
             raise WriterPopulationError("Writer output population does not match ordered input")
         return tuple(blocks)
 

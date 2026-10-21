@@ -5,7 +5,13 @@ import unittest
 from types import ModuleType
 from unittest.mock import patch
 
-from src.weekly_report.contracts import CanonicalCandidate, EvidenceState, FetchedSource, RejectReason
+from src.weekly_report.contracts import (
+    CanonicalCandidate,
+    EvidenceState,
+    FetchedSource,
+    RejectReason,
+    SemanticProviderTechnicalFailure,
+)
 from src.weekly_report.evidence_service import EvidenceService
 from src.weekly_report.maiagent_semantic_judge_provider import (
     EVIDENCE_SEMANTIC_JUDGE_HELPER_VERSION,
@@ -215,7 +221,8 @@ class MaiAgentSemanticJudgeProviderTests(unittest.TestCase):
         endpoint, headers, body, timeout = transport.calls[0]
         self.assertEqual(endpoint, "https://maiagent.example/api/v1/chatbots/helper-id/completions/")
         self.assertEqual(headers["Authorization"], "Api-Key synthetic-secret")
-        self.assertEqual(timeout, 45.0)
+        # RC-6: helper timeout is set from observed Phase A latency.
+        self.assertEqual(timeout, 30.0)
         outer = json.loads(body)
         self.assertEqual(outer["message"]["role"], "user")
         self.assertIsNone(outer["conversation"])
@@ -277,7 +284,9 @@ class MaiAgentSemanticJudgeProviderTests(unittest.TestCase):
         transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(wrong)))
         self.assertEqual(MaiAgentSemanticJudgeProvider(_config(), transport=transport)(_request()), wrong)
 
-    def test_malformed_response_is_invalid_raw_value_without_repair(self):
+    def test_malformed_response_is_retried_once_without_repair(self):
+        # RC-6: unparseable responses are technical failures with one
+        # identical retry; nothing is repaired or reinterpreted.
         for body in (
             b"not-json",
             json.dumps({"answer": "{}"}).encode(),
@@ -287,23 +296,23 @@ class MaiAgentSemanticJudgeProviderTests(unittest.TestCase):
         ):
             with self.subTest(body=body):
                 transport = _RecordedTransport(MaiAgentHttpResponse(200, body))
-                self.assertIsNone(MaiAgentSemanticJudgeProvider(_config(), transport=transport)(_request()))
-                self.assertEqual(len(transport.calls), 1)
+                with self.assertRaises(SemanticProviderTechnicalFailure) as raised:
+                    MaiAgentSemanticJudgeProvider(_config(), transport=transport)(_request())
+                self.assertEqual(raised.exception.failure_class, "UNPARSEABLE_RESPONSE")
+                self.assertEqual(len(transport.calls), 2)
 
-    def test_timeout_non_200_and_generic_failure_are_safe_and_not_retried(self):
-        for error in (TimeoutError("secret-timeout"), RuntimeError("secret-provider")):
-            transport = _RecordedTransport(error=error)
-            provider = MaiAgentSemanticJudgeProvider(_config(), transport=transport)
-            expected = TimeoutError if isinstance(error, TimeoutError) else MaiAgentSemanticJudgeProviderFailure
-            with self.subTest(expected=expected), self.assertRaises(expected) as raised:
-                provider(_request())
-            self.assertNotIn("secret", str(raised.exception))
-            self.assertEqual(len(transport.calls), 1)
-        transport = _RecordedTransport(MaiAgentHttpResponse(503, b"secret body"))
-        with self.assertRaises(MaiAgentSemanticJudgeProviderFailure) as raised:
-            MaiAgentSemanticJudgeProvider(_config(), transport=transport)(_request())
-        self.assertNotIn("secret", str(raised.exception))
-        self.assertEqual(len(transport.calls), 1)
+    def test_timeout_transient_http_and_connection_failure_are_safe_and_retried_once(self):
+        for transport, failure_class in (
+            (_RecordedTransport(error=TimeoutError("secret-timeout")), "TIMEOUT"),
+            (_RecordedTransport(error=RuntimeError("secret-provider")), "CONNECTION"),
+            (_RecordedTransport(MaiAgentHttpResponse(503, b"secret body")), "HTTP_503"),
+        ):
+            with self.subTest(failure_class=failure_class):
+                with self.assertRaises(SemanticProviderTechnicalFailure) as raised:
+                    MaiAgentSemanticJudgeProvider(_config(), transport=transport)(_request())
+                self.assertEqual(raised.exception.failure_class, failure_class)
+                self.assertNotIn("secret", str(raised.exception))
+                self.assertEqual(len(transport.calls), 2)
 
     def test_existing_evidence_service_keeps_authority_for_all_paths(self):
         text = "東京メトロ launched the platform after trials."
@@ -382,25 +391,39 @@ class MaiAgentSemanticJudgeProviderTests(unittest.TestCase):
             content=f"<html><body><h1>{candidate.title}</h1><article><p>{text}</p></article></body></html>",
             content_type="text/html",
         )
-        for body, error, expected in (
-            (None, TimeoutError("secret"), "timeout"),
-            (None, RuntimeError("secret"), "transport_error"),
-            (b"not-json", None, "invalid"),
+        # RC-6: technical failures are never converted into SOURCE_PAGE_MISMATCH;
+        # they propagate as typed failures for a disclosed technical gap.
+        for body, error in (
+            (None, TimeoutError("secret")),
+            (None, RuntimeError("secret")),
+            (b"not-json", None),
         ):
-            with self.subTest(expected=expected):
+            with self.subTest(error=type(error).__name__, body=body):
                 transport = _RecordedTransport(
                     None if error else MaiAgentHttpResponse(200, body), error=error
                 )
                 provider = MaiAgentSemanticJudgeProvider(_config(), transport=transport)
-                result = EvidenceService(
-                    lambda _url, source=source: source,
-                    semantic_judge=provider,
-                    judge_metadata=provider.metadata,
-                ).evaluate(candidate)
-                self.assertEqual(result.state, EvidenceState.REJECTED)
-                self.assertEqual(result.reject_reason, RejectReason.SOURCE_PAGE_MISMATCH)
-                self.assertEqual(result.provenance["response_validation_result"], expected)
-                self.assertEqual(len(transport.calls), 1)
+                with self.assertRaises(SemanticProviderTechnicalFailure):
+                    EvidenceService(
+                        lambda _url, source=source: source,
+                        semantic_judge=provider,
+                        judge_metadata=provider.metadata,
+                    ).evaluate(candidate)
+                self.assertEqual(len(transport.calls), 2)
+
+        # A parseable but contract-invalid proposal remains an owner rejection
+        # (fail-closed, no retry).
+        transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope({"relation": "SAME_EVENT"})))
+        provider = MaiAgentSemanticJudgeProvider(_config(), transport=transport)
+        result = EvidenceService(
+            lambda _url, source=source: source,
+            semantic_judge=provider,
+            judge_metadata=provider.metadata,
+        ).evaluate(candidate)
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.reject_reason, RejectReason.SOURCE_PAGE_MISMATCH)
+        self.assertEqual(result.provenance["response_validation_result"], "invalid")
+        self.assertEqual(len(transport.calls), 1)
 
 
 if __name__ == "__main__":

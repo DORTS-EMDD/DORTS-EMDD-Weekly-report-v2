@@ -146,6 +146,12 @@ If authoritative source facts independently establish that the Candidate
 event belongs to an eligible family, a commuter, suburban, or regional
 service label does not automatically exclude it.
 
+RC-8 (D2): commuter, suburban, regional, S-Bahn, S-tog and RER labels neither
+include nor exclude a system by name. `Urban Rail` or any other eligible
+family requires the supplied source itself to describe the affected system as
+metro, light rail, tram, or urban rapid transit. A commuter or suburban
+description alone yields `UNKNOWN` or `NON_URBAN_RAIL`, never `Urban Rail`.
+
 ```text
 service described as commuter rail
 + authoritative facts explicitly establish Metro/MRT
@@ -282,16 +288,51 @@ The `scope_semantic_proposal` task is proposal-only. Every material positive
 relationship must carry an exact quotation from the supplied principal
 content. ScopeClassifier validates the candidate identity, versioned strict
 shape, relationship endpoints, event focus, same-document quotations, and
-mechanically derives any coordinates. A valid citation alone is not semantic
-proof; the complete action-to-target-to-system relation is required. The
+mechanically derives any coordinates. Under RC-3 (ARCHITECTURE_CONTRACT §A.1)
+a quotation is located at every exact occurrence and none is selected.
+
+RC-8 (ARCHITECTURE_CONTRACT §A.3), schema `scope-semantic-proposal-v3`:
+
+* Endpoints are labels, not quotations. The action, target and system labels
+  are short exact source-surface substrings, matched case-insensitively.
+* The `action_target` quotation must contain the action and target labels and
+  the `target_system` quotation must contain `target_reference` and the system
+  label (same-context rule). `target_reference` is the target label itself or
+  a same-event reference to the target in that quotation (anaphora,
+  demonstrative or possessive, such as "the five lines"); a reference other
+  than the label requires a resolved event focus containing both relation
+  quotations. The system label may be omitted from the quotation only when it
+  equals the target label. Both relation quotations lie inside the event-focus
+  quotation. Endpoint provenance records only label occurrences inside the
+  relation quotation that establishes them, so repeated text elsewhere cannot
+  assemble a relation.
+* The action label differs from the target and system labels. The target and
+  system labels may be identical when the action affects the eligible system
+  itself, such as a new line, extension or network.
+* `noneligible_relation` concerns only the focus action's own target or
+  system, and a `PRESENT` quotation must contain that target or system label.
+  Other actions in the same document are governed by §7 and are not recorded
+  there.
+* A positive relation is `AFFECTS`, or `LOCATED_AT` when the Candidate event
+  itself takes place on or in a station, platform, train, depot, track or
+  other facility of the system (D1); in both cases the target must have
+  `BELONGS_TO`, `PART_OF` or `FUNCTIONS_FOR` membership in an eligible system.
+  Proximity is never `LOCATED_AT`, and a located-at or operator relation
+  between target and system never establishes membership. Whether such an
+  event is worth reporting is decided only by Reportability. A valid
+citation alone is not semantic proof; the complete action-to-target-to-system
+relation is required. The
 helper must not search, fetch, use external facts, infer from publisher
 reputation, or decide Date, Event Identity, Category, E&M Taxonomy,
 Reportability, diagnostics, or the final Scope state.
 
-`UNCERTAIN`, malformed output, invalid quotations, timeout, and provider failure
-cannot be repaired by keywords, retried until a desired answer appears, or
-rescued downstream. When eligible mode support remains unestablished, the
-Scope Classifier returns `OUT_OF_SCOPE` with `SCOPE_NOT_ESTABLISHED`.
+`UNCERTAIN`, malformed parseable output, and invalid quotations cannot be
+repaired by keywords, retried until a desired answer appears, or rescued
+downstream. When eligible mode support remains unestablished, the Scope
+Classifier returns `OUT_OF_SCOPE` with `SCOPE_NOT_ESTABLISHED`. Under RC-6, a
+timeout, connection failure, HTTP 429/5xx or unparseable response that persists
+after the single shared transport retry is a disclosed Candidate `TechnicalGap`,
+never `OUT_OF_SCOPE`.
 
 ## 10. Search and Evidence boundaries
 

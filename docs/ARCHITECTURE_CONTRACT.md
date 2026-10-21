@@ -26,6 +26,145 @@ Tests passing 是必要條件，不是完成的充分條件。若修改造成 ow
 
 一個 Domain Decision 只能有一個 authoritative owner。Downstream consumer 不得重新推導 upstream decision、不得修改 upstream decision、不得在 upstream reject 後重新救回。Owner 名稱可調整，但責任不得重複。
 
+### A.1 RC-3～RC-6 contract revision (2026-10-20, user-approved)
+
+Phase A real-source acceptance showed four contract rules that systematically
+rejected legitimate events or stopped the whole formal report. The user
+formally approved this revision. It supersedes every conflicting earlier
+clause; those clauses below are amended inline.
+
+**RC-3 — `EXACT_TEXT_ALL_OCCURRENCES`.** One mechanical locator
+(`src/weekly_report/exact_text.py`) serves Evidence metadata, the Evidence
+Semantic Judge, Scope, Category, Taxonomy, Reportability and Validator. A
+proposed exact quote or value is valid when it occurs at least once, unchanged,
+in the named segment/content. Python records every occurrence (including
+overlapping ones) in ascending order and selects none; first, last, nearest,
+longest, fuzzy, normalized or cross-source selection remains forbidden. Zero
+occurrences remain invalid. Exact occurrence never proves a semantic relation:
+Scope endpoint labels must lie inside the relation quotation that establishes
+them (same-context rule; RC-8 replaced separate endpoint quotations with
+labels), and endpoint provenance records only occurrences inside that context. Metadata is validated per governed field: a
+blank value, unknown segment or absent value invalidates only that field;
+same-source distinct values for one field are a recorded conflict and that
+field is invalidated without choosing a value; malformed response or
+observation shapes still invalidate the whole proposal.
+
+**RC-4 — deterministic country/region resolution.** EvidenceService remains
+the sole owner of formal factual metadata. It resolves country/region only by
+whole-value lookup of validated source values (country, transit-system name,
+location) in the versioned declarative reference
+`src/weekly_report/geographic_reference.json` (`geo-reference-v1`, ISO
+3166-1 codes, curated urban-rail cities and systems), loaded by the pure module
+`geographic_reference.py`, which decides nothing. The result is a
+`RegionResolution` with basis `SOURCE_STATED` (a source value is a
+country/region name), `REFERENCE_MAPPED` (a source city/system name maps to
+exactly one region), `NOT_STATED` (no geographic metadata in the source) or
+`UNRESOLVED` (invalid, unrecognized, ambiguous or conflicting values). The raw
+source value and its spans are retained; names shared by more than one region
+are ambiguous and never resolve. Search market, query, publisher, URL/TLD,
+discovery title and model knowledge are never used. A transit-system name must
+be a specific source-stated name: generic mode words and region or city names
+are recorded as unresolved, never stored. Country/region and transit-system
+name are no longer formal-run prerequisites; the report displays 「來源未載明」
+for `NOT_STATED` and 「未能確認」 for `UNRESOLVED`, which are display strings,
+never stored entities.
+
+**RC-5 — event-level failure isolation.** Legal event-level data
+insufficiency excludes only that event with a typed, disclosed reason. The only
+current such reason is `CONFLICTING_COUNTRY` (event members establish different
+regions). Invariant breaches (structural inconsistency, invalid canonical
+member/date/source, identity mismatch, broken immutable contracts, cross-event
+source mixing) still abort the formal run and are never disguised as data
+insufficiency. Excluded events are never restored downstream.
+
+**RC-6 — technical failure is not a content decision.** All MaiAgent tasks
+(Writer and the seven Structured Helper tasks) share one transport policy
+(`request_maiagent_proposal`): a call that produced no parseable response
+because of timeout, connection failure, HTTP 429/500/502/503/504 or an
+unparseable outer/inner JSON response is retried at most once with the
+identical request, counted, within the run wall-clock budget, with no other
+provider or model. HTTP 401/403/404 is a configuration/authentication failure
+that stops the run without retry. Another non-200 status is a non-transient
+technical failure without retry. A parseable response is never retried,
+whatever its content or schema validity. A remaining technical failure is a
+`TechnicalGap` execution disposition for that Candidate or EventGroup (stage,
+subject, kind, failure class, attempts); it is not an Evidence, Scope,
+Category, Taxonomy, Reportability or Validation state. Where an owner contract
+has no fail-closed content outcome for an invalid parseable proposal
+(Taxonomy, Reportability, Writer, Validator), that proposal-contract violation
+is also an event-level `TechnicalGap`. Evidence, Scope and Category keep their
+existing fail-closed outcomes for invalid parseable proposals. Other subjects
+continue. A run with any technical gap is `SUCCESS_WITH_TECHNICAL_GAPS` (RunTrace
+`EXECUTION_PARTIAL`, CLI exit code 2), never an unrestricted success, and the
+formal artifact discloses technical gaps, data exclusions and Validation FAILs.
+
+```text
+EXACT_TEXT_RESOLUTION = EXACT_TEXT_ALL_OCCURRENCES
+COUNTRY_RESOLUTION_OWNER = EvidenceService
+GEOGRAPHIC_REFERENCE_VERSION = geo-reference-v1
+FORMAL_METADATA_FAILURE_GRANULARITY = EVENT (data) / RUN (invariant)
+MAIAGENT_MAX_ATTEMPTS = 2 (transient, no parseable response only)
+MAIAGENT_HELPER_TIMEOUT_SECONDS = 30
+MAIAGENT_WRITER_TIMEOUT_SECONDS = 45
+TECHNICAL_GAP = EXECUTION_DISPOSITION (not a Domain state)
+```
+
+### A.2 RC-7 Validator-owned Writer segmentation (2026-10-20, user-approved)
+
+Phase A live revalidation showed that asking the `validation_semantic_check`
+helper to re-type an exact `writer_quote` partition of every Writer field made
+otherwise assessable events technical gaps (dropped punctuation between units,
+oversized or truncated responses). The user approved moving segmentation to the
+Validator. The Validator deterministically splits each Writer field into
+ordered units with stable `unit_id`s (§Q); the helper returns only a per-field
+language assessment and a per-unit assessment with Evidence citations. Python
+guarantees complete Writer-text coverage by construction and verifies that the
+proposal assesses every supplied unit exactly once. A unit is the claim
+granularity: it is `SUPPORTED` only when its whole text is supported. The
+Validator remains the sole validation owner; no Domain decision moves.
+
+```text
+VALIDATION_SEGMENTATION_OWNER = Validator (deterministic Python)
+VALIDATION_PROMPT_VERSION = validation-evidence-writer-v2
+VALIDATION_SCHEMA_VERSION = validation-semantic-check-proposal-v2
+```
+
+### A.3 RC-8 Scope proposal stability (2026-10-20, user-approved)
+
+Phase A live2/live3 used identical Evidence; 8 of 13 Scope decisions flipped.
+Most flips were mechanical: the helper's semantic answer was the same, but one
+of eight overlapping endpoint quotations was cut differently and failed a
+containment or distinctness check. The user approved four changes, specified
+in `docs/SCOPE_CONTRACT.md` §6.2 and §9:
+
+* SC-1: action, target and system are short source labels, not quotations.
+  The `action_target` quotation must contain the action and target labels, the
+  `target_system` quotation must contain the target and system labels, and both
+  lie inside the event-focus quotation. The action label differs from the
+  target and system labels; the target and system labels may be identical when
+  the action affects the eligible system itself. The target-to-system
+  quotation may refer to the target by a same-event reference
+  (`target_reference`, for example "the five lines"); the reference must occur
+  in that quotation, inside the resolved event focus, so no quotation that
+  repeats the target label has to be invented.
+* SC-2: `noneligible_relation` concerns only the focus action's own target or
+  system; other actions in the same document are not recorded there.
+* D1: an event taking place on or in a station, platform, train, depot, track
+  or other facility that belongs to an eligible system (`action_target`
+  `LOCATED_AT`, plus eligible target-to-system membership) is `IN_SCOPE`.
+  Proximity is never `LOCATED_AT`. Reportability alone decides its value.
+* D2: commuter, suburban, regional or S-Bahn labels neither include nor exclude
+  a system. An eligible family requires the source itself to describe the
+  system as metro, light rail, tram or urban rapid transit.
+
+ScopeClassifier remains the sole owner and still fails closed on any invalid
+proposal; no retry, vote, fallback or keyword rule is added.
+
+```text
+SCOPE_PROMPT_VERSION = scope-event-target-system-v6
+SCOPE_SCHEMA_VERSION = scope-semantic-proposal-v3
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -891,7 +1030,7 @@ response contract is superseded by the following single resolution rule.
 | --- | --- | --- |
 | A: retain Helper-authored offsets | Python validation preserves grounding, but still delegates deterministic character counting to the semantic provider | Rejected |
 | B: Python canonical coordinate derivation | One exact occurrence rule provides reproducible coordinates within the existing Evidence owner | Selected |
-| C: add a quote locator, occurrence selector, or extra service | The segment/value pair already suffices for unique occurrences; extra mechanisms add ambiguity or responsibility without a current requirement | Not adopted; ambiguous occurrences are rejected |
+| C: add a quote locator, occurrence selector, or extra service | The segment/value pair already suffices; extra mechanisms add ambiguity or responsibility without a current requirement | Not adopted; every exact occurrence is recorded and none is selected (RC-3) |
 
 | Responsibility | Proposal / source boundary | Authoritative owner |
 | --- | --- | --- |
@@ -906,7 +1045,7 @@ response contract is superseded by the following single resolution rule.
 EVIDENCE_METADATA_AUTHORITATIVE_OWNER = EvidenceService
 METADATA_CANONICAL_COORDINATE_OWNER = EvidenceService
 METADATA_CANONICAL_COORDINATE_OWNER_COUNT = 1
-METADATA_EVIDENCE_RESOLUTION = EXACT_TEXT_UNIQUE_RESOLUTION
+METADATA_EVIDENCE_RESOLUTION = EXACT_TEXT_ALL_OCCURRENCES
 METADATA_PROVIDER_OFFSET_FIELDS_ALLOWED = NO
 ```
 
@@ -934,13 +1073,13 @@ must be rejected even when their coordinates would have been valid. They are
 not retained as ignored hints or used to disambiguate a match.
 
 Missing keys, extra keys, non-object or non-array values, non-string field
-names or segment IDs, unsupported field names, blank or non-string values,
-unknown segments, absent exact values, and ambiguous exact occurrences are
-validation failures. Same-source distinct values for one governed field are
-also invalid. The governed field names remain exactly `country`,
+names or segment IDs, and unsupported field names invalidate the whole
+proposal. Blank or non-string values, unknown segments and absent exact values
+invalidate only their governed field (RC-3). Same-source distinct values for one
+governed field are a recorded field conflict; that field is invalidated without
+choosing a value. The governed field names remain exactly `country`,
 `transit_system_name`, and `location`. Missing or unknown keys are never
-silently ignored and no partial-schema acceptance or permissive fallback is
-allowed.
+silently ignored and no permissive fallback is allowed.
 
 The response contains no Evidence state, Scope, Temporal, Event Identity,
 Category, Taxonomy, Reportability, Ordering, source replacement, canonical
@@ -948,8 +1087,10 @@ source, confidence authority, normalized geographic ID, or report-inclusion
 decision. A value must be an exact nonblank source surface form copied
 unchanged from the named principal-body segment. Translation, case-folded
 replacement, alias normalization, geographic inference, inferred expansion,
-ontology lookup, and canonical-name substitution are forbidden. Transit-system
-identity must be explicitly established in the source text. Exact occurrence
+ontology lookup, and canonical-name substitution are forbidden in the proposed
+value. The only geographic lookup is EvidenceService's deterministic RC-4
+region resolution over validated source values. Transit-system identity must be
+explicitly established in the source text. Exact occurrence
 validation does not independently prove semantic field selection; accepted
 metadata still relies on the Helper's bounded semantic proposal after the
 complete Python acceptance contract passes. No second semantic judge or
@@ -966,11 +1107,10 @@ rule, executed by the pure mechanical validator in
 3. Locate all exact occurrences of the unchanged value in that named segment
    using Python Unicode string indexing, including overlapping occurrences.
    Search no other segment or source on behalf of this observation.
-4. Zero occurrences invalidate the complete extraction. More than one
-   occurrence also invalidates the complete extraction. The contract provides
-   no additional occurrence disambiguator; first, last, nearest, longest, or
-   semantic occurrence selection is forbidden.
-5. For the sole occurrence, derive `start` as its Python index and
+4. Zero occurrences invalidate that field (RC-3). Every occurrence is
+   recorded; no occurrence is selected, so first, last, nearest, longest, or
+   semantic occurrence selection cannot arise.
+5. For each occurrence, derive `start` as its Python index and
    `end = start + len(value)`. Require `0 <= start < end <= len(segment.text)`
    and `segment.text[start:end] == value` exactly.
 
@@ -979,9 +1119,7 @@ translation, aliasing, fuzzy or approximate matching, offset guessing, or
 cross-segment reconstruction is permitted. Leading/trailing whitespace that
 does not match the source is rejected, never trimmed; every supplied character
 must match unchanged. Whitespace-only values remain invalid. Repeated values
-in different segments are independently resolvable only when each observation
-names a segment with exactly one occurrence. Repeating an observation cannot
-disambiguate multiple occurrences within its segment.
+are supported at every occurrence in each named segment.
 
 The helper no longer emits numeric coordinates. Python derives coordinates
 for every accepted observation through the same rule; it never tries provider
@@ -1028,10 +1166,9 @@ Multiple observations for the same field/value may name different segments.
 Exact duplicate resolved supports may be removed while preserving first-seen
 order; nonidentical supports are not merged and whole-document support is not
 fabricated. Within a single source, identical proposed values may be
-consolidated with their valid supports. Distinct values for one field invalidate
-the complete extraction response: EvidenceService publishes no metadata from it, records the safe
-`invalid_response` diagnostic with optional detail
-`same_source_distinct_values`, and does not salvage a partial response.
+consolidated with their valid supports. Distinct values for one field are a
+recorded conflict that invalidates only that field (RC-3): the other validated
+fields are published, the status is `partial_metadata`, and no value is chosen.
 
 The Evidence lifecycle is ordered:
 
@@ -1043,7 +1180,8 @@ fetch
 → source-to-candidate semantic SAME_EVENT established
 → EvidenceMetadataExtractor invoked at most once
 → raw metadata response strictly validated
-→ exact unique occurrence resolved to a canonical segment span by Python
+→ every exact occurrence resolved to canonical segment spans by Python
+→ RC-4 region resolution over validated source values
 → segment-relative support mechanically translated by EvidenceService
 → accepted metadata facts/support constructed by EvidenceService
 → EVIDENCE_READY EvidenceResult constructed
@@ -1052,13 +1190,13 @@ fetch
 The extractor runs only after the pre-existing Evidence eligibility
 requirements have otherwise passed and never runs for a Candidate rejected by
 an earlier Evidence gate. At most one invocation is allowed per qualifying
-Candidate. Not configured, timeout, `transport_error`, `invalid_response`,
-`span_mapping_invalid`, exception, malformed response, invalid locator,
-span-mapping failure, and valid zero metadata leave an otherwise valid
-Candidate as `EVIDENCE_READY` with formal metadata absent. They do not become
-`EVIDENCE_REJECTED`; there is no retry, fallback, rescue, second extractor,
-alternate model, inference, or external search. Required Country/System
-completeness remains a later formal pre-Writer concern.
+Candidate. Not configured, `invalid_response`, `span_mapping_invalid`,
+malformed parseable response, invalid locator and span-mapping failure leave an
+otherwise valid Candidate as `EVIDENCE_READY` with formal metadata absent
+(displayed 「未能確認」). Valid zero metadata is `NOT_STATED`. A provider
+technical failure after the RC-6 transport retry is a Candidate `TechnicalGap`,
+never "metadata absent". There is no semantic retry, fallback, rescue, second
+extractor, alternate model, inference, or external search.
 
 The finite metadata diagnostics are:
 
@@ -1067,6 +1205,7 @@ not_configured
 timeout
 transport_error
 invalid_response
+partial_metadata
 valid_zero_metadata
 valid_metadata
 ```
@@ -1075,18 +1214,18 @@ Failure classes do not create new Evidence states or diagnostic enums:
 
 | Rejected proposal / mapping condition | Existing status | Existing detail |
 | --- | --- | --- |
-| Unknown segment, zero exact matches, or ambiguous exact matches | `invalid_response` | `schema_invalid` |
-| Invalid field, empty/blank value, incorrect types, missing/extra fields, or malformed response | `invalid_response` | `schema_invalid` |
-| Distinct values for one governed field within the source | `invalid_response` | `same_source_distinct_values` |
+| Unknown segment, zero exact matches, or blank value (field-level, RC-3) | `partial_metadata` | `<field>:UNRESOLVED` |
+| Generic mode word, region or city proposed as transit-system name (RC-4) | `partial_metadata` | `transit_system_name:UNRESOLVED` |
+| Invalid field name, incorrect types, missing/extra fields, or malformed response | `invalid_response` | `schema_invalid` |
+| Distinct values for one governed field within the source (field conflict) | `partial_metadata` | `<field>:UNRESOLVED` |
 | Canonical segment-to-substantive-content mapping fails | `invalid_response` | `span_mapping_invalid` |
 
-Any invalid observation invalidates the complete extraction; no subset is
-published. Timeout, transport failure, valid zero observations, and absence of
-configuration retain the finite diagnostics above and the same lifecycle
-behavior. Diagnostics contain no provider secrets, raw payloads,
+A malformed proposal shape invalidates the complete extraction; a value-level
+failure invalidates only its field (RC-3). Valid zero observations and absence
+of configuration retain the finite diagnostics above. Diagnostics contain no provider secrets, raw payloads,
 exception text, or traceback. A valid zero-observation response is legal and
-leaves `EVIDENCE_READY` unchanged; required country and transit-system
-completeness is checked later before Writer under §R.
+leaves `EVIDENCE_READY` unchanged; country/region and transit-system name are
+optional formal metadata under RC-4.
 
 ##### Proposal contract migration boundary
 
@@ -1203,15 +1342,15 @@ mechanically projected by Report Service as optional formal display metadata.
 No `identity_location`, `formal_location`, `display_location`, second location
 DTO, or second location source of truth is permitted.
 
-Country is required for formal assembly. One established supported value, or
-repeated identical supported values, is mechanically projectable. A missing
-value or unresolved competing supported values cause a typed formal-metadata
-failure before Writer; the formal run aborts without an artifact or Delivery,
-without omitting the event, inserting a placeholder, using `未明示`, guessing,
-or applying a geographic fallback. A member that lacks the field does not by
-itself conflict with an established supported value. Forbidden resolution
-includes majority vote, canonical-member preference, geographic lookup, alias
-mapping, Writer choice, and Search-region fallback.
+Country/region is optional formal metadata (RC-4). Report Service projects the
+EvidenceService `RegionResolution` of the event members: agreeing established
+regions are displayed with the reference display name; members that establish
+different regions are the event-level exclusion `CONFLICTING_COUNTRY` (RC-5);
+otherwise the field displays 「來源未載明」 (every member `NOT_STATED`) or
+「未能確認」. A member that lacks the field does not by itself conflict with an
+established value. Forbidden resolution includes majority vote,
+canonical-member preference, any geographic lookup outside EvidenceService's
+RC-4 reference, Writer choice, and Search-region fallback.
 
 Location is optional. A single supported value, or repeated identical supported
 values, may be mechanically projected. A missing location is omitted. Unresolved
@@ -1220,13 +1359,13 @@ diagnostic and provenance are preserved. Location conflict alone does not fail
 the run, and no country, system-name, title, publisher, Search-region, or
 external-geography inference is permitted.
 
-Transit-system name is required and means the named urban-rail network/system;
-it is not E&M Taxonomy, transport mode, city, supplier, or operator unless the
-authoritative evidence explicitly establishes that string as the system
-identity. A missing value or unresolved competing supported values cause the
-same typed formal-metadata failure before Writer. There is no Writer inference,
-majority vote, canonical-source override, downstream alias resolution,
-city-to-system lookup, Search-region mapping, or event omission.
+Transit-system name is optional (RC-4) and means the named urban-rail
+network/system; it is not E&M Taxonomy, transport mode, city, region, supplier,
+or operator unless the authoritative evidence explicitly establishes that
+string as the system identity. A missing value displays 「來源未載明」; competing
+values display 「未能確認」 with a diagnostic and no chosen value. There is no
+Writer inference, majority vote, canonical-source override, downstream alias
+resolution, city-to-system lookup, or Search-region mapping.
 
 The principal-source headline is separate from metadata extraction. EvidenceService
 mechanically preserves all structurally established
@@ -1276,10 +1415,10 @@ Reportability, and it may not take on MaiAgent's writing responsibility.
 EvidenceService validates the helper response and makes the final decision.
 `SAME_EVENT` is usable only when its support quotes resolve to canonical spans
 in supplied body text and pass the complete Judge acceptance contract.
-`DIFFERENT_EVENT`, `UNCERTAIN`, invalid or malformed
-responses, invalid evidence locators, timeout, and transport/provider failure are
-conservative Evidence rejection conditions. Phase 1 permits one semantic
-judge call per Candidate and no retry to obtain a different relation.
+`DIFFERENT_EVENT`, `UNCERTAIN`, invalid parseable responses and invalid
+evidence locators are conservative Evidence rejection conditions. A provider
+technical failure after the RC-6 transport retry is a Candidate `TechnicalGap`,
+never a rejection. There is no retry to obtain a different relation.
 
 #### Semantic Judge span ownership adjudication
 
@@ -1324,7 +1463,7 @@ EVIDENCE_JUDGE_SPAN_OWNERSHIP_DECISION = PYTHON_CANONICAL_COORDINATE_OWNER
 JUDGE_CANONICAL_COORDINATE_OWNER = EvidenceService
 JUDGE_CANONICAL_COORDINATE_OWNER_COUNT = 1
 JUDGE_PROVIDER_OFFSET_FIELDS_ALLOWED = NO
-JUDGE_EVIDENCE_RESOLUTION = EXACT_TEXT_UNIQUE_RESOLUTION
+JUDGE_EVIDENCE_RESOLUTION = EXACT_TEXT_ALL_OCCURRENCES
 ```
 
 The provider proposal fields become exactly `relation`, `support_evidence`,
@@ -1909,11 +2048,11 @@ priority and Python serializes accepted systems in canonical registry order.
 Each support or conflict citation contains a canonical `system_id`, a member
 `candidate_id`, and an exact quote copied from that member's authoritative
 `substantive_content`. The support location model is
-`EXACT_TEXT_UNIQUE_RESOLUTION`: Python resolves a quote to `[start, end)` only
-when it occurs exactly once in the named candidate content. Missing, repeated,
-fuzzy, approximate, rewritten, paraphrased, synthetic, title/snippet, or
-cross-source quotes are technical failures. Python must not choose among
-repeated occurrences, guess offsets, search another candidate, or borrow an
+`EXACT_TEXT_ALL_OCCURRENCES` (RC-3): Python resolves a quote to every
+`[start, end)` occurrence in the named candidate content. Missing, fuzzy,
+approximate, rewritten, paraphrased, synthetic, title/snippet, or cross-source
+quotes are proposal-contract violations. Python must not choose among
+occurrences, guess offsets, search another candidate, or borrow an
 EventGroup's evidence.
 
 Before constructing `TaxonomyResult`, Python validates reachability and matching
@@ -1923,9 +2062,9 @@ provenance, per-system support, candidate membership, exact quote occurrence,
 span bounds and exact source slicing. Conflict provenance must contain at least
 two distinct competing canonical hypotheses and only EventGroup members.
 Insufficient provenance must identify all examined EventGroup member IDs and
-contain a non-empty diagnostic. Python may parse typed enums, localize one
-unique exact quote, build immutable structures, and canonicalize serialization
-order. It must not add, remove, replace, guess, drop, synthesize, repair, or
+contain a non-empty diagnostic. Python may parse typed enums, localize every
+exact quote occurrence, build immutable structures, and canonicalize
+serialization order. It must not add, remove, replace, guess, drop, synthesize, repair, or
 convert semantic outcomes.
 
 The provider performs the semantic interpretation of the bounded authoritative
@@ -1940,11 +2079,12 @@ provider's authoritative-evidence interpretation supports that state.
 Provider unavailability, provider exceptions, malformed responses, invalid
 states or IDs, duplicate systems, missing or non-member support, invalid or
 ambiguous quotes, invalid provenance, and every other proposal contract
-violation are typed technical stage failures. They produce no `TaxonomyResult`
-and do not authorize downstream Reportability, Writer, or Delivery processing
-for that failed EventGroup. No `TAXONOMY_ERROR` state is added. Taxonomy-specific
-retry, malformed-response retry, fallback, rescue, and backfill are prohibited;
-no generic retry policy is currently reused by this seam.
+violation are typed technical failures (`TaxonomyProposalViolation` for
+parseable proposal violations). They produce no `TaxonomyResult` and do not
+authorize downstream Reportability, Writer, or Delivery processing for that
+failed EventGroup, which becomes an event-level `TechnicalGap` (RC-6). No
+`TAXONOMY_ERROR` state is added. Semantic retry, fallback, rescue, and backfill
+are prohibited; only the shared RC-6 transport retry applies.
 
 The proposal provider is not a second classifier owner, Category authority,
 Reportability authority, Writer role, runtime Golden lookup, or keyword
@@ -1955,10 +2095,11 @@ eligibility, alter Category or Reportability, or decide workflow continuation.
 Keywords and search terms such as SCADA, train, depot, network, and
 cybersecurity may occur in evidence but do not determine taxonomy by themselves.
 
-Timeout, HTTP or transport failure, malformed response, and invalid proposal
-remain `TaxonomyStageFailure` and trigger `ABORT_FORMAL_REPORT_RUN`. They must
-not become `TAXONOMY_UNRESOLVED`, evaluated-empty, zero-population success, or a
-fallback result. There is one provider invocation per reachable EventGroup;
+Timeout, HTTP or transport failure, unparseable response, and invalid parseable
+proposal for one EventGroup are an event-level `TechnicalGap` (RC-6); upstream
+invariant failures remain `TaxonomyStageFailure` and abort the run. None may
+become `TAXONOMY_UNRESOLVED`, evaluated-empty, or a fallback result. There is one
+proposal per reachable EventGroup plus at most one RC-6 transport retry; semantic
 retry, fallback, rescue, and response repair remain prohibited.
 
 ### Contextual and subsystem rules
@@ -2089,10 +2230,10 @@ Writer 或 Delivery，並可由 Debug 觀察。
 
 `TaxonomyStageFailure` 是 technical execution failure，不是任何 domain outcome。
 它不產生 `TaxonomyResult` 或 `EventDecisionRecord`。該 EventGroup 不得進入
-Reportability 或 Writer。任一 EventGroup 發生此 failure 時，正式 run 採
-`ABORT_FORMAL_REPORT_RUN`：不允許部分正式報告發布，不組裝成功 formal artifact，
-不交付 PDF，也不寄送 Email。先前結果只能保留供 diagnostics；technical failure
-不得轉為「零篇成功」。這是 population-level logical stage barrier，不要求 database
+Reportability 或 Writer。RC-6：provider 技術失敗或 parseable proposal 違約只使該
+EventGroup 成為已揭露的 `TechnicalGap`，其他事件繼續；upstream invariant 違反仍採
+`ABORT_FORMAL_REPORT_RUN`。technical gap 不得轉為「零篇成功」或內容判斷，正式
+artifact 與 run status（`SUCCESS_WITH_TECHNICAL_GAPS`）必須揭露。這是 population-level logical stage barrier，不要求 database
 transaction：整批 Category／Taxonomy 完成且沒有 blocking technical failure 後，才可
 進入 Reportability／Ordering 與後續 Writer progression。
 
@@ -2307,19 +2448,18 @@ support an accepted path. It must not fabricate a negative citation proving
 absence and must never stand in for provider inability or technical failure.
 
 `REPORTABILITY_EVIDENCE_RESOLUTION` is
-`EXACT_TEXT_UNIQUE_RESOLUTION`. Every provider quote must be non-empty,
-unchanged, belong to a named EventGroup member, and occur exactly once in
-that member's authoritative substantive content. Python resolves it to a
-canonical `[start, end)` span and verifies candidate membership, bounds and
-exact source slicing. Zero occurrences and repeated occurrences are invalid
-proposals. Fuzzy matching, whitespace or quote repair, normalization,
+`EXACT_TEXT_ALL_OCCURRENCES` (RC-3). Every provider quote must be non-empty,
+unchanged, belong to a named EventGroup member, and occur at least once in
+that member's authoritative substantive content. Python resolves it to every
+canonical `[start, end)` occurrence and verifies candidate membership, bounds
+and exact source slicing. Zero occurrences are an invalid proposal. Fuzzy matching, whitespace or quote repair, normalization,
 offset guessing, arbitrary repeated-occurrence selection, cross-source
 borrowing, synthetic merged evidence and title/snippet support are forbidden.
 
 Python validates the current identity and prerequisites, complete request
 membership, proposal fields and types, legal state, complete examined-member
 IDs, rationale, positive/negative citation cardinality, candidate membership,
-unique exact occurrences, bounds, source slicing, and the resulting
+exact occurrences, bounds, source slicing, and the resulting
 state/reason/provenance invariants before constructing the authoritative
 result. It may canonicalize serialization order, but it must not salvage a
 subset, change the proposed state, manufacture citations or turn an invalid
@@ -2344,12 +2484,13 @@ must not escape. A failure produces no ReportabilityResult and is not
 converted to `REPORTABLE`, `NOT_REPORTABLE`, `NOT_EVALUATED` or zero-event
 success.
 
-There is one proposal attempt per eligible EventGroup. Retry, alternate
-provider, fallback, rescue, backfill, keyword backup, default state and
-Writer rescue are prohibited. Any `ReportabilityStageFailure` triggers
-`ABORT_FORMAL_REPORT_RUN`: all eligible Reportability decisions must finish
-before Ordering or Writer begins, and no partial formal artifact, PDF or
-Email may be produced. Earlier results may remain diagnostic evidence only.
+There is one proposal attempt per eligible EventGroup plus at most one RC-6
+transport retry. Semantic retry, alternate provider, fallback, rescue,
+backfill, keyword backup, default state and Writer rescue are prohibited. A
+provider technical failure or `ReportabilityProposalViolation` for one
+EventGroup is an event-level `TechnicalGap` (RC-6); an upstream invariant
+`ReportabilityStageFailure` triggers `ABORT_FORMAL_REPORT_RUN`. All eligible
+Reportability decisions finish before Ordering or Writer begins.
 
 MaiAgent may transport the bounded `reportability_semantic_proposal` task, but it
 cannot create `ReportabilityResult`, admit or drop events directly, change
@@ -2366,12 +2507,11 @@ lexically ordered member population (`candidate_id`, unmodified
 It receives no CategoryResult, TaxonomyResult/rationale, discovery, publisher,
 snippet, ordering, Writer, Taipei rescue, Golden, or external facts.
 
-Timeout, HTTP or transport failure, malformed response, materialization failure,
-and invalid proposal remain `ReportabilityStageFailure` and trigger
-`ABORT_FORMAL_REPORT_RUN`. They must not become `NOT_REPORTABLE`, an invented
-unresolved state, zero-event success, or a fallback result. There is one
-provider invocation per eligible EventGroup; retry, fallback, rescue, and
-response repair remain prohibited.
+Timeout, HTTP or transport failure, unparseable response, materialization
+failure, and invalid parseable proposal for one EventGroup are an event-level
+`TechnicalGap` (RC-6). They must not become `NOT_REPORTABLE`, an invented
+unresolved state, zero-event success, or a fallback result. Semantic retry,
+fallback, rescue, and response repair remain prohibited.
 
 ### Procurement and Golden governance boundary
 
@@ -2813,9 +2953,9 @@ The factual summary is grounded only in authoritative member
 search, general knowledge, source supplementation, guessed country/location,
 and unsupported technical interpretation presented as fact are forbidden.
 Unresolved conflicting factual claims are omitted. If a complete grounded
-Writer block cannot be drafted, the Writer returns a typed drafting failure and
-the formal run fails; no event omission, fallback prose, or hidden retry is
-allowed.
+Writer block cannot be drafted for one event, that event is an event-level
+`TechnicalGap` (RC-6), disclosed in the artifact and run status; no fallback
+prose or semantic redraft is allowed.
 
 `taipei_insight` is a separate professional-analysis field. It may analyze
 supported foreign event facts, but MUST NOT assert unsupplied facts about Taipei
@@ -2837,15 +2977,16 @@ ReportWriter.write(ordered_results)
 
 This is one Writer invocation. Internally it makes one isolated initial MaiAgent
 request per event to preserve exact mapping, grounding isolation, and
-event-level validation/correction. Writer transport or malformed-output retry
-is forbidden: one initial drafting attempt per event, with no hidden retry,
-provider rescue, or fallback response. Validator-directed semantic correction is
-separate and is governed by §Q.
+event-level validation/correction. One initial drafting attempt per event, with
+at most one counted RC-6 transport retry when no parseable response was
+received; no semantic redraft, provider rescue, or fallback response.
+Validator-directed semantic correction is separate and is governed by §Q.
 
-If any event has transport failure, malformed response, missing, duplicate, or
-unexpected block, or incomplete required prose, the Writer handoff fails closed
-for the whole formal run: no artifact and no Delivery, with diagnostics. It
-must not silently delete the failed event.
+If one event has a technical failure after that retry, a malformed or
+incomplete response, or a mismatched block, only that event becomes a disclosed
+`TechnicalGap` (RC-6); other events continue. It is never silently deleted:
+the artifact, run status and RunTrace disclose it. Input-build failures and
+configuration/authentication failures still stop the run.
 
 ## Q. Validation
 
@@ -2869,8 +3010,11 @@ Transport retry 與 semantic correction 分開計算。
 Validator 不得代替 Writer，也不得修改 upstream domain decision。Semantic correction 只限於該 Event，且最多一次。
 
 單 Event FAIL 僅指已完成合法 semantic validation 後確認的內容或語言失敗。
-無法完成 validation 的 configuration、transport、schema、correlation 或
-citation 技術失敗，必須中止整個正式 run，不得當成內容 FAIL 或觸發 correction。
+RC-6：configuration／authentication 失敗與 event-boundary invariant（event
+identity、source／metadata integrity）失敗中止整個正式 run；單一 Event 的
+transport（一次 transport retry 後）、schema、correlation 或 citation 技術失敗只使
+該 Event 成為已揭露的 `TechnicalGap`，不得當成內容 FAIL 或觸發 correction，其他
+Event 繼續驗證。
 
 The Validator receives the original ordered authoritative references together
 with the generated `WriterReportBlock` values. It owns the post-Writer checks
@@ -2883,8 +3027,8 @@ The existing Generic Stateless Structured Helper may transport one additional
 proposal-only task, `validation_semantic_check`. Its task-specific adapter is
 `src/weekly_report/maiagent_validation_provider.py` with adapter identity
 `MaiAgentValidationProposalProvider`. The task uses prompt version
-`validation-evidence-writer-v1`, schema version
-`validation-semantic-check-proposal-v1`, and adapter version
+`validation-evidence-writer-v2`, schema version
+`validation-semantic-check-proposal-v2` (RC-7), and adapter version
 `maiagent-structured-helper-validation-adapter-v1`. The adapter is subordinate
 to Validator: it must never produce `ValidationResult`, write or correct prose,
 change upstream decisions, or determine workflow continuation.
@@ -2896,10 +3040,23 @@ The same Generic Stateless Structured Helper may transport the authorized
 eligible-system relation and produces the authoritative ScopeResult. The
 adapter must not return ScopeResult, diagnostic, or a span-only positive.
 
+Before the call, the Validator deterministically segments each of `headline`,
+`factual_summary`, and `taipei_insight` of the block being checked into an
+ordered sequence of units (RC-7). A unit ends after a run of full-width
+sentence terminators `。！？；` together with any directly following closing
+quotes/brackets and whitespace, or after a line break; ASCII periods never end
+a unit. A unit without any letter or digit merges into the following unit (or
+the preceding unit at the end of the field). Concatenating a field's units
+reproduces the field exactly, including punctuation and whitespace. Unit IDs
+are `<field_name>-<1-based index>`. Segmentation is a pure Validator function;
+it makes no semantic judgement and no helper may split, merge, or rewrite
+units.
+
 Each bounded request contains exactly `event_id`, `evidence_sources`, and
-`writer_prose`. Each evidence source contains exactly `candidate_id` and
-`substantive_content`. `writer_prose` contains exactly `headline`,
-`factual_summary`, and `taipei_insight` from the block being checked. Evidence
+`writer_fields`. Each evidence source contains exactly `candidate_id` and
+`substantive_content`. `writer_fields` contains, in field order, one object per
+prose field with exactly `field_name` and `units`; each unit contains exactly
+`unit_id` and `text`. Evidence
 sources are the authoritative substantive-content inputs used for the event
 under the Writer contract; under the current contract this is the canonical
 member content. Discovery titles, snippets, publisher metadata, URL geography,
@@ -2916,9 +3073,9 @@ no object may contain additional fields:
     {
       "field_name": "headline | factual_summary | taipei_insight",
       "language_assessment": "TRADITIONAL_CHINESE | NOT_TRADITIONAL_CHINESE | UNCERTAIN",
-      "units": [
+      "unit_assessments": [
         {
-          "writer_quote": "non-empty string",
+          "unit_id": "supplied unit_id of this field",
           "assessment": "SUPPORTED | ANALYSIS | UNSUPPORTED | UNCERTAIN",
           "evidence_citations": [
             {"candidate_id": "string", "exact_quote": "non-empty string"}
@@ -2931,12 +3088,15 @@ no object may contain additional fields:
 ```
 
 There is exactly one field assessment for each of the three prose fields. Each
-field has a non-empty ordered sequence of substantive claim units. Concatenating
-`writer_quote` values reproduces the complete original field exactly, including
-punctuation and whitespace. Compound claims with different support are split;
-Python mechanically verifies the complete text coverage.
+field assessment contains exactly one unit assessment for every `unit_id` the
+Validator supplied for that field, each exactly once, and no other `unit_id`;
+order is not significant because Python maps assessments by `unit_id`. The
+helper never returns Writer text. Complete Writer-text coverage therefore holds
+by construction, and Python mechanically verifies the unit coverage (RC-7).
 
-`SUPPORTED` requires a citation supporting the entire substantive claim.
+A unit is assessed as a whole. `SUPPORTED` requires citations supporting every
+substantive claim in the unit; a unit with any unsupported or unclear part is
+`UNSUPPORTED` or `UNCERTAIN`.
 `ANALYSIS` is allowed only in `taipei_insight`, requires cited Evidence
 premises, and cannot introduce unsupplied facts about Taipei Metro equipment,
 operating conditions, regulations, laws, requirements, projects, incidents, or
@@ -2944,8 +3104,9 @@ installed capability. `UNSUPPORTED` and `UNCERTAIN` cannot pass. Their citation
 lists may be empty, but any supplied citation must be valid.
 
 Every citation references a supplied `candidate_id` and contains an unchanged,
-non-empty exact quote resolving to exactly one contiguous occurrence in that
-source's `substantive_content`. Python derives coordinates. Provider numeric
+non-empty exact quote occurring at least once in that source's
+`substantive_content` (RC-3 `EXACT_TEXT_ALL_OCCURRENCES`). Python derives
+coordinates. Provider numeric
 offsets, fuzzy matching, normalization, translation repair, citation repair,
 and provider-authored offsets are forbidden. Exact citation existence proves
 provenance only; it does not mechanically prove semantic entailment. The Helper
@@ -2970,19 +3131,20 @@ At most one well-formed semantic failure may receive a Validator-directed Writer
 correction. The correction uses the same authoritative Evidence and cannot
 change metadata, `event_id`, event population, upstream decisions, or Ordering.
 The corrected block must pass structural validation and receive one fresh
-semantic-helper call. The maximum is one Writer drafting call, zero Writer
-transport retries, two semantic-helper calls, and one correction per event.
+semantic-helper call. The maximum is one Writer drafting call, two
+semantic-helper calls, and one correction per event, each with at most one
+counted RC-6 transport retry.
 PASS events are never regenerated; semantic validation calls are not Writer
 retries.
 
-Missing validation injection/configuration, timeout, HTTP failure, malformed
-outer or inner response, schema violation, unknown event_id, missing required
-fields, incomplete Writer-text coverage, invalid or ambiguous citation,
-event-population failure, source-reference integrity failure,
-metadata-integrity failure, Writer correction transport failure, malformed
-correction output, or changed event identity is a typed `ValidationStageFailure`
-and stops the whole formal run. It cannot become a semantic content FAIL,
-trigger correction or retry, or produce an artifact, staging, or Delivery.
+Missing validation injection/configuration, event-population failure,
+source-reference integrity failure, metadata-integrity failure, or changed event
+identity is a typed `ValidationStageFailure` that stops the whole formal run.
+For one event, timeout or HTTP failure after the RC-6 transport retry, malformed
+outer or inner response, schema violation, unknown proposal event_id, missing
+required fields, incomplete or duplicated unit coverage, or invalid citation is an
+event-level `TechnicalGap` (RC-6). Neither can become a semantic content FAIL
+or trigger correction; repeated exact citations are valid (RC-3).
 
 A well-formed proposal containing `UNSUPPORTED`, `UNCERTAIN`,
 `NOT_TRADITIONAL_CHINESE`, or language `UNCERTAIN` is an event-level semantic
@@ -3021,19 +3183,24 @@ projection and final report assembly. It projects, without model rewriting:
 
 * `event_id`
 * the canonical member's Temporal controlling date, formatted as `YYYY-MM-DD`
-* required country
-* required transit-system name
+* optional country/region (RC-4 `RegionResolution` display name)
+* optional transit-system name
 * optional location
 * Category
 * E&M Taxonomy labels
 * canonical source hostname
 * canonical source URL
 
-Country and transit-system name must be complete before Writer. Missing or
-unresolved conflicting required metadata is a typed formal-metadata failure that
-aborts the whole formal run with diagnostics, no artifact, and no Delivery. It
-must not omit the event, create a zero-event success, insert `未明示`, infer a
-value, or backfill one. Missing or conflicting optional location is omitted.
+Country/region and transit-system name are optional (RC-4). Not-stated values
+display 「來源未載明」 and unresolved values display 「未能確認」; neither is
+stored as an entity, inferred, or backfilled. Members establishing different
+regions exclude only that event as `CONFLICTING_COUNTRY` (RC-5), disclosed in
+the artifact. Invariant failures (structural inconsistency, invalid canonical
+member/date/source) abort the whole formal run with diagnostics, no artifact,
+and no Delivery. Missing or conflicting optional location is omitted. The
+artifact discloses technical gaps, metadata exclusions and Validation FAILs
+(`ReportDisclosure`), so a zero-event artifact with gaps is never presented as
+"no eligible events".
 Report Service may collapse only identical supported metadata values; it does
 not semantically reconcile aliases or choose a winning member.
 

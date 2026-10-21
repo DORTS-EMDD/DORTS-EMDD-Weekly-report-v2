@@ -22,6 +22,8 @@ from .maiagent_transport import (
     UrllibMaiAgentJsonTransport,
     load_shared_maiagent_values,
     parse_maiagent_response,
+    MAIAGENT_HELPER_TIMEOUT_SECONDS,
+    request_maiagent_proposal,
 )
 from .scope_classifier import (
     SCOPE_PROPOSAL_SCHEMA_VERSION,
@@ -31,7 +33,7 @@ from .scope_classifier import (
 
 
 TASK_IDENTITY = "scope_semantic_proposal"
-PROMPT_VERSION = "scope-event-target-system-v3"
+PROMPT_VERSION = "scope-event-target-system-v7"
 SCHEMA_VERSION = SCOPE_PROPOSAL_SCHEMA_VERSION
 HELPER_VERSION = "maiagent-structured-helper-scope-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-scope"
@@ -45,25 +47,28 @@ MAIAGENT_SCOPE_PROVIDER_IDENTIFIER = PROVIDER_IDENTIFIER
 SCOPE_SEMANTIC_INSTRUCTIONS = (
     "You are a stateless proposal-only semantic helper for the Python ScopeClassifier.",
     "Use only the supplied authoritative principal_content and same-document metadata.",
-    "Interpret in order: identify the Candidate event, its asserted action, what the action actually affects, and the transport system that affected target belongs to or for which it functions; only then propose an eligible mode if supported.",
-    "The affected target is not automatically the operator, owner, city, publisher, nearby station, route, or whole Metro system. For example, installed platform-door equipment is the target, and irrigation near a station remains irrigation equipment. Do not infer target-system membership from transport vocabulary or proximity.",
+    "Interpret in order: identify the Candidate event, its asserted action, what the action actually affects or where the event takes place, and the transport system that target belongs to or functions for; only then propose an eligible mode if supported.",
+    "The affected target is not automatically the operator, owner, city, publisher, nearby station, route, or whole Metro system. For example, installed platform-door equipment is the target, and irrigation or sculptures installed for a neighbouring park remain park equipment. Do not infer target-system membership from transport vocabulary or proximity.",
+    "Use action_target relation AFFECTS when the action acts on the target. Use LOCATED_AT only when the Candidate event itself takes place on or in the target, and the target is a station, platform, train, depot, track or other facility of the transport system (for example a derailment, fire, assault or breakdown on a platform or train). Proximity, nearby or adjacent locations are never LOCATED_AT. Whether such an event is worth reporting is decided elsewhere, not here.",
     "When the source supports eligibility, use exactly one canonical eligible_mode_family: METRO, MRT, SUBWAY, LIGHT_RAIL, TRAM, URBAN_RAIL, AGT, MONORAIL, or PEOPLE_MOVER. Urban maglev maps to URBAN_RAIL; AGT and People Mover remain distinct. NON_ELIGIBLE and UNKNOWN are valid when their respective noneligible or unresolved status is supported; do not force an eligible family.",
-    "Citation policy: event_focus requires a nonempty exact quotation for RESOLVED or CONFLICTING and may be empty for UNRESOLVED. The asserted action and claimed affected target each require their own nonempty exact source quotation.",
-    "system, action_target, and target_system require nonempty exact quotations when their relation status is ESTABLISHED or CONFLICTING. Their quotations may be empty when status is UNESTABLISHED and no affirmative relation is established. ambiguity requires a quotation only for CONFLICTING; NONE and UNRESOLVED may be empty. noneligible_relation requires a quotation only for PRESENT; ABSENT and UNRESOLVED may be empty.",
-    "Each nonempty action.label, target.label, and system.label must be an exact source-surface substring within its own endpoint quote. Do not translate, paraphrase, normalize, conjugate, nominalize, replace with a synonym, or invent endpoint labels; retain the original language and surface form.",
-    "Every nonempty quotation, including optional quotations, must be a contiguous exact substring copied from principal_content, occur exactly once, preserve spelling and punctuation, and identify only evidence it supports. Never invent or reconstruct a quotation or offsets to represent absence or uncertainty.",
-    "For an ESTABLISHED or CONFLICTING action_target relation, its quotation must contain the exact selected action.quote and target.quote endpoints. For an ESTABLISHED or CONFLICTING target_system relation, its quotation must contain the exact selected target.quote and system.quote endpoints within the selected event. A noneligible PRESENT quotation must identify the target or system involved.",
-    "A bounded relation quotation may span multiple sentences only when the source genuinely expresses the relation across them. Select a relevant contiguous excerpt rather than the whole source, and do not choose an action endpoint broader than the relation quotation can contain.",
-    "The selected event_focus.quote must encompass the source material supporting the established relationships attributed to that Candidate event. Do not borrow support from a separate independent event in the same document.",
-    "IN_SCOPE_SUPPORT requires a RESOLVED Candidate event, an ASSERTED action, an established AFFECTS action-to-target relation, and an established eligible target-to-system relation supported by exact endpoint quotations.",
-    "A location, operator identity, ownership identity, generic equipment word, or nearby station is not target-to-system membership. Use AFFECTS only for action-to-target evidence; use BELONGS_TO, PART_OF, or FUNCTIONS_FOR for eligible membership. LOCATED_AT, OWNED_BY, and OPERATED_BY never establish eligibility.",
-    "Interpret source-grounded anaphora, demonstratives, possessives, component relationships, and cross-sentence grammatical references, including Japanese and French constructions. These may support a relationship only when the supplied source clearly connects the actual affected target to the system; preserve UNCERTAIN if the antecedent or relation remains ambiguous, and do not use outside knowledge.",
-    "Interpret action-to-target independently from target eligibility: when the source clearly establishes an action affecting a target, mark action_target ESTABLISHED even if target_system is UNESTABLISHED or a supported noneligible relationship. Do not mark a clear action unresolved merely because overall Scope is negative.",
-    "When noneligible_relation.status is ABSENT, noneligible_kind must be NONE. When status is PRESENT, provide exact supporting evidence, use mode NON_ELIGIBLE, and choose only a supported kind: EXCLUDED_TRANSPORT_MODE or NON_URBAN_RAIL. For a genuinely unresolved noneligible relationship, use UNRESOLVED status and kind consistently; do not invent a negative relationship to force a diagnostic.",
-    "Record noneligible, ambiguous, contradictory, negated, conditional, and unasserted events explicitly. Use UNESTABLISHED or UNRESOLVED when evidence does not establish a relation; do not label uncertainty as an affirmative relation merely to fill a citation field.",
+    "Commuter, suburban, regional, S-Bahn, S-tog and RER labels neither include nor exclude a system by name. Use an eligible family for such a service only when the supplied source itself describes the affected system as metro, light rail, tram, or urban rapid transit; a commuter or suburban description alone is UNKNOWN or NON_URBAN_RAIL, never URBAN_RAIL.",
+    "Endpoints are labels, not quotations. action.label, target.label and system.label are short exact source-surface substrings (original language and form; do not translate, paraphrase, normalize, conjugate, or invent). action.label must differ from target.label and system.label. target.label and system.label may be the same text when the action affects the system itself, such as a new line, extension or network.",
+    "Citation policy: only event_focus, action_target, target_system, ambiguity and noneligible_relation carry quotations. event_focus requires a quotation for RESOLVED or CONFLICTING; action_target and target_system require one when ESTABLISHED or CONFLICTING; ambiguity only for CONFLICTING; noneligible_relation only for PRESENT. Otherwise the quotation may be empty.",
+    "Every nonempty quotation must be a contiguous exact substring copied character for character from principal_content, preserving spelling, spacing and punctuation. Prefer one complete source sentence or clause that states the relation; do not shorten words, join separate passages, or insert words. The same text may occur more than once; it is still one quotation.",
+    "The action_target quotation must contain both the action label and the target label. The target_system quotation must contain the target label and the system label. When the source states membership in a later sentence that refers to the target by a same-event reference such as 'the five lines', 'the line', 'its' or '該線', put that exact reference in target_system.target_reference; otherwise omit target_reference. Never invent a quotation that repeats the target label when the source uses a reference. Choose the relation quotations inside the event_focus quotation; the event_focus quotation may span consecutive sentences of the same Candidate event and must not borrow support from a separate event in the same document.",
+    "When the target phrase itself names its system or mode, such as 'five metro lines', 'tram Route 19', 'Chennai Metro's Yellow Line' or '電車', that phrase already states membership: cite it as the target_system quotation, with the system label equal to the target label or the system word inside it.",
+    "A station, platform, track, train, depot or service of a named station, line or network of the system is PART_OF that system; for example 'a northbound E train platform at the 53rd Street subway station' is PART_OF the subway, and a tram that derailed is PART_OF the tram system.",
+    "For contract, procurement, operation and maintenance, authorisation, funding or study events, the target is the work, service, equipment, line or project the action covers (for example 'the operation and maintenance of lines M1 to M4' or 'a 6.2 km underground line'), not the contract document itself. It FUNCTIONS_FOR or is PART_OF the system when the source identifies those lines, stations, trains or services as that system's own.",
+    "IN_SCOPE_SUPPORT requires a RESOLVED Candidate event, an ASSERTED action, an established AFFECTS or LOCATED_AT action-to-target relation, and an established BELONGS_TO, PART_OF or FUNCTIONS_FOR target-to-system relation to an eligible system.",
+    "A location, operator identity alone, ownership identity, generic equipment word, or nearby station is not target-to-system membership; an operator's buses, ferries or real estate never become urban rail through the operator. Use BELONGS_TO, PART_OF, or FUNCTIONS_FOR for eligible membership; LOCATED_AT, OWNED_BY, and OPERATED_BY never establish target-to-system eligibility.",
+    "Interpret source-grounded anaphora, demonstratives, possessives, component relationships, and cross-sentence grammatical references, including Japanese, Korean and French constructions. These may support a relationship only when the supplied source clearly connects the actual target to the system; preserve UNCERTAIN if the antecedent or relation remains ambiguous, and do not use outside knowledge.",
+    "Interpret action-to-target independently from target eligibility: when the source clearly establishes an action affecting a target, mark action_target ESTABLISHED even if target_system is UNESTABLISHED or a supported noneligible relationship.",
+    "noneligible_relation concerns only the Candidate focus action's own target or system. Do not record other actions reported in the same document, such as a bus pilot announced together with a metro service change. When status is ABSENT, noneligible_kind must be NONE. When status is PRESENT, its quotation must contain the target or system label, mode must be NON_ELIGIBLE, and kind must be EXCLUDED_TRANSPORT_MODE or NON_URBAN_RAIL. For a genuinely unresolved noneligible relationship, use UNRESOLVED status and kind.",
+    "ambiguity concerns only whether the Candidate event is tied to an eligible system or which system it belongs to. Uncertainty about details that leave the system unchanged, such as whether an incident happened on the platform or on the train of the same subway, the exact time, or the cause, is NONE.",
+    "Record noneligible, ambiguous, contradictory, negated, conditional, and unasserted events explicitly. Use UNESTABLISHED or UNRESOLVED when evidence does not establish a relation; do not label uncertainty as an affirmative relation merely to fill a field.",
     "Do not force a positive proposal or output IN_SCOPE_SUPPORT to satisfy a benchmark. A complete citation is a necessary mechanical condition, not independent proof of a semantic relation.",
     "Do not search, browse, use tools, retrieve external knowledge, or return a ScopeResult or diagnostic.",
-    "Return exactly the supplied JSON schema with no extra fields and no prose outside JSON.",
+    "Return exactly one JSON object with the supplied schema, no extra fields and no prose outside JSON.",
 )
 
 
@@ -76,7 +81,7 @@ class MaiAgentScopeProviderConfig:
     api_base: str
     api_key: str = field(repr=False)
     chatbot_id: str = field(repr=False)
-    timeout_seconds: float = 45.0
+    timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS
 
     def __post_init__(self) -> None:
         values = (self.api_base, self.api_key, self.chatbot_id)
@@ -102,7 +107,7 @@ class MaiAgentScopeProviderConfig:
         return f"{self.api_base.rstrip('/')}/api/v1/chatbots/{quote(self.chatbot_id, safe='')}/completions/"
 
     @classmethod
-    def from_environment(cls, environ: Mapping[str, str] | None = None, *, timeout_seconds: float = 45.0, dotenv_path: str | os.PathLike[str] | None = None):
+    def from_environment(cls, environ: Mapping[str, str] | None = None, *, timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS, dotenv_path: str | os.PathLike[str] | None = None):
         values = load_shared_maiagent_values(environ, dotenv_path=dotenv_path)
         api_base, api_key, chatbot_id = (values.get(key) for key in ("MAIAGENT_API_BASE", "MAIAGENT_API_KEY", "MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID"))
         if not all(isinstance(value, str) and value.strip() for value in (api_base, api_key, chatbot_id)):
@@ -144,18 +149,20 @@ class MaiAgentScopeProposalProvider:
             raise TypeError("MaiAgent Scope provider accepts only ScopeSemanticRequest")
         request_content = json.dumps(build_maiagent_scope_model_input(request), ensure_ascii=False, separators=(",", ":"))
         body = json.dumps({"message": {"role": "user", "content": request_content}, "conversation": None, "attachments": [], "is_streaming": False}, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        try:
-            response = self._transport(self._config.completion_endpoint, headers={"Authorization": f"Api-Key {self._config.api_key}", "Content-Type": "application/json", "Accept": "application/json"}, body=body, timeout_seconds=float(self._config.timeout_seconds))
-        except TimeoutError:
-            raise TimeoutError("MaiAgent Scope request timed out") from None
-        except Exception:
-            raise MaiAgentScopeProviderFailure("MaiAgent Scope provider transport failed", failure_category="TRANSPORT") from None
-        if not isinstance(response, MaiAgentHttpResponse) or response.status_code != 200:
-            raise MaiAgentScopeProviderFailure("MaiAgent Scope provider request failed", failure_category="HTTP_STATUS")
-        try:
-            return parse_maiagent_response(response.body)
-        except MaiAgentResponseError:
-            raise MaiAgentScopeProviderFailure("MaiAgent Scope provider response was invalid", failure_category="RESPONSE_PARSE") from None
+        # Technical failures propagate as typed SemanticProviderTechnicalFailure
+        # after the shared bounded retry; parseable responses go to the owner.
+        return request_maiagent_proposal(
+            self._transport,
+            self._config.completion_endpoint,
+            headers={
+                "Authorization": f"Api-Key {self._config.api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            body=body,
+            timeout_seconds=float(self._config.timeout_seconds),
+            task="scope_semantic_proposal",
+        )
 
 
 MaiAgentScopeProvider = MaiAgentScopeProposalProvider
@@ -163,7 +170,7 @@ MaiAgentScopeAdapter = MaiAgentScopeProposalProvider
 MaiAgentScopeFailure = MaiAgentScopeProviderFailure
 
 
-def build_maiagent_scope_provider(config: MaiAgentScopeProviderConfig | None = None, *, transport: MaiAgentJsonHttpTransport | None = None, environ: Mapping[str, str] | None = None, timeout_seconds: float = 45.0, dotenv_path: str | os.PathLike[str] | None = None) -> MaiAgentScopeProposalProvider | None:
+def build_maiagent_scope_provider(config: MaiAgentScopeProviderConfig | None = None, *, transport: MaiAgentJsonHttpTransport | None = None, environ: Mapping[str, str] | None = None, timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS, dotenv_path: str | os.PathLike[str] | None = None) -> MaiAgentScopeProposalProvider | None:
     resolved = config or MaiAgentScopeProviderConfig.from_environment(environ, timeout_seconds=timeout_seconds, dotenv_path=dotenv_path)
     return None if resolved is None else MaiAgentScopeProposalProvider(resolved, transport=transport)
 

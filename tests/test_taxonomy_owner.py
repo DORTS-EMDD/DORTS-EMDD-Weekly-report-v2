@@ -26,6 +26,7 @@ from src.weekly_report.contracts import (
 from src.weekly_report.taxonomy import (
     Taxonomy,
     TaxonomySemanticProposal,
+    TaxonomyProposalViolation,
     TaxonomyStageFailure,
 )
 
@@ -314,19 +315,37 @@ class TaxonomyOwnerTests(TestCase):
         with self.assertRaises(TaxonomyStageFailure):
             Taxonomy(provider).evaluate(group, (_record("C1"),), _assigned(group))
 
-    def test_ambiguous_quote_is_rejected(self):
+    def test_repeated_quote_records_every_occurrence(self):
+        # RC-3 (EXACT_TEXT_ALL_OCCURRENCES): a repeated exact quote is valid;
+        # every occurrence is recorded and none is selected.
         group = _group("C1")
         provider = _FakeProvider(_proposal(
             group,
             systems=["POWER_SUPPLY"],
             support=[{"system_id": "POWER_SUPPLY", "candidate_id": "C1", "exact_quote": "power"}],
         ))
-        with self.assertRaises(TaxonomyStageFailure):
-            Taxonomy(provider).evaluate(
-                group,
-                (_record("C1", "power and power"),),
-                _assigned(group),
-            )
+        result = Taxonomy(provider).evaluate(
+            group,
+            (_record("C1", "power and power"),),
+            _assigned(group),
+        )
+        self.assertEqual(
+            [(span.start, span.end) for span in result.support_spans],
+            [(0, 5), (10, 15)],
+        )
+
+    def test_missing_quote_is_an_event_level_proposal_violation(self):
+        # RC-6: a parseable proposal violating the contract isolates only this
+        # EventGroup; it is still a TaxonomyStageFailure for strict callers.
+        group = _group("C1")
+        provider = _FakeProvider(_proposal(
+            group,
+            systems=["POWER_SUPPLY"],
+            support=[{"system_id": "POWER_SUPPLY", "candidate_id": "C1", "exact_quote": "absent"}],
+        ))
+        with self.assertRaises(TaxonomyProposalViolation) as raised:
+            Taxonomy(provider).evaluate(group, (_record("C1", "power and power"),), _assigned(group))
+        self.assertIsInstance(raised.exception, TaxonomyStageFailure)
 
     def test_unique_exact_quote_maps_to_exact_source_slice(self):
         group = _group("C1")

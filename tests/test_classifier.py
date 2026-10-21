@@ -489,8 +489,6 @@ class ClassifierTests(unittest.TestCase):
     def test_quote_resolution_fails_closed_without_repair(self):
         cases = (
             ("zero occurrences", "The exact phrase is absent.", "not present"),
-            ("multiple occurrences", "repeat here; repeat here", "repeat here"),
-            ("overlapping occurrences", "aaa", "aa"),
             ("empty quote", "some source text", ""),
             ("trim recovery forbidden", "phrase", " phrase "),
             ("whitespace normalization forbidden", "line one" + chr(10) + "line two", "line one line two"),
@@ -512,6 +510,22 @@ class ClassifierTests(unittest.TestCase):
                     CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
                 )
                 self.assertNotIn("validated_support_spans", result.provenance)
+
+    def test_repeated_exact_quote_records_every_occurrence(self):
+        # RC-3 (EXACT_TEXT_ALL_OCCURRENCES): a repeated identical quotation is
+        # valid; Python records every occurrence and selects none.
+        body = "repeat here; repeat here"
+        record = _record("C1", body)
+        proposal = _assigned_response(
+            CategorySemanticRequest(sources=(_source_for_test("C1", body),)),
+            CategoryId.PROCUREMENT,
+        )
+        proposal["citations"] = [{"candidate_id": "C1", "quote": "repeat here"}]
+        result = Classifier(_Helper(proposal)).classify(_group((record,)), (record,))
+
+        self.assertEqual(result.category_state, CategoryState.CATEGORY_ASSIGNED)
+        spans = result.provenance["validated_support_spans"]
+        self.assertEqual([(span["start"], span["end"]) for span in spans], [(0, 11), (13, 24)])
 
     def test_every_citation_must_resolve_and_candidate_membership_is_exact(self):
         record = _record("C1", "The pilot began on the corridor.")

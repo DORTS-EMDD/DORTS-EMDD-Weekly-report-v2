@@ -165,11 +165,12 @@ evidence arrays:
 3. Search only that immutable named segment for all occurrences of the quote
    exactly as supplied, including overlapping occurrences. Quote characters are
    never removed, rewritten, or added.
-4. Zero occurrences invalidate the complete response. Multiple occurrences also
-   invalidate it. There is no already-authoritative deterministic disambiguator
-   in the current Judge contract. First, last, nearest, longest, title context,
-   explanation, provider hints, and a second model cannot select an occurrence.
-5. For the sole occurrence, derive `start = occurrence_index` and
+4. Zero occurrences invalidate the complete response. Under the RC-3 revision
+   (`EXACT_TEXT_ALL_OCCURRENCES`, ARCHITECTURE_CONTRACT §A.1) every occurrence
+   is recorded and none is selected; first, last, nearest, longest, title
+   context, explanation, provider hints, and a second model cannot select an
+   occurrence.
+5. For each occurrence, derive `start = occurrence_index` and
    `end = start + len(exact_quote)` using Python Unicode indexing. Require
    integer, boolean-excluded bounds `0 <= start < end <= len(segment.text)`
    and verify `segment.text[start:end] == exact_quote` exactly.
@@ -183,15 +184,14 @@ cross-segment synthetic quote reconstruction is allowed. Leading or trailing
 whitespace must match unchanged; mismatches are rejected. The non-empty quote
 rule does not add a new blanket nonblank-text requirement to the existing
 Judge schema; the selected text must still serve its semantic evidentiary role.
-The same quote in different segments is independently resolvable only if each
-locator names a segment containing one occurrence. Repeated locators do not
-disambiguate repeated occurrences within one segment. Preserve array order and
+Repeated identical text is supported at every occurrence in the named
+segment. Preserve array order and
 the existing handling of duplicate entries; no new semantic merging or
 deduplication is introduced.
 
 Unknown fields, missing fields, invalid types, unknown segments, empty quotes,
-absent or ambiguous exact matches, or invalid canonical bounds invalidate the
-complete response. One invalid conflict locator also invalidates a `SAME_EVENT`
+absent exact matches, or invalid canonical bounds invalidate the complete
+response. One invalid conflict locator also invalidates a `SAME_EVENT`
 proposal; there is no partial acceptance or subset salvage. Failures use the
 existing `InvalidSemanticJudgeResponse`,
 `response_validation_result = invalid`, and conservative Evidence rejection.
@@ -276,19 +276,22 @@ validate completely and still cannot promote `UNCERTAIN` to `SAME_EVENT`.
 
 ## Invalid, timeout, and transport failure behavior
 
-An invalid response, invalid schema, invalid support/conflict locator or
-canonical span, timeout, or
-semantic provider transport failure is a failed Evidence decision.
-EvidenceService rejects conservatively and records the failure type. It does not
-reinterpret the error as `UNCERTAIN` and then accept it, and it does not
-search for or fetch another source as a semantic fallback.
+An invalid parseable response, invalid schema, or invalid support/conflict
+locator or canonical span is a failed Evidence decision: EvidenceService
+rejects conservatively and records the failure type. Under RC-6
+(ARCHITECTURE_CONTRACT §A.1) a timeout, connection failure, HTTP 429/5xx or
+unparseable response that persists after the single shared transport retry is
+a typed `SemanticProviderTechnicalFailure`: the Candidate becomes a disclosed
+`TechnicalGap`, never `EVIDENCE_REJECTED`. EvidenceService never reinterprets
+an error as `UNCERTAIN` and never searches for or fetches another source.
 
 ## Retry policy
 
-Phase 1 makes at most one Semantic Judge call per Candidate. There is no retry
-for `UNCERTAIN`, `DIFFERENT_EVENT`, malformed responses, invalid spans,
-timeouts, or provider transport failures. Repeating a call until a desired
-relation appears is forbidden.
+There is one Semantic Judge proposal per Candidate. The only retry is the
+shared RC-6 transport retry, at most once with the identical request, and only
+when no parseable response was received. There is no retry for `UNCERTAIN`,
+`DIFFERENT_EVENT`, parseable invalid responses, or invalid spans. Repeating a
+call until a desired relation appears is forbidden.
 
 Transport acquisition concerns and semantic judgment concerns remain separate;
 neither creates a second Evidence owner.
@@ -412,7 +415,8 @@ outcomes and accepted Evidence fixtures need no change. Event Identity,
 Category, Taxonomy, Reportability, Ordering, Formal Metadata, Writer, and
 Delivery consume accepted Evidence and receive no new fields or responsibilities.
 For equivalent valid semantic text selections, downstream domain behavior is
-preserved. A missing or ambiguous quote now fails the new contract deliberately;
+preserved. A missing quote fails the contract deliberately; a repeated quote is
+recorded at every occurrence (RC-3);
 this is not a claim that every old offset-bearing response has an equivalent
 accepted quote proposal. No downstream consumer recalculates coordinates.
 

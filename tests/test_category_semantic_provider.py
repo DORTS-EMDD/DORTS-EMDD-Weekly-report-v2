@@ -13,6 +13,10 @@ from unittest.mock import patch
 from jsonschema import Draft202012Validator
 
 import src.weekly_report.category_semantic_provider as category_semantic_provider_module
+from src.weekly_report.contracts import (
+    SemanticProviderConfigurationFailure,
+    SemanticProviderTechnicalFailure,
+)
 import src.weekly_report.classifier as classifier_module
 
 from src.weekly_report.category_semantic_provider import (
@@ -702,18 +706,17 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
             json.dumps({"content": {"proposal": _proposal(record)}}).encode(),
             json.dumps({"content": "not JSON"}).encode(),
         )
+        # RC-6: an unparseable envelope is a technical failure (one identical
+        # retry), never CATEGORY_UNRESOLVED; it is disclosed as a technical gap.
         for body in invalid_bodies:
             with self.subTest(body=body):
                 transport = _RecordedMaiAgentTransport(MaiAgentHttpResponse(200, body))
-                result = Classifier(
-                    MaiAgentCategorySemanticProvider(_maiagent_config(), transport=transport)
-                ).classify(_group(record), (record,))
-                self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
-                self.assertEqual(
-                    result.category_resolution_reason,
-                    CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-                )
-                self.assertEqual(len(transport.calls), 1)
+                with self.assertRaises(SemanticProviderTechnicalFailure) as raised:
+                    Classifier(
+                        MaiAgentCategorySemanticProvider(_maiagent_config(), transport=transport)
+                    ).classify(_group(record), (record,))
+                self.assertEqual(raised.exception.failure_class, "UNPARSEABLE_RESPONSE")
+                self.assertEqual(len(transport.calls), 2)
 
     def test_alternate_envelopes_are_not_searched_or_used_as_fallback(self):
         record = _record()
@@ -730,38 +733,36 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
                 transport = _RecordedMaiAgentTransport(
                     MaiAgentHttpResponse(200, json.dumps(envelope).encode())
                 )
-                result = Classifier(
-                    MaiAgentCategorySemanticProvider(_maiagent_config(), transport=transport)
-                ).classify(_group(record), (record,))
-                self.assertEqual(
-                    result.category_resolution_reason,
-                    CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-                )
-                self.assertEqual(len(transport.calls), 1)
+                # Alternate envelopes are never searched; the response is
+                # unparseable under the confirmed envelope contract (RC-6).
+                with self.assertRaises(SemanticProviderTechnicalFailure):
+                    Classifier(
+                        MaiAgentCategorySemanticProvider(_maiagent_config(), transport=transport)
+                    ).classify(_group(record), (record,))
+                self.assertEqual(len(transport.calls), 2)
 
     def test_non_200_and_transport_errors_fail_closed_without_retry_or_secret_provenance(self):
         record = _record()
         secret = "synthetic-test-api-key"
         chatbot_id = "synthetic-category-chatbot-id"
+        # RC-6: 401/403/404 are configuration failures (run stops, no retry);
+        # another non-200 status is a non-transient technical failure (no
+        # retry); a connection error is retried once.  None becomes a Category
+        # decision and no secret is exposed.
         cases = (
-            _RecordedMaiAgentTransport(MaiAgentHttpResponse(403, b"permission denied")),
-            _RecordedMaiAgentTransport(MaiAgentHttpResponse(201, _maiagent_body(_proposal(record)))),
-            _RecordedMaiAgentTransport(error=RuntimeError(f"{secret} {chatbot_id}")),
+            (_RecordedMaiAgentTransport(MaiAgentHttpResponse(403, b"permission denied")), SemanticProviderConfigurationFailure, 1),
+            (_RecordedMaiAgentTransport(MaiAgentHttpResponse(201, _maiagent_body(_proposal(record)))), SemanticProviderTechnicalFailure, 1),
+            (_RecordedMaiAgentTransport(error=RuntimeError(f"{secret} {chatbot_id}")), SemanticProviderTechnicalFailure, 2),
         )
-        for transport in cases:
-            with self.subTest(error=transport.error is not None):
-                result = Classifier(
-                    MaiAgentCategorySemanticProvider(_maiagent_config(), transport=transport)
-                ).classify(_group(record), (record,))
-                self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
-                self.assertEqual(
-                    result.category_resolution_reason,
-                    CategoryResolutionReason.SEMANTIC_HELPER_FAILURE,
-                )
-                provenance_text = json.dumps(dict(result.provenance))
-                self.assertNotIn(secret, provenance_text)
-                self.assertNotIn(chatbot_id, provenance_text)
-                self.assertEqual(len(transport.calls), 1)
+        for transport, expected, calls in cases:
+            with self.subTest(expected=expected.__name__, calls=calls):
+                with self.assertRaises(expected) as raised:
+                    Classifier(
+                        MaiAgentCategorySemanticProvider(_maiagent_config(), transport=transport)
+                    ).classify(_group(record), (record,))
+                self.assertNotIn(secret, str(raised.exception))
+                self.assertNotIn(chatbot_id, str(raised.exception))
+                self.assertEqual(len(transport.calls), calls)
 
     def test_category_configuration_merges_dotenv_and_process_env_with_process_precedence(self):
         dotenv_values = {

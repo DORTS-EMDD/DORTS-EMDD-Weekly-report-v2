@@ -1196,6 +1196,172 @@ class EvidenceContractTests(unittest.TestCase):
         self.assertEqual(judge.calls, 1)
         self.assertNotIn("separate project summary", judge.requests[0].principal_body_segments[0].text)
 
+    def test_s1_link_wrapped_related_articles_in_main_are_separable(self):
+        judge = _SameEventJudge()
+        url = "https://source.test/usa/2026/10/16/line-4-opens/"
+        html = (
+            "<html><body><main><article><h1>Line 4 opens</h1>"
+            "<p>The operator opened Line 4 after final testing and safety approval.</p>"
+            "</article><div>"
+            "<a href='/usa/2026/09/01/depot-expansion/'><article><p>Depot expansion "
+            "summary for another project.</p></article></a>"
+            "<a href='https://source.test/uk/2026/08/02/tram-order/'><article><p>Tram "
+            "order summary for another operator.</p></article></a>"
+            "</div></main></body></html>"
+        )
+        result = _service(html, url=url, judge=judge).evaluate(
+            _candidate(title="Line 4 opens", url=url)
+        )
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(judge.calls, 1)
+        body = judge.requests[0].principal_body_segments[0].text
+        self.assertIn("opened Line 4", body)
+        self.assertNotIn("Depot expansion", body)
+        self.assertNotIn("Tram order", body)
+
+    def test_s1_contentless_article_units_do_not_compete_with_principal(self):
+        judge = _SameEventJudge()
+        url = "https://source.test/news/line-4-opens"
+        html = (
+            "<html><body><main><h1>Line 4 opens</h1>"
+            "<article><picture><img src='/a.jpg'></picture></article>"
+            "<p>The operator opened Line 4 after final testing and safety approval.</p>"
+            "<article><picture><img src='/b.jpg'></picture></article>"
+            "</main></body></html>"
+        )
+        result = _service(html, url=url, judge=judge).evaluate(
+            _candidate(title="Line 4 opens", url=url)
+        )
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertEqual(judge.calls, 1)
+
+    def test_link_wrapped_article_cards_without_principal_remain_ambiguous(self):
+        judge = _SameEventJudge()
+        url = "https://source.test/category/urban/"
+        html = (
+            "<html><body><h1>Urban rail news</h1><main>"
+            "<a href='/a/2026/10/16/line-4-opens/'><article><p>Line 4 opens after "
+            "final testing.</p></article></a>"
+            "<a href='/a/2026/10/15/tram-order/'><article><p>Tram order signed for "
+            "a separate network.</p></article></a>"
+            "</main></body></html>"
+        )
+        result = _service(html, url=url, judge=judge).evaluate(
+            _candidate(title="Line 4 opens", url=url)
+        )
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(result.reject_reason, RejectReason.SOURCE_PAGE_MISMATCH)
+        self.assertEqual(judge.calls, 0)
+
+    def test_unlinked_sibling_articles_with_prose_remain_ambiguous(self):
+        judge = _SameEventJudge()
+        url = "https://source.test/news/line-4-opens"
+        html = (
+            "<html><body><main>"
+            "<article><h2>Line 4 opens</h2><p>The operator opened Line 4.</p></article>"
+            "<article><h2>Tram order</h2><p>A separate tram order was signed.</p></article>"
+            "</main></body></html>"
+        )
+        result = _service(html, url=url, judge=judge).evaluate(
+            _candidate(title="Line 4 opens", url=url)
+        )
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(judge.calls, 0)
+
+    def test_article_linked_to_the_same_resource_is_not_a_reference_unit(self):
+        judge = _SameEventJudge()
+        url = "https://source.test/news/line-4-opens"
+        html = (
+            "<html><body><main>"
+            "<article><h1>Line 4 opens</h1><p>The operator opened Line 4.</p></article>"
+            f"<a href='{url}'><article><p>A second unit owning separate prose.</p></article></a>"
+            "</main></body></html>"
+        )
+        result = _service(html, url=url, judge=judge).evaluate(
+            _candidate(title="Line 4 opens", url=url)
+        )
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(judge.calls, 0)
+
+    def test_main_fallback_excludes_hyperlink_only_reference_blocks(self):
+        judge = _SameEventJudge()
+        url = "https://source.test/news/line-4-opens"
+        html = (
+            "<html><body><h1>Line 4 opens</h1><main>"
+            "<p>The operator opened Line 4 after final testing and safety approval.</p>"
+            "<div><span>Related</span><p><a href='/news/depot-fire'>Depot fire closes "
+            "another network</a></p></div>"
+            "<div><h2><a href='https://source.test/news/fare-rise'>Fares rise on a "
+            "separate system</a></h2><div>Live</div></div>"
+            "</main></body></html>"
+        )
+        result = _service(html, url=url, judge=judge).evaluate(
+            _candidate(title="Line 4 opens", url=url)
+        )
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        body = judge.requests[0].principal_body_segments[0].text
+        self.assertIn("opened Line 4", body)
+        self.assertNotIn("Depot fire", body)
+        self.assertNotIn("Fares rise", body)
+
+    def test_main_fallback_preserves_inline_anchor_inside_prose(self):
+        judge = _SameEventJudge()
+        url = "https://source.test/news/line-4-opens"
+        html = (
+            "<html><body><h1>Line 4 opens</h1><main>"
+            "<p>The operator <a href='/operators/metro'>opened Line 4</a> after final "
+            "testing and safety approval.</p>"
+            "<p><em><a href='/reports/line-4'>Line 4 commissioning report</a></em> was "
+            "published alongside the opening.</p>"
+            "</main></body></html>"
+        )
+        result = _service(html, url=url, judge=judge).evaluate(
+            _candidate(title="Line 4 opens", url=url)
+        )
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        body = judge.requests[0].principal_body_segments[0].text
+        self.assertIn("opened Line 4", body)
+        self.assertIn("Line 4 commissioning report", body)
+
+    def test_main_fallback_keeps_links_to_the_same_resource(self):
+        judge = _SameEventJudge()
+        url = "https://source.test/news/line-4-opens"
+        html = (
+            "<html><body><h1>Line 4 opens</h1><main>"
+            "<p>The operator opened Line 4 after final testing and safety approval.</p>"
+            "<p><a href='#timeline'>Opening timeline</a></p>"
+            "</main></body></html>"
+        )
+        result = _service(html, url=url, judge=judge).evaluate(
+            _candidate(title="Line 4 opens", url=url)
+        )
+
+        self.assertEqual(result.state, EvidenceState.READY)
+        self.assertIn("Opening timeline", judge.requests[0].principal_body_segments[0].text)
+
+    def test_main_fallback_with_only_reference_blocks_has_no_body(self):
+        judge = _SameEventJudge()
+        url = "https://source.test/news/line-4-opens"
+        html = (
+            "<html><body><h1>Line 4 opens</h1><main>"
+            "<div><a href='/news/a'>Line 4 opens after testing</a></div>"
+            "<div><a href='/news/b'>Tram order signed elsewhere</a></div>"
+            "</main></body></html>"
+        )
+        result = _service(html, url=url, judge=judge).evaluate(
+            _candidate(title="Line 4 opens", url=url)
+        )
+
+        self.assertEqual(result.state, EvidenceState.REJECTED)
+        self.assertEqual(judge.calls, 0)
+
     def test_s2_nested_comment_article_is_excluded_from_principal_body(self):
         judge = _SameEventJudge()
         html = (

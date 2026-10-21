@@ -24,6 +24,7 @@ from .contracts import (
     EventGroup,
     EventIdentityRecord,
     EvidenceState,
+    RegionResolutionBasis,
     ReportabilityState,
     ScopeState,
     TaxonomyState,
@@ -48,6 +49,27 @@ class FormalMetadataDiagnosticReason(StrEnum):
     """Finite non-failing diagnostics emitted with a projection."""
 
     CONFLICTING_OPTIONAL_LOCATION = "CONFLICTING_OPTIONAL_LOCATION"
+    CONFLICTING_OPTIONAL_TRANSIT_SYSTEM = "CONFLICTING_OPTIONAL_TRANSIT_SYSTEM"
+
+
+class FormalMetadataBasis(StrEnum):
+    """How a displayed country/region or transit-system value was established."""
+
+    SOURCE_STATED = "SOURCE_STATED"
+    REFERENCE_MAPPED = "REFERENCE_MAPPED"
+    NOT_STATED = "NOT_STATED"
+    UNRESOLVED = "UNRESOLVED"
+
+
+# Event-level data insufficiency (RC-5): only that event is excluded and the
+# exclusion is disclosed.  Every other FormalMetadataFailureReason is an
+# invariant breach and still aborts the formal run.
+EVENT_LEVEL_METADATA_REASONS = frozenset({FormalMetadataFailureReason.CONFLICTING_COUNTRY})
+
+_NOT_ESTABLISHED_DISPLAY = {
+    FormalMetadataBasis.NOT_STATED: "來源未載明",
+    FormalMetadataBasis.UNRESOLVED: "未能確認",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,21 +105,21 @@ class FormalReportMetadata:
 
     event_id: str
     display_date: str
-    country: str
-    transit_system_name: str
+    country: str | None
+    transit_system_name: str | None
     location: str | None
     category: str
     em_system_labels: tuple[str, ...]
     source_display: str
     source_url: str
     diagnostics: tuple[FormalMetadataDiagnostic, ...] = ()
+    country_basis: FormalMetadataBasis = FormalMetadataBasis.SOURCE_STATED
+    transit_system_basis: FormalMetadataBasis = FormalMetadataBasis.SOURCE_STATED
 
     def __post_init__(self) -> None:
         for field_name in (
             "event_id",
             "display_date",
-            "country",
-            "transit_system_name",
             "category",
             "source_display",
             "source_url",
@@ -105,6 +127,20 @@ class FormalReportMetadata:
             value = getattr(self, field_name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"FormalReportMetadata requires {field_name}")
+        for value_name, basis_name in (
+            ("country", "country_basis"),
+            ("transit_system_name", "transit_system_basis"),
+        ):
+            basis = FormalMetadataBasis(getattr(self, basis_name))
+            object.__setattr__(self, basis_name, basis)
+            value = getattr(self, value_name)
+            established = basis in {FormalMetadataBasis.SOURCE_STATED, FormalMetadataBasis.REFERENCE_MAPPED}
+            if established and (not isinstance(value, str) or not value.strip()):
+                raise ValueError(f"FormalReportMetadata requires {value_name} when established")
+            if not established and value is not None:
+                raise ValueError(f"FormalReportMetadata cannot store {value_name} that was not established")
+        if self.transit_system_basis is FormalMetadataBasis.REFERENCE_MAPPED:
+            raise ValueError("transit_system_name is never reference-mapped")
         if len(self.display_date) != 10 or self.display_date[4] != "-" or self.display_date[7] != "-":
             raise ValueError("FormalReportMetadata display_date must be YYYY-MM-DD")
         try:
@@ -157,12 +193,20 @@ class FinalReportBlock:
         return self.metadata.display_date
 
     @property
-    def country(self) -> str:
+    def country(self) -> str | None:
         return self.metadata.country
 
     @property
-    def transit_system_name(self) -> str:
+    def transit_system_name(self) -> str | None:
         return self.metadata.transit_system_name
+
+    @property
+    def country_display(self) -> str:
+        return self.metadata.country or _NOT_ESTABLISHED_DISPLAY[self.metadata.country_basis]
+
+    @property
+    def transit_system_display(self) -> str:
+        return self.metadata.transit_system_name or _NOT_ESTABLISHED_DISPLAY[self.metadata.transit_system_basis]
 
     @property
     def location(self) -> str | None:
@@ -202,6 +246,30 @@ class FinalReportSection:
 
 
 @dataclass(frozen=True, slots=True)
+class ReportDisclosure:
+    """Counts that let the artifact distinguish why events are absent.
+
+    Zero events with zero counts means no event met the formal conditions.
+    Nonzero counts disclose event-level exclusions (RC-5), technical gaps
+    (RC-6), and Validation FAILs; they never add or restore an event.
+    """
+
+    technical_gap_count: int = 0
+    metadata_exclusion_count: int = 0
+    validation_failed_count: int = 0
+
+    def __post_init__(self) -> None:
+        for name in ("technical_gap_count", "metadata_exclusion_count", "validation_failed_count"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ValueError(f"ReportDisclosure {name} must be a non-negative integer")
+
+    @property
+    def complete(self) -> bool:
+        return self.technical_gap_count == 0
+
+
+@dataclass(frozen=True, slots=True)
 class FinalReportArtifact:
     """The authoritative assembled artifact handed to DeliveryService."""
 
@@ -211,6 +279,7 @@ class FinalReportArtifact:
     events: tuple[FinalReportBlock, ...]
     sections: tuple[FinalReportSection, ...]
     content: str
+    disclosure: ReportDisclosure = ReportDisclosure()
 
     def __post_init__(self) -> None:
         for field_name in ("report_id", "artifact_id", "artifact_version", "content"):
@@ -265,6 +334,32 @@ class FormalMetadataFailure(RuntimeError):
         super().__init__(f"formal metadata failure: {reason.value}")
 
 
+@dataclass(frozen=True, slots=True)
+class FormalMetadataExclusion:
+    """One event excluded for legal event-level data insufficiency (RC-5)."""
+
+    event_id: str
+    reason: FormalMetadataFailureReason
+    candidate_ids: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        reason = FormalMetadataFailureReason(self.reason)
+        if reason not in EVENT_LEVEL_METADATA_REASONS:
+            raise ValueError("only event-level data insufficiency can exclude an event")
+        object.__setattr__(self, "reason", reason)
+        if not isinstance(self.event_id, str) or not self.event_id.strip():
+            raise ValueError("FormalMetadataExclusion requires event_id")
+        object.__setattr__(self, "candidate_ids", tuple(self.candidate_ids))
+
+
+@dataclass(frozen=True, slots=True)
+class FormalMetadataProjection:
+    """Ordered projected metadata plus disclosed event-level exclusions."""
+
+    metadata: tuple[FormalReportMetadata, ...]
+    exclusions: tuple[FormalMetadataExclusion, ...] = ()
+
+
 class ReportService:
     """Sole mechanical owner of metadata projection and final assembly."""
 
@@ -272,15 +367,40 @@ class ReportService:
         self,
         ordered_results: tuple[ReportWorkflowResult, ...],
     ) -> tuple[FormalReportMetadata, ...]:
-        """Project the authoritative Ordering output without changing it."""
+        """Project the authoritative Ordering output without changing it.
+
+        Strict seam: any exclusion is raised as ``FormalMetadataFailure``.
+        The formal application uses ``project_formal_metadata_population``.
+        """
+
+        projection = self.project_formal_metadata_population(ordered_results)
+        if projection.exclusions:
+            exclusion = projection.exclusions[0]
+            raise FormalMetadataFailure(
+                exclusion.reason,
+                event_id=exclusion.event_id,
+                candidate_ids=exclusion.candidate_ids,
+            )
+        return projection.metadata
+
+    def project_formal_metadata_population(
+        self,
+        ordered_results: tuple[ReportWorkflowResult, ...],
+    ) -> FormalMetadataProjection:
+        """Project metadata; isolate event-level data insufficiency (RC-5).
+
+        Invariant breaches (structural inconsistency, invalid canonical member,
+        date, or source) still raise and abort the formal run.
+        """
 
         if not isinstance(ordered_results, tuple):
             raise FormalMetadataFailure(FormalMetadataFailureReason.STRUCTURAL_INCONSISTENCY)
         if not ordered_results:
-            return ()
+            return FormalMetadataProjection(())
 
         seen_event_ids: set[str] = set()
         projected: list[FormalReportMetadata] = []
+        exclusions: list[FormalMetadataExclusion] = []
         for result in ordered_results:
             if not isinstance(result, ReportWorkflowResult):
                 raise FormalMetadataFailure(FormalMetadataFailureReason.STRUCTURAL_INCONSISTENCY)
@@ -296,10 +416,22 @@ class ReportService:
                     FormalMetadataFailureReason.STRUCTURAL_INCONSISTENCY,
                     event_id=event_id,
                 )
-            projected.append(self._project_one(result))
-        return tuple(projected)
+            try:
+                projected.append(self._project_one(result))
+            except FormalMetadataFailure as failure:
+                if failure.reason not in EVENT_LEVEL_METADATA_REASONS:
+                    raise
+                exclusions.append(
+                    FormalMetadataExclusion(failure.event_id or event_id, failure.reason, failure.candidate_ids)
+                )
+        return FormalMetadataProjection(tuple(projected), tuple(exclusions))
 
-    def assemble_final_report(self, validation_result: Any) -> FinalReportArtifact:
+    def assemble_final_report(
+        self,
+        validation_result: Any,
+        *,
+        disclosure: ReportDisclosure | None = None,
+    ) -> FinalReportArtifact:
         """Assemble only Validation-PASS prose with exact projected metadata.
 
         ``ValidationResult`` is imported lazily by callers to keep this owner
@@ -349,15 +481,25 @@ class ReportService:
             FinalReportSection(category, tuple(sections_by_category[category]))
             for category in category_order
         )
-        content = self._render_final_content(events, sections)
+        disclosure = disclosure if disclosure is not None else ReportDisclosure()
+        if not isinstance(disclosure, ReportDisclosure):
+            raise TypeError("ReportService disclosure must be a ReportDisclosure")
+        content = self._render_final_content(events, sections, disclosure)
         identity_payload = {
+            "disclosure": {
+                "technical_gap_count": disclosure.technical_gap_count,
+                "metadata_exclusion_count": disclosure.metadata_exclusion_count,
+                "validation_failed_count": disclosure.validation_failed_count,
+            },
             "events": [
                 {
                     "event_id": event.event_id,
                     "metadata": {
                         "display_date": event.display_date,
                         "country": event.country,
+                        "country_basis": event.metadata.country_basis.value,
                         "transit_system_name": event.transit_system_name,
+                        "transit_system_basis": event.metadata.transit_system_basis.value,
                         "location": event.location,
                         "category": event.category,
                         "em_system_labels": list(event.em_system_labels),
@@ -381,6 +523,7 @@ class ReportService:
             events=events,
             sections=sections,
             content=content,
+            disclosure=disclosure,
         )
 
     def assemble(self, validation_result: Any) -> FinalReportArtifact:
@@ -394,12 +537,33 @@ class ReportService:
         return self.assemble_final_report(validation_result)
 
     @staticmethod
+    def _render_disclosure(disclosure: ReportDisclosure) -> list[str]:
+        notes: list[str] = []
+        if disclosure.technical_gap_count:
+            notes.append(
+                f"本期有 {disclosure.technical_gap_count} 則候選或事件因技術問題未完成處理，未列入本報告。"
+            )
+        if disclosure.metadata_exclusion_count:
+            notes.append(
+                f"本期有 {disclosure.metadata_exclusion_count} 則事件因來源記載之國家／地區互相衝突，未列入本報告。"
+            )
+        if disclosure.validation_failed_count:
+            notes.append(
+                f"本期有 {disclosure.validation_failed_count} 則事件未通過內容驗證，未列入本報告。"
+            )
+        return notes
+
+    @staticmethod
     def _render_final_content(
         events: tuple[FinalReportBlock, ...],
         sections: tuple[FinalReportSection, ...],
+        disclosure: ReportDisclosure | None = None,
     ) -> str:
+        notes = ReportService._render_disclosure(disclosure or ReportDisclosure())
         if not events:
-            return "本期無符合正式報導條件之事件。"
+            if not notes:
+                return "本期無符合正式報導條件之事件。"
+            return "\n".join(["本期正式報告無事件。", "", "執行說明：", *notes]) + "\n"
         lines = ["捷運技術週報", ""]
         for section in sections:
             lines.extend((f"【{section.category}】", ""))
@@ -408,8 +572,8 @@ class ReportService:
                     (
                         f"{event.headline}",
                         f"日期：{event.display_date}",
-                        f"國家／地區：{event.country}",
-                        f"運輸系統：{event.transit_system_name}",
+                        f"國家／地區：{event.country_display}",
+                        f"運輸系統：{event.transit_system_display}",
                     )
                 )
                 if event.location:
@@ -425,6 +589,8 @@ class ReportService:
                         "",
                     )
                 )
+        if notes:
+            lines.extend(("執行說明：", *notes))
         return "\n".join(lines).rstrip() + "\n"
 
     def _project_one(self, result: ReportWorkflowResult) -> FormalReportMetadata:
@@ -457,21 +623,12 @@ class ReportService:
         canonical_member = canonical_members[0]
 
         self._validate_upstream_result(result)
-        country = self._resolve_required(
-            event_id,
-            records,
-            "country",
-            FormalMetadataFailureReason.MISSING_COUNTRY,
-            FormalMetadataFailureReason.CONFLICTING_COUNTRY,
-        )
-        transit_system_name = self._resolve_required(
-            event_id,
-            records,
-            "transit_system_name",
-            FormalMetadataFailureReason.MISSING_TRANSIT_SYSTEM_NAME,
-            FormalMetadataFailureReason.CONFLICTING_TRANSIT_SYSTEM_NAME,
+        country, country_basis = self._resolve_country(event_id, records)
+        transit_system_name, transit_system_basis, system_diagnostics = self._resolve_transit_system(
+            event_id, records
         )
         location, diagnostics = self._resolve_location(event_id, records)
+        diagnostics = diagnostics + system_diagnostics
 
         controlling_date = canonical_member.temporal.controlling_calendar_date
         if canonical_member.temporal.date_valid is not True or type(controlling_date) is not date:
@@ -509,7 +666,74 @@ class ReportService:
             source_display=source_display,
             source_url=source_url,
             diagnostics=diagnostics,
+            country_basis=country_basis,
+            transit_system_basis=transit_system_basis,
         )
+
+    @staticmethod
+    def _resolve_country(
+        event_id: str,
+        records: tuple[EventIdentityRecord, ...],
+    ) -> tuple[str | None, FormalMetadataBasis]:
+        """Project EvidenceService's region resolution across event members.
+
+        Agreeing established regions are displayed; disagreement is a recorded
+        conflict that excludes the event; nothing is chosen.
+        """
+
+        established: list[tuple[str, Any]] = []
+        all_not_stated = True
+        for record in records:
+            facts = record.evidence.identity_facts
+            resolution = getattr(facts, "region_resolution", None) if facts is not None else None
+            if resolution is None or resolution.basis is not RegionResolutionBasis.NOT_STATED:
+                all_not_stated = False
+            if resolution is not None and resolution.established:
+                established.append((record.candidate.candidate_id, resolution))
+        regions = {resolution.region_id for _, resolution in established}
+        if len(regions) > 1:
+            raise FormalMetadataFailure(
+                FormalMetadataFailureReason.CONFLICTING_COUNTRY,
+                event_id=event_id,
+                candidate_ids=tuple(candidate_id for candidate_id, _ in established),
+            )
+        if regions:
+            resolution = established[0][1]
+            basis = (
+                FormalMetadataBasis.SOURCE_STATED
+                if any(item.basis is RegionResolutionBasis.SOURCE_STATED for _, item in established)
+                else FormalMetadataBasis.REFERENCE_MAPPED
+            )
+            return resolution.display_name, basis
+        return None, FormalMetadataBasis.NOT_STATED if all_not_stated else FormalMetadataBasis.UNRESOLVED
+
+    @staticmethod
+    def _resolve_transit_system(
+        event_id: str,
+        records: tuple[EventIdentityRecord, ...],
+    ) -> tuple[str | None, FormalMetadataBasis, tuple[FormalMetadataDiagnostic, ...]]:
+        populated: list[tuple[str, str]] = []
+        all_not_stated = True
+        for record in records:
+            facts = record.evidence.identity_facts
+            if facts is None or "transit_system_name" in facts.unresolved_metadata_fields:
+                all_not_stated = False
+            value = getattr(facts, "transit_system_name", None) if facts is not None else None
+            if isinstance(value, str) and value.strip():
+                populated.append((record.candidate.candidate_id, value))
+        distinct = list(dict.fromkeys(value for _, value in populated))
+        if len(distinct) == 1:
+            return distinct[0], FormalMetadataBasis.SOURCE_STATED, ()
+        if len(distinct) > 1:
+            return None, FormalMetadataBasis.UNRESOLVED, (
+                FormalMetadataDiagnostic(
+                    event_id=event_id,
+                    field_name="transit_system_name",
+                    reason=FormalMetadataDiagnosticReason.CONFLICTING_OPTIONAL_TRANSIT_SYSTEM,
+                    candidate_ids=tuple(candidate_id for candidate_id, _ in populated),
+                ),
+            )
+        return None, (FormalMetadataBasis.NOT_STATED if all_not_stated else FormalMetadataBasis.UNRESOLVED), ()
 
     @staticmethod
     def _validate_upstream_result(result: ReportWorkflowResult) -> None:
@@ -548,38 +772,6 @@ class ReportService:
                     event_id=event_id,
                     candidate_ids=(record.candidate.candidate_id,),
                 )
-
-    @staticmethod
-    def _resolve_required(
-        event_id: str,
-        records: tuple[EventIdentityRecord, ...],
-        field_name: str,
-        missing_reason: FormalMetadataFailureReason,
-        conflict_reason: FormalMetadataFailureReason,
-    ) -> str:
-        populated: list[tuple[str, str]] = []
-        for record in records:
-            facts = record.evidence.identity_facts
-            value = getattr(facts, field_name, None) if facts is not None else None
-            if isinstance(value, str) and value.strip():
-                populated.append((record.candidate.candidate_id, value))
-        distinct: list[str] = []
-        for _, value in populated:
-            if value not in distinct:
-                distinct.append(value)
-        if not distinct:
-            raise FormalMetadataFailure(
-                missing_reason,
-                event_id=event_id,
-                candidate_ids=tuple(record.candidate.candidate_id for record in records),
-            )
-        if len(distinct) > 1:
-            raise FormalMetadataFailure(
-                conflict_reason,
-                event_id=event_id,
-                candidate_ids=tuple(candidate_id for candidate_id, _ in populated),
-            )
-        return distinct[0]
 
     @staticmethod
     def _resolve_location(
@@ -649,6 +841,11 @@ ReportAssemblyResult = FinalReportArtifact
 
 
 __all__ = [
+    "EVENT_LEVEL_METADATA_REASONS",
+    "FormalMetadataBasis",
+    "FormalMetadataExclusion",
+    "FormalMetadataProjection",
+    "ReportDisclosure",
     "FormalMetadataDiagnostic",
     "FormalMetadataDiagnosticReason",
     "FormalMetadataFailure",

@@ -134,7 +134,15 @@ The parser must preserve whether article elements are:
 * sibling independent document units in a collection structure.
 
 A main article with a related article remains eligible when the main document
-and related unit are structurally separable. A nested article does not create
+and related unit are structurally separable. Implemented separability facts
+(2026-10-20): a sibling article unit that is wholly a hyperlink to a different
+resource (contained by, or with all of its text owned by, links to other
+resources) is a reference to a separate document, and an article element with
+no text is not a competing document unit. Exactly one remaining unit is the
+principal article; when only hyperlink reference units remain, the page stays
+ambiguous (a listing). Without a principal article, whole hyperlink-only blocks
+inside the main region are excluded from the principal body; inline anchors in
+prose and links to the same resource are kept. A nested article does not create
 a second principal document merely because it uses the same tag. Multiple
 sibling article cards prove a collection only when their relationships and
 surrounding structure establish multiple independent document units and do

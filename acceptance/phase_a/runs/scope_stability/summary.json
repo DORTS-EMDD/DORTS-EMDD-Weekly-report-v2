@@ -1,0 +1,1248 @@
+{
+ "purpose": "RC-8 Scope stability acceptance on archived Phase A Evidence",
+ "prompt_version": "scope-event-target-system-v5",
+ "schema_version": "scope-semantic-proposal-v2",
+ "source_summary": "acceptance/phase_a/runs/live3/summary.json",
+ "abort": null,
+ "wall_clock_seconds": 276.9,
+ "budgets": {
+  "evidence_http": [
+   0,
+   0
+  ],
+  "maiagent_calls": [
+   45,
+   45
+  ],
+  "seconds": 900
+ },
+ "rounds_completed": 3,
+ "unstable_slots": [
+  "C03",
+  "C04",
+  "P04",
+  "P08",
+  "P13"
+ ],
+ "in_scope_counts_by_round": [
+  3,
+  7,
+  6
+ ],
+ "per_slot": {
+  "C03": {
+   "states": [
+    "OUT_OF_SCOPE",
+    "IN_SCOPE",
+    "IN_SCOPE"
+   ],
+   "stable": false
+  },
+  "C04": {
+   "states": [
+    "TECHNICAL_GAP",
+    "OUT_OF_SCOPE",
+    "OUT_OF_SCOPE"
+   ],
+   "stable": false
+  },
+  "C05": {
+   "states": [
+    "OUT_OF_SCOPE",
+    "OUT_OF_SCOPE",
+    "OUT_OF_SCOPE"
+   ],
+   "stable": true
+  },
+  "P02": {
+   "states": [
+    "OUT_OF_SCOPE",
+    "OUT_OF_SCOPE",
+    "OUT_OF_SCOPE"
+   ],
+   "stable": true
+  },
+  "P03": {
+   "states": [
+    "IN_SCOPE",
+    "IN_SCOPE",
+    "IN_SCOPE"
+   ],
+   "stable": true
+  },
+  "P04": {
+   "states": [
+    "OUT_OF_SCOPE",
+    "IN_SCOPE",
+    "IN_SCOPE"
+   ],
+   "stable": false
+  },
+  "P05": {
+   "states": [
+    "OUT_OF_SCOPE",
+    "OUT_OF_SCOPE",
+    "OUT_OF_SCOPE"
+   ],
+   "stable": true
+  },
+  "P07": {
+   "states": [
+    "IN_SCOPE",
+    "IN_SCOPE",
+    "IN_SCOPE"
+   ],
+   "stable": true
+  },
+  "P08": {
+   "states": [
+    "OUT_OF_SCOPE",
+    "IN_SCOPE",
+    "IN_SCOPE"
+   ],
+   "stable": false
+  },
+  "P09": {
+   "states": [
+    "IN_SCOPE",
+    "IN_SCOPE",
+    "IN_SCOPE"
+   ],
+   "stable": true
+  },
+  "P10": {
+   "states": [
+    "OUT_OF_SCOPE",
+    "OUT_OF_SCOPE",
+    "OUT_OF_SCOPE"
+   ],
+   "stable": true
+  },
+  "P13": {
+   "states": [
+    "OUT_OF_SCOPE",
+    "IN_SCOPE",
+    "OUT_OF_SCOPE"
+   ],
+   "stable": false
+  },
+  "P14": {
+   "states": [
+    "OUT_OF_SCOPE",
+    "OUT_OF_SCOPE",
+    "OUT_OF_SCOPE"
+   ],
+   "stable": true
+  }
+ },
+ "rounds": [
+  {
+   "round": 1,
+   "outcomes": {
+    "C03": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": "TARGET_SYSTEM_CONTAINMENT",
+     "response_status": "OWNER_REJECTED",
+     "mode": null,
+     "relations": [
+      null,
+      null
+     ],
+     "labels": null,
+     "calls": [
+      1,
+      1
+     ]
+    },
+    "C04": {
+     "state": "TECHNICAL_GAP",
+     "failure_class": "UNPARSEABLE_RESPONSE",
+     "calls": [
+      2,
+      3
+     ]
+    },
+    "C05": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "TRAM",
+     "relations": [
+      "AFFECTS",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "出軌",
+      "target": "電車",
+      "system": "電車"
+     },
+     "calls": [
+      4,
+      4
+     ]
+    },
+    "P02": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "UNKNOWN",
+     "relations": [
+      "AFFECTS",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "awarded",
+      "target": "the Support Systems contract",
+      "system": "the København S-Bane suburban rail network"
+     },
+     "calls": [
+      5,
+      6
+     ]
+    },
+    "P03": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "TRAM",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "exploring",
+      "target": "tram network",
+      "system": "tram network"
+     },
+     "calls": [
+      7,
+      7
+     ]
+    },
+    "P04": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": "EVENT_FOCUS_CONTAINMENT",
+     "response_status": "OWNER_REJECTED",
+     "mode": null,
+     "relations": [
+      null,
+      null
+     ],
+     "labels": null,
+     "calls": [
+      8,
+      8
+     ]
+    },
+    "P05": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "SUBWAY",
+     "relations": [
+      "LOCATED_AT",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "being shot",
+      "target": "northbound E train platform",
+      "system": "subway system"
+     },
+     "calls": [
+      9,
+      9
+     ]
+    },
+    "P07": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "LIGHT_RAIL",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "extension",
+      "target": "MetroLink light rail system",
+      "system": "MetroLink light rail system"
+     },
+     "calls": [
+      10,
+      10
+     ]
+    },
+    "P08": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": "TARGET_SYSTEM_CONTAINMENT",
+     "response_status": "OWNER_REJECTED",
+     "mode": null,
+     "relations": [
+      null,
+      null
+     ],
+     "labels": null,
+     "calls": [
+      11,
+      11
+     ]
+    },
+    "P09": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "METRO",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "늘리고",
+      "target": "급행열차 운행 횟수",
+      "system": "지하철 9호선"
+     },
+     "calls": [
+      12,
+      12
+     ]
+    },
+    "P10": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "METRO",
+     "relations": [
+      "AFFECTS",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "signed",
+      "target": "the next contract",
+      "system": "København metro"
+     },
+     "calls": [
+      13,
+      13
+     ]
+    },
+    "P13": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "METRO",
+     "relations": [
+      "AFFECTS",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "authorised",
+      "target": "Northern Link Spur Line project",
+      "system": "Northern Link Spur Line"
+     },
+     "calls": [
+      14,
+      14
+     ]
+    },
+    "P14": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": "TARGET_SYSTEM_CONTAINMENT",
+     "response_status": "OWNER_REJECTED",
+     "mode": null,
+     "relations": [
+      null,
+      null
+     ],
+     "labels": null,
+     "calls": [
+      15,
+      15
+     ]
+    }
+   }
+  },
+  {
+   "round": 2,
+   "outcomes": {
+    "C03": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "TRAM",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "launched",
+      "target": "tram Route 19",
+      "system": "tram Route 19"
+     },
+     "calls": [
+      16,
+      16
+     ]
+    },
+    "C04": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "UNKNOWN",
+     "relations": [
+      "AFFECTS",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "install",
+      "target": "local weather stations",
+      "system": "Wales and Borders route"
+     },
+     "calls": [
+      17,
+      17
+     ]
+    },
+    "C05": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "TRAM",
+     "relations": [
+      "AFFECTS",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "出軌",
+      "target": "電車",
+      "system": "電車服務"
+     },
+     "calls": [
+      18,
+      18
+     ]
+    },
+    "P02": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": "NONELIGIBLE_CONSISTENCY",
+     "response_status": "OWNER_REJECTED",
+     "mode": null,
+     "relations": [
+      null,
+      null
+     ],
+     "labels": null,
+     "calls": [
+      19,
+      19
+     ]
+    },
+    "P03": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "TRAM",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "exploring",
+      "target": "a hydrogen-powered tram network",
+      "system": "tram network"
+     },
+     "calls": [
+      20,
+      20
+     ]
+    },
+    "P04": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "TRAM",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "derailment",
+      "target": "tram",
+      "system": "tram"
+     },
+     "calls": [
+      21,
+      21
+     ]
+    },
+    "P05": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": "ENDPOINT_LABEL",
+     "response_status": "OWNER_REJECTED",
+     "mode": null,
+     "relations": [
+      null,
+      null
+     ],
+     "labels": null,
+     "calls": [
+      22,
+      22
+     ]
+    },
+    "P07": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "LIGHT_RAIL",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "extension",
+      "target": "MetroLink light rail system",
+      "system": "MetroLink light rail system"
+     },
+     "calls": [
+      23,
+      23
+     ]
+    },
+    "P08": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "METRO",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "opened",
+      "target": "Yellow Line",
+      "system": "Chennai Metro"
+     },
+     "calls": [
+      24,
+      24
+     ]
+    },
+    "P09": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "METRO",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "늘리고",
+      "target": "급행열차 운행 횟수",
+      "system": "지하철 9호선"
+     },
+     "calls": [
+      25,
+      25
+     ]
+    },
+    "P10": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "METRO",
+     "relations": [
+      "AFFECTS",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "signed",
+      "target": "the next contract",
+      "system": "København metro"
+     },
+     "calls": [
+      26,
+      26
+     ]
+    },
+    "P13": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "METRO",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "construction",
+      "target": "6.2 km underground line",
+      "system": "metro networks of Hong Kong and Shenzhen"
+     },
+     "calls": [
+      27,
+      28
+     ]
+    },
+    "P14": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": "QUOTE_NOT_FOUND",
+     "response_status": "OWNER_REJECTED",
+     "mode": null,
+     "relations": [
+      null,
+      null
+     ],
+     "labels": null,
+     "calls": [
+      29,
+      30
+     ]
+    }
+   }
+  },
+  {
+   "round": 3,
+   "outcomes": {
+    "C03": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "TRAM",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "launched",
+      "target": "tram Route 19",
+      "system": "tram Route 19"
+     },
+     "calls": [
+      31,
+      31
+     ]
+    },
+    "C04": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "UNKNOWN",
+     "relations": [
+      "AFFECTS",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "install",
+      "target": "local weather stations",
+      "system": "locations on the railway"
+     },
+     "calls": [
+      32,
+      32
+     ]
+    },
+    "C05": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "TRAM",
+     "relations": [
+      "AFFECTS",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "出軌",
+      "target": "電車",
+      "system": "電車"
+     },
+     "calls": [
+      33,
+      33
+     ]
+    },
+    "P02": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": "NONELIGIBLE_CONSISTENCY",
+     "response_status": "OWNER_REJECTED",
+     "mode": null,
+     "relations": [
+      null,
+      null
+     ],
+     "labels": null,
+     "calls": [
+      34,
+      35
+     ]
+    },
+    "P03": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "TRAM",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "exploring",
+      "target": "hydrogen-powered tram network",
+      "system": "hydrogen-powered tram network"
+     },
+     "calls": [
+      36,
+      36
+     ]
+    },
+    "P04": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "TRAM",
+     "relations": [
+      "AFFECTS",
+      "BELONGS_TO"
+     ],
+     "labels": {
+      "action": "derailment",
+      "target": "tram",
+      "system": "tram"
+     },
+     "calls": [
+      37,
+      38
+     ]
+    },
+    "P05": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "SUBWAY",
+     "relations": [
+      "LOCATED_AT",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "being shot",
+      "target": "northbound E train platform",
+      "system": "subway"
+     },
+     "calls": [
+      39,
+      39
+     ]
+    },
+    "P07": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "LIGHT_RAIL",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "extension",
+      "target": "MetroLink light rail system",
+      "system": "MetroLink light rail system"
+     },
+     "calls": [
+      40,
+      40
+     ]
+    },
+    "P08": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "METRO",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "opened",
+      "target": "Chennai Metro’s 15 km Yellow Line",
+      "system": "Chennai Metro"
+     },
+     "calls": [
+      41,
+      41
+     ]
+    },
+    "P09": {
+     "state": "IN_SCOPE",
+     "diagnostic": "NONE",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "METRO",
+     "relations": [
+      "AFFECTS",
+      "PART_OF"
+     ],
+     "labels": {
+      "action": "늘리고",
+      "target": "급행열차 운행 횟수",
+      "system": "지하철 9호선"
+     },
+     "calls": [
+      42,
+      42
+     ]
+    },
+    "P10": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "METRO",
+     "relations": [
+      "AFFECTS",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "signed",
+      "target": "the next contract",
+      "system": "København metro"
+     },
+     "calls": [
+      43,
+      43
+     ]
+    },
+    "P13": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": null,
+     "response_status": "OWNER_VALIDATED",
+     "mode": "METRO",
+     "relations": [
+      "AFFECTS",
+      "UNRESOLVED"
+     ],
+     "labels": {
+      "action": "authorised",
+      "target": "Northern Link Spur Line project",
+      "system": "metro networks"
+     },
+     "calls": [
+      44,
+      44
+     ]
+    },
+    "P14": {
+     "state": "OUT_OF_SCOPE",
+     "diagnostic": "SCOPE_NOT_ESTABLISHED",
+     "first_rejection_predicate": "TARGET_SYSTEM_CONTAINMENT",
+     "response_status": "OWNER_REJECTED",
+     "mode": null,
+     "relations": [
+      null,
+      null
+     ],
+     "labels": null,
+     "calls": [
+      45,
+      45
+     ]
+    }
+   }
+  }
+ ],
+ "maiagent_calls": [
+  {
+   "index": 1,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 23477,
+   "outcome": "HTTP_200",
+   "latency_s": 5.218,
+   "response_bytes": 3575
+  },
+  {
+   "index": 2,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 24499,
+   "outcome": "HTTP_200",
+   "latency_s": 7.672,
+   "response_bytes": 8108
+  },
+  {
+   "index": 3,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 24499,
+   "outcome": "HTTP_200",
+   "latency_s": 14.203,
+   "response_bytes": 14282
+  },
+  {
+   "index": 4,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 16193,
+   "outcome": "HTTP_200",
+   "latency_s": 5.0,
+   "response_bytes": 3467
+  },
+  {
+   "index": 5,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 22132,
+   "outcome": "HTTP_200",
+   "latency_s": 6.875,
+   "response_bytes": 7988
+  },
+  {
+   "index": 6,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 22132,
+   "outcome": "HTTP_200",
+   "latency_s": 5.437,
+   "response_bytes": 4844
+  },
+  {
+   "index": 7,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 24606,
+   "outcome": "HTTP_200",
+   "latency_s": 5.359,
+   "response_bytes": 5033
+  },
+  {
+   "index": 8,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 16701,
+   "outcome": "HTTP_200",
+   "latency_s": 5.172,
+   "response_bytes": 4643
+  },
+  {
+   "index": 9,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 20363,
+   "outcome": "HTTP_200",
+   "latency_s": 4.328,
+   "response_bytes": 3467
+  },
+  {
+   "index": 10,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 23120,
+   "outcome": "HTTP_200",
+   "latency_s": 4.953,
+   "response_bytes": 4115
+  },
+  {
+   "index": 11,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 22450,
+   "outcome": "HTTP_200",
+   "latency_s": 5.313,
+   "response_bytes": 3497
+  },
+  {
+   "index": 12,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 24384,
+   "outcome": "HTTP_200",
+   "latency_s": 5.859,
+   "response_bytes": 4133
+  },
+  {
+   "index": 13,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 22251,
+   "outcome": "HTTP_200",
+   "latency_s": 4.594,
+   "response_bytes": 3440
+  },
+  {
+   "index": 14,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 20771,
+   "outcome": "HTTP_200",
+   "latency_s": 4.204,
+   "response_bytes": 3251
+  },
+  {
+   "index": 15,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 26231,
+   "outcome": "HTTP_200",
+   "latency_s": 4.594,
+   "response_bytes": 4364
+  },
+  {
+   "index": 16,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 23477,
+   "outcome": "HTTP_200",
+   "latency_s": 4.437,
+   "response_bytes": 3596
+  },
+  {
+   "index": 17,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 24499,
+   "outcome": "HTTP_200",
+   "latency_s": 5.688,
+   "response_bytes": 4211
+  },
+  {
+   "index": 18,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 16193,
+   "outcome": "HTTP_200",
+   "latency_s": 4.766,
+   "response_bytes": 3146
+  },
+  {
+   "index": 19,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 22132,
+   "outcome": "HTTP_200",
+   "latency_s": 4.844,
+   "response_bytes": 4463
+  },
+  {
+   "index": 20,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 24606,
+   "outcome": "HTTP_200",
+   "latency_s": 5.609,
+   "response_bytes": 4862
+  },
+  {
+   "index": 21,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 16701,
+   "outcome": "HTTP_200",
+   "latency_s": 5.516,
+   "response_bytes": 4817
+  },
+  {
+   "index": 22,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 20363,
+   "outcome": "HTTP_200",
+   "latency_s": 5.468,
+   "response_bytes": 4745
+  },
+  {
+   "index": 23,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 23120,
+   "outcome": "HTTP_200",
+   "latency_s": 4.484,
+   "response_bytes": 4115
+  },
+  {
+   "index": 24,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 22450,
+   "outcome": "HTTP_200",
+   "latency_s": 4.906,
+   "response_bytes": 3734
+  },
+  {
+   "index": 25,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 24384,
+   "outcome": "HTTP_200",
+   "latency_s": 5.422,
+   "response_bytes": 3782
+  },
+  {
+   "index": 26,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 22251,
+   "outcome": "HTTP_200",
+   "latency_s": 4.687,
+   "response_bytes": 3530
+  },
+  {
+   "index": 27,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 20771,
+   "outcome": "HTTP_200",
+   "latency_s": 8.14,
+   "response_bytes": 8966
+  },
+  {
+   "index": 28,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 20771,
+   "outcome": "HTTP_200",
+   "latency_s": 5.829,
+   "response_bytes": 5915
+  },
+  {
+   "index": 29,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 26231,
+   "outcome": "HTTP_200",
+   "latency_s": 6.953,
+   "response_bytes": 7385
+  },
+  {
+   "index": 30,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 26231,
+   "outcome": "HTTP_200",
+   "latency_s": 4.89,
+   "response_bytes": 5105
+  },
+  {
+   "index": 31,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 23477,
+   "outcome": "HTTP_200",
+   "latency_s": 5.14,
+   "response_bytes": 5828
+  },
+  {
+   "index": 32,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 24499,
+   "outcome": "HTTP_200",
+   "latency_s": 4.672,
+   "response_bytes": 4775
+  },
+  {
+   "index": 33,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 16193,
+   "outcome": "HTTP_200",
+   "latency_s": 4.469,
+   "response_bytes": 3416
+  },
+  {
+   "index": 34,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 22132,
+   "outcome": "TIMEOUT",
+   "latency_s": 30.172
+  },
+  {
+   "index": 35,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 22132,
+   "outcome": "HTTP_200",
+   "latency_s": 6.031,
+   "response_bytes": 4355
+  },
+  {
+   "index": 36,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 24606,
+   "outcome": "HTTP_200",
+   "latency_s": 5.25,
+   "response_bytes": 5135
+  },
+  {
+   "index": 37,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 16701,
+   "outcome": "HTTP_200",
+   "latency_s": 9.094,
+   "response_bytes": 7910
+  },
+  {
+   "index": 38,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 16701,
+   "outcome": "HTTP_200",
+   "latency_s": 6.547,
+   "response_bytes": 4826
+  },
+  {
+   "index": 39,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 20363,
+   "outcome": "HTTP_200",
+   "latency_s": 4.671,
+   "response_bytes": 3446
+  },
+  {
+   "index": 40,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 23120,
+   "outcome": "HTTP_200",
+   "latency_s": 5.359,
+   "response_bytes": 4115
+  },
+  {
+   "index": 41,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 22450,
+   "outcome": "HTTP_200",
+   "latency_s": 5.218,
+   "response_bytes": 3806
+  },
+  {
+   "index": 42,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 24384,
+   "outcome": "HTTP_200",
+   "latency_s": 5.578,
+   "response_bytes": 3695
+  },
+  {
+   "index": 43,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 22251,
+   "outcome": "HTTP_200",
+   "latency_s": 4.406,
+   "response_bytes": 3503
+  },
+  {
+   "index": 44,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 20771,
+   "outcome": "HTTP_200",
+   "latency_s": 4.234,
+   "response_bytes": 3725
+  },
+  {
+   "index": 45,
+   "task": "scope_semantic_proposal",
+   "request_bytes": 26231,
+   "outcome": "HTTP_200",
+   "latency_s": 4.39,
+   "response_bytes": 4364
+  }
+ ]
+}

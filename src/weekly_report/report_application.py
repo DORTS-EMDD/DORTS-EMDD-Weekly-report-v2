@@ -29,6 +29,8 @@ from .contracts import (
     SearchTerminalStatus,
     ScopeResult,
     ScopeState,
+    SemanticProviderTechnicalFailure,
+    TechnicalGap,
     TemporalResult,
 )
 from .evidence_service import EvidenceService
@@ -40,7 +42,13 @@ from .scope_classifier import ScopeClassifier
 from .temporal_rule import TemporalRule
 from .ordering import Ordering
 from .report_workflow import ReportWorkflow, ReportWorkflowResult
-from .report_service import FinalReportArtifact, FormalReportMetadata, ReportService
+from .report_service import (
+    FinalReportArtifact,
+    FormalMetadataExclusion,
+    FormalReportMetadata,
+    ReportDisclosure,
+    ReportService,
+)
 from .writer import ReportWriter, WriterReportBlock
 from .validator import ValidationResult, Validator
 from .delivery import DeliveryReceipt, DeliveryService
@@ -109,12 +117,29 @@ class ReportApplicationResult:
     validation_result: ValidationResult | None = None
     final_report: FinalReportArtifact | None = None
     delivery_result: DeliveryReceipt | None = None
+    # RC-6: subjects left unfinished by a technical failure; never a Domain
+    # state.  RC-5: events excluded for legal event-level data insufficiency.
+    technical_gaps: tuple[TechnicalGap, ...] = ()
+    metadata_exclusions: tuple[FormalMetadataExclusion, ...] = ()
 
     @property
     def search_runtime_acceptance(self) -> SearchRuntimeAcceptance:
         return determine_search_runtime_acceptance(self.execution)
 
+    def _gap_ids(self, *stages: str) -> frozenset[str]:
+        return frozenset(gap.subject_id for gap in self.technical_gaps if gap.stage in stages)
+
     def __post_init__(self) -> None:
+        gaps = tuple(self.technical_gaps)
+        if any(not isinstance(gap, TechnicalGap) for gap in gaps):
+            raise TypeError("ReportApplicationResult technical_gaps must be TechnicalGap values")
+        if len({(gap.stage, gap.subject_id) for gap in gaps}) != len(gaps):
+            raise ValueError("a subject can have at most one technical gap per stage")
+        object.__setattr__(self, "technical_gaps", gaps)
+        exclusions = tuple(self.metadata_exclusions)
+        if any(not isinstance(item, FormalMetadataExclusion) for item in exclusions):
+            raise TypeError("ReportApplicationResult metadata_exclusions must be typed")
+        object.__setattr__(self, "metadata_exclusions", exclusions)
         if not isinstance(self.plan, SearchPlan):
             raise TypeError("ReportApplicationResult requires a SearchPlan")
         if not isinstance(self.execution, SearchExecutionResult):
@@ -153,7 +178,14 @@ class ReportApplicationResult:
             if any(not isinstance(item.state, EvidenceState) for item in evidence_results):
                 raise TypeError("EvidenceResult state must be an EvidenceState")
             candidates = self.normalized_candidates
-            candidate_ids = tuple(item.candidate.candidate_id for item in candidates)
+            evidence_gaps = self._gap_ids("Evidence")
+            candidate_ids = tuple(
+                item.candidate.candidate_id
+                for item in candidates
+                if item.candidate.candidate_id not in evidence_gaps
+            )
+            if not evidence_gaps <= {item.candidate.candidate_id for item in candidates}:
+                raise ValueError("Evidence technical gaps must name normalized candidates")
             result_ids = tuple(item.candidate_id for item in evidence_results)
             if len(result_ids) != len(set(result_ids)):
                 raise ValueError("Evidence results must have unique candidate IDs")
@@ -168,10 +200,11 @@ class ReportApplicationResult:
             scope_results = tuple(scope_results)
             if any(not isinstance(result, ScopeResult) for result in scope_results):
                 raise TypeError("ReportApplicationResult scope_results must be typed")
+            scope_gaps = self._gap_ids("Scope")
             admitted_ids = tuple(
                 result.candidate_id
                 for result in evidence_results
-                if result.state is EvidenceState.READY
+                if result.state is EvidenceState.READY and result.candidate_id not in scope_gaps
             )
             if len(scope_results) != len(admitted_ids):
                 raise ValueError("Scope results must cover READY Evidence candidates")
@@ -287,7 +320,8 @@ class ReportApplicationResult:
             category_results = tuple(category_results)
             if any(not isinstance(result, CategoryResult) for result in category_results):
                 raise TypeError("ReportApplicationResult category_results must be typed")
-            groups = event_identity_run.groups
+            category_gaps = self._gap_ids("Category")
+            groups = tuple(group for group in event_identity_run.groups if group.event_id not in category_gaps)
             if len(category_results) != len(groups):
                 raise ValueError("Category results must cover EventGroups exactly")
             group_ids = tuple(group.event_id for group in groups)
@@ -309,7 +343,8 @@ class ReportApplicationResult:
                 raise TypeError(
                     "ReportApplicationResult downstream_results must be ReportWorkflowResult values"
                 )
-            groups = event_identity_run.groups
+            downstream_gaps = self._gap_ids("Category", "Taxonomy", "Reportability")
+            groups = tuple(group for group in event_identity_run.groups if group.event_id not in downstream_gaps)
             if len(downstream_results) != len(groups):
                 raise ValueError("downstream results must cover EventGroups exactly")
             result_ids = tuple(result.event_group.event_id for result in downstream_results)
@@ -350,10 +385,15 @@ class ReportApplicationResult:
                 raise TypeError(
                     "ReportApplicationResult formal_metadata must be FormalReportMetadata values"
                 )
-            if len(formal_metadata) != len(ordered_results):
+            excluded_ids = {item.event_id for item in exclusions}
+            ordered_ids = tuple(
+                item.event_group.event_id
+                for item in ordered_results
+                if item.event_group.event_id not in excluded_ids
+            )
+            if len(formal_metadata) != len(ordered_ids):
                 raise ValueError("formal metadata must preserve ordered cardinality")
             metadata_ids = tuple(item.event_id for item in formal_metadata)
-            ordered_ids = tuple(item.event_group.event_id for item in ordered_results)
             if metadata_ids != ordered_ids:
                 raise ValueError("formal metadata must preserve ordered event IDs")
             if len(metadata_ids) != len(set(metadata_ids)):
@@ -367,8 +407,9 @@ class ReportApplicationResult:
             writer_blocks = tuple(writer_blocks)
             if any(not isinstance(item, WriterReportBlock) for item in writer_blocks):
                 raise TypeError("ReportApplicationResult writer_blocks must be typed")
+            writer_gaps = self._gap_ids("Writer")
             if tuple(item.event_id for item in writer_blocks) != tuple(
-                result.event_group.event_id for result in ordered_results
+                item.event_id for item in formal_metadata if item.event_id not in writer_gaps
             ):
                 raise ValueError("writer blocks must preserve ordered event IDs")
         object.__setattr__(self, "writer_blocks", writer_blocks)
@@ -394,6 +435,10 @@ class ReportApplicationResult:
         object.__setattr__(self, "delivery_result", delivery_result)
 
     @property
+    def has_technical_gaps(self) -> bool:
+        return bool(self.technical_gaps)
+
+    @property
     def downstream_ready(self) -> bool:
         return (
             self.search_runtime_acceptance is not SearchRuntimeAcceptance.BLOCK
@@ -415,12 +460,15 @@ class ReportApplicationResult:
     def evidence_admitted_candidates(self) -> tuple[NormalizedCandidate, ...]:
         if self.evidence_results is None:
             return ()
+        ready_ids = {
+            evidence.candidate_id
+            for evidence in self.evidence_results
+            if evidence.state is EvidenceState.READY
+        }
         return tuple(
             candidate
-            for candidate, evidence in zip(
-                self.normalized_candidates, self.evidence_results, strict=True
-            )
-            if evidence.state is EvidenceState.READY
+            for candidate in self.normalized_candidates
+            if candidate.candidate.candidate_id in ready_ids
         )
 
 
@@ -603,10 +651,17 @@ class ReportApplication:
                 )
             observation.observe(normalized, final=True)
 
+        technical_gaps: list[TechnicalGap] = []
         with observe_stage("Evidence", len(normalized.normalized_candidates)) as observation:
             evidence_results: list[EvidenceResult] = []
             for normalized_candidate in normalized.normalized_candidates:
-                evidence = self._evidence_service.evaluate(normalized_candidate.candidate)
+                try:
+                    evidence = self._evidence_service.evaluate(normalized_candidate.candidate)
+                except SemanticProviderTechnicalFailure as failure:
+                    technical_gaps.append(
+                        TechnicalGap.from_failure("Evidence", normalized_candidate.candidate.candidate_id, failure)
+                    )
+                    continue
                 if not isinstance(evidence, EvidenceResult):
                     raise TypeError("EvidenceService must return an EvidenceResult")
                 if not isinstance(evidence.state, EvidenceState):
@@ -619,20 +674,26 @@ class ReportApplication:
             evidence_tuple = tuple(evidence_results)
             observation.observe(evidence_tuple, final=True)
 
+        evidence_by_id = {evidence.candidate_id: evidence for evidence in evidence_tuple}
         ready_pairs = tuple(
-            (normalized_candidate, evidence)
-            for normalized_candidate, evidence in zip(
-                normalized.normalized_candidates, evidence_tuple, strict=True
-            )
-            if evidence.state is EvidenceState.READY
+            (normalized_candidate, evidence_by_id[normalized_candidate.candidate.candidate_id])
+            for normalized_candidate in normalized.normalized_candidates
+            if normalized_candidate.candidate.candidate_id in evidence_by_id
+            and evidence_by_id[normalized_candidate.candidate.candidate_id].state is EvidenceState.READY
         )
         with observe_stage("Scope", len(ready_pairs)) as observation:
             scope_results: list[ScopeResult] = []
             for normalized_candidate, evidence in ready_pairs:
-                scope = self._scope_classifier.classify(
-                    evidence,
-                    candidate_title=normalized_candidate.candidate.title,
-                )
+                try:
+                    scope = self._scope_classifier.classify(
+                        evidence,
+                        candidate_title=normalized_candidate.candidate.title,
+                    )
+                except SemanticProviderTechnicalFailure as failure:
+                    technical_gaps.append(
+                        TechnicalGap.from_failure("Scope", normalized_candidate.candidate.candidate_id, failure)
+                    )
+                    continue
                 if not isinstance(scope, ScopeResult):
                     raise TypeError("ScopeClassifier must return a ScopeResult")
                 if not isinstance(scope.state, ScopeState):
@@ -694,16 +755,18 @@ class ReportApplication:
         category_results = self._classify_event_groups(
             event_identity_run,
             event_identity_records,
+            technical_gaps,
         )
         downstream_results = self._run_downstream_workflow(
             event_identity_run,
             event_identity_records,
             category_results,
+            technical_gaps,
         )
         ordered_results = self._run_ordering(downstream_results)
-        formal_metadata = self._run_formal_metadata_projection(ordered_results)
+        formal_metadata, metadata_exclusions = self._run_formal_metadata_projection(ordered_results)
         writer_blocks, validation_result, final_report, delivery_result = self._run_final_pipeline(
-            ordered_results, formal_metadata
+            ordered_results, formal_metadata, metadata_exclusions, technical_gaps
         )
 
         return ReportApplicationResult(
@@ -727,12 +790,16 @@ class ReportApplication:
             validation_result=validation_result,
             final_report=final_report,
             delivery_result=delivery_result,
+            technical_gaps=tuple(technical_gaps),
+            metadata_exclusions=metadata_exclusions,
         )
 
     def _run_final_pipeline(
         self,
         ordered_results: tuple[ReportWorkflowResult, ...] | None,
         formal_metadata: tuple[FormalReportMetadata, ...] | None,
+        metadata_exclusions: tuple[FormalMetadataExclusion, ...] = (),
+        technical_gaps: list[TechnicalGap] | None = None,
     ) -> tuple[
         tuple[WriterReportBlock, ...] | None,
         ValidationResult | None,
@@ -743,15 +810,28 @@ class ReportApplication:
             return None, None, None, None
         if ordered_results is None or formal_metadata is None:
             return None, None, None, None
-        with observe_stage("Writer", len(ordered_results)) as observation:
-            writer_blocks = self._writer.write(ordered_results)
+        gaps = technical_gaps if technical_gaps is not None else []
+        excluded_ids = {item.event_id for item in metadata_exclusions}
+        reportable = tuple(
+            result for result in ordered_results if result.event_group.event_id not in excluded_ids
+        )
+        with observe_stage("Writer", len(reportable)) as observation:
+            writer_blocks = self._writer.write(reportable, on_event_technical_gap=gaps.append)
             if not isinstance(writer_blocks, tuple):
                 raise TypeError("ReportWriter must return a tuple")
             observation.observe(writer_blocks, final=True)
 
-        with observe_stage("Validator", len(ordered_results)) as observation:
+        written_ids = {block.event_id for block in writer_blocks}
+        written_results = tuple(
+            result for result in reportable if result.event_group.event_id in written_ids
+        )
+        written_metadata = tuple(item for item in formal_metadata if item.event_id in written_ids)
+        with observe_stage("Validator", len(written_results)) as observation:
             validation_result = self._validator.validate(
-                ordered_results, formal_metadata, writer_blocks
+                written_results,
+                written_metadata,
+                writer_blocks,
+                on_event_technical_gap=gaps.append,
             )
             if not isinstance(validation_result, ValidationResult):
                 raise TypeError("Validator must return a ValidationResult")
@@ -759,8 +839,15 @@ class ReportApplication:
 
         if self._report_service is None:
             raise ValueError("final pipeline requires ReportService")
+        disclosure = ReportDisclosure(
+            technical_gap_count=len(gaps),
+            metadata_exclusion_count=len(metadata_exclusions),
+            validation_failed_count=len(validation_result.failed),
+        )
         with observe_stage("Assembly", validation_result.pass_count) as observation:
-            final_report = self._report_service.assemble_final_report(validation_result)
+            final_report = self._report_service.assemble_final_report(
+                validation_result, disclosure=disclosure
+            )
             if not isinstance(final_report, FinalReportArtifact):
                 raise TypeError("ReportService must return a FinalReportArtifact")
             observation.observe(final_report, final=True)
@@ -778,28 +865,35 @@ class ReportApplication:
     def _run_formal_metadata_projection(
         self,
         ordered_results: tuple[ReportWorkflowResult, ...] | None,
-    ) -> tuple[FormalReportMetadata, ...] | None:
+    ) -> tuple[tuple[FormalReportMetadata, ...] | None, tuple[FormalMetadataExclusion, ...]]:
         if self._report_service is None or ordered_results is None:
-            return None
+            return None, ()
         with observe_stage("FormalMetadata", len(ordered_results)) as observation:
-            formal_metadata = self._report_service.project_formal_metadata(ordered_results)
+            projection = self._report_service.project_formal_metadata_population(ordered_results)
+            formal_metadata = projection.metadata
             if not isinstance(formal_metadata, tuple):
                 raise TypeError("ReportService must return a tuple of formal metadata")
             observation.observe(formal_metadata, final=True)
 
-        return formal_metadata
+        return formal_metadata, projection.exclusions
 
     def _run_downstream_workflow(
         self,
         event_identity_run: EventIdentityRun,
         event_identity_records: tuple[EventIdentityRecord, ...],
         category_results: tuple[CategoryResult, ...],
+        technical_gaps: list[TechnicalGap] | None = None,
     ) -> tuple[ReportWorkflowResult, ...] | None:
         """Pass validated upstream values to the existing downstream owner."""
 
         if self._report_workflow is None:
             return None
-        if not event_identity_run.groups:
+        gaps = technical_gaps if technical_gaps is not None else []
+        category_gap_ids = {gap.subject_id for gap in gaps if gap.stage == "Category"}
+        groups = tuple(
+            group for group in event_identity_run.groups if group.event_id not in category_gap_ids
+        )
+        if not groups:
             with observe_stage("Taxonomy", 0) as observation:
                 observation.observe((), final=True)
             if self._report_workflow.reportability is not None:
@@ -814,12 +908,14 @@ class ReportApplication:
                 record_by_id[candidate_id]
                 for candidate_id in group.member_candidate_ids
             )
-            for group in event_identity_run.groups
+            for group in groups
         }
+        gaps_before = len(gaps)
         downstream_results = self._report_workflow.run(
-            event_identity_run.groups,
+            groups,
             member_records,
             category_results,
+            on_event_technical_gap=gaps.append,
         )
         if not isinstance(downstream_results, tuple):
             raise TypeError("ReportWorkflow must return a tuple")
@@ -827,10 +923,11 @@ class ReportApplication:
             raise TypeError(
                 "ReportApplication requires complete ReportWorkflowResult values"
             )
-        if len(downstream_results) != len(event_identity_run.groups):
+        workflow_gap_ids = {gap.subject_id for gap in gaps[gaps_before:]}
+        expected_ids = tuple(group.event_id for group in groups if group.event_id not in workflow_gap_ids)
+        if len(downstream_results) != len(expected_ids):
             raise ValueError("ReportWorkflow results must cover EventGroups exactly")
         result_ids = tuple(result.event_group.event_id for result in downstream_results)
-        expected_ids = tuple(group.event_id for group in event_identity_run.groups)
         if result_ids != expected_ids:
             raise ValueError("ReportWorkflow results must match EventGroups in order")
         if len(result_ids) != len(set(result_ids)):
@@ -875,6 +972,7 @@ class ReportApplication:
         self,
         event_identity_run: EventIdentityRun,
         event_identity_records: tuple[EventIdentityRecord, ...],
+        technical_gaps: list[TechnicalGap] | None = None,
     ) -> tuple[CategoryResult, ...]:
         with observe_stage("Category") as observation:
             groups = event_identity_run.groups
@@ -921,7 +1019,13 @@ class ReportApplication:
 
             results: list[CategoryResult] = []
             for event_group, member_records in projections:
-                result = self._classifier.classify(event_group, member_records)
+                try:
+                    result = self._classifier.classify(event_group, member_records)
+                except SemanticProviderTechnicalFailure as failure:
+                    if technical_gaps is None:
+                        raise
+                    technical_gaps.append(TechnicalGap.from_failure("Category", event_group.event_id, failure))
+                    continue
                 if not isinstance(result, CategoryResult):
                     raise TypeError("Classifier must return a CategoryResult")
                 if result.category_state is CategoryState.NOT_EVALUATED:

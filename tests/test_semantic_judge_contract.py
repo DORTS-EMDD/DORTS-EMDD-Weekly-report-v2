@@ -439,11 +439,31 @@ class SemanticJudgeContractTests(unittest.TestCase):
                 self.assertEqual(result.support_spans, ())
                 self.assertEqual(result.conflict_spans, ())
 
-    def test_quote_locator_rejects_zero_duplicate_overlap_and_non_exact_forms(self):
+    def test_quote_locator_records_every_duplicate_and_overlapping_occurrence(self):
+        # RC-3 (EXACT_TEXT_ALL_OCCURRENCES): repeated text is located at every
+        # occurrence, including overlaps; no occurrence is selected.
+        for text, quote, expected in (("banana", "ana", [(1, 4), (3, 6)]), ("aaa", "aa", [(0, 2), (1, 3)])):
+            with self.subTest(text=text):
+                request = SemanticJudgeInput(
+                    candidate_id=text,
+                    candidate_title="Candidate",
+                    document_level_headlines=(),
+                    principal_body_segments=(PrincipalBodySegment("body-1", text),),
+                )
+                validated = validate_semantic_judge_response(
+                    {
+                        "relation": "SAME_EVENT",
+                        "support_evidence": [{"segment_id": "body-1", "exact_quote": quote}],
+                        "conflict_evidence": [],
+                        "explanation": "bounded",
+                    },
+                    request,
+                )
+                self.assertEqual([(span.start, span.end) for span in validated.support_spans], expected)
+
+    def test_quote_locator_rejects_zero_and_non_exact_forms(self):
         cases = (
             ("zero", "missing", "exact_quote does not occur"),
-            ("duplicate", "ana", "exact_quote occurrence is ambiguous"),
-            ("overlap", "aa", "exact_quote occurrence is ambiguous"),
             ("whitespace", " body", "exact_quote does not occur"),
             ("case", "BODY", "exact_quote does not occur"),
         )
@@ -451,8 +471,6 @@ class SemanticJudgeContractTests(unittest.TestCase):
             with self.subTest(name=name):
                 text = {
                     "zero": "unique body",
-                    "duplicate": "banana",
-                    "overlap": "aaa",
                     "whitespace": "body",
                     "case": "body",
                 }[name]

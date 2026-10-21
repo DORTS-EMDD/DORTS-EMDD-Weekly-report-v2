@@ -7,13 +7,14 @@ retry, rescue, or backfill behavior.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
 from .contracts import (
     CategoryResult,
     CategoryState,
+    EVENT_TECHNICAL_FAILURES,
     EventDecisionRecord,
     EventGroup,
     EventIdentityRecord,
@@ -22,6 +23,7 @@ from .contracts import (
     ReportabilityState,
     TaxonomyResult,
     TaxonomyState,
+    TechnicalGap,
 )
 from .debug_service import observe_stage
 from .reportability import Reportability
@@ -119,15 +121,18 @@ class ReportWorkflow:
         member_records: Mapping[str, Sequence[EventIdentityRecord]]
         | Sequence[Sequence[EventIdentityRecord]],
         category_results: Mapping[str, CategoryResult] | Sequence[CategoryResult],
+        *,
+        on_event_technical_gap: Callable[[TechnicalGap], None] | None = None,
     ) -> tuple[EventDecisionRecord, ...] | tuple[ReportWorkflowResult, ...]:
         """Populate upstream decisions and the reached Reportability population.
 
-        The local lists are intentionally not exposed until every stage has
-        completed successfully.  A TaxonomyStageFailure or
-        ReportabilityStageFailure therefore aborts the formal run without a
-        partial-success result.  A workflow composed without a Reportability
-        owner retains the pre-integration taxonomy-only return shape for
-        callers that explicitly exercise that lower-level seam.
+        Without ``on_event_technical_gap`` any Taxonomy or Reportability
+        failure aborts the run without a partial result.  With it (the formal
+        application), a typed technical failure or proposal-contract violation
+        for one EventGroup is reported as a TechnicalGap and only that event is
+        omitted (RC-5/RC-6); invariant failures still abort.  A workflow
+        composed without a Reportability owner retains the pre-integration
+        taxonomy-only return shape for callers that exercise that seam.
         """
 
         groups = self._validate_groups(event_groups)
@@ -142,7 +147,13 @@ class ReportWorkflow:
                 category_values,
                 strict=True,
             ):
-                taxonomy_result = self._taxonomy.evaluate(group, records, category_result)
+                try:
+                    taxonomy_result = self._taxonomy.evaluate(group, records, category_result)
+                except EVENT_TECHNICAL_FAILURES as failure:
+                    if on_event_technical_gap is None:
+                        raise
+                    on_event_technical_gap(TechnicalGap.from_failure("Taxonomy", group.event_id, failure))
+                    continue
                 decisions.append(
                     EventDecisionRecord(
                         event_group=group,
@@ -167,7 +178,15 @@ class ReportWorkflow:
                     category_state is CategoryState.CATEGORY_ASSIGNED
                     and taxonomy_state is TaxonomyState.TAXONOMY_EVALUATED
                 ):
-                    reportability_result = self._reportability.evaluate(decision)
+                    try:
+                        reportability_result = self._reportability.evaluate(decision)
+                    except EVENT_TECHNICAL_FAILURES as failure:
+                        if on_event_technical_gap is None:
+                            raise
+                        on_event_technical_gap(
+                            TechnicalGap.from_failure("Reportability", decision.event_group.event_id, failure)
+                        )
+                        continue
                 results.append(ReportWorkflowResult(decision, reportability_result))
                 observation.observe(results)
             observation.observe(results, final=True)

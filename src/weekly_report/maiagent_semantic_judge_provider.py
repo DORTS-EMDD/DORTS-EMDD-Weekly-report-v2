@@ -23,6 +23,8 @@ from .maiagent_transport import (
     UrllibMaiAgentJsonTransport,
     load_shared_maiagent_values,
     parse_maiagent_response,
+    MAIAGENT_HELPER_TIMEOUT_SECONDS,
+    request_maiagent_proposal,
 )
 from .semantic_judge import JudgeMetadata, SemanticJudgeInput
 
@@ -115,7 +117,7 @@ class MaiAgentSemanticJudgeConfig:
     api_key: str = field(repr=False)
     chatbot_id: str = field(repr=False)
     model_identifier: str
-    timeout_seconds: float = 45.0
+    timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS
     provider_identifier: str = PROVIDER_IDENTIFIER
 
     def __post_init__(self) -> None:
@@ -177,7 +179,7 @@ class MaiAgentSemanticJudgeConfig:
         environ: Mapping[str, str] | None = None,
         *,
         model_identifier: str | None = None,
-        timeout_seconds: float = 45.0,
+        timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS,
         provider_identifier: str = PROVIDER_IDENTIFIER,
         dotenv_path: str | os.PathLike[str] | None = None,
     ) -> "MaiAgentSemanticJudgeConfig | None":
@@ -284,34 +286,21 @@ class MaiAgentSemanticJudgeProvider:
             ensure_ascii=False,
             separators=(",", ":"),
         ).encode("utf-8")
-        try:
-            response = self._transport(
-                self._config.completion_endpoint,
-                headers={
-                    "Authorization": f"Api-Key {self._config.api_key}",
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                },
-                body=body,
-                timeout_seconds=float(self._config.timeout_seconds),
-            )
-        except TimeoutError:
-            raise TimeoutError("MaiAgent semantic judge request timed out") from None
-        except Exception:
-            raise MaiAgentSemanticJudgeProviderFailure(
-                "MaiAgent semantic judge transport failed"
-            ) from None
-
-        if not isinstance(response, MaiAgentHttpResponse) or response.status_code != 200:
-            raise MaiAgentSemanticJudgeProviderFailure(
-                "MaiAgent semantic judge request failed"
-            )
-        try:
-            return parse_maiagent_response(response.body)
-        except MaiAgentResponseError:
-            # EvidenceService's existing validator owns the invalid-response
-            # diagnostic.  No repair or correction request is permitted here.
-            return None
+        # Technical failures propagate as typed SemanticProviderTechnicalFailure
+        # after the shared bounded retry.  A parseable response is returned
+        # unchanged; EvidenceService's validator owns its acceptance.
+        return request_maiagent_proposal(
+            self._transport,
+            self._config.completion_endpoint,
+            headers={
+                "Authorization": f"Api-Key {self._config.api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            body=body,
+            timeout_seconds=float(self._config.timeout_seconds),
+            task="evidence_semantic_judge",
+        )
 
 
 # The shorter name reads naturally at the SemanticJudge injection seam.
@@ -326,7 +315,7 @@ def build_maiagent_semantic_judge(
     model_identifier: str | None = None,
     transport: MaiAgentJsonHttpTransport | None = None,
     environ: Mapping[str, str] | None = None,
-    timeout_seconds: float = 45.0,
+    timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS,
     provider_identifier: str = PROVIDER_IDENTIFIER,
     dotenv_path: str | os.PathLike[str] | None = None,
 ) -> MaiAgentSemanticJudgeProvider | None:

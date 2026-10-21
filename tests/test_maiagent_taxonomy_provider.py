@@ -33,6 +33,7 @@ from src.weekly_report.maiagent_taxonomy_provider import (
     TAXONOMY_INSTRUCTIONS,
     build_maiagent_taxonomy_model_input,
 )
+from src.weekly_report.contracts import SemanticProviderTechnicalFailure
 from src.weekly_report.maiagent_transport import MaiAgentHttpResponse
 from src.weekly_report.taxonomy import Taxonomy, TaxonomySemanticMember, TaxonomySemanticRequest, TaxonomyStageFailure
 
@@ -294,14 +295,16 @@ class MaiAgentTaxonomyProviderTests(unittest.TestCase):
                 self.assertEqual(MaiAgentTaxonomyProposalProvider(_config(), transport=transport)(request), proposal)
                 self.assertEqual(len(transport.calls), 1)
 
-    def test_failures_are_safe_and_never_retried(self):
+    def test_transient_failures_are_safe_and_retried_once(self):
+        # RC-6: one identical retry for transient failures, then a typed
+        # technical failure; nothing is repaired.
         request = _request()
         for error in (TimeoutError("secret-timeout"), RuntimeError("secret-provider")):
             transport = _RecordedTransport(error=error)
-            with self.subTest(error=type(error)), self.assertRaises((TimeoutError, MaiAgentTaxonomyProviderFailure)) as raised:
+            with self.subTest(error=type(error)), self.assertRaises(SemanticProviderTechnicalFailure) as raised:
                 MaiAgentTaxonomyProposalProvider(_config(), transport=transport)(request)
             self.assertNotIn("secret", str(raised.exception))
-            self.assertEqual(len(transport.calls), 1)
+            self.assertEqual(len(transport.calls), 2)
 
         for response in (
             MaiAgentHttpResponse(503, b"secret body"),
@@ -311,9 +314,9 @@ class MaiAgentTaxonomyProviderTests(unittest.TestCase):
             MaiAgentHttpResponse(200, json.dumps({"content": "[]"}).encode()),
         ):
             transport = _RecordedTransport(response)
-            with self.subTest(response=response), self.assertRaises(MaiAgentTaxonomyProviderFailure):
+            with self.subTest(response=response), self.assertRaises(SemanticProviderTechnicalFailure):
                 MaiAgentTaxonomyProposalProvider(_config(), transport=transport)(request)
-            self.assertEqual(len(transport.calls), 1)
+            self.assertEqual(len(transport.calls), 2)
 
     def test_owner_accepts_valid_adapter_proposal_and_rejects_invalid_support(self):
         group = _group("A")
@@ -407,19 +410,20 @@ class MaiAgentTaxonomyProviderTests(unittest.TestCase):
             )
         self.assertEqual(len(transport.calls), 1)
 
-    def test_owner_maps_provider_failure_to_technical_stage_failure_not_unresolved(self):
+    def test_owner_passes_provider_technical_failure_through_not_unresolved(self):
+        # RC-6: provider technical failures pass through the owner unchanged
+        # (a disclosed event-level technical gap), never TAXONOMY_UNRESOLVED.
         group = _group("A")
         record = _record("A", "Body")
         for transport in (
             _RecordedTransport(error=TimeoutError("secret")),
             _RecordedTransport(MaiAgentHttpResponse(200, b"not-json")),
         ):
-            with self.subTest(transport_error=transport.error is not None), self.assertRaises(TaxonomyStageFailure) as raised:
+            with self.subTest(transport_error=transport.error is not None), self.assertRaises(SemanticProviderTechnicalFailure):
                 Taxonomy(MaiAgentTaxonomyProposalProvider(_config(), transport=transport)).evaluate(
                     group, (record,), _assigned(group)
                 )
-            self.assertNotEqual(raised.exception.reason, "TAXONOMY_UNRESOLVED")
-            self.assertEqual(len(transport.calls), 1)
+            self.assertEqual(len(transport.calls), 2)
 
     def test_construction_and_model_input_make_no_network_calls(self):
         transport = _RecordedTransport()

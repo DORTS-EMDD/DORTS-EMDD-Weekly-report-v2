@@ -22,23 +22,23 @@ def _evidence(content: str, *, candidate_id: str = "C1", **provenance) -> Eviden
 
 
 def _mechanical_schema_proposal(request, *, decision="IN_SCOPE_SUPPORT", mode="METRO", diagnostic="NONE", quote=None):
-    """Quarter-sliced endpoint fields are for mechanical contract tests only."""
+    """Quarter-sliced endpoint labels are for mechanical contract tests only."""
     content = request.principal_content
     quote = content if quote is None else quote
     width = max(1, len(quote) // 4)
-    action_quote = quote[:width]
-    target_quote = quote[width : width * 2]
-    system_quote = quote[width * 2 : width * 3] or quote[width * 2 :]
+    action_label = quote[:width]
+    target_label = quote[width : width * 2]
+    system_label = quote[width * 2 : width * 3] or quote[width * 2 :]
     return {
         "candidate_id": request.candidate_id,
         "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION,
         "event_focus": {"status": "RESOLVED", "quote": quote},
-        "action": {"label": action_quote, "quote": action_quote},
-        "target": {"label": target_quote, "quote": target_quote},
-        "system": {"label": system_quote, "quote": system_quote},
+        "action": {"label": action_label},
+        "target": {"label": target_label},
+        "system": {"label": system_label},
         "eligible_mode_family": mode,
         "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "quote": quote},
-        "target_system": {"status": "ESTABLISHED", "relation": "BELONGS_TO", "quote": quote},
+        "target_system": {"status": "ESTABLISHED", "relation": "BELONGS_TO", "quote": quote, "target_reference": target_label},
         "ambiguity": {"status": "NONE", "quote": quote},
         "noneligible_relation": {"status": "PRESENT" if mode == "NON_ELIGIBLE" else "ABSENT", "quote": quote},
         "noneligible_kind": diagnostic,
@@ -131,7 +131,7 @@ class ScopeClassifierTests(unittest.TestCase):
         def helper(request):
             proposal = _mechanical_schema_proposal(request)
             for field in ("action", "target", "system"):
-                proposal[field] = {"label": content, "quote": content}
+                proposal[field] = {"label": content}
             return proposal
 
         result = ScopeClassifier(helper).classify(_evidence(content), observation_hook=observations.append)
@@ -172,7 +172,7 @@ class ScopeClassifierTests(unittest.TestCase):
 
         def helper(request):
             proposal = _mechanical_schema_proposal(request)
-            proposal["target_system"] = {"status": "ESTABLISHED", "relation": "LOCATED_AT", "quote": content}
+            proposal["target_system"] = {"status": "ESTABLISHED", "relation": "LOCATED_AT", "quote": content, "target_reference": proposal["target"]["label"]}
             return proposal
 
         result = ScopeClassifier(helper).classify(_evidence(content))
@@ -201,12 +201,18 @@ class ScopeClassifierTests(unittest.TestCase):
 
         self.assertEqual(ScopeClassifier(invalid).classify(_evidence(content)).state, ScopeState.OUT_OF_SCOPE)
 
-        def ambiguous(request):
-            proposal = _mechanical_schema_proposal(request, quote="Metro")
-            return proposal
+        # RC-3: a repeated identical quotation is not by itself a rejection;
+        # every occurrence is located and none is selected.
+        def repeated_quote(request):
+            return _mechanical_schema_proposal(request, quote="Metro")
 
         repeated = _evidence("Metro action. Metro action.")
-        self.assertEqual(ScopeClassifier(ambiguous).classify(repeated).state, ScopeState.OUT_OF_SCOPE)
+        result = ScopeClassifier(repeated_quote).classify(repeated)
+        self.assertEqual(result.state, ScopeState.IN_SCOPE)
+        self.assertEqual(
+            result.provenance["relation_support"]["event_focus"],
+            [{"start": 0, "end": 5}, {"start": 14, "end": 19}],
+        )
 
     def test_negated_conditional_and_unresolved_proposals_fail_closed(self):
         content = "The operator may install signalling equipment on the Metro line."

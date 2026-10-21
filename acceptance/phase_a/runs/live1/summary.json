@@ -1,0 +1,504 @@
+{
+  "run_started_utc": "2026-10-20T03:12:21.155771+00:00",
+  "git_head": "ccec80b8871a910dc165c9e87b23fde9b0b2e304",
+  "dry_run": false,
+  "period": [
+    "2026-10-12",
+    "2026-10-18"
+  ],
+  "abort": null,
+  "wall_clock_seconds": 143.8,
+  "budgets": {
+    "evidence_http": [
+      22,
+      80
+    ],
+    "maiagent_calls": [
+      19,
+      160
+    ],
+    "seconds": 2700
+  },
+  "search": {
+    "plan_items_replayed_offline": 449,
+    "manifest_rows_served": [
+      "P04",
+      "P05",
+      "P06",
+      "C05",
+      "P07",
+      "P08",
+      "P09",
+      "P13",
+      "C01",
+      "C06",
+      "P02",
+      "P10",
+      "P11",
+      "P12",
+      "P14",
+      "C02",
+      "P01",
+      "P03",
+      "C03",
+      "C04"
+    ]
+  },
+  "run_status": "APPLICATION_FAILURE",
+  "stage_counts": {},
+  "stage_elapsed_ms": {
+    "Search": 15,
+    "Acquisition": 0,
+    "Normalization": 0,
+    "Evidence": 109765,
+    "Scope": 24297,
+    "Temporal": 0,
+    "EventIdentity": 0,
+    "Category": 3092,
+    "Taxonomy": 2813,
+    "Reportability": 3671,
+    "Ordering": 0,
+    "FormalMetadata": 0
+  },
+  "maiagent_calls_by_task": {
+    "evidence_semantic_judge": 6,
+    "evidence_metadata_extraction": 5,
+    "scope_semantic_proposal": 5,
+    "category_semantic_proposal": 1,
+    "taxonomy_semantic_proposal": 1,
+    "reportability_semantic_proposal": 1
+  },
+  "maiagent_outcomes": {
+    "HTTP_200": 18,
+    "TIMEOUT": 1
+  },
+  "maiagent_calls": [
+    {
+      "index": 1,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 7427,
+      "outcome": "HTTP_200",
+      "latency_s": 3.125,
+      "response_bytes": 2183
+    },
+    {
+      "index": 2,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 6006,
+      "outcome": "HTTP_200",
+      "latency_s": 6.718,
+      "response_bytes": 1739
+    },
+    {
+      "index": 3,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 6250,
+      "outcome": "HTTP_200",
+      "latency_s": 3.047,
+      "response_bytes": 2027
+    },
+    {
+      "index": 4,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 4881,
+      "outcome": "HTTP_200",
+      "latency_s": 3.343,
+      "response_bytes": 1253
+    },
+    {
+      "index": 5,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 4619,
+      "outcome": "TIMEOUT",
+      "latency_s": 45.14
+    },
+    {
+      "index": 6,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 9497,
+      "outcome": "HTTP_200",
+      "latency_s": 2.703,
+      "response_bytes": 1682
+    },
+    {
+      "index": 7,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 8281,
+      "outcome": "HTTP_200",
+      "latency_s": 3.515,
+      "response_bytes": 1427
+    },
+    {
+      "index": 8,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 4994,
+      "outcome": "HTTP_200",
+      "latency_s": 3.094,
+      "response_bytes": 2843
+    },
+    {
+      "index": 9,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 3800,
+      "outcome": "HTTP_200",
+      "latency_s": 2.688,
+      "response_bytes": 1010
+    },
+    {
+      "index": 10,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 4479,
+      "outcome": "HTTP_200",
+      "latency_s": 2.922,
+      "response_bytes": 1601
+    },
+    {
+      "index": 11,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 3309,
+      "outcome": "HTTP_200",
+      "latency_s": 2.719,
+      "response_bytes": 893
+    },
+    {
+      "index": 12,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 23436,
+      "outcome": "HTTP_200",
+      "latency_s": 4.484,
+      "response_bytes": 4295
+    },
+    {
+      "index": 13,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 19931,
+      "outcome": "HTTP_200",
+      "latency_s": 4.579,
+      "response_bytes": 5213
+    },
+    {
+      "index": 14,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 25175,
+      "outcome": "HTTP_200",
+      "latency_s": 4.781,
+      "response_bytes": 4436
+    },
+    {
+      "index": 15,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 15630,
+      "outcome": "HTTP_200",
+      "latency_s": 3.891,
+      "response_bytes": 3476
+    },
+    {
+      "index": 16,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 15090,
+      "outcome": "HTTP_200",
+      "latency_s": 6.406,
+      "response_bytes": 7217
+    },
+    {
+      "index": 17,
+      "task": "category_semantic_proposal",
+      "request_bytes": 9984,
+      "outcome": "HTTP_200",
+      "latency_s": 3.047,
+      "response_bytes": 1553
+    },
+    {
+      "index": 18,
+      "task": "taxonomy_semantic_proposal",
+      "request_bytes": 7481,
+      "outcome": "HTTP_200",
+      "latency_s": 2.781,
+      "response_bytes": 1004
+    },
+    {
+      "index": 19,
+      "task": "reportability_semantic_proposal",
+      "request_bytes": 5240,
+      "outcome": "HTTP_200",
+      "latency_s": 3.64,
+      "response_bytes": 2015
+    }
+  ],
+  "evidence_requests": [
+    {
+      "slot": "C04",
+      "url": "https://www.globalrailwayreview.com/network-rail-wales-and-borders-fits-weather-stations-to-gsm-r-masts-for-severe-weather-response/2136750.article",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.globalrailwayreview.com/network-rail-wales-and-borders-fits-weather-stations-to-gsm-r-masts-for-severe-weather-response/2136750.article",
+      "content_type": "text/html; charset=utf-8",
+      "content_chars": 176714,
+      "sha256": "e7e2142a48af447da17d3563faa68afc19d8630b94b2f41643901d110fba8af3",
+      "redirect_chain": [
+        "https://www.globalrailwayreview.com/network-rail-wales-and-borders-fits-weather-stations-to-gsm-r-masts-for-severe-weather-response/2136750.article"
+      ],
+      "http_requests": 1,
+      "latency_s": 2.5
+    },
+    {
+      "slot": "P05",
+      "url": "https://abc7ny.com/post/nyc-subway-shooting-53rd-street-station-leaves-man-critically-injured/19948241/",
+      "outcome": "HTTP_200",
+      "final_url": "https://abc7ny.com/post/nyc-subway-shooting-53rd-street-station-leaves-man-critically-injured/19948241/",
+      "content_type": "text/html; charset=utf-8",
+      "content_chars": 257480,
+      "sha256": "e3cd9e4c3f2c1b9ef17e9ac98652b168fed156b8fe453669501b43ede33dfe0c",
+      "redirect_chain": [
+        "https://abc7ny.com/post/nyc-subway-shooting-53rd-street-station-leaves-man-critically-injured/19948241/"
+      ],
+      "http_requests": 1,
+      "latency_s": 1.125
+    },
+    {
+      "slot": "P03",
+      "url": "https://www.newarab.com/news/egypt-explores-hydrogen-tram-new-capital-amid-economic-woes",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.newarab.com/news/egypt-explores-hydrogen-tram-new-capital-amid-economic-woes",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 162343,
+      "sha256": "acf259e092cde772be3392160feed9d28815c526e47b3065a18a0a81dad3005a",
+      "redirect_chain": [
+        "https://www.newarab.com/news/egypt-explores-hydrogen-tram-new-capital-amid-economic-woes"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.234
+    },
+    {
+      "slot": "P11",
+      "url": "https://www.adb.org/news/adb-approves-302-million-loan-modernize-baku-metro-signaling-and-digital-operations",
+      "outcome": "ERROR:_EvidenceFetchError",
+      "status_code": 403,
+      "failing_host": "www.adb.org",
+      "http_requests": 1,
+      "latency_s": 0.078
+    },
+    {
+      "slot": "P08",
+      "url": "https://www.railwaygazette.com/india/2026/10/13/chennai-metro-opens-first-section-of-the-yellow-line-as-phase-ii-expansion-gathers-pace/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/india/2026/10/13/chennai-metro-opens-first-section-of-the-yellow-line-as-phase-ii-expansion-gathers-pace/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 92578,
+      "sha256": "9af95be0a672dec4a708d165ffcf3dd95689f1038e6de2784896443cf78e96ff",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/india/2026/10/13/chennai-metro-opens-first-section-of-the-yellow-line-as-phase-ii-expansion-gathers-pace/"
+      ],
+      "http_requests": 1,
+      "latency_s": 1.109
+    },
+    {
+      "slot": "P09",
+      "url": "https://www.yna.co.kr/view/MYH20261014022200038",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.yna.co.kr/view/MYH20261014022200038",
+      "content_type": "text/html;charset=UTF-8",
+      "content_chars": 137708,
+      "sha256": "6786c60e2c4ad0a7959dcbd817fb0d3c3b7006d4c9144b0ab5c2d84782118153",
+      "redirect_chain": [
+        "https://www.yna.co.kr/view/MYH20261014022200038"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.5
+    },
+    {
+      "slot": "C01",
+      "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxPZnZmZ0xrWlFxY1lBYjllU1dwMmZfMUo1QVNPMlVQYXpBemJHcmhWRmFhWnNPLVBaRk5VMENPRllIYzNBanpqZlVsUnlKVDVESE8xNkFuNTN5cXpLb2NYMnd1X3JUclZ5eWhibUc4YkRqRkQzR1hkck9Ga04weDQyeF85amxXTUZ5ZEFXakwwempjLWoxWDlSTzc0QnR5SHhZQk9DRTJCVklGZHVHS3plY0FB?oc=5",
+      "outcome": "HTTP_200",
+      "final_url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxPZnZmZ0xrWlFxY1lBYjllU1dwMmZfMUo1QVNPMlVQYXpBemJHcmhWRmFhWnNPLVBaRk5VMENPRllIYzNBanpqZlVsUnlKVDVESE8xNkFuNTN5cXpLb2NYMnd1X3JUclZ5eWhibUc4YkRqRkQzR1hkck9Ga04weDQyeF85amxXTUZ5ZEFXakwwempjLWoxWDlSTzc0QnR5SHhZQk9DRTJCVklGZHVHS3plY0FB?oc=5&hl=en-US&gl=US&ceid=US:en",
+      "content_type": "text/html; charset=utf-8",
+      "content_chars": 584861,
+      "sha256": "3f6a2a4850118efd7c16932ff3d525bd808b8aec4ab305c0d6a2446aa380d4f2",
+      "redirect_chain": [
+        "https://news.google.com/rss/articles/CBMisgFBVV95cUxPZnZmZ0xrWlFxY1lBYjllU1dwMmZfMUo1QVNPMlVQYXpBemJHcmhWRmFhWnNPLVBaRk5VMENPRllIYzNBanpqZlVsUnlKVDVESE8xNkFuNTN5cXpLb2NYMnd1X3JUclZ5eWhibUc4YkRqRkQzR1hkck9Ga04weDQyeF85amxXTUZ5ZEFXakwwempjLWoxWDlSTzc0QnR5SHhZQk9DRTJCVklGZHVHS3plY0FB?oc=5",
+        "https://news.google.com/rss/articles/CBMisgFBVV95cUxPZnZmZ0xrWlFxY1lBYjllU1dwMmZfMUo1QVNPMlVQYXpBemJHcmhWRmFhWnNPLVBaRk5VMENPRllIYzNBanpqZlVsUnlKVDVESE8xNkFuNTN5cXpLb2NYMnd1X3JUclZ5eWhibUc4YkRqRkQzR1hkck9Ga04weDQyeF85amxXTUZ5ZEFXakwwempjLWoxWDlSTzc0QnR5SHhZQk9DRTJCVklGZHVHS3plY0FB?oc=5&hl=en-US&gl=US&ceid=US:en"
+      ],
+      "http_requests": 2,
+      "latency_s": 0.594
+    },
+    {
+      "slot": "C03",
+      "url": "https://www.railwaygazette.com/netherlands/2026/10/06/delft-tramway-extension-to-university-opens-with-custom-power-feed-to-minimise-electromagnetic-interference/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/netherlands/2026/10/06/delft-tramway-extension-to-university-opens-with-custom-power-feed-to-minimise-electromagnetic-interference/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 95565,
+      "sha256": "5914ca14eb01f5ff38c5e594242ca312eec85ebdae2b51e5c0cbb63fda8e80d6",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/netherlands/2026/10/06/delft-tramway-extension-to-university-opens-with-custom-power-feed-to-minimise-electromagnetic-interference/"
+      ],
+      "http_requests": 1,
+      "latency_s": 1.218
+    },
+    {
+      "slot": "P06",
+      "url": "https://www.railbusinessuk.com/light-rail/2026/10/14/tram-safety-reviewed-ahead-of-10th-anniversary-of-croydon-derailment/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railbusinessuk.com/light-rail/2026/10/14/tram-safety-reviewed-ahead-of-10th-anniversary-of-croydon-derailment/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 58439,
+      "sha256": "2288b79bfbd5ea29d6eb5b1141e476e2e67f964cc5301b3b81c311e87908f772",
+      "redirect_chain": [
+        "https://www.railbusinessuk.com/light-rail/2026/10/14/tram-safety-reviewed-ahead-of-10th-anniversary-of-croydon-derailment/"
+      ],
+      "http_requests": 1,
+      "latency_s": 1.375
+    },
+    {
+      "slot": "P12",
+      "url": "https://www.spa.gov.sa/en/N2700572",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.spa.gov.sa/en/N2700572",
+      "content_type": "text/html; charset=utf-8",
+      "content_chars": 141866,
+      "sha256": "c49f872a10bf80778ee25a30d7e728b6cb17598e4f75305736ff67a99db0eb9a",
+      "redirect_chain": [
+        "https://www.spa.gov.sa/en/N2700572"
+      ],
+      "http_requests": 1,
+      "latency_s": 2.843
+    },
+    {
+      "slot": "P14",
+      "url": "https://news.tuoitre.vn/hanoi-strikes-deals-for-5-metro-lines-targets-2030-completion-103261016123017314.htm",
+      "outcome": "HTTP_200",
+      "final_url": "https://news.tuoitre.vn/hanoi-strikes-deals-for-5-metro-lines-targets-2030-completion-103261016123017314.htm",
+      "content_type": "text/html; charset=utf-8",
+      "content_chars": 86229,
+      "sha256": "82cefdf50a27183036f44599351538e15a0d77a9cf0a87e839798699ce6f7231",
+      "redirect_chain": [
+        "https://news.tuoitre.vn/hanoi-strikes-deals-for-5-metro-lines-targets-2030-completion-103261016123017314.htm"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.625
+    },
+    {
+      "slot": "P10",
+      "url": "https://www.railwaygazette.com/denmark/2026/10/14/kobenhavn-metro-operating-contract-signed/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/denmark/2026/10/14/kobenhavn-metro-operating-contract-signed/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 88900,
+      "sha256": "6c4ae82175efc170df7bee29c6ee2396696bc94d103c1c20eb8c9e172709d7d7",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/denmark/2026/10/14/kobenhavn-metro-operating-contract-signed/"
+      ],
+      "http_requests": 1,
+      "latency_s": 1.891
+    },
+    {
+      "slot": "P02",
+      "url": "https://www.railwaygazette.com/denmark/2026/10/13/hitachi-rail-awarded-kobenhavn-s-bane-automation-support-systems-contract/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/denmark/2026/10/13/hitachi-rail-awarded-kobenhavn-s-bane-automation-support-systems-contract/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 90650,
+      "sha256": "77226c2cb213b7cd18b6a9e82798c91dc5a73ac9b8d4d0c3130a6f7d51ccd748",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/denmark/2026/10/13/hitachi-rail-awarded-kobenhavn-s-bane-automation-support-systems-contract/"
+      ],
+      "http_requests": 1,
+      "latency_s": 1.172
+    },
+    {
+      "slot": "P07",
+      "url": "https://www.railwaygazette.com/usa/2026/10/16/st-louis-metrolink-completes-192m-extension-to-midamerica-airport/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/usa/2026/10/16/st-louis-metrolink-completes-192m-extension-to-midamerica-airport/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 93105,
+      "sha256": "5c596939cacb47a997c01b3175826af01fdadc58878e9446326be87db38a418a",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/usa/2026/10/16/st-louis-metrolink-completes-192m-extension-to-midamerica-airport/"
+      ],
+      "http_requests": 1,
+      "latency_s": 1.14
+    },
+    {
+      "slot": "C06",
+      "url": "https://www.railwaygazette.com/category/urban/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/category/urban/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 79339,
+      "sha256": "5454a59a1b16ac4d3548314d50ce436308ad0416797bbaa5821473484cf9b4eb",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/category/urban/"
+      ],
+      "http_requests": 1,
+      "latency_s": 1.016
+    },
+    {
+      "slot": "C02",
+      "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxPWG52aGh6cVB1T3oxUktJNFhnUEZxMW9Jc0xoblBwUkhadWNHUGRBLThvZ3dwT0FTX2lOTjRGMXk0R2JuNFViUjVPTUpqRElyaWUwZGgxckJsdHRSS0NOc2dYREdxd3pmMTdTUTBFNkk1VEYzUnp0YnJIbnF5aFExcXhyTkZvRkFaTkNfVm16VUlBYXUyaUU2T0ZNNjFLcnB0N2VnMVNpbXZUd3Rj?oc=5",
+      "outcome": "HTTP_200",
+      "final_url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxPWG52aGh6cVB1T3oxUktJNFhnUEZxMW9Jc0xoblBwUkhadWNHUGRBLThvZ3dwT0FTX2lOTjRGMXk0R2JuNFViUjVPTUpqRElyaWUwZGgxckJsdHRSS0NOc2dYREdxd3pmMTdTUTBFNkk1VEYzUnp0YnJIbnF5aFExcXhyTkZvRkFaTkNfVm16VUlBYXUyaUU2T0ZNNjFLcnB0N2VnMVNpbXZUd3Rj?oc=5&hl=en-US&gl=US&ceid=US:en",
+      "content_type": "text/html; charset=utf-8",
+      "content_chars": 584712,
+      "sha256": "52ee0c08ef738cdfb1c07017cde7fae23ce97b515654a4d6e03ac87f2eab88df",
+      "redirect_chain": [
+        "https://news.google.com/rss/articles/CBMirAFBVV95cUxPWG52aGh6cVB1T3oxUktJNFhnUEZxMW9Jc0xoblBwUkhadWNHUGRBLThvZ3dwT0FTX2lOTjRGMXk0R2JuNFViUjVPTUpqRElyaWUwZGgxckJsdHRSS0NOc2dYREdxd3pmMTdTUTBFNkk1VEYzUnp0YnJIbnF5aFExcXhyTkZvRkFaTkNfVm16VUlBYXUyaUU2T0ZNNjFLcnB0N2VnMVNpbXZUd3Rj?oc=5",
+        "https://news.google.com/rss/articles/CBMirAFBVV95cUxPWG52aGh6cVB1T3oxUktJNFhnUEZxMW9Jc0xoblBwUkhadWNHUGRBLThvZ3dwT0FTX2lOTjRGMXk0R2JuNFViUjVPTUpqRElyaWUwZGgxckJsdHRSS0NOc2dYREdxd3pmMTdTUTBFNkk1VEYzUnp0YnJIbnF5aFExcXhyTkZvRkFaTkNfVm16VUlBYXUyaUU2T0ZNNjFLcnB0N2VnMVNpbXZUd3Rj?oc=5&hl=en-US&gl=US&ceid=US:en"
+      ],
+      "http_requests": 2,
+      "latency_s": 0.625
+    },
+    {
+      "slot": "P04",
+      "url": "https://www.info.gov.hk/gia/general/202610/12/P2026101200687.htm",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.info.gov.hk/gia/general/202610/12/P2026101200687.htm",
+      "content_type": "text/html",
+      "content_chars": 12905,
+      "sha256": "c62dc794d1898a11420e0992ad4e206fb6031e5edf4c5f2d554727d1a5189ec4",
+      "redirect_chain": [
+        "https://www.info.gov.hk/gia/general/202610/12/P2026101200687.htm"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.344
+    },
+    {
+      "slot": "P01",
+      "url": "https://news.66wz.com/system/2026/10/13/105853227.shtml",
+      "outcome": "ERROR:URLError",
+      "status_code": null,
+      "failing_host": null,
+      "http_requests": 1,
+      "latency_s": 10.156
+    },
+    {
+      "slot": "C05",
+      "url": "https://www.info.gov.hk/gia/general/202610/12/P2026101200683.htm",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.info.gov.hk/gia/general/202610/12/P2026101200683.htm",
+      "content_type": "text/html",
+      "content_chars": 11745,
+      "sha256": "641bc2ef22b49bc06efa70b022d6ab0c05a7004b16987a41b3115292c3238ea5",
+      "redirect_chain": [
+        "https://www.info.gov.hk/gia/general/202610/12/P2026101200683.htm"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.188
+    },
+    {
+      "slot": "P13",
+      "url": "https://www.railwaygazette.com/china/2026/10/16/hong-kong-northern-link-spur-line-approved/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/china/2026/10/16/hong-kong-northern-link-spur-line-approved/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 87747,
+      "sha256": "61d94c927b54c61a1e32067d46614e7bb73411361bfc50a634592ad453d3ba1b",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/china/2026/10/16/hong-kong-northern-link-spur-line-approved/"
+      ],
+      "http_requests": 1,
+      "latency_s": 1.094
+    }
+  ],
+  "slot_by_candidate": {},
+  "final_report_event_count": null
+}

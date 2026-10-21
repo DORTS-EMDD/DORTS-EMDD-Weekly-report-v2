@@ -7,6 +7,8 @@ from unittest import TestCase
 from src.weekly_report.candidate_normalizer import CandidateNormalizationError, CandidateNormalizer
 from src.weekly_report.classifier import Classifier
 from src.weekly_report.contracts import (
+    RegionResolution,
+    RegionResolutionBasis,
     CandidateNormalizationFailure,
     CategoryId,
     CategoryResult,
@@ -78,15 +80,15 @@ def _semantic_provider(request):
         "event_id": request.event_id,
         "field_assessments": [
             {
-                "field_name": field_name,
+                "field_name": field_name.value,
                 "language_assessment": "TRADITIONAL_CHINESE",
-                "units": [{
-                    "writer_quote": value,
+                "unit_assessments": [{
+                    "unit_id": unit_id,
                     "assessment": "ANALYSIS" if field_name == "taipei_insight" else "SUPPORTED",
                     "evidence_citations": [{"candidate_id": source.candidate_id, "exact_quote": source.substantive_content}],
-                }],
+                } for unit_id in unit_ids],
             }
-            for field_name, value in request.writer_prose.as_mapping().items()
+            for field_name, unit_ids in request.unit_ids_by_field().items()
         ],
     }
 
@@ -251,6 +253,15 @@ class FormalEvidenceService(RecordingEvidenceService):
                 IdentityMetadataSupport("country", 0, 6),
                 IdentityMetadataSupport("transit_system_name", 7, 12),
                 IdentityMetadataSupport("location", 13, 19),
+            ),
+            # RC-4: EvidenceService-owned deterministic region resolution.
+            region_resolution=RegionResolution(
+                RegionResolutionBasis.SOURCE_STATED,
+                region_id="TW",
+                display_name="臺灣",
+                source_field="country",
+                source_value="Taiwan",
+                reference_version="geo-reference-v1",
             ),
         )
         return EvidenceResult(
@@ -483,9 +494,9 @@ class RecordingDownstreamWorkflow(ReportWorkflow):
         self.calls = []
         super().__init__(self.taxonomy_owner, reportability=self.reportability_owner)
 
-    def run(self, event_groups, member_records, category_results):
+    def run(self, event_groups, member_records, category_results, **kwargs):
         self.calls.append((tuple(event_groups), member_records, tuple(category_results)))
-        return super().run(event_groups, member_records, category_results)
+        return super().run(event_groups, member_records, category_results, **kwargs)
 
 
 class BrokenOrdering(Ordering):
@@ -504,8 +515,8 @@ class MalformedDownstreamWorkflow(RecordingDownstreamWorkflow):
         super().__init__(reportable=True)
         self.mode = mode
 
-    def run(self, event_groups, member_records, category_results):
-        results = super().run(event_groups, member_records, category_results)
+    def run(self, event_groups, member_records, category_results, **kwargs):
+        results = super().run(event_groups, member_records, category_results, **kwargs)
         if self.mode == "raw":
             return (results[0].decision,)
         if self.mode == "mixed":
@@ -542,13 +553,13 @@ class RecordingReportService(ReportService):
         self.failure = failure
         self.trace = trace
 
-    def project_formal_metadata(self, ordered_results):
+    def project_formal_metadata_population(self, ordered_results):
         self.calls.append(ordered_results)
         if self.trace is not None:
             self.trace.append("report_service")
         if self.failure is not None:
             raise self.failure
-        return super().project_formal_metadata(ordered_results)
+        return super().project_formal_metadata_population(ordered_results)
 
 
 class ReportApplicationTests(TestCase):
@@ -1387,7 +1398,9 @@ class ReportApplicationTests(TestCase):
             tuple(item.event_group.event_id for item in result.ordered_results),
         )
         metadata = result.formal_metadata[0]
-        self.assertEqual(metadata.country, "Taiwan")
+        # RC-4: the displayed country is the reference display name of the
+        # EvidenceService region resolution for the source value "Taiwan".
+        self.assertEqual(metadata.country, "臺灣")
         self.assertEqual(metadata.transit_system_name, "Metro")
         self.assertEqual(metadata.display_date, "2026-09-18")
         self.assertEqual(metadata.source_display, "www.news.example.com")
@@ -1467,7 +1480,10 @@ class ReportApplicationTests(TestCase):
                 ordering=RecordingOrdering(),
                 report_service=ReportService(),
             ).run("selected")
-        self.assertEqual(context.exception.reason, FormalMetadataFailureReason.MISSING_COUNTRY)
+        # RC-4: a missing country is no longer a formal-run failure; the
+        # next formal-metadata invariant (invalid canonical source) still
+        # propagates without downgrade.
+        self.assertEqual(context.exception.reason, FormalMetadataFailureReason.INVALID_CANONICAL_SOURCE)
 
     def test_ordering_output_validation_rejects_all_malformed_shapes(self) -> None:
         baseline = self._reportable_run(RecordingOrdering())
@@ -2181,3 +2197,197 @@ class ReportApplicationTests(TestCase):
             event_identity=RecordingEventIdentity(),
         ).run("selected")
         self.assertTrue(result.downstream_ready)
+
+
+# ---------------------------------------------------------------------------
+# RC-5 / RC-6: event-level isolation of technical gaps with full disclosure.
+# ---------------------------------------------------------------------------
+
+from src.weekly_report.contracts import (  # noqa: E402
+    SemanticProviderConfigurationFailure,
+    SemanticProviderTechnicalFailure,
+    TechnicalGapKind,
+)
+from src.weekly_report.production_runner import ProductionRunner, ProductionRunStatus  # noqa: E402
+
+
+def _block(event_id):
+    return {
+        "event_id": event_id,
+        "headline": "事件標題",
+        "factual_summary": "事件摘要 Taiwan Metro",
+        "taipei_insight": "可供臺北捷運評估相關規劃方向",
+    }
+
+
+class _OneCandidateTechnicalFailure(FormalEvidenceService):
+    def evaluate(self, candidate):
+        if candidate.url.endswith("formal-one"):
+            self.calls.append(candidate)
+            raise SemanticProviderTechnicalFailure("TIMEOUT", attempts=2, transient=True)
+        return super().evaluate(candidate)
+
+
+class TechnicalGapIsolationTests(TestCase):
+    _app = ReportApplicationTests._app
+
+    def _run(self, *, evidence_service=None, writer_provider=None, semantic_provider=None, provider=None):
+        return self._app(
+            provider or TwoFormalResultProvider(),
+            evidence_service=evidence_service or FormalEvidenceService(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(default_date=date(2026, 9, 18)),
+            event_identity=RecordingEventIdentity(),
+            classifier=RecordingClassifier(),
+            report_workflow=RecordingDownstreamWorkflow(reportable=True),
+            ordering=RecordingOrdering(),
+            report_service=ReportService(),
+            writer=ReportWriter(provider=writer_provider or (lambda request: _block(request["writer_request"]["event_id"]))),
+            validator=Validator(semantic_provider=semantic_provider or _semantic_provider),
+        ).run("selected")
+
+    def test_evidence_technical_failure_isolates_one_candidate(self):
+        result = self._run(evidence_service=_OneCandidateTechnicalFailure())
+        self.assertEqual(
+            [(gap.stage, gap.kind) for gap in result.technical_gaps],
+            [("Evidence", TechnicalGapKind.TRANSIENT_FAILURE_AFTER_RETRY)],
+        )
+        self.assertEqual(len(result.evidence_results), 1)
+        self.assertEqual(result.final_report.event_count, 1)
+        self.assertEqual(result.final_report.disclosure.technical_gap_count, 1)
+        self.assertIn("技術問題未完成處理", result.final_report.content)
+
+    def test_writer_technical_failure_isolates_one_event_and_is_disclosed(self):
+        calls = []
+
+        def writer(request):
+            calls.append(request)
+            if len(calls) == 1:
+                raise SemanticProviderTechnicalFailure("HTTP_503", attempts=2, transient=True)
+            return _block(request["writer_request"]["event_id"])
+
+        result = self._run(writer_provider=writer)
+        self.assertEqual(len(result.ordered_results), 2)
+        self.assertEqual([gap.stage for gap in result.technical_gaps], ["Writer"])
+        self.assertEqual(len(result.writer_blocks), 1)
+        self.assertEqual(result.validation_result.pass_count, 1)
+        self.assertEqual(result.final_report.event_count, 1)
+        self.assertEqual(result.technical_gaps[0].subject_id, result.ordered_results[0].event_group.event_id)
+
+    def test_invalid_writer_response_is_a_gap_not_a_whole_run_failure(self):
+        calls = []
+
+        def writer(request):
+            calls.append(request)
+            if len(calls) == 1:
+                return {"event_id": request["writer_request"]["event_id"], "headline": "只有標題"}
+            return _block(request["writer_request"]["event_id"])
+
+        result = self._run(writer_provider=writer)
+        self.assertEqual(
+            [(gap.stage, gap.kind) for gap in result.technical_gaps],
+            [("Writer", TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION)],
+        )
+        self.assertEqual(result.final_report.event_count, 1)
+
+    def test_validator_proposal_violation_isolates_one_event(self):
+        calls = []
+
+        def semantic(request):
+            calls.append(request)
+            if len(calls) == 1:
+                return {"event_id": request.event_id, "field_assessments": []}
+            return _semantic_provider(request)
+
+        result = self._run(semantic_provider=semantic)
+        self.assertEqual(
+            [(gap.stage, gap.kind) for gap in result.technical_gaps],
+            [("Validator", TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION)],
+        )
+        self.assertEqual(result.validation_result.pass_count, 1)
+        self.assertEqual(result.validation_result.failed, ())
+        self.assertEqual(result.final_report.event_count, 1)
+
+    def test_zero_events_with_gaps_are_not_reported_as_no_eligible_events(self):
+        class AllFail(FormalEvidenceService):
+            def evaluate(self, candidate):
+                raise SemanticProviderTechnicalFailure("TIMEOUT", attempts=2, transient=True)
+
+        result = self._run(evidence_service=AllFail(), provider=FormalResultProvider())
+        self.assertEqual(result.final_report.event_count, 0)
+        self.assertNotIn("本期無符合正式報導條件之事件", result.final_report.content)
+        self.assertIn("執行說明", result.final_report.content)
+
+    def test_configuration_and_unexpected_failures_still_abort(self):
+        class ConfigFail(FormalEvidenceService):
+            def evaluate(self, candidate):
+                raise SemanticProviderConfigurationFailure("HTTP_401")
+
+        class Broken(FormalEvidenceService):
+            def evaluate(self, candidate):
+                raise RuntimeError("programming error")
+
+        with self.assertRaises(SemanticProviderConfigurationFailure):
+            self._run(evidence_service=ConfigFail())
+        with self.assertRaises(RuntimeError):
+            self._run(evidence_service=Broken())
+
+    def test_result_invariants_reject_a_gap_for_an_unknown_candidate(self):
+        result = self._run(evidence_service=_OneCandidateTechnicalFailure())
+        foreign = replace(result.technical_gaps[0], subject_id="cand_foreign")
+        with self.assertRaises(ValueError):
+            replace(result, technical_gaps=(foreign,))
+
+    def test_runner_status_distinguishes_gaps_and_configuration_failure(self):
+        gapped = self._run(evidence_service=_OneCandidateTechnicalFailure())
+
+        class Fixed:
+            def __init__(self, outcome):
+                self.outcome = outcome
+
+            def run(self, *args, **kwargs):
+                if isinstance(self.outcome, BaseException):
+                    raise self.outcome
+                return self.outcome
+
+        result = ProductionRunner(Fixed(gapped)).run(period_start="2026-09-12", period_end="2026-09-18")
+        self.assertEqual(result.status, ProductionRunStatus.SUCCESS_WITH_TECHNICAL_GAPS)
+        self.assertTrue(result.successful)
+        self.assertFalse(result.complete)
+        self.assertEqual(result.stage_counts["technical_gaps_evidence"], 1)
+
+        config = ProductionRunner(Fixed(SemanticProviderConfigurationFailure("HTTP_403"))).run(
+            period_start="2026-09-12", period_end="2026-09-18"
+        )
+        self.assertEqual(config.status, ProductionRunStatus.CONFIGURATION_FAILURE)
+        self.assertFalse(config.successful)
+
+
+class WorkflowIsolationTests(TestCase):
+    def test_taxonomy_proposal_violation_isolates_one_event_only_when_hooked(self):
+        from src.weekly_report.taxonomy import TaxonomyProposalViolation
+
+        baseline = ReportApplicationTests._reportable_run(ReportApplicationTests(), RecordingOrdering())
+        groups = baseline.event_identity_run.groups
+        records = {record.candidate.candidate_id: record for record in baseline.event_identity_records}
+        members = {group.event_id: tuple(records[c] for c in group.member_candidate_ids) for group in groups}
+        categories = baseline.category_results
+        failing = groups[0].event_id
+        inner = RecordingDownstreamWorkflow(reportable=True)
+
+        class FlakyTaxonomy:
+            def evaluate(self, group, member_records, category_result):
+                if group.event_id == failing:
+                    raise TaxonomyProposalViolation(
+                        "taxonomy citation exact_quote was not found", event_id=group.event_id
+                    )
+                return inner.taxonomy.evaluate(group, member_records, category_result)
+
+        workflow = ReportWorkflow(FlakyTaxonomy(), reportability=inner.reportability)
+        gaps = []
+        results = workflow.run(groups, members, categories, on_event_technical_gap=gaps.append)
+        self.assertEqual([gap.subject_id for gap in gaps], [failing])
+        self.assertNotIn(failing, [result.event_group.event_id for result in results])
+        self.assertEqual(len(results), len(groups) - 1)
+        with self.assertRaises(TaxonomyProposalViolation):
+            workflow.run(groups, members, categories)

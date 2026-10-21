@@ -61,7 +61,7 @@ from .scope_classifier import (
 )
 from .temporal_rule import TemporalRule
 from .taxonomy import (
-    EXACT_TEXT_UNIQUE_RESOLUTION,
+    EXACT_TEXT_RESOLUTION,
     EMTaxonomy,
     Taxonomy,
     TaxonomyOwner,
@@ -127,7 +127,7 @@ __all__ = [
     "TemporalDiagnostic",
     "TemporalResult",
     "TemporalRule",
-    "EXACT_TEXT_UNIQUE_RESOLUTION",
+    "EXACT_TEXT_RESOLUTION",
     "EMTaxonomy",
     "Taxonomy",
     "TaxonomyOwner",

@@ -145,8 +145,81 @@ def parse_maiagent_response(response_body: bytes) -> dict[str, Any]:
     return proposal
 
 
+# One bounded transport policy for every MaiAgent task (Writer and the seven
+# Structured Helper tasks).  Only failures that produced no parseable response
+# are retried, at most once, with the identical request.  A parseable response
+# is never retried, whatever its content or schema validity.
+MAIAGENT_MAX_ATTEMPTS = 2
+MAIAGENT_TRANSIENT_HTTP_STATUSES = frozenset({429, 500, 502, 503, 504})
+MAIAGENT_CONFIGURATION_HTTP_STATUSES = frozenset({401, 403, 404})
+# Helper tasks: observed Phase A latency median 3.2 s, max 6.7 s (n=18) and
+# one 45 s non-response.  Revisit when more live latency data is recorded.
+MAIAGENT_HELPER_TIMEOUT_SECONDS = 30.0
+MAIAGENT_WRITER_TIMEOUT_SECONDS = 45.0
+
+
+def request_maiagent_proposal(
+    transport: "MaiAgentJsonHttpTransport",
+    endpoint: str,
+    *,
+    headers: Mapping[str, str],
+    body: bytes,
+    timeout_seconds: float,
+    task: str = "",
+) -> dict[str, Any]:
+    """Return the parsed inner proposal object or raise a typed failure.
+
+    Raises ``SemanticProviderConfigurationFailure`` for HTTP 401/403/404 (no
+    retry) and ``SemanticProviderTechnicalFailure`` when the call produced no
+    parseable response after the bounded retry, or for any other non-200
+    status (no retry).
+    """
+
+    from .contracts import (
+        SemanticProviderConfigurationFailure,
+        SemanticProviderTechnicalFailure,
+    )
+
+    attempts = 0
+    while True:
+        attempts += 1
+        try:
+            response = transport(endpoint, headers=headers, body=body, timeout_seconds=timeout_seconds)
+        except TimeoutError:
+            failure_class = "TIMEOUT"
+        except Exception:
+            failure_class = "CONNECTION"
+        else:
+            status = getattr(response, "status_code", None)
+            if not isinstance(response, MaiAgentHttpResponse):
+                failure_class = "INVALID_TRANSPORT_RESPONSE"
+            elif status == 200:
+                try:
+                    return parse_maiagent_response(response.body)
+                except MaiAgentResponseError:
+                    failure_class = "UNPARSEABLE_RESPONSE"
+            elif status in MAIAGENT_CONFIGURATION_HTTP_STATUSES:
+                raise SemanticProviderConfigurationFailure(f"HTTP_{status}", task=task)
+            elif status in MAIAGENT_TRANSIENT_HTTP_STATUSES:
+                failure_class = f"HTTP_{status}"
+            else:
+                raise SemanticProviderTechnicalFailure(
+                    f"HTTP_{status}", attempts=attempts, transient=False, task=task
+                )
+        if attempts >= MAIAGENT_MAX_ATTEMPTS:
+            raise SemanticProviderTechnicalFailure(
+                failure_class, attempts=attempts, transient=True, task=task
+            )
+
+
 __all__ = [
+    "MAIAGENT_CONFIGURATION_HTTP_STATUSES",
+    "MAIAGENT_HELPER_TIMEOUT_SECONDS",
+    "MAIAGENT_MAX_ATTEMPTS",
+    "MAIAGENT_TRANSIENT_HTTP_STATUSES",
+    "MAIAGENT_WRITER_TIMEOUT_SECONDS",
     "SHARED_MAIAGENT_CONFIG_KEYS",
+    "request_maiagent_proposal",
     "MaiAgentHttpResponse",
     "MaiAgentJsonHttpTransport",
     "UrllibMaiAgentJsonTransport",

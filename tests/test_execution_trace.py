@@ -367,7 +367,7 @@ def test_cli_trace_starts_before_composition_and_uses_one_identity(capsys, confi
             return cls()
 
         def run(self, **kwargs):
-            return SimpleNamespace(successful=True, summary=lambda: "status=SUCCESS")
+            return SimpleNamespace(successful=True, complete=True, summary=lambda: "status=SUCCESS")
 
     with patch.object(main, "ProductionRunner", Runner):
         code = main.main([])

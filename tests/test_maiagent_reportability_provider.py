@@ -41,6 +41,7 @@ from src.weekly_report.maiagent_reportability_provider import (
     TASK_IDENTITY,
     build_maiagent_reportability_model_input,
 )
+from src.weekly_report.contracts import SemanticProviderTechnicalFailure
 from src.weekly_report.maiagent_transport import MaiAgentHttpResponse
 from src.weekly_report.reportability import Reportability
 
@@ -248,23 +249,26 @@ class MaiAgentReportabilityProviderTests(unittest.TestCase):
         self.assertEqual(sent["reportability_request"], request.as_payload())
         self.assertNotIn("model", sent)
 
-    def test_failure_paths_are_safe_and_never_retried(self):
+    def test_failure_paths_are_safe_and_retried_only_when_transient(self):
+        # RC-6: transient failures get one identical retry; another non-200
+        # status (402) is non-transient and not retried.  Nothing is repaired.
         request = _request()
         for error in (TimeoutError("secret-timeout"), RuntimeError("secret-provider")):
             transport = _RecordedTransport(error=error)
-            with self.subTest(error=type(error)), self.assertRaises((TimeoutError, MaiAgentReportabilityProviderFailure)) as raised:
+            with self.subTest(error=type(error)), self.assertRaises(SemanticProviderTechnicalFailure) as raised:
                 MaiAgentReportabilityProposalProvider(_config(), transport=transport)(request)
             self.assertNotIn("secret", str(raised.exception))
-            self.assertEqual(len(transport.calls), 1)
-        for response in (
-            MaiAgentHttpResponse(402, b"secret body"),
-            MaiAgentHttpResponse(200, b"not-json"),
-            MaiAgentHttpResponse(200, json.dumps({"answer": "{}"}).encode()),
+            self.assertEqual(len(transport.calls), 2)
+        for response, calls in (
+            (MaiAgentHttpResponse(402, b"secret body"), 1),
+            (MaiAgentHttpResponse(200, b"not-json"), 2),
+            (MaiAgentHttpResponse(200, json.dumps({"answer": "{}"}).encode()), 2),
         ):
             transport = _RecordedTransport(response)
-            with self.subTest(response=response), self.assertRaises(MaiAgentReportabilityProviderFailure):
+            with self.subTest(response=response), self.assertRaises(SemanticProviderTechnicalFailure) as raised:
                 MaiAgentReportabilityProposalProvider(_config(), transport=transport)(request)
-            self.assertEqual(len(transport.calls), 1)
+            self.assertNotIn("secret", str(raised.exception))
+            self.assertEqual(len(transport.calls), calls)
 
     def test_construction_and_builder_make_no_network_calls(self):
         transport = _RecordedTransport()

@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from src.weekly_report.contracts import ScopeDiagnostic
+from src.weekly_report.contracts import ScopeDiagnostic, SemanticProviderTechnicalFailure
 from src.weekly_report.maiagent_scope_provider import (
     MAIAGENT_SCOPE_RESPONSE_SCHEMA,
     MaiAgentScopeProviderConfig,
@@ -35,40 +35,55 @@ def test_prompt_and_schema_express_conditional_quote_obligations():
     payload = build_maiagent_scope_model_input(_request())
     instructions = " ".join(payload["instructions"])
     schema = MAIAGENT_SCOPE_RESPONSE_SCHEMA["properties"]
-    assert PROMPT_VERSION == "scope-event-target-system-v3"
-    assert "occurring exactly once" in MAIAGENT_SCOPE_RESPONSE_SCHEMA["description"]
-    assert "may be empty for UNRESOLVED" in instructions
+    # RC-8: v5 anchors endpoint labels inside relation quotations; endpoints
+    # carry no quotations of their own.
+    assert PROMPT_VERSION == "scope-event-target-system-v7"
+    assert SCOPE_PROPOSAL_SCHEMA_VERSION == "scope-semantic-proposal-v3"
+    assert "records every occurrence" in MAIAGENT_SCOPE_RESPONSE_SCHEMA["description"]
+    assert "occur exactly once" not in instructions
     assert "Every nonempty quotation" in instructions
-    assert "selected target.quote and system.quote endpoints" in instructions
-    assert "LOCATED_AT, OWNED_BY, and OPERATED_BY never establish eligibility" in instructions
+    assert "LOCATED_AT, OWNED_BY, and OPERATED_BY never establish target-to-system eligibility" in instructions
+    for endpoint in ("action", "target", "system"):
+        assert set(schema[endpoint]["properties"]) == {"label"}
     assert "UNRESOLVED" in schema["event_focus"]["properties"]["quote"]["description"]
-    assert "asserted action" in schema["action"]["properties"]["quote"]["description"]
-    assert "claimed affected target" in schema["target"]["properties"]["quote"]["description"]
     assert "ESTABLISHED or CONFLICTING" in schema["action_target"]["properties"]["quote"]["description"]
-    assert "UNESTABLISHED" in schema["target_system"]["properties"]["quote"]["description"]
-    assert "actual target and system endpoints" in schema["target_system"]["properties"]["quote"]["description"]
+    assert "action and target labels" in schema["action_target"]["properties"]["quote"]["description"]
+    assert "target_reference and the system label" in schema["target_system"]["properties"]["quote"]["description"]
+    assert "same-event reference" in schema["target_system"]["properties"]["target_reference"]["description"]
+    assert "target_reference" not in MAIAGENT_SCOPE_RESPONSE_SCHEMA["properties"]["target_system"]["required"]
     assert "NONE or UNRESOLVED" in schema["ambiguity"]["properties"]["quote"]["description"]
-    assert "ABSENT or UNRESOLVED" in schema["noneligible_relation"]["properties"]["quote"]["description"]
+    assert "focus action's own target or system" in schema["noneligible_relation"]["properties"]["quote"]["description"]
 
 
-def test_scope_prompt_v3_aligns_proposals_with_source_grounded_relation_contract():
+def test_scope_prompt_v6_states_relation_anchored_labels_and_boundary_rules():
     instructions = " ".join(SCOPE_SEMANTIC_INSTRUCTIONS)
-    assert "exact source-surface substring within its own endpoint quote" in instructions
-    assert "Do not translate, paraphrase, normalize" in instructions
-    assert "contain the exact selected action.quote and target.quote endpoints" in instructions
-    assert "contain the exact selected target.quote and system.quote endpoints" in instructions
-    assert "contiguous excerpt" in instructions
-    assert "may span multiple sentences" in instructions
-    assert "event_focus.quote must encompass the source material" in instructions
-    assert "Do not borrow support from a separate independent event" in instructions
-    assert "noneligible_relation.status is ABSENT, noneligible_kind must be NONE" in instructions
-    assert "When status is PRESENT" in instructions
-    assert "use mode NON_ELIGIBLE" in instructions
+    # SC-1: labels anchored in relation quotations; target may equal system.
+    assert "Endpoints are labels, not quotations" in instructions
+    assert "do not translate, paraphrase, normalize" in instructions
+    assert "must contain both the action label and the target label" in instructions
+    assert "must contain the target label and the system label" in instructions
+    assert "put that exact reference in target_system.target_reference" in instructions
+    assert "Uncertainty about details that leave the system unchanged" in instructions
+    assert "Never invent a quotation that repeats the target label" in instructions
+    assert "that phrase already states membership" in instructions
+    assert "is PART_OF that system" in instructions
+    assert "not the contract document itself" in instructions
+    assert "never become urban rail through the operator" in instructions
+    assert "may be the same text when the action affects the system itself" in instructions
+    assert "must not borrow support from a separate event" in instructions
+    # SC-2: noneligible relation only for the focus action.
+    assert "noneligible_relation concerns only the Candidate focus action's own target or system" in instructions
+    assert "When status is ABSENT, noneligible_kind must be NONE" in instructions
+    assert "mode must be NON_ELIGIBLE" in instructions
+    # D1: events on or in a facility of the system; proximity is not LOCATED_AT.
+    assert "Proximity, nearby or adjacent locations are never LOCATED_AT" in instructions
+    # D2: commuter/suburban/S-Bahn labels neither include nor exclude.
+    assert "neither include nor exclude a system by name" in instructions
+    assert "never URBAN_RAIL" in instructions
     assert "NON_ELIGIBLE and UNKNOWN are valid" in instructions
     assert "anaphora, demonstratives, possessives, component relationships, and cross-sentence" in instructions
-    assert "A location, operator identity, ownership identity, generic equipment word, or nearby station is not target-to-system membership" in instructions
+    assert "A location, operator identity alone, ownership identity, generic equipment word, or nearby station is not target-to-system membership" in instructions
     assert "action_target ESTABLISHED even if target_system is UNESTABLISHED" in instructions
-    assert "Never invent or reconstruct a quotation" in instructions
     assert "Do not force a positive proposal" in instructions
 
 
@@ -108,21 +123,29 @@ def test_scope_provider_returns_shared_config_none_without_all_keys():
 
 
 @pytest.mark.parametrize(
-    ("transport_result", "expected_category"),
+    ("transport_result", "expected_class"),
     [
-        (MaiAgentHttpResponse(503, b"credential-like body is discarded"), "HTTP_STATUS"),
-        (MaiAgentHttpResponse(200, b"not-json"), "RESPONSE_PARSE"),
+        (MaiAgentHttpResponse(503, b"credential-like body is discarded"), "HTTP_503"),
+        (MaiAgentHttpResponse(200, b"not-json"), "UNPARSEABLE_RESPONSE"),
     ],
 )
-def test_scope_provider_failure_categories_are_safe_and_distinct(transport_result, expected_category):
+def test_scope_provider_failure_categories_are_safe_and_distinct(transport_result, expected_class):
+    # RC-6: transient failures are typed technical failures after one retry.
+    calls = []
+
+    def transport(*_args, **_kwargs):
+        calls.append(1)
+        return transport_result
+
     provider = build_maiagent_scope_provider(
-        transport=lambda *_args, **_kwargs: transport_result,
+        transport=transport,
         environ={"MAIAGENT_API_BASE": "https://maiagent.invalid", "MAIAGENT_API_KEY": "key", "MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID": "helper"},
     )
     assert provider is not None
-    with pytest.raises(MaiAgentScopeProviderFailure) as caught:
+    with pytest.raises(SemanticProviderTechnicalFailure) as caught:
         provider(_request())
-    assert caught.value.failure_category == expected_category
+    assert caught.value.failure_class == expected_class
+    assert len(calls) == 2
     assert "credential-like" not in str(caught.value)
 
 
@@ -135,7 +158,7 @@ def test_scope_provider_transport_failure_category_is_safe():
         environ={"MAIAGENT_API_BASE": "https://maiagent.invalid", "MAIAGENT_API_KEY": "key", "MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID": "helper"},
     )
     assert provider is not None
-    with pytest.raises(MaiAgentScopeProviderFailure) as caught:
+    with pytest.raises(SemanticProviderTechnicalFailure) as caught:
         provider(_request())
-    assert caught.value.failure_category == "TRANSPORT"
+    assert caught.value.failure_class == "CONNECTION"
     assert "provider supplied details" not in str(caught.value)

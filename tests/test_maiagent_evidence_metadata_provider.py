@@ -7,7 +7,12 @@ from types import ModuleType
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
 
-from src.weekly_report.contracts import CanonicalCandidate, FetchedSource, EvidenceState
+from src.weekly_report.contracts import (
+    CanonicalCandidate,
+    EvidenceState,
+    FetchedSource,
+    SemanticProviderTechnicalFailure,
+)
 from src.weekly_report.evidence_metadata import EvidenceMetadataRequest
 from src.weekly_report.evidence_service import EvidenceService
 from src.weekly_report.maiagent_evidence_metadata_provider import (
@@ -152,7 +157,8 @@ class MaiAgentEvidenceMetadataProviderTests(unittest.TestCase):
         self.assertEqual(outer["attachments"], [])
         self.assertFalse(outer["is_streaming"])
         self.assertEqual(outer["message"]["role"], "user")
-        self.assertEqual(timeout, 45.0)
+        # RC-6: helper timeout is set from observed Phase A latency.
+        self.assertEqual(timeout, 30.0)
 
         sent_content = outer["message"]["content"]
         sent_input = json.loads(sent_content)
@@ -189,6 +195,8 @@ class MaiAgentEvidenceMetadataProviderTests(unittest.TestCase):
             self.assertNotIn(forbidden, sent_content.lower())
 
     def test_response_parser_rejects_malformed_or_non_object_content_without_repair(self):
+        # RC-6: an unparseable response is a technical failure; the identical
+        # request is retried once, never repaired, then raised as typed failure.
         request = _request()
         for body in (
             b"not-json",
@@ -199,9 +207,11 @@ class MaiAgentEvidenceMetadataProviderTests(unittest.TestCase):
         ):
             with self.subTest(body=body):
                 transport = _RecordedTransport(MaiAgentHttpResponse(200, body))
-                result = MaiAgentEvidenceMetadataExtractor(_config(), transport=transport)(request)
-                self.assertIsNone(result)
-                self.assertEqual(len(transport.calls), 1)
+                with self.assertRaises(SemanticProviderTechnicalFailure) as raised:
+                    MaiAgentEvidenceMetadataExtractor(_config(), transport=transport)(request)
+                self.assertEqual(raised.exception.failure_class, "UNPARSEABLE_RESPONSE")
+                self.assertEqual(len(transport.calls), 2)
+                self.assertEqual(transport.calls[0][2], transport.calls[1][2])
 
     def test_raw_json_schema_is_not_validated_or_repaired_by_adapter(self):
         raw = {"observations": [{"wrong": "domain-shape"}]}
@@ -215,18 +225,21 @@ class MaiAgentEvidenceMetadataProviderTests(unittest.TestCase):
         self.assertNotIn("start", observation_schema["properties"])
         self.assertNotIn("end", observation_schema["properties"])
 
-    def test_timeout_status_error_and_http_failure_have_no_retry(self):
+    def test_timeout_connection_and_transient_http_are_retried_once(self):
+        # RC-6: transient failures get exactly one identical retry.
         request = _request()
-        for error, expected in ((TimeoutError(), TimeoutError), (RuntimeError("secret"), RuntimeError)):
-            transport = _RecordedTransport(error=error)
-            with self.subTest(expected=expected), self.assertRaises(expected):
-                MaiAgentEvidenceMetadataExtractor(_config(), transport=transport)(request)
-            self.assertEqual(len(transport.calls), 1)
-
-        transport = _RecordedTransport(MaiAgentHttpResponse(503, b"secret body"))
-        with self.assertRaises(RuntimeError):
-            MaiAgentEvidenceMetadataExtractor(_config(), transport=transport)(request)
-        self.assertEqual(len(transport.calls), 1)
+        for transport, failure_class in (
+            (_RecordedTransport(error=TimeoutError()), "TIMEOUT"),
+            (_RecordedTransport(error=RuntimeError("secret")), "CONNECTION"),
+            (_RecordedTransport(MaiAgentHttpResponse(503, b"secret body")), "HTTP_503"),
+        ):
+            with self.subTest(failure_class=failure_class):
+                with self.assertRaises(SemanticProviderTechnicalFailure) as raised:
+                    MaiAgentEvidenceMetadataExtractor(_config(), transport=transport)(request)
+                self.assertEqual(raised.exception.failure_class, failure_class)
+                self.assertEqual(raised.exception.attempts, 2)
+                self.assertEqual(len(transport.calls), 2)
+                self.assertNotIn("secret", str(raised.exception))
 
     def test_transport_preserves_timeout_and_sanitizes_failures(self):
         class _Opener:
@@ -320,7 +333,7 @@ class MaiAgentEvidenceMetadataProviderTests(unittest.TestCase):
         raw = {
             "observations": [
                 {"field_name": "country", "value": "Taiwan", "segment_id": "body-0001"},
-                {"field_name": "transit_system_name", "value": "Metro", "segment_id": "body-0001"},
+                {"field_name": "transit_system_name", "value": "Taiwan Metro", "segment_id": "body-0001"},
             ]
         }
         transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(raw)))
@@ -342,7 +355,8 @@ class MaiAgentEvidenceMetadataProviderTests(unittest.TestCase):
         self.assertEqual(result.state, EvidenceState.READY)
         self.assertEqual(result.provenance["metadata_extraction_status"], "valid_metadata")
         self.assertEqual(result.identity_facts.country, "Taiwan")
-        self.assertEqual(result.identity_facts.transit_system_name, "Metro")
+        # RC-4: a specific system name is kept; a bare mode word would not be.
+        self.assertEqual(result.identity_facts.transit_system_name, "Taiwan Metro")
         self.assertEqual(len(transport.calls), 1)
 
     def test_existing_evidence_service_maps_adapter_failures_without_retry_or_salvage(self):
@@ -357,11 +371,8 @@ class MaiAgentEvidenceMetadataProviderTests(unittest.TestCase):
             }
 
         for raw, error, expected_status in (
-            ({"observations": []}, None, "valid_zero_metadata"),
             ({"observations": [{"bad": 1}]}, None, "invalid_response"),
             ({"observations": [{"field_name": "country", "value": "Taiwan", "segment_id": "body-0001", "support_spans": []}]}, None, "invalid_response"),
-            (None, TimeoutError(), "timeout"),
-            (None, RuntimeError("secret-provider-error"), "transport_error"),
         ):
             with self.subTest(expected_status=expected_status):
                 response = _envelope(raw) if raw is not None else b""
@@ -379,6 +390,20 @@ class MaiAgentEvidenceMetadataProviderTests(unittest.TestCase):
                 self.assertEqual(result.provenance["metadata_extraction_status"], expected_status)
                 self.assertEqual(len(transport.calls), 1)
                 self.assertIsNone(result.identity_facts)
+
+        # RC-6: a provider technical failure is propagated to the application
+        # as a typed failure (a disclosed technical gap), never "metadata absent".
+        for error in (TimeoutError(), RuntimeError("secret-provider-error")):
+            with self.subTest(error=type(error).__name__):
+                transport = _RecordedTransport(error=error)
+                service = EvidenceService(
+                    lambda _url: FetchedSource("https://source.test/article", "<html><body><article><p>" + text + "</p></article></body></html>"),
+                    semantic_judge=judge,
+                    metadata_extractor=MaiAgentEvidenceMetadataExtractor(_config(), transport=transport),
+                )
+                with self.assertRaises(SemanticProviderTechnicalFailure):
+                    service.evaluate(CanonicalCandidate("candidate-1", "Title", "https://source.test/article"))
+                self.assertEqual(len(transport.calls), 2)
 
 
 if __name__ == "__main__":

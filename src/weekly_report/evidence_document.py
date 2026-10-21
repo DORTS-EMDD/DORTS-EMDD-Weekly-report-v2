@@ -14,7 +14,7 @@ import re
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from typing import Any, Iterable
-from urllib.parse import urlsplit
+from urllib.parse import urldefrag, urljoin, urlsplit
 from xml.etree import ElementTree
 
 from lxml import html as lxml_html
@@ -336,6 +336,7 @@ def _direct_text(node: _Node) -> str:
 def _collect_principal_body(
     boundary: _Node,
     excluded: list[str],
+    reference_blocks: tuple[_Node, ...] = (),
 ) -> tuple[str, bool, bool]:
     """Return body text, noninteractive-content flag, and body presence."""
 
@@ -345,6 +346,9 @@ def _collect_principal_body(
 
     def visit(node: _Node, inside_anchor: bool = False) -> None:
         nonlocal has_noninteractive, has_any
+        if any(node is block for block in reference_blocks):
+            excluded.append(f"{node.node_id}:hyperlink_reference_block")
+            return
         reason = None if node is boundary else _exclusion_reason(node)
         if reason:
             excluded.append(f"{node.node_id}:{reason}")
@@ -410,6 +414,129 @@ def _find_article_roots(region: _Node) -> list[_Node]:
             continue
         result.append(node)
     return result
+
+
+def _hyperlink_targets_other_resource(
+    anchor: _Node,
+    resource_url: str,
+    resource_identity_checker: Callable[[str], bool] | None,
+) -> bool:
+    href = anchor.attrs.get("href", "").strip()
+    if not href or href.startswith("#"):
+        return False
+    target = urljoin(resource_url, href)
+    if resource_identity_checker is not None and resource_identity_checker(target):
+        return False
+    return urldefrag(target)[0] != urldefrag(resource_url)[0]
+
+
+def _is_hyperlinked_reference_unit(
+    node: _Node,
+    region: _Node,
+    resource_url: str,
+    resource_identity_checker: Callable[[str], bool] | None,
+) -> bool:
+    """Return whether a whole article unit is a hyperlink to another resource.
+
+    A unit contained by a hyperlink, or whose entire text is owned by
+    hyperlinks, to a different resource is a reference to a separate document
+    (EVIDENCE_STRUCTURAL_DOCUMENT §6/§8).  This is a document relationship,
+    not class-name, phrase, count, or position vocabulary.
+    """
+
+    for ancestor in _ancestors(node):
+        if ancestor is region:
+            break
+        if ancestor.tag.casefold() == "a":
+            return _hyperlink_targets_other_resource(ancestor, resource_url, resource_identity_checker)
+    text = _node_text(node)
+    if not text:
+        return False
+    anchors = [
+        item for item in _walk(node)
+        if item is not node
+        and item.tag.casefold() == "a"
+        and not _has_ancestor_tag(item, "a")
+    ]
+    return bool(anchors) and all(
+        _hyperlink_targets_other_resource(item, resource_url, resource_identity_checker)
+        for item in anchors
+    ) and _clean(" ".join(_node_text(item) for item in anchors)) == text
+
+
+def _separable_principal_articles(
+    articles: list[_Node],
+    region: _Node,
+    resource_url: str,
+    resource_identity_checker: Callable[[str], bool] | None,
+    excluded: list[str],
+) -> list[_Node] | None:
+    """Resolve sibling article units by structural separability (§6).
+
+    Content-less article elements and whole-unit hyperlink references to other
+    resources cannot compete as the principal document.  Exactly one remaining
+    unit is the principal article; none remaining is valid only when nothing
+    but content-less units were present.  Any other population is unresolved
+    and returns ``None`` so the caller keeps the ambiguous assessment.
+    """
+
+    references = [
+        node for node in articles
+        if _is_hyperlinked_reference_unit(node, region, resource_url, resource_identity_checker)
+    ]
+    contentless = [
+        node for node in articles
+        if node not in references and not _node_text(node)
+    ]
+    remaining = [node for node in articles if node not in references and node not in contentless]
+    if len(remaining) > 1 or (not remaining and references):
+        return None
+    excluded.extend(f"{node.node_id}:hyperlinked_reference_unit" for node in references)
+    excluded.extend(f"{node.node_id}:contentless_article_unit" for node in contentless)
+    return remaining
+
+
+def _owns_direct_text(node: _Node) -> bool:
+    return bool(_direct_text(node)) or any(_clean(child.tail_text) for child in node.children)
+
+
+def _hyperlink_reference_blocks(
+    boundary: _Node,
+    resource_url: str,
+    resource_identity_checker: Callable[[str], bool] | None,
+) -> tuple[_Node, ...]:
+    """Return maximal blocks whose entire text is links to other resources.
+
+    Such a block references separate documents (EVIDENCE_STRUCTURAL_DOCUMENT
+    §8).  Descent stops at any element that owns non-link text, so inline
+    anchors inside principal prose are never selected.  Hyperlink elements
+    themselves are never selected as blocks.
+    """
+
+    blocks: list[_Node] = []
+
+    def visit(node: _Node) -> None:
+        for child in node.children:
+            if child.tag.casefold() == "a":
+                continue
+            text = _node_text(child)
+            if not text:
+                continue
+            anchors = [
+                item for item in _walk(child)
+                if item.tag.casefold() == "a" and not _has_ancestor_tag(item, "a")
+            ]
+            if anchors and all(
+                _hyperlink_targets_other_resource(item, resource_url, resource_identity_checker)
+                for item in anchors
+            ) and _clean(" ".join(_node_text(item) for item in anchors)) == text:
+                blocks.append(child)
+                continue
+            if not _owns_direct_text(child):
+                visit(child)
+
+    visit(boundary)
+    return tuple(blocks)
 
 
 def _has_explicit_collection(region: _Node) -> bool:
@@ -888,6 +1015,7 @@ def _assessment(
     diagnostics: dict[str, Any] | None = None,
     candidate_id: str = "",
     resource_identity_checker: Callable[[str], bool] | None = None,
+    reference_blocks: tuple[_Node, ...] = (),
 ) -> StructuralAssessment:
     principal_id = boundary.node_id if boundary is not None else ""
     body_segments: tuple[DocumentSegment, ...] = ()
@@ -896,7 +1024,9 @@ def _assessment(
     source_date_facts: tuple[dict[str, Any], ...] = ()
     effective_status = status
     if boundary is not None and status is PrincipalDocumentStatus.PRINCIPAL_DOCUMENT_ESTABLISHED:
-        body, has_noninteractive, has_any = _collect_principal_body(boundary, excluded)
+        body, has_noninteractive, has_any = _collect_principal_body(
+            boundary, excluded, reference_blocks
+        )
         primary, secondary = _headlines_for(boundary, root)
         if body and has_any and has_noninteractive:
             body_segments = (DocumentSegment("body-0001", body),)
@@ -984,6 +1114,12 @@ def _assess_tree(
             diagnostics={"parse_diagnostics": parse_diagnostics, "collection": True},
         )
 
+    if len(articles) > 1:
+        separable = _separable_principal_articles(
+            articles, region, resource_url, resource_identity_checker, excluded
+        )
+        if separable is not None:
+            articles = separable
     if len(articles) > 1:
         return _assessment(
             format_name=format_name,
@@ -1140,6 +1276,13 @@ def _assess_tree(
             },
         )
 
+    # Without a principal article, the main region is the boundary; whole
+    # hyperlink-only blocks inside it reference other documents (§8).
+    reference_blocks = (
+        _hyperlink_reference_blocks(boundary, resource_url, resource_identity_checker)
+        if not articles and boundary is region and region is not root
+        else ()
+    )
     assessment = _assessment(
         format_name=format_name,
         parse_status=parse_status,
@@ -1151,6 +1294,7 @@ def _assess_tree(
         diagnostics={"parse_diagnostics": parse_diagnostics},
         candidate_id=candidate_id,
         resource_identity_checker=resource_identity_checker,
+        reference_blocks=reference_blocks,
     )
     if not assessment.principal_body_segments:
         reason = assessment.reject_reason or "INSUFFICIENT_SUBSTANCE"

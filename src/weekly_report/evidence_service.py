@@ -19,6 +19,10 @@ from urllib.parse import unquote_plus, urljoin, urlsplit, urlunsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from .contracts import (
+    RegionResolution,
+    RegionResolutionBasis,
+    SemanticProviderConfigurationFailure,
+    SemanticProviderTechnicalFailure,
     CanonicalCandidate,
     EvidenceResult,
     EvidenceState,
@@ -46,6 +50,7 @@ from .semantic_judge import (
     validate_semantic_judge_response,
 )
 from .evidence_document import DocumentSegment, PrincipalDocumentStatus, assess_document
+from .geographic_reference import GeographicMatchKind, GeographicReference, default_geographic_reference
 
 
 Fetcher = Callable[[str], FetchedSource | Mapping[str, Any] | object]
@@ -502,8 +507,10 @@ class EvidenceService:
         semantic_judge: SemanticJudge | None = None,
         judge_metadata: JudgeMetadata | None = None,
         metadata_extractor: EvidenceMetadataExtractor | None = None,
+        geographic_reference: GeographicReference | None = None,
     ) -> None:
         self._timeout_seconds = float(timeout_seconds)
+        self._geographic_reference = geographic_reference or default_geographic_reference()
         self._fetcher = fetcher or (
             lambda url: _default_fetcher(url, self._timeout_seconds)
         )
@@ -813,6 +820,10 @@ class EvidenceService:
             return None, self._metadata_signals("not_configured")
         try:
             raw_response = self._metadata_extractor(request)
+        except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure):
+            # RC-6: a technical failure is not "metadata absent"; the
+            # application records a technical gap for this Candidate.
+            raise
         except TimeoutError:
             return None, self._metadata_signals("timeout")
         except Exception:
@@ -827,9 +838,19 @@ class EvidenceService:
             facts = self._translate_metadata(extraction, request, substantive_content)
         except ValueError:
             return None, self._metadata_signals("invalid_response", "span_mapping_invalid")
+        detail = ",".join(
+            f"{field}:UNRESOLVED" for field in facts.unresolved_metadata_fields
+        )
+        resolution = facts.region_resolution
+        region_signal = {
+            "metadata_region_basis": resolution.basis.value if resolution else "",
+            "metadata_region_diagnostic": resolution.diagnostic if resolution else "",
+        }
+        if facts.unresolved_metadata_fields:
+            return facts, {**self._metadata_signals("partial_metadata", detail), **region_signal}
         if not extraction.observations:
-            return None, self._metadata_signals("valid_zero_metadata")
-        return facts, self._metadata_signals("valid_metadata")
+            return facts, {**self._metadata_signals("valid_zero_metadata"), **region_signal}
+        return facts, {**self._metadata_signals("valid_metadata"), **region_signal}
 
     @staticmethod
     def _metadata_signals(status: str, detail: str = "") -> dict[str, Any]:
@@ -838,8 +859,59 @@ class EvidenceService:
             "metadata_extraction_detail": detail,
         }
 
-    @staticmethod
+    def _resolve_region(
+        self,
+        values: Mapping[str, str | None],
+        unresolved_fields: tuple[str, ...],
+    ) -> RegionResolution:
+        """Deterministically resolve one country/region from source values.
+
+        Only validated exact source values are looked up in the versioned
+        geographic reference.  Agreeing matches establish the region; any
+        disagreement, ambiguity, or unrecognized value leaves it unresolved.
+        Search market, query, publisher, URL, and model knowledge are never used.
+        """
+
+        reference = self._geographic_reference
+        matches = []
+        ambiguous = False
+        present = False
+        for field_name in ("country", "transit_system_name", "location"):
+            value = values.get(field_name)
+            if not value:
+                continue
+            present = True
+            match = reference.lookup(value)
+            if match is None:
+                continue
+            if match.kind is GeographicMatchKind.AMBIGUOUS:
+                ambiguous = True
+                continue
+            matches.append((field_name, value, match))
+        regions = {match.region_id for _, _, match in matches}
+        if len(regions) > 1:
+            return RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="CONFLICTING_REGIONS")
+        if len(regions) == 1:
+            stated = [item for item in matches if item[2].kind is GeographicMatchKind.REGION]
+            field_name, value, match = (stated or matches)[0]
+            return RegionResolution(
+                RegionResolutionBasis.SOURCE_STATED if stated else RegionResolutionBasis.REFERENCE_MAPPED,
+                region_id=match.region_id,
+                display_name=match.display_name,
+                source_field=field_name,
+                source_value=value,
+                reference_version=reference.version,
+            )
+        if ambiguous:
+            return RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="AMBIGUOUS_NAME")
+        if present:
+            return RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="UNRECOGNIZED_VALUE")
+        if unresolved_fields:
+            return RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="INVALID_FIELD")
+        return RegionResolution(RegionResolutionBasis.NOT_STATED)
+
     def _translate_metadata(
+        self,
         extraction: EvidenceMetadataExtraction,
         request: EvidenceMetadataRequest,
         substantive_content: str,
@@ -861,7 +933,16 @@ class EvidenceService:
             "location": "",
         }
         supports: list[IdentityMetadataSupport] = []
+        unresolved = [diagnostic.field_name for diagnostic in extraction.field_diagnostics]
+        reference = self._geographic_reference
         for observation in extraction.observations:
+            if observation.field_name == "transit_system_name" and (
+                reference.is_generic_transit_term(observation.value)
+                or reference.is_region_or_city_name(observation.value)
+            ):
+                # A mode word, city, or country is not a specific system name.
+                unresolved.append("transit_system_name")
+                continue
             values[observation.field_name] = observation.value
             for span in observation.support_spans:
                 segment = next(
@@ -889,11 +970,14 @@ class EvidenceService:
                         end=translated_end,
                     )
                 )
+        unresolved_fields = tuple(dict.fromkeys(unresolved))
         return EventIdentityFacts(
             country=values["country"],
             transit_system_name=values["transit_system_name"],
             location=str(values["location"] or ""),
             metadata_support=tuple(supports),
+            region_resolution=self._resolve_region(values, unresolved_fields),
+            unresolved_metadata_fields=unresolved_fields,
         )
 
     def _semantic_match(
@@ -926,6 +1010,9 @@ class EvidenceService:
         started = perf_counter()
         try:
             raw_response = self._semantic_judge(request)
+        except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure):
+            # RC-6: never converted into SOURCE_PAGE_MISMATCH.
+            raise
         except TimeoutError:
             signals.update(
                 {

@@ -318,13 +318,21 @@ class ReportabilityOwnerTests(TestCase):
         with self.assertRaises(ReportabilityStageFailure):
             Reportability(_Provider(proposal)).evaluate(_decision(group, {"C1": "content"}))
 
-    def test_exact_quote_absent_or_repeated_fails(self):
+    def test_exact_quote_absent_fails(self):
         group = _group("C1")
-        for body, quote in (("source content", "missing"), ("repeat repeat", "repeat")):
-            provider = _Provider(_proposal(group, citations=(_citation("C1", quote),)))
-            with self.subTest(body=body):
-                with self.assertRaises(ReportabilityStageFailure):
-                    Reportability(provider).evaluate(_decision(group, {"C1": body}))
+        provider = _Provider(_proposal(group, citations=(_citation("C1", "missing"),)))
+        with self.assertRaises(ReportabilityStageFailure):
+            Reportability(provider).evaluate(_decision(group, {"C1": "source content"}))
+
+    def test_repeated_exact_quote_records_every_occurrence(self):
+        # RC-3 (EXACT_TEXT_ALL_OCCURRENCES): no occurrence is selected.
+        group = _group("C1")
+        provider = _Provider(_proposal(group, citations=(_citation("C1", "repeat"),)))
+        result = Reportability(provider).evaluate(_decision(group, {"C1": "repeat repeat"}))
+        self.assertEqual(
+            [(span.start, span.end) for span in result.provenance.support_spans],
+            [(0, 6), (7, 13)],
+        )
 
     def test_exact_quote_resolution_does_not_normalize_or_cross_search(self):
         group = _group("C1", "C2")

@@ -1,0 +1,364 @@
+# Phase A 真實整合驗收報告
+
+- 執行日：2026-10-20
+- HEAD：`ccec80b8871a910dc165c9e87b23fde9b0b2e304`（production code 未修改）
+- 報告期間：2026-10-12 ～ 2026-10-18
+- 樣本：[manifest.json](manifest.json)（20 筆）
+- 預期結果：[expected_outcomes.json](expected_outcomes.json)（於執行前登錄）
+- 原始紀錄：[runs/live1/summary.json](runs/live1/summary.json)、[runs/live1/trace.jsonl](runs/live1/trace.jsonl)
+- 驗收腳本：[scripts/phase_a_acceptance.py](../../scripts/phase_a_acceptance.py)（test-only）
+
+## 1. 三個問題的答案
+
+| 問題 | 結論 | 依據 |
+|---|---|---|
+| V2 能取得國際捷運新聞原文嗎？ | **能（直接網址時）** | 發布者直接網址 18 筆中 16 筆取得 HTTP 200，中位數 1.1 秒。Google News 連結 2/2 只取得 Google 中介頁。 |
+| 能產生 Evidence READY 嗎？ | **能，但比率過低：正向樣本 3/14**（目標 ≥10/14 → FAIL） | 9 個頁面因結構判定規則被誤拒；應拒絕的 3 個對照組全部正確拒絕。 |
+| 能在合理時間內形成可信的正式報告嗎？ | **時間可以，報告不行** | 總耗時 144 秒，但唯一存活的事件缺少 country，**整個 run 中止，沒有任何 artifact**。Writer 與 Validator 未執行，factual grounding 品質無法量測。 |
+
+## 2. 預算使用
+
+| 項目 | 用量／上限 |
+|---|---|
+| 策展瀏覽頁面載入 | 59 / 80 |
+| Evidence HTTP 請求 | 22 / 80 |
+| MaiAgent 呼叫 | 19 / 160 |
+| 時間 | 144 秒 / 2,700 秒 |
+| Email | 0 封（`LIVE_EMAIL_SEND=0`，未設定收件人） |
+| Search 網路請求 | 0（449 個 plan item 全部以離線 replay 回應） |
+
+MaiAgent 請求合計約 186 KB、回應約 46 KB，約 6 萬 token，費用可忽略。
+
+## 3. 各階段實測
+
+| 階段 | 輸入 → 輸出 | 耗時 | MaiAgent 呼叫 |
+|---|---|---:|---:|
+| Search（replay） | 449 個 item → 20 筆 | 0.02 秒 | 0 |
+| Evidence | 20 → READY 5 | 109.8 秒 | judge 6、metadata 5 |
+| Scope | 5 → IN_SCOPE 1 | 24.3 秒 | 5 |
+| Temporal | 1 → DATE_VALID 1 | 0 秒 | 0 |
+| Event Identity | 1 → 1 個事件 | 0 秒 | 0 |
+| Category | 1 → INCIDENT | 3.1 秒 | 1 |
+| Taxonomy | 1 → 無七大系統 | 2.8 秒 | 1 |
+| Reportability | 1 → REPORTABLE | 3.7 秒 | 1 |
+| FormalMetadata | **FAILED：MISSING_COUNTRY → 整個 run 中止** | — | — |
+| Writer、Validator、Assembly | 未到達 | — | — |
+
+**MaiAgent 實測：**
+- 18 次 HTTP 200，延遲中位數 3.2 秒、最大 6.7 秒。
+- 1 次 45 秒 timeout。
+- 1 次回應格式錯誤：回傳兩個 JSON 物件。
+
+## 4. 逐筆結果（對照預期）
+
+| Slot | Evidence | 之後的結果 | 與預期比較 |
+|---|---|---|---|
+| P01 溫州（66wz） | FETCH_TRANSPORT（10 秒 timeout） | — | 策展時已標示 AT_RISK；瀏覽器也無法連線 |
+| P02 Hitachi S-bane（RG） | PRINCIPAL_DOCUMENT_AMBIGUOUS | — | **誤拒** |
+| P03 埃及氫能電車 | PRINCIPAL_DOCUMENT_AMBIGUOUS | — | **誤拒** |
+| P04 香港電車出軌（英） | READY | Scope：QUOTE_NOT_FOUND → OUT_OF_SCOPE；country 缺 | **誤判**（電車屬適用範圍） |
+| P05 紐約地鐵槍擊 | READY | IN_SCOPE、DATE_VALID、INCIDENT、REPORTABLE → MISSING_COUNTRY | 預期 NOT_REPORTABLE |
+| P06 Croydon 電車安全 | PRINCIPAL_DOCUMENT_AMBIGUOUS | — | **誤拒** |
+| P07 St Louis MetroLink（全文） | PRINCIPAL_DOCUMENT_AMBIGUOUS | — | **誤拒** |
+| P08 Chennai | PRINCIPAL_DOCUMENT_AMBIGUOUS | — | **誤拒** |
+| P09 首爾 9 號線（韓） | SEMANTIC_MATCH：judge **timeout** 被當成內容拒絕 | — | **技術失敗被當成內容判斷** |
+| P10 København O&M | PRINCIPAL_DOCUMENT_AMBIGUOUS | — | **誤拒** |
+| P11 ADB Baku 號誌 | HTTP 403（擋 bot User-Agent） | — | 取得失敗 |
+| P12 利雅得 94 列車（SPA） | SOURCE_PROVENANCE：canonical 指向首頁，且內容由 JS 渲染 | — | 策展時已標示 AT_RISK |
+| P13 港北環支線 | PRINCIPAL_DOCUMENT_AMBIGUOUS | — | **誤拒** |
+| P14 河內 5 條地鐵 | READY | Scope：QUOTE_NOT_UNIQUE → OUT_OF_SCOPE；metadata 無效 | **誤判** |
+| C01、C02 Google News 連結 | SOURCE_PROVENANCE | — | 符合預期（R1 A/B：同一文章直接網址可以取得） |
+| C03 Delft（期間外） | PRINCIPAL_DOCUMENT_AMBIGUOUS | 未到 Temporal | 對照組沒有發揮作用 |
+| C04 Network Rail（幹線） | READY | OUT_OF_SCOPE（NON_ELIGIBLE） | **符合預期** |
+| C05 香港電車出軌（中） | READY | Scope helper 回應格式錯誤 → OUT_OF_SCOPE | **技術失敗被當成內容判斷** |
+| C06 列表頁 | PRINCIPAL_DOCUMENT_AMBIGUOUS | — | **符合預期** |
+
+另外兩點：
+- P04、C05、C04 都沒有任何 `source_date_facts`。香港政府新聞稿的日期寫在頁尾，格式是「Ends/Monday, October 12, 2026」。即使 Scope 通過，Temporal 也會把它們拒絕。
+- C05 與 P04 的跨語言合併沒有被驗證到。
+
+## 5. 根因（依 pipeline 先後排序，只列有實證者）
+
+**RC-1　Google News 不透明連結（R1）：CONFIRMED（A/B 實證）**
+- 同一篇 Railway Gazette 與 ADB 文章，直接網址可以取得原文，Google News 連結只得到 Google 的中介頁。
+- 位置：discovery 來源策略。需要你裁決（Phase B）。
+
+**RC-2　「多個 `<article>` → AMBIGUOUS」：實作違反既有契約**
+- [evidence_document.py:987](../../src/weekly_report/evidence_document.py) 只要 `<main>` 內 `<article>` 超過 1 個，就判 AMBIGUOUS。
+- 但 [EVIDENCE_STRUCTURAL_DOCUMENT.md §6](../../docs/EVIDENCE_STRUCTURAL_DOCUMENT.md) 明文規定：主文章加上可分離的相關文章仍然合格（第 136 行）；多個 `<article>` 不自動代表列表頁（第 406 行）。
+- 影響：成功取得的發布者頁面中，8 篇正常文章被誤拒。Railway Gazette 與 Rail Business UK 頁面有 1 篇主文加 4 張「related」卡片；New Arab 用 `<article>` 包圖片。
+- **修正不需要改契約**，屬於 EvidenceService 的結構判定。
+
+**RC-3　Metadata「值必須在段落中恰好出現一次」：契約本身的規定**
+- 契約〈Canonical exact occurrence resolution〉第 4 點寫明：出現超過一次就作廢整個 extraction。
+- 實際文章通常只有 1 個本文段落，地名一定重複：河內文中「Hanoi」多次出現、「Vietnam」也是；紐約文中「New York」也重複。
+- 結果：5 篇 READY 中 3 篇的 metadata 全部作廢。
+- Scope 的 `QUOTE_NOT_UNIQUE`（P14）是同一類規則。
+- **需要你裁決契約。**
+
+**RC-4　Country 為必填，卻禁止由城市或世界知識推得：契約設計衝突**
+- 紐約新聞全文不會出現「United States」；香港政府英文稿也不寫國家。
+- 依現行契約，這類事件永遠無法成報。
+- **需要你裁決**，例如：由 Python 維護、版本化的「系統／城市 → 國家」對照表，或讓 country 改為非必填，顯示「來源未載明」。
+
+**RC-5　單一事件缺 metadata 就中止整個 run**
+- `FormalMetadataFailure` 會往上拋出；整個 run 判為 APPLICATION_FAILURE，連 0 篇的 artifact 都沒有。
+- 這與 AGENTS §12「單一 Event FAIL 只淘汰該 Event」及 §13「0 篇仍正常產生 artifact」的精神衝突。契約只寫「fail closed」，沒有說明粒度。
+- **需要你釐清。**
+
+**RC-6　MaiAgent 技術失敗被當成內容判斷**
+- P09：judge 45 秒 timeout，結果變成 `SOURCE_PAGE_MISMATCH`。
+- C05：Scope helper 回應格式錯誤，結果變成 `OUT_OF_SCOPE`。
+- 依 AGENTS §12 的原則，技術失敗不應被當成內容 FAIL，但目前 Evidence 與 Scope 是默默拒絕。
+- 是否允許 transport retry 需要你決定。
+
+**RC-7　次要問題（列出但不優先處理）**
+- 香港政府頁尾日期格式抽不到。
+- User-Agent 被擋（ADB 403）。
+- JS 渲染頁面（SPA）無法取得內容。
+- canonical 指向首頁。
+- 地鐵槍擊被判 REPORTABLE。
+- Scope helper 引文與原文不一致（QUOTE_NOT_FOUND）。
+
+## 6. 30 分鐘目標的實測參數
+
+- 抓取：中位數 1.1 秒／頁。
+- MaiAgent：中位數 3.2 秒／次。每個候選最多 3 次（約 10 秒），每個事件約 5 次（約 16 秒）。
+- 一次 timeout 要 45 秒，約等於 14 次正常呼叫。
+- 估算：循序執行時，約 100 個進入 judge 的候選加上約 30 個事件，就接近 30 分鐘。這仍只是推估，必須等 Phase B 量測每週候選數後才能確認。
+
+## 6b. RC-2 修正（2026-10-20，離線驗證，未 commit）
+
+**修改**
+- [evidence_document.py](../../src/weekly_report/evidence_document.py)：只在原本「≥2 個頂層 `<article>` → AMBIGUOUS」的分支內，依結構關係排除兩類單元：
+  - 整個單元是指向**其他資源**的超連結（被 `<a href>` 包住，或全部文字都屬於這類連結）。
+  - 完全沒有文字內容的 `<article>`。
+- 剩下恰好 1 個 → 作為主文件。剩 0 個且確實有被排除的連結單元 → 維持 AMBIGUOUS（列表頁）。其餘情況 → 維持 AMBIGUOUS。
+- 不使用 class 名稱、片語、數量、位置或「取第一篇／最長篇」。
+
+**測試**
+- 新增 5 個 owner 測試。其中 2 個在舊碼上失敗、新碼通過；另外 3 個保護既有行為。
+- 全套 913 passed；Golden 21 passed。
+
+**封存頁面離線結果**
+
+| 項目 | 修正前 | 修正後 |
+|---|---:|---:|
+| 結構通過、可進 Semantic Judge 的頁面 | 6 | 13 |
+| 其中正向樣本 | 4 | 10（新增 P02、P03、P07、P08、P10、P13） |
+
+- C03（期間外）現在能進入 Temporal，日期為 2026-10-06。
+- C06 列表頁仍然正確地被判 AMBIGUOUS。
+
+**仍未處理（不屬於 RC-2）**
+- **RC-2b：** P06 被另一條規則 `duplicate_twitter_title_metadata` 判為 headline 衝突。
+- **RC-2c：** 已修正（見下節）。
+- 實際能否 READY 仍取決於 Semantic Judge，必須以 live 驗證。
+
+## 6c. RC-2c 修正（2026-10-20，離線驗證，未 commit）
+
+**修改**
+- 只在沒有主 `<article>`、邊界退回 `<main>` 時生效。
+- 排除「整段文字全部是指向其他資源的超連結」的最大區塊；這類區塊是對其他文件的引用（§8）。
+- 遇到自己直接擁有非連結文字的元素就不再往下判斷，所以本文中的行內連結會保留。連到同一資源或頁內錨點（`#`）的連結也保留。
+
+**測試**
+- 新增 4 個 owner 測試。其中 1 個在停用此規則時失敗；另外 3 個是保護既有行為（行內連結、同資源連結、只有連結時不成立本文）。
+- 全套 917 passed；Golden 21 passed。
+
+**封存頁面離線結果**
+- P03 本文從 4,200 字元降為 3,172 字元，其他新聞的標題全部移除。尾端只剩欄目、作者等標籤，不含其他事件的事實。
+- C04 只移除兩個主題標籤連結。
+- 其餘頁面的本文不變。各頁結構判定結果與 RC-2 後相同（13 個 ESTABLISHED；C06、P06 為 AMBIGUOUS）。
+
+## 7. 判定
+
+```text
+PHASE_A_RESULT = FAIL（第一次真實整合）
+EVIDENCE_ACQUISITION_DIRECT_URL = PASS（16/18）
+FALSE_READY_ON_CONTROLS = 0（PASS）
+POSITIVE_READY = 3/14（FAIL，目標 ≥10）
+FINAL_REPORT = 未產生（run 中止於 FormalMetadata）
+GROUNDING_QUALITY = 未量測（Writer／Validator 未到達）
+RUNTIME = 144 秒（20 筆）
+```
+
+
+## 8. RC-3～RC-6 修訂後重新驗收（live2，2026-10-20）
+
+- 原始紀錄：[runs/live2/summary.json](runs/live2/summary.json)
+- 用量（不含 live1）：HTTP 22、MaiAgent 62、耗時 411 秒。Phase A 累計：HTTP 44/80、MaiAgent 81/160、時間 555/2700 秒。
+- 未寄信；未執行任何 Search 網路請求。
+
+| 指標 | live1 | live2 |
+|---|---:|---:|
+| Evidence READY（正向 14 筆） | 3 | 10 |
+| 對照組錯放 | 0 | 0 |
+| IN_SCOPE | 1 | 4 |
+| REPORTABLE 事件 | 1 | 4 |
+| Writer 完成 | 0（run 中止） | 4 |
+| Validation PASS | 0 | 0（4 筆 Validator 技術缺口） |
+| 正式 artifact | 無 | 有（0 篇＋執行說明；狀態 `SUCCESS_WITH_TECHNICAL_GAPS`） |
+
+**目前最早的實際 blocker：Validator 語意檢查 helper 的輸出契約。**
+- 2 件 `TEXT_COVERAGE_INVALID`：helper 重抄 Writer 文字時漏掉單元間的標點（，；。），無法逐字還原。
+- 2 件重試後仍 `UNPARSEABLE_RESPONSE`：回應截斷、夾帶推理文字、輸出兩個 JSON。
+- 這與先前已修正的 offset 問題同類：要求模型做逐字的機械性文字工作。
+
+**次要 blocker：Scope 語意任務的偽陰性。**
+- helper 自身判 UNCERTAIN：P04、P05、P10、C05。
+- helper 輸出瑕疵：引文錯誤（P02、P13）、欄位矛盾（P09）、端點標籤重疊（C03）。
+- 已沒有任何一筆是因為重複字串而被拒。
+
+**Writer 品質人工稽核（4 篇，皆未經 Validator 通過）**
+- 事實句全部可回溯原文。
+- 沒有捏造臺北捷運現況；標題均為繁體中文。
+- 兩點輕微瑕疵：
+  - 河內篇以「業主」概括市府主席的發言，並保留英文 "turnkey"。
+  - 埃及篇的「2026年」取自文章發布日期，原文該句未寫年份。
+
+
+## 9. RC-7 修訂後重新驗收（live3，2026-10-20）
+
+- 修訂內容：Validator 以確定性 Python 規則把 Writer 各欄位切成具 `unit_id` 的單元；helper 只回傳單元評估與引文（契約 §A.2、§Q）。
+- 離線驗證：
+  - 測試全數通過（969）；Golden 29 通過。
+  - live2 的 4 篇 Writer 文稿切成 6～8 個單元，逐字還原全部成立。
+- 原始紀錄：[runs/live3/summary.json](runs/live3/summary.json)
+- 用量：HTTP 22、MaiAgent 65、耗時 337 秒。
+- Phase A 累計：HTTP 66/80、MaiAgent 146/160、時間 892/2700 秒。剩餘 MaiAgent 14 次，不足以再跑一輪完整驗收。
+- 未寄信；未執行任何 Search 網路請求；未 commit。
+
+| 指標 | live2 | live3 |
+|---|---:|---:|
+| Evidence READY（正向 14 筆） | 10 | 10 |
+| 對照組錯放（正式報告） | 0 | 0 |
+| IN_SCOPE（含對照組） | 4 | 6 |
+| REPORTABLE 事件 | 4 | 5 |
+| Validator 回應可解析 | 2/4 | 5/5 |
+| 單元覆蓋違規 | 2 | 0 |
+| Validation PASS／FAIL／技術缺口 | 0／0／4 | 2／1／2 |
+| 正式報告篇數 | 0 | **2** |
+
+**Validator 結果逐筆**
+- P05 紐約地鐵槍擊：PASS。
+  - 事實可回溯原文。
+  - 一處輕微失真：原文為 12:30 前不久，Writer 寫成「中午前」，Validator 判為 SUPPORTED。
+- P08 清奈黃線：PASS。逐句核對原文，全部有據。
+- P13 香港北環線支線：FAIL，判定正確。
+  - 原文車站為 "The Loop"（河套），Writer 誤譯為「新田科技城」。
+  - 未進行改寫重驗：production 未接 correction provider（契約為「得」）。
+- P02 哥本哈根 S-Bane：技術缺口 `INVALID_CITATION`。
+  - helper 抄錄原文時把 "Hitachi will supply" 寫成 "Hitachi Rail will supply"。
+- P09 首爾 9 號線：技術缺口 `INVALID_CITATION`。
+  - helper 抄錄韓文原文時把「다음」寫成中韓混雜的「下一」。
+
+**結論：RC-7 已解決它要解決的問題。** 兩種失敗都已消失：漏抄標點造成的覆蓋失敗，以及回應過長造成的無法解析。Validator 回應大小由 13～23 KB 降至 7～13 KB。
+
+**新的最早 blocker：Scope 結果在兩次執行間不穩定（超出本次核准範圍，未修改）。**
+- 同一批 Evidence 原文，13 筆 Scope 判定中有 8 筆在 live2 與 live3 之間翻轉：
+  - 由 IN 轉 OUT：P03、P07、P14。
+  - 由 OUT 轉 IN：P02、P05、P09、P13、C03。
+- live3 的拒絕原因皆為 helper 結構化提案未通過 Python 的嚴格檢查，屬 fail-closed：
+  - P03：`ENDPOINT_ROLE_DISTINCTNESS`。
+  - P07：`ACTION_TARGET_CONTAINMENT`。
+  - P14：`TARGET_SYSTEM_CONTAINMENT`。
+- 影響：哪些事件進入報告，主要取決於 helper 單次輸出的隨機性，而不是事件本身。
+
+**次要問題：helper 逐字抄錄 Evidence 引文仍會出錯（超出核准範圍，未修改）。**
+- 與 RC-7 前的 Writer 文字問題同類：要求模型逐字重打長句。
+- 可比照 RC-7 的方向：由 Python 將 Evidence 切成具 ID 的句子，helper 只引用句子 ID。
+- 此方向涉及 Evidence、Scope、Category、Taxonomy、Reportability、Validator 共用的引用契約，需另行裁決。
+
+**與預期標記不符，待裁決：**
+- P05 槍擊案：預期 `reportable: false`（一般治安事件、無機電面向），Reportability owner 判為 REPORTABLE。
+- C03（荷蘭 Delft 電車 19 路，對照組）：本次判為 IN_SCOPE，最後因日期不在期間內而排除，未進入報告。
+
+```text
+VALIDATOR_PARSEABLE = 5/5
+VALIDATOR_COVERAGE_VIOLATIONS = 0
+VALIDATION = PASS 2 / FAIL 1（正確） / TECHNICAL_GAP 2（引文抄錄錯誤）
+FINAL_REPORT = 2 篇，狀態 SUCCESS_WITH_TECHNICAL_GAPS，揭露 2 則技術缺口與 1 則驗證未通過
+EARLIEST_BLOCKER = Scope 跨執行不穩定（8/13 翻轉）
+PRODUCTION_READY = 否
+```
+
+
+## 10. RC-8 Scope 穩定性驗收（2026-10-20）
+
+- 修訂：SC-1（端點改為標籤，須位於關係引文內）、SC-2（noneligible 只針對焦點行動）、D1（發生於合格系統設施內的事件）、D2（commuter／suburban／S-Bahn 名稱不自動納入或排除）。契約 §A.3、SCOPE_CONTRACT §6.2／§9；prompt v5、schema v2。
+- 方法：以 live3 封存的 13 份 Scope 請求原文（逐字相同）重跑 3 輪，只呼叫 Scope helper。
+- 原始紀錄：[runs/scope_stability/summary.json](runs/scope_stability/summary.json)
+- 用量：MaiAgent 45/45（39 次＋6 次重試）、HTTP 0、277 秒；未寄信、未 commit。
+
+| 樣本 | 預期 | R1 | R2 | R3 | 說明 |
+|---|---|---|---|---|---|
+| P03 埃及電車 | IN | IN | IN | IN | 穩定 |
+| P07 聖路易輕軌 | IN | IN | IN | IN | 穩定 |
+| P09 首爾 9 號線 | IN | IN | IN | IN | 穩定（SC-2 生效） |
+| P04 香港電車出軌 | IN | OUT | IN | IN | R1 關係引文取自焦點外段落 |
+| P08 清奈黃線 | IN | OUT | IN | IN | R1 標籤不在關係引文內 |
+| C03 Delft 電車（對照，日期無效） | 未標 | OUT | IN | IN | R1 同一實體卻引用另一句 |
+| P13 香港北環線支線 | 不確定 | OUT | IN | OUT | helper 語意判斷不一 |
+| C04 Network Rail（對照） | OUT | 技術缺口 | OUT | OUT | 平台回應夾雜雜訊，重試後仍無法解析 |
+| P14 河內五條地鐵 | IN | OUT | OUT | OUT | 穩定誤拒：同一實體卻引用另一句 |
+| P05 紐約月臺槍擊 | IN | OUT | OUT | OUT | 穩定誤拒：helper 不認定月臺屬於地鐵 |
+| P10 哥本哈根地鐵營運合約 | IN | OUT | OUT | OUT | 穩定誤拒：helper 未把合約連到系統 |
+| C05 香港電車出軌（中文） | IN | OUT | OUT | OUT | 穩定誤拒：同上 |
+| P02 S-Bane 郊區鐵路 | 不確定 | OUT | OUT | OUT | 符合 D2 |
+
+- 翻轉：8/13 → 5/13；扣除 C04 技術缺口後為 4/13，其中 3 筆只在 R1 被機械性拒絕。
+- 錯誤 IN_SCOPE：0。所有 IN 皆為合格模式（電車、輕軌、地鐵）；C04 鐵路氣象站、P02 郊區鐵路皆維持 OUT。
+- 新的主要問題已由「隨機翻轉」轉為「穩定誤拒」（P05、P10、P14、C05），根因分兩類：
+  - 目標即系統時，helper 常引用另一句只用代稱（"The five lines"）的文字，標籤不在引文內（P14、C03 R1）。
+  - helper 對「合約／事故現場」與系統的關係過度保守，回 UNRESOLVED（P05、P10、C05）。
+- 與 live3 的差異：P05 在 live3 以「A man PART_OF subway」這種語意錯誤的關係進入報告；v5 下穩定為 OUT。依 D1 它應為 IN_SCOPE，屬尚未達成的目標，不是被修好的行為。
+- 核准預算已用完，上述兩類的 prompt 修正尚未實作、也未驗證。
+
+```text
+SCOPE_FLIPS = 8/13 → 5/13（4/13 不含技術缺口）
+FALSE_IN_SCOPE = 0
+STABLE_FALSE_NEGATIVES = P05, P10, P14, C05
+TESTS = 975 passed；GOLDEN = 29 passed
+PRODUCTION_READY = 否
+```
+
+
+## 11. RC-8 第二輪：穩定誤拒修正（2026-10-21）
+
+- 修改（皆為一般規則，無單一新聞特例）：
+  - Python：`target_system.target_reference`（選填）讓目標-系統引文可用同一事件內的代稱（"The five lines"、"This"）指涉目標；省略即代表目標標籤本身。代稱須位於該引文內，且兩段關係引文都須位於已確定的事件焦點內。系統即目標本身時不需再次出現。
+  - Prompt v7：目標詞組本身已含系統（"five metro lines"、"電車"）時直接引用該詞組；車站、月臺、列車屬於系統（PART_OF）；合約／採購／授權事件的目標是合約涵蓋的工作或路線；營運者的公車不因營運者而成為都市軌道；ambiguity 只指「屬於哪個系統」的不確定，不含月臺或列車、時間、原因等細節。
+  - 驗收腳本改為每次呼叫後即寫入結果（上一次執行因工作階段重啟中斷，未留下摘要）。
+- 原始紀錄：[runs/scope_stability_v7/summary.json](runs/scope_stability_v7/summary.json)；中斷的 v6 執行（11 筆回應）已以現行 owner 離線重放。
+- 用量：MaiAgent 約 39～40/40（中斷的 v6 約 12～13 次＋v7 27 次，含 2 次逾時重試、1 次無法解析重試）、HTTP 0；v7 耗時 174 秒。預算在第 2 輪剩 3 筆時用完。
+
+| 樣本 | 預期 | v5（3 輪） | v7 R1 | v7 R2 |
+|---|---|---|---|---|
+| P05 紐約月臺槍擊 | IN | OUT×3 | IN | IN |
+| C05 香港電車出軌（中文） | IN | OUT×3 | IN | IN |
+| P14 河內五條地鐵 | IN | OUT×3 | IN | 未執行 |
+| P10 哥本哈根營運合約 | IN | OUT×3 | OUT（引錯句子） | 未執行 |
+| P04 香港電車出軌 | IN | 2/3 IN | IN | IN |
+| P08 清奈黃線 | IN | 2/3 IN | IN | IN |
+| P03 埃及電車 | IN | IN×3 | OUT（漏填代稱） | 技術缺口 |
+| P07、P09 | IN | IN×3 | IN | IN |
+| C03 Delft 電車 | 未標 | 2/3 IN | IN | IN |
+| P13 香港北環線支線 | 不確定 | 1/3 IN | OUT（漏填代稱） | 未執行 |
+| P02 S-Bane 郊區鐵路 | 不確定 | OUT×3 | OUT | OUT |
+| C04 Network Rail（對照） | OUT | OUT（1 次技術缺口） | OUT | OUT |
+
+- 正確率（排除預期「不確定」的 P02、P13）：v7 R1 為 9/11；R2 已執行的 8 筆皆正確，另有 1 筆技術缺口。v5 多數決為 7/11。
+- 跨執行：兩輪都有結果的 10 筆中，內容判定翻轉 0 筆；P03 一輪 OUT、一輪技術缺口。P10、P13、P14 只有一輪，穩定性未量測。
+- 錯誤 IN_SCOPE：0。C04 鐵路氣象站、P02 郊區鐵路維持 OUT。
+- 仍未解決：
+  - helper 在需要代稱時仍常漏填 `target_reference`（P03、P13），或引用錯誤句子（P10）。Python 依規則拒絕，沒有替模型補上。
+  - Scope 提案若違反格式或引文規則（非傳輸錯誤），依 RC-6 仍以 OUT_OF_SCOPE 收場；在 RunTrace 可區分（OWNER_REJECTED），但正式報告不揭露為技術缺口。這與「技術失敗與合法 OUT_OF_SCOPE 必須分開」的要求有落差，需另行裁決。
+
+```text
+STABLE_FALSE_NEGATIVES_FIXED = P05, C05（兩輪）、P14（一輪）
+STILL_FALSE_NEGATIVE = P10；P03 退步為隨機
+FALSE_IN_SCOPE = 0
+TESTS = 979 passed；GOLDEN = 29 passed
+PRODUCTION_READY = 否
+```

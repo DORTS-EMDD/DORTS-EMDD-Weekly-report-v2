@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field as dataclass_field
 from enum import StrEnum
 from typing import Any, Protocol
 from urllib.parse import urlparse
 
+from .exact_text import exact_occurrence_offsets
+from .contracts import (
+    SemanticProviderConfigurationFailure,
+    SemanticProviderTechnicalFailure,
+    TechnicalGap,
+    TechnicalGapKind,
+)
 from .report_service import FormalReportMetadata
 from .report_workflow import ReportWorkflowResult
 from .writer import WriterReportBlock
@@ -115,10 +122,81 @@ class ValidationWriterProse:
 
 
 @dataclass(frozen=True, slots=True)
+class ValidationWriterUnit:
+    """One Validator-segmented assessment unit of a Writer prose field."""
+
+    unit_id: str
+    field_name: ValidationFieldName
+    text: str
+
+    def as_mapping(self) -> dict[str, str]:
+        return {"unit_id": self.unit_id, "text": self.text}
+
+
+_UNIT_TERMINATORS = frozenset("。！？；")
+_UNIT_CLOSERS = frozenset("」』）〕】》〉”’\"')")
+
+
+def segment_writer_field(
+    field_name: ValidationFieldName | str,
+    text: str,
+) -> tuple[ValidationWriterUnit, ...]:
+    """Deterministically split one Writer field into ordered assessment units.
+
+    A unit ends after a run of full-width sentence terminators (with any
+    closing quotes/brackets and trailing whitespace) or after a line break.
+    ASCII periods never split, so decimals and abbreviations stay intact.
+    Units without any letter or digit merge into the following unit (or the
+    preceding one at the end).  Concatenating the units reproduces ``text``
+    exactly; unit IDs are ``<field_name>-<1-based index>``.
+    """
+
+    name = ValidationFieldName(field_name)
+    if not isinstance(text, str) or not text:
+        raise ValueError("Writer field segmentation requires text")
+    pieces: list[str] = []
+    start = index = 0
+    length = len(text)
+    while index < length:
+        character = text[index]
+        if character in _UNIT_TERMINATORS or character == "\n":
+            end = index + 1
+            if character != "\n":
+                while end < length and (text[end] in _UNIT_TERMINATORS or text[end] in _UNIT_CLOSERS):
+                    end += 1
+            while end < length and text[end].isspace():
+                end += 1
+            pieces.append(text[start:end])
+            start = index = end
+            continue
+        index += 1
+    if start < length:
+        pieces.append(text[start:])
+    merged: list[str] = []
+    pending = ""
+    for piece in pieces:
+        if not any(character.isalnum() for character in piece):
+            pending += piece
+            continue
+        merged.append(pending + piece)
+        pending = ""
+    if pending:
+        if merged:
+            merged[-1] += pending
+        else:
+            merged.append(pending)
+    return tuple(
+        ValidationWriterUnit(f"{name.value}-{position}", name, piece)
+        for position, piece in enumerate(merged, start=1)
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class ValidationSemanticRequest:
     event_id: str
     evidence_sources: tuple[ValidationEvidenceSource, ...]
     writer_prose: ValidationWriterProse
+    writer_units: tuple[ValidationWriterUnit, ...] = dataclass_field(init=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.event_id, str) or not self.event_id.strip():
@@ -132,12 +210,34 @@ class ValidationSemanticRequest:
         if not isinstance(self.writer_prose, ValidationWriterProse):
             raise TypeError("Validation semantic request writer_prose must be typed")
         object.__setattr__(self, "evidence_sources", sources)
+        prose = self.writer_prose.as_mapping()
+        object.__setattr__(
+            self,
+            "writer_units",
+            tuple(
+                unit
+                for name in ValidationFieldName
+                for unit in segment_writer_field(name, prose[name.value])
+            ),
+        )
+
+    def unit_ids_by_field(self) -> dict[ValidationFieldName, tuple[str, ...]]:
+        return {
+            name: tuple(unit.unit_id for unit in self.writer_units if unit.field_name is name)
+            for name in ValidationFieldName
+        }
 
     def as_payload(self) -> dict[str, object]:
         return {
             "event_id": self.event_id,
             "evidence_sources": [source.as_mapping() for source in self.evidence_sources],
-            "writer_prose": self.writer_prose.as_mapping(),
+            "writer_fields": [
+                {
+                    "field_name": name.value,
+                    "units": [unit.as_mapping() for unit in self.writer_units if unit.field_name is name],
+                }
+                for name in ValidationFieldName
+            ],
         }
 
 
@@ -155,13 +255,13 @@ class ValidationEvidenceCitation:
 
 @dataclass(frozen=True, slots=True)
 class ValidationClaimUnit:
-    writer_quote: str
+    unit_id: str
     assessment: ValidationUnitAssessment | str
     evidence_citations: tuple[ValidationEvidenceCitation, ...]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.writer_quote, str) or not self.writer_quote:
-            raise ValueError("Validation claim unit requires writer_quote")
+        if not isinstance(self.unit_id, str) or not self.unit_id:
+            raise ValueError("Validation claim unit requires unit_id")
         try:
             assessment = ValidationUnitAssessment(self.assessment)
         except (TypeError, ValueError) as exc:
@@ -177,7 +277,7 @@ class ValidationClaimUnit:
 class ValidationFieldAssessment:
     field_name: ValidationFieldName | str
     language_assessment: ValidationLanguageAssessment | str
-    units: tuple[ValidationClaimUnit, ...]
+    unit_assessments: tuple[ValidationClaimUnit, ...]
 
     def __post_init__(self) -> None:
         try:
@@ -188,12 +288,12 @@ class ValidationFieldAssessment:
             language = ValidationLanguageAssessment(self.language_assessment)
         except (TypeError, ValueError) as exc:
             raise ValueError("Validation field assessment requires a valid language assessment") from exc
-        units = tuple(self.units)
+        units = tuple(self.unit_assessments)
         if not units or any(not isinstance(unit, ValidationClaimUnit) for unit in units):
-            raise ValueError("Validation field assessment requires claim units")
+            raise ValueError("Validation field assessment requires unit assessments")
         object.__setattr__(self, "field_name", field_name)
         object.__setattr__(self, "language_assessment", language)
-        object.__setattr__(self, "units", units)
+        object.__setattr__(self, "unit_assessments", units)
 
 
 @dataclass(frozen=True, slots=True)
@@ -219,16 +319,16 @@ class ValidationSemanticProposal:
         parsed_fields: list[ValidationFieldAssessment] = []
         for raw_field in raw_assessments:
             if not isinstance(raw_field, Mapping) or set(raw_field) != {
-                "field_name", "language_assessment", "units"
+                "field_name", "language_assessment", "unit_assessments"
             }:
                 raise ValueError("Validation field assessment fields do not match the exact schema")
-            raw_units = raw_field["units"]
+            raw_units = raw_field["unit_assessments"]
             if not isinstance(raw_units, (list, tuple)):
-                raise ValueError("Validation field units must be an array")
+                raise ValueError("Validation field unit_assessments must be an array")
             units: list[ValidationClaimUnit] = []
             for raw_unit in raw_units:
                 if not isinstance(raw_unit, Mapping) or set(raw_unit) != {
-                    "writer_quote", "assessment", "evidence_citations"
+                    "unit_id", "assessment", "evidence_citations"
                 }:
                     raise ValueError("Validation claim unit fields do not match the exact schema")
                 raw_citations = raw_unit["evidence_citations"]
@@ -249,7 +349,7 @@ class ValidationSemanticProposal:
                     except (TypeError, ValueError) as exc:
                         raise _ValidationProposalCitationError from exc
                 units.append(
-                    ValidationClaimUnit(raw_unit["writer_quote"], raw_unit["assessment"], tuple(citations))
+                    ValidationClaimUnit(raw_unit["unit_id"], raw_unit["assessment"], tuple(citations))
                 )
             parsed_fields.append(
                 ValidationFieldAssessment(
@@ -355,7 +455,16 @@ class Validator:
         ordered_results: tuple[ReportWorkflowResult, ...],
         formal_metadata: tuple[FormalReportMetadata, ...],
         writer_blocks: tuple[WriterReportBlock, ...],
+        *,
+        on_event_technical_gap: Callable[[TechnicalGap], None] | None = None,
     ) -> ValidationResult:
+        """Validate each event independently.
+
+        With ``on_event_technical_gap`` (the formal application), a provider
+        technical failure or invalid semantic proposal for one event is a
+        TechnicalGap for that event only, never a content FAIL; event-boundary
+        invariant failures still abort.  Without it, they abort as before.
+        """
         ordered_results = self._require_tuple(ordered_results, ReportWorkflowResult, "ordered_results")
         formal_metadata = self._require_tuple(formal_metadata, FormalReportMetadata, "formal_metadata")
         writer_blocks = self._require_tuple(writer_blocks, WriterReportBlock, "writer_blocks")
@@ -379,7 +488,23 @@ class Validator:
         for result, metadata, initial_block in zip(ordered_results, formal_metadata, writer_blocks, strict=True):
             self._validate_event_boundary(result, metadata, initial_block)
             block = initial_block
-            reasons = self._semantic_reasons(result, block)
+            try:
+                reasons = self._semantic_reasons(result, block)
+            except (SemanticProviderTechnicalFailure, ValidationStageFailure) as failure:
+                if on_event_technical_gap is None:
+                    raise
+                if isinstance(failure, SemanticProviderTechnicalFailure):
+                    gap = TechnicalGap.from_failure("Validator", result.event_group.event_id, failure)
+                else:
+                    gap = TechnicalGap(
+                        "Validator",
+                        result.event_group.event_id,
+                        TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION,
+                        failure.reason.value if hasattr(failure.reason, "value") else str(failure.reason),
+                        1,
+                    )
+                on_event_technical_gap(gap)
+                continue
             corrected = False
             if reasons and self._correction_provider is not None:
                 correction_calls += 1
@@ -500,7 +625,7 @@ class Validator:
                 if field_name is not ValidationFieldName.TAIPEI_INSIGHT
                 else {ValidationUnitAssessment.SUPPORTED, ValidationUnitAssessment.ANALYSIS}
             )
-            for unit in field.units:
+            for unit in field.unit_assessments:
                 if unit.assessment not in allowed:
                     reasons.append(f"semantic_{field_name.value}_{unit.assessment.value.lower()}")
                 elif not unit.evidence_citations:
@@ -514,6 +639,9 @@ class Validator:
         self.semantic_call_count += 1
         try:
             raw = self._semantic_provider(request)  # type: ignore[misc]
+        except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure):
+            # RC-6: a technical failure is never a semantic FAIL.
+            raise
         except ValidationStageFailure:
             raise
         except Exception:
@@ -556,45 +684,30 @@ class Validator:
                 event_id=request.event_id,
             )
         sources = {source.candidate_id: source.substantive_content for source in request.evidence_sources}
-        prose = request.writer_prose.as_mapping()
+        expected_units = request.unit_ids_by_field()
         for field in proposal.field_assessments:
-            original = prose[field.field_name.value]
-            if "".join(unit.writer_quote for unit in field.units) != original:
+            # Python owns segmentation; the proposal must assess every
+            # Validator-supplied unit of this field exactly once.
+            unit_ids = tuple(unit.unit_id for unit in field.unit_assessments)
+            if len(unit_ids) != len(set(unit_ids)) or set(unit_ids) != set(expected_units[field.field_name]):
                 raise ValidationStageFailure(
                     ValidationStageFailureReason.TEXT_COVERAGE_INVALID,
                     event_id=request.event_id,
                 )
-            for unit in field.units:
+            for unit in field.unit_assessments:
                 for citation in unit.evidence_citations:
                     if citation.candidate_id not in sources:
                         raise ValidationStageFailure(
                             ValidationStageFailureReason.INVALID_CITATION,
                             event_id=request.event_id,
                         )
-                    occurrences = _exact_occurrences(sources[citation.candidate_id], citation.exact_quote)
-                    if not occurrences:
+                    # EXACT_TEXT_ALL_OCCURRENCES: an exact citation is valid
+                    # when it occurs at least once in the cited source.
+                    if not exact_occurrence_offsets(sources[citation.candidate_id], citation.exact_quote):
                         raise ValidationStageFailure(
                             ValidationStageFailureReason.INVALID_CITATION,
                             event_id=request.event_id,
                         )
-                    if len(occurrences) != 1:
-                        raise ValidationStageFailure(
-                            ValidationStageFailureReason.AMBIGUOUS_CITATION,
-                            event_id=request.event_id,
-                        )
-
-
-def _exact_occurrences(source: str, quote: str) -> tuple[int, ...]:
-    if not isinstance(quote, str) or not quote:
-        return ()
-    positions: list[int] = []
-    start = 0
-    while True:
-        index = source.find(quote, start)
-        if index < 0:
-            return tuple(positions)
-        positions.append(index)
-        start = index + 1
 
 
 ReportValidator = Validator
@@ -609,6 +722,8 @@ __all__ = [
     "ValidationPopulationError",
     "ValidationEvidenceSource",
     "ValidationWriterProse",
+    "ValidationWriterUnit",
+    "segment_writer_field",
     "ValidationSemanticRequest",
     "ValidationEvidenceCitation",
     "ValidationClaimUnit",

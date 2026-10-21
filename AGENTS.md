@@ -229,11 +229,41 @@ Validator 只檢查：
 每個 Event 最多一次 semantic correction。
 
 單一 Event FAIL 只表示已完成合法 semantic validation 後確認的內容或語言
-無效；它只淘汰該 Event，不得拖垮其他 PASS Events。無法完成 validation
-的 configuration、transport、schema、correlation 或 citation 技術失敗，
-必須中止整個正式 run，不得當成內容 FAIL 或觸發 correction。
+無效；它只淘汰該 Event，不得拖垮其他 PASS Events。Configuration／
+authentication 失敗與 invariant 違反必須中止整個正式 run。單一 Event 的
+transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Event 成為
+已揭露的 technical gap，不得當成內容 FAIL 或觸發 correction。
 
 Transport retry 與 semantic correction 必須分開計算。
+
+### RC-3～RC-8 修訂（2026-10-20，使用者核准）
+
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.3。
+
+* RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
+  使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
+  Python 記錄全部出現位置、不選擇任一位置；Scope 端點必須位於建立該關係的
+  引文脈絡內；Metadata 採欄位層級驗證。
+* RC-4：Country／Region 由 EvidenceService 依版本化 `geographic_reference.json`
+  對來源原文值做確定性解析（SOURCE_STATED／REFERENCE_MAPPED／NOT_STATED／
+  UNRESOLVED）；不得用 Search market、query、publisher、TLD 或模型知識；
+  Country 與 transit_system_name 不再是阻擋整份報告的必填欄位，報告顯示
+  「來源未載明」或「未能確認」。
+* RC-5：合法的事件層級資料不足（目前僅 `CONFLICTING_COUNTRY`）只排除該事件並
+  揭露；invariant 違反仍中止整個 run。
+* RC-6：所有 MaiAgent task 共用一個 transport policy：未取得可解析回應的暫時性
+  故障（timeout、連線、HTTP 429／5xx、無法解析的 JSON）最多以相同請求重試一次；
+  401／403／404 立即中止；可解析回應一律不重試。剩餘技術失敗是
+  `TechnicalGap` execution disposition，不是任何 Domain state；含技術缺口的
+  run 狀態為 `SUCCESS_WITH_TECHNICAL_GAPS`，不得標示為完整成功。
+* RC-7（§A.2）：Validator 以確定性 Python 規則將 Writer 各欄位切分為具
+  `unit_id` 的單元；`validation_semantic_check` helper 只回傳各欄位語言評估與
+  各單元的評估及 Evidence 引文，不得回傳、切分或改寫 Writer 文字。Python 驗證
+  每個單元恰被評估一次；單元整體受支持才可為 `SUPPORTED`。
+* RC-8（§A.3）：Scope 提案的 action／target／system 改為標籤，必須位於建立該關係的
+  引文內；noneligible 關係只針對焦點行動；發生於合格系統車站、月臺、列車等設施的
+  事件可為 IN_SCOPE（報導價值由 Reportability 判定）；commuter／suburban／S-Bahn
+  名稱不自動納入或排除，須來源支持其為都市軌道系統。
 
 ## 13. Report / Delivery
 
@@ -241,7 +271,9 @@ Transport retry 與 semantic correction 必須分開計算。
 Final report count = Validation PASS count
 ```
 
-0 篇仍正常產生正式 artifact。
+0 篇仍正常產生正式 artifact。正式 artifact 必須揭露 technical gap、事件層級
+排除與 Validation FAIL 的數量；有技術缺口的 0 篇不得呈現為「本期無符合正式
+報導條件之事件」。
 
 GitHub Actions 負責 production automation。
 
@@ -381,4 +413,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
+CONTRACT_REVISION = RC-3..RC-8 APPLIED (2026-10-20, user-approved)
 ```

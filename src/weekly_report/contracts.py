@@ -91,6 +91,67 @@ class IdentityMetadataSupport:
             raise ValueError("metadata support offsets must satisfy 0 <= start < end")
 
 
+class RegionResolutionBasis(StrEnum):
+    """How EvidenceService established, or failed to establish, a country/region.
+
+    ``SOURCE_STATED``: a validated source value is a country/region name in the
+    versioned geographic reference.  ``REFERENCE_MAPPED``: a validated source
+    place or transit-system name maps to exactly one region in that reference.
+    ``NOT_STATED``: the source supplied no geographic metadata.  ``UNRESOLVED``:
+    values exist but are invalid, unrecognized, ambiguous, or conflicting.
+    """
+
+    SOURCE_STATED = "SOURCE_STATED"
+    REFERENCE_MAPPED = "REFERENCE_MAPPED"
+    NOT_STATED = "NOT_STATED"
+    UNRESOLVED = "UNRESOLVED"
+
+
+_ESTABLISHED_REGION_BASES = frozenset(
+    {RegionResolutionBasis.SOURCE_STATED, RegionResolutionBasis.REFERENCE_MAPPED}
+)
+
+
+@dataclass(frozen=True, slots=True)
+class RegionResolution:
+    """EvidenceService-owned deterministic country/region resolution.
+
+    An established resolution names the governed source field and its exact
+    source value; that value keeps its own ``metadata_support`` spans.  An
+    unestablished resolution carries no region, so "not stated" can never be
+    stored as a country entity.
+    """
+
+    basis: RegionResolutionBasis
+    region_id: str | None = None
+    display_name: str | None = None
+    source_field: Literal["country", "transit_system_name", "location"] | None = None
+    source_value: str | None = None
+    reference_version: str = ""
+    diagnostic: str = ""
+
+    def __post_init__(self) -> None:
+        basis = RegionResolutionBasis(self.basis)
+        object.__setattr__(self, "basis", basis)
+        established = basis in _ESTABLISHED_REGION_BASES
+        values = (self.region_id, self.display_name, self.source_field, self.source_value)
+        if established:
+            if any(not isinstance(value, str) or not value.strip() for value in values):
+                raise ValueError("an established RegionResolution requires region and source provenance")
+            if self.source_field not in {"country", "transit_system_name", "location"}:
+                raise ValueError("RegionResolution source_field must be a governed metadata field")
+            if not isinstance(self.reference_version, str) or not self.reference_version.strip():
+                raise ValueError("an established RegionResolution requires a reference version")
+        elif any(value is not None for value in values):
+            raise ValueError("an unestablished RegionResolution cannot carry a region or source value")
+        if not isinstance(self.diagnostic, str):
+            raise TypeError("RegionResolution diagnostic must be a string")
+
+    @property
+    def established(self) -> bool:
+        return self.basis in _ESTABLISHED_REGION_BASES
+
+
 def _coerce_metadata_support(
     value: object,
 ) -> tuple[IdentityMetadataSupport, ...]:
@@ -142,12 +203,22 @@ class EventIdentityFacts:
     country: str | None = None
     transit_system_name: str | None = None
     metadata_support: tuple[IdentityMetadataSupport, ...] = ()
+    region_resolution: RegionResolution | None = None
+    # Governed fields whose proposal was invalid, conflicting, or not a
+    # specific value; absence of a field here and of its value means "not stated".
+    unresolved_metadata_fields: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         for field_name in ("country", "transit_system_name"):
             value = getattr(self, field_name)
             if value is not None and not isinstance(value, str):
                 raise TypeError(f"{field_name} must be a string or None")
+        if self.region_resolution is not None and not isinstance(self.region_resolution, RegionResolution):
+            raise TypeError("region_resolution must be a RegionResolution or None")
+        unresolved = tuple(self.unresolved_metadata_fields)
+        if any(item not in {"country", "transit_system_name", "location"} for item in unresolved):
+            raise ValueError("unresolved_metadata_fields must name governed metadata fields")
+        object.__setattr__(self, "unresolved_metadata_fields", tuple(dict.fromkeys(unresolved)))
         claims = {
             str(key): str(value)
             for key, value in dict(self.non_identity_claims).items()
@@ -202,6 +273,8 @@ def _validate_evidence_identity_metadata(
             facts.country not in (None, "")
             or facts.transit_system_name not in (None, "")
             or facts.metadata_support
+            or facts.region_resolution is not None
+            or facts.unresolved_metadata_fields
         ):
             raise ValueError("EVIDENCE_REJECTED cannot expose formal identity metadata")
         return
@@ -223,6 +296,10 @@ def _validate_evidence_identity_metadata(
     for field_name, value in values.items():
         if value not in (None, "") and field_name not in supported_fields:
             raise ValueError(f"{field_name} requires matching metadata support")
+    resolution = facts.region_resolution
+    if resolution is not None and resolution.established:
+        if values.get(resolution.source_field) != resolution.source_value:
+            raise ValueError("RegionResolution must name a supported source metadata value")
 
 
 class EventIdentityRelation(StrEnum):
@@ -2189,3 +2266,101 @@ class SearchProvider(Protocol):
 
     def execute(self, request: SearchPlanItem) -> SearchAttemptResult:
         """Execute one technical discovery request and return a typed result."""
+
+
+class SemanticProviderTechnicalFailure(RuntimeError):
+    """A semantic provider call could not return a parseable response.
+
+    Raised by provider transport after its single bounded retry for transient
+    failures (timeout, connection, HTTP 429/5xx, unparseable outer/inner JSON),
+    or immediately for a non-transient non-configuration HTTP status.  It is
+    never a content decision: owners must propagate it unchanged.
+    """
+
+    def __init__(self, failure_class: str, *, attempts: int, transient: bool, task: str = "") -> None:
+        if not isinstance(failure_class, str) or not failure_class.strip():
+            failure_class = "UNKNOWN"
+        self.failure_class = failure_class
+        self.attempts = int(attempts)
+        self.transient = bool(transient)
+        self.task = task
+        super().__init__(f"semantic provider technical failure: {failure_class}")
+
+
+class SemanticProviderConfigurationFailure(RuntimeError):
+    """Configuration or authentication failure; the formal run must stop."""
+
+    def __init__(self, failure_class: str, *, task: str = "") -> None:
+        self.failure_class = failure_class if isinstance(failure_class, str) and failure_class.strip() else "CONFIGURATION"
+        self.task = task
+        super().__init__(f"semantic provider configuration failure: {self.failure_class}")
+
+
+class ProposalContractViolation(RuntimeError):
+    """Marker for a parseable helper proposal that violates its contract.
+
+    Only owners whose contract defines no fail-closed content outcome for an
+    invalid proposal (Taxonomy, Reportability, Writer, Validator) raise it.  It
+    isolates the one subject as a technical gap; it is never retried.
+    """
+
+
+class TechnicalGapKind(StrEnum):
+    TRANSIENT_FAILURE_AFTER_RETRY = "TRANSIENT_FAILURE_AFTER_RETRY"
+    NON_TRANSIENT_PROVIDER_FAILURE = "NON_TRANSIENT_PROVIDER_FAILURE"
+    PROPOSAL_CONTRACT_VIOLATION = "PROPOSAL_CONTRACT_VIOLATION"
+
+
+TECHNICAL_GAP_STAGES = (
+    "Evidence", "Scope", "Category", "Taxonomy", "Reportability", "Writer", "Validator",
+)
+CANDIDATE_GAP_STAGES = frozenset({"Evidence", "Scope"})
+
+
+@dataclass(frozen=True, slots=True)
+class TechnicalGap:
+    """Execution disposition for one subject left unfinished by a technical failure.
+
+    It is not an Evidence, Scope, Category, Taxonomy, Reportability, or
+    Validation state.  The subject is excluded from this run and disclosed.
+    """
+
+    stage: str
+    subject_id: str
+    kind: TechnicalGapKind
+    failure_class: str
+    attempts: int = 0
+
+    def __post_init__(self) -> None:
+        if self.stage not in TECHNICAL_GAP_STAGES:
+            raise ValueError("TechnicalGap stage is not a semantic stage")
+        if not isinstance(self.subject_id, str) or not self.subject_id.strip():
+            raise ValueError("TechnicalGap requires subject_id")
+        object.__setattr__(self, "kind", TechnicalGapKind(self.kind))
+        if not isinstance(self.failure_class, str) or not self.failure_class.strip():
+            raise ValueError("TechnicalGap requires failure_class")
+        if isinstance(self.attempts, bool) or not isinstance(self.attempts, int) or self.attempts < 0:
+            raise ValueError("TechnicalGap attempts must be a non-negative integer")
+
+    @classmethod
+    def from_failure(cls, stage: str, subject_id: str, failure: BaseException) -> "TechnicalGap":
+        if isinstance(failure, SemanticProviderTechnicalFailure):
+            kind = (
+                TechnicalGapKind.TRANSIENT_FAILURE_AFTER_RETRY
+                if failure.transient
+                else TechnicalGapKind.NON_TRANSIENT_PROVIDER_FAILURE
+            )
+            return cls(stage, subject_id, kind, failure.failure_class, failure.attempts)
+        if isinstance(failure, ProposalContractViolation):
+            return cls(stage, subject_id, TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION, "PROPOSAL_INVALID", 1)
+        raise TypeError("TechnicalGap requires a technical failure or proposal violation")
+
+
+EVENT_TECHNICAL_FAILURES = (SemanticProviderTechnicalFailure, ProposalContractViolation)
+
+
+class ReportabilityProposalViolation(ReportabilityStageFailure, ProposalContractViolation):
+    """A parseable helper proposal violated the Reportability contract (RC-6).
+
+    Only this EventGroup becomes a technical gap; it is never NOT_REPORTABLE.
+    """

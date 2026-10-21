@@ -1,0 +1,36 @@
+{
+  "purpose": "Human expectations recorded BEFORE the live run, for grading only. The harness never reads this file and it is not Golden.",
+  "recorded_at": "2026-10-20",
+  "legend": {
+    "evidence": "READY / REJECTED / AT_RISK (acquisition risk noted during curation)",
+    "unsure": "human judgement is genuinely ambiguous; either outcome is acceptable if the trace explains it"
+  },
+  "items": {
+    "P01": {"evidence": "AT_RISK", "scope": "IN_SCOPE (unsure: Wenzhou S-line is a 市域 line)", "date_valid": true, "category": "TECHNICAL_DEVELOPMENT", "taxonomy": ["機廠維修設備"], "reportable": true},
+    "P02": {"evidence": "READY (thin teaser)", "scope": "unsure (København S-bane is suburban rail)", "date_valid": true, "category": "PROCUREMENT", "taxonomy": ["號誌"], "reportable": "unsure"},
+    "P03": {"evidence": "READY", "scope": "IN_SCOPE", "date_valid": true, "category": "TECHNICAL_DEVELOPMENT (unsure: exploratory proposal)", "taxonomy": ["電聯車", "供電"], "reportable": "unsure"},
+    "P04": {"evidence": "READY", "scope": "IN_SCOPE", "date_valid": true, "category": "INCIDENT", "taxonomy": ["電聯車"], "reportable": true, "event_group_with": "C05"},
+    "P05": {"evidence": "READY", "scope": "IN_SCOPE", "date_valid": true, "category": "INCIDENT", "taxonomy": [], "reportable": false},
+    "P06": {"evidence": "READY", "scope": "IN_SCOPE", "date_valid": true, "category": "unsure (safety workshop; no new rule)", "taxonomy": [], "reportable": "unsure"},
+    "P07": {"evidence": "READY", "scope": "IN_SCOPE", "date_valid": true, "category": "OPERATIONAL_CHANGE", "taxonomy": [], "reportable": true},
+    "P08": {"evidence": "READY (thin teaser)", "scope": "IN_SCOPE", "date_valid": true, "category": "OPERATIONAL_CHANGE", "taxonomy": [], "reportable": true},
+    "P09": {"evidence": "READY", "scope": "IN_SCOPE", "date_valid": true, "category": "OPERATIONAL_CHANGE", "taxonomy": [], "reportable": "unsure"},
+    "P10": {"evidence": "READY (thin teaser)", "scope": "IN_SCOPE", "date_valid": true, "category": "PROCUREMENT", "taxonomy": [], "reportable": "unsure"},
+    "P11": {"evidence": "READY", "scope": "IN_SCOPE", "date_valid": true, "category": "PROCUREMENT (unsure: financing approval)", "taxonomy": ["號誌"], "reportable": true},
+    "P12": {"evidence": "AT_RISK (client-rendered page)", "scope": "IN_SCOPE", "date_valid": true, "category": "PROCUREMENT", "taxonomy": ["電聯車"], "reportable": true},
+    "P13": {"evidence": "READY (thin teaser)", "scope": "unsure (cross-boundary heavy rail)", "date_valid": true, "category": "unsure", "taxonomy": [], "reportable": "unsure"},
+    "P14": {"evidence": "READY", "scope": "IN_SCOPE", "date_valid": true, "category": "PROCUREMENT", "taxonomy": [], "reportable": true},
+    "C01": {"evidence": "REJECTED (Google News interstitial)"},
+    "C02": {"evidence": "REJECTED (Google News interstitial)"},
+    "C03": {"evidence": "READY (thin teaser)", "date_valid": false},
+    "C04": {"evidence": "READY", "scope": "OUT_OF_SCOPE"},
+    "C05": {"evidence": "READY", "scope": "IN_SCOPE", "date_valid": true, "event_group_with": "P04"},
+    "C06": {"evidence": "REJECTED (listing page)"}
+  },
+  "report_level": {
+    "zero_false_ready_on": ["C01", "C02", "C06"],
+    "positive_ready_target": "≥10 of 14",
+    "final_report_count": "no target; must equal Validation PASS count",
+    "grounding": "every factual sentence in each summary must be supported by substantive_content; zero fabricated Taipei facts"
+  }
+}

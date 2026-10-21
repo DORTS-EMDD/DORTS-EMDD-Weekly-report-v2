@@ -23,6 +23,8 @@ from .maiagent_transport import (
     UrllibMaiAgentJsonTransport,
     load_shared_maiagent_values,
     parse_maiagent_response,
+    MAIAGENT_HELPER_TIMEOUT_SECONDS,
+    request_maiagent_proposal,
 )
 
 
@@ -106,7 +108,7 @@ class MaiAgentReportabilityProviderConfig:
     api_base: str
     api_key: str = field(repr=False)
     chatbot_id: str = field(repr=False)
-    timeout_seconds: float = 45.0
+    timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS
 
     def __post_init__(self) -> None:
         values = (self.api_base, self.api_key, self.chatbot_id)
@@ -156,7 +158,7 @@ class MaiAgentReportabilityProviderConfig:
         cls,
         environ: Mapping[str, str] | None = None,
         *,
-        timeout_seconds: float = 45.0,
+        timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS,
         dotenv_path: str | os.PathLike[str] | None = None,
     ) -> "MaiAgentReportabilityProviderConfig | None":
         values = load_shared_maiagent_values(environ, dotenv_path=dotenv_path)
@@ -237,34 +239,20 @@ class MaiAgentReportabilityProposalProvider:
             ensure_ascii=False,
             separators=(",", ":"),
         ).encode("utf-8")
-        try:
-            response = self._transport(
-                self._config.completion_endpoint,
-                headers={
-                    "Authorization": f"Api-Key {self._config.api_key}",
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                },
-                body=body,
-                timeout_seconds=float(self._config.timeout_seconds),
-            )
-        except TimeoutError:
-            raise TimeoutError("MaiAgent Reportability request timed out") from None
-        except Exception:
-            raise MaiAgentReportabilityProviderFailure(
-                "MaiAgent Reportability provider transport failed"
-            ) from None
-
-        if not isinstance(response, MaiAgentHttpResponse) or response.status_code != 200:
-            raise MaiAgentReportabilityProviderFailure(
-                "MaiAgent Reportability provider request failed"
-            )
-        try:
-            return parse_maiagent_response(response.body)
-        except MaiAgentResponseError:
-            raise MaiAgentReportabilityProviderFailure(
-                "MaiAgent Reportability provider response was invalid"
-            ) from None
+        # Technical failures propagate as typed SemanticProviderTechnicalFailure
+        # after the shared bounded retry; parseable responses go to the owner.
+        return request_maiagent_proposal(
+            self._transport,
+            self._config.completion_endpoint,
+            headers={
+                "Authorization": f"Api-Key {self._config.api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            body=body,
+            timeout_seconds=float(self._config.timeout_seconds),
+            task="reportability_semantic_proposal",
+        )
 
 
 MaiAgentReportabilityProvider = MaiAgentReportabilityProposalProvider
@@ -277,7 +265,7 @@ def build_maiagent_reportability_provider(
     *,
     transport: MaiAgentJsonHttpTransport | None = None,
     environ: Mapping[str, str] | None = None,
-    timeout_seconds: float = 45.0,
+    timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS,
     dotenv_path: str | os.PathLike[str] | None = None,
 ) -> MaiAgentReportabilityProposalProvider | None:
     """Construct the adapter without performing network I/O."""

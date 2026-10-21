@@ -3,10 +3,15 @@ from __future__ import annotations
 from unittest import TestCase
 
 from src.weekly_report.report_service import ReportService
+from src.weekly_report.contracts import TechnicalGapKind
 from src.weekly_report.validator import (
+    ValidationEvidenceSource,
+    ValidationSemanticRequest,
     ValidationStageFailure,
     ValidationStageFailureReason,
+    ValidationWriterProse,
     Validator,
+    segment_writer_field,
 )
 from src.weekly_report.writer import WriterReportBlock
 
@@ -22,23 +27,30 @@ def _block(event_id: str = "E1", *, headline: str = "Taiwan", summary: str = "Me
 
 
 def _proposal(request, *, assessment_overrides=None, language_overrides=None):
+    """Assess every Validator-supplied unit; overrides key on field or unit_id."""
+
     assessment_overrides = assessment_overrides or {}
     language_overrides = language_overrides or {}
     source = request.evidence_sources[0]
     fields = []
-    for field_name, value in request.writer_prose.as_mapping().items():
+    for field_name, unit_ids in request.unit_ids_by_field().items():
+        name = field_name.value
+        default = "ANALYSIS" if name == "taipei_insight" else "SUPPORTED"
         fields.append(
             {
-                "field_name": field_name,
-                "language_assessment": language_overrides.get(field_name, "TRADITIONAL_CHINESE"),
-                "units": [
+                "field_name": name,
+                "language_assessment": language_overrides.get(name, "TRADITIONAL_CHINESE"),
+                "unit_assessments": [
                     {
-                        "writer_quote": value,
-                        "assessment": assessment_overrides.get(field_name, "ANALYSIS" if field_name == "taipei_insight" else "SUPPORTED"),
+                        "unit_id": unit_id,
+                        "assessment": assessment_overrides.get(
+                            unit_id, assessment_overrides.get(name, default)
+                        ),
                         "evidence_citations": [
                             {"candidate_id": source.candidate_id, "exact_quote": source.substantive_content}
                         ],
                     }
+                    for unit_id in unit_ids
                 ],
             }
         )
@@ -101,7 +113,7 @@ class ValidatorTests(TestCase):
 
         def provider(request):
             proposal = _proposal(request)
-            proposal["field_assessments"][0]["units"][0]["evidence_citations"][0]["exact_quote"] = "missing"
+            proposal["field_assessments"][0]["unit_assessments"][0]["evidence_citations"][0]["exact_quote"] = "missing"
             return proposal
 
         with self.assertRaises(ValidationStageFailure) as context:
@@ -115,7 +127,7 @@ class ValidatorTests(TestCase):
 
         def provider(request):
             proposal = _proposal(request)
-            proposal["field_assessments"][0]["units"][0]["evidence_citations"] = []
+            proposal["field_assessments"][0]["unit_assessments"][0]["evidence_citations"] = []
             return proposal
 
         with self.assertRaises(ValidationStageFailure) as context:
@@ -159,6 +171,162 @@ class ValidatorTests(TestCase):
             ).validate((result,), (_metadata(result),), (_block(),))
         self.assertEqual(context.exception.reason, ValidationStageFailureReason.PROVIDER_FAILURE)
         self.assertEqual(corrections, [])
+
+
+class WriterSegmentationTests(TestCase):
+    """RC-7: the Validator owns deterministic Writer-unit segmentation."""
+
+    def _texts(self, text):
+        units = segment_writer_field("factual_summary", text)
+        self.assertEqual("".join(unit.text for unit in units), text)
+        self.assertEqual(
+            [unit.unit_id for unit in units],
+            [f"factual_summary-{index}" for index in range(1, len(units) + 1)],
+        )
+        return [unit.text for unit in units]
+
+    def test_headline_without_terminator_is_one_unit(self) -> None:
+        self.assertEqual(self._texts("埃及開羅地鐵三號線第四期啟用"), ["埃及開羅地鐵三號線第四期啟用"])
+
+    def test_full_width_terminators_split_and_keep_closers_and_whitespace(self) -> None:
+        self.assertEqual(
+            self._texts("第一句。第二句！「引述內容。」接著說明；最後一句？  "),
+            ["第一句。", "第二句！", "「引述內容。」", "接著說明；", "最後一句？  "],
+        )
+
+    def test_ascii_periods_commas_and_decimals_do_not_split(self) -> None:
+        self.assertEqual(
+            self._texts("St. Louis 延伸 3.5 公里，預計 2026 年完工。後續"),
+            ["St. Louis 延伸 3.5 公里，預計 2026 年完工。", "後續"],
+        )
+
+    def test_line_breaks_split_and_punctuation_only_units_merge(self) -> None:
+        self.assertEqual(self._texts("甲段\n\n乙段。"), ["甲段\n\n", "乙段。"])
+        self.assertEqual(self._texts("。開頭"), ["。開頭"])
+        self.assertEqual(self._texts("結尾。\n」"), ["結尾。\n」"])
+
+    def test_segmentation_is_deterministic(self) -> None:
+        text = "第一句。第二句。"
+        self.assertEqual(
+            segment_writer_field("factual_summary", text), segment_writer_field("factual_summary", text)
+        )
+
+    def test_request_payload_carries_units_not_free_prose(self) -> None:
+        request = ValidationSemanticRequest(
+            "E1",
+            (ValidationEvidenceSource("C1", "Evidence."),),
+            ValidationWriterProse("標題", "第一句。第二句。", "啟示。"),
+        )
+        payload = request.as_payload()
+        self.assertEqual(set(payload), {"event_id", "evidence_sources", "writer_fields"})
+        self.assertEqual(
+            payload["writer_fields"],
+            [
+                {"field_name": "headline", "units": [{"unit_id": "headline-1", "text": "標題"}]},
+                {
+                    "field_name": "factual_summary",
+                    "units": [
+                        {"unit_id": "factual_summary-1", "text": "第一句。"},
+                        {"unit_id": "factual_summary-2", "text": "第二句。"},
+                    ],
+                },
+                {"field_name": "taipei_insight", "units": [{"unit_id": "taipei_insight-1", "text": "啟示。"}]},
+            ],
+        )
+
+
+class UnitCoverageTests(TestCase):
+    """RC-7: the proposal must assess every supplied unit exactly once."""
+
+    _SUMMARY = "Metro 完成測試。Metro 將於明年通車。"
+
+    def _validate(self, provider, *, hook=None):
+        result = _workflow_result("E1")
+        return Validator(semantic_provider=provider).validate(
+            (result,), (_metadata(result),), (_block(summary=self._SUMMARY),),
+            on_event_technical_gap=hook,
+        )
+
+    def _summary_units(self, proposal):
+        return next(
+            field for field in proposal["field_assessments"] if field["field_name"] == "factual_summary"
+        )["unit_assessments"]
+
+    def test_multi_unit_summary_passes_when_every_unit_is_supported(self) -> None:
+        seen = []
+
+        def provider(request):
+            seen.append(request.unit_ids_by_field())
+            return _proposal(request)
+
+        self.assertEqual(self._validate(provider).pass_count, 1)
+        self.assertEqual(
+            [ids for name, ids in seen[0].items() if name.value == "factual_summary"],
+            [("factual_summary-1", "factual_summary-2")],
+        )
+
+    def test_one_unsupported_unit_is_a_semantic_fail(self) -> None:
+        provider = lambda request: _proposal(request, assessment_overrides={"factual_summary-2": "UNSUPPORTED"})
+        validation = self._validate(provider)
+        self.assertEqual(validation.pass_count, 0)
+        self.assertEqual(validation.failed[0].reasons, ("semantic_factual_summary_unsupported",))
+
+    def test_reordered_unit_assessments_are_mapped_by_unit_id(self) -> None:
+        def provider(request):
+            proposal = _proposal(request)
+            self._summary_units(proposal).reverse()
+            return proposal
+
+        self.assertEqual(self._validate(provider).pass_count, 1)
+
+    def test_missing_duplicate_or_foreign_unit_is_coverage_violation(self) -> None:
+        def missing(units):
+            del units[1]
+
+        def duplicate(units):
+            units[1] = dict(units[0])
+
+        def foreign(units):
+            units[1] = dict(units[1], unit_id="headline-1")
+
+        for mutate in (missing, duplicate, foreign):
+            with self.subTest(mutation=mutate.__name__):
+                def provider(request, mutate=mutate):
+                    proposal = _proposal(request)
+                    mutate(self._summary_units(proposal))
+                    return proposal
+
+                with self.assertRaises(ValidationStageFailure) as context:
+                    self._validate(provider)
+                self.assertEqual(context.exception.reason, ValidationStageFailureReason.TEXT_COVERAGE_INVALID)
+
+    def test_legacy_writer_quote_shape_is_invalid_response(self) -> None:
+        def provider(request):
+            proposal = _proposal(request)
+            for field in proposal["field_assessments"]:
+                field["units"] = [
+                    {"writer_quote": "x", "assessment": unit["assessment"], "evidence_citations": unit["evidence_citations"]}
+                    for unit in field.pop("unit_assessments")
+                ]
+            return proposal
+
+        with self.assertRaises(ValidationStageFailure) as context:
+            self._validate(provider)
+        self.assertEqual(context.exception.reason, ValidationStageFailureReason.INVALID_RESPONSE)
+
+    def test_coverage_violation_in_formal_run_is_event_technical_gap(self) -> None:
+        gaps = []
+
+        def provider(request):
+            proposal = _proposal(request)
+            del self._summary_units(proposal)[0]
+            return proposal
+
+        validation = self._validate(provider, hook=gaps.append)
+        self.assertEqual((validation.pass_count, len(validation.failed)), (0, 0))
+        self.assertEqual(len(gaps), 1)
+        self.assertEqual(gaps[0].kind, TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION)
+        self.assertEqual(gaps[0].failure_class, "TEXT_COVERAGE_INVALID")
 
 
 if __name__ == "__main__":

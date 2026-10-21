@@ -1,0 +1,1641 @@
+{
+ "reference_version": "geo-reference-v1",
+ "effective_date": "2026-10-20",
+ "basis": {
+  "region_ids": "ISO 3166-1 alpha-2 codes (HK and MO as their ISO-assigned codes).",
+  "region_display_names": "Traditional Chinese names used for formal DORTS reports.",
+  "places": "Curated cities/districts (cities) and transit-system or operator names (systems) with operating or approved urban rail, as published by their operators or governments. A place name resolves only when it is unique across this population; names shared by more than one region, or listed in ambiguous_names, never resolve.",
+  "matching": "Whole-value match after Unicode case folding and whitespace collapsing; no partial, fuzzy, translated, or inferred matches.",
+  "generic_transit_terms": "Mode or category words that are not specific transit-system names."
+ },
+ "regions": [
+  {
+   "region_id": "TW",
+   "display_name": "臺灣",
+   "names": [
+    "Taiwan",
+    "臺灣",
+    "台灣",
+    "台湾"
+   ]
+  },
+  {
+   "region_id": "CN",
+   "display_name": "中國大陸",
+   "names": [
+    "China",
+    "People's Republic of China",
+    "中國",
+    "中国",
+    "中國大陸",
+    "中国大陆"
+   ]
+  },
+  {
+   "region_id": "HK",
+   "display_name": "香港",
+   "names": [
+    "Hong Kong",
+    "HK",
+    "Hong Kong SAR",
+    "香港",
+    "香港特別行政區",
+    "香港特别行政区"
+   ]
+  },
+  {
+   "region_id": "MO",
+   "display_name": "澳門",
+   "names": [
+    "Macau",
+    "Macao",
+    "澳門",
+    "澳门"
+   ]
+  },
+  {
+   "region_id": "JP",
+   "display_name": "日本",
+   "names": [
+    "Japan",
+    "日本"
+   ]
+  },
+  {
+   "region_id": "KR",
+   "display_name": "韓國",
+   "names": [
+    "South Korea",
+    "Republic of Korea",
+    "대한민국",
+    "한국",
+    "韓國",
+    "韩国",
+    "南韓",
+    "南韩"
+   ]
+  },
+  {
+   "region_id": "KP",
+   "display_name": "北韓",
+   "names": [
+    "North Korea",
+    "DPRK",
+    "北韓",
+    "北韩",
+    "朝鮮",
+    "朝鲜"
+   ]
+  },
+  {
+   "region_id": "SG",
+   "display_name": "新加坡",
+   "names": [
+    "Singapore",
+    "新加坡"
+   ]
+  },
+  {
+   "region_id": "MY",
+   "display_name": "馬來西亞",
+   "names": [
+    "Malaysia",
+    "馬來西亞",
+    "马来西亚"
+   ]
+  },
+  {
+   "region_id": "TH",
+   "display_name": "泰國",
+   "names": [
+    "Thailand",
+    "泰國",
+    "泰国"
+   ]
+  },
+  {
+   "region_id": "VN",
+   "display_name": "越南",
+   "names": [
+    "Vietnam",
+    "Viet Nam",
+    "Việt Nam",
+    "越南"
+   ]
+  },
+  {
+   "region_id": "PH",
+   "display_name": "菲律賓",
+   "names": [
+    "Philippines",
+    "菲律賓",
+    "菲律宾"
+   ]
+  },
+  {
+   "region_id": "ID",
+   "display_name": "印尼",
+   "names": [
+    "Indonesia",
+    "印尼",
+    "印度尼西亞",
+    "印度尼西亚"
+   ]
+  },
+  {
+   "region_id": "IN",
+   "display_name": "印度",
+   "names": [
+    "India",
+    "印度"
+   ]
+  },
+  {
+   "region_id": "PK",
+   "display_name": "巴基斯坦",
+   "names": [
+    "Pakistan",
+    "巴基斯坦"
+   ]
+  },
+  {
+   "region_id": "BD",
+   "display_name": "孟加拉",
+   "names": [
+    "Bangladesh",
+    "孟加拉"
+   ]
+  },
+  {
+   "region_id": "AU",
+   "display_name": "澳洲",
+   "names": [
+    "Australia",
+    "澳洲",
+    "澳大利亞",
+    "澳大利亚"
+   ]
+  },
+  {
+   "region_id": "NZ",
+   "display_name": "紐西蘭",
+   "names": [
+    "New Zealand",
+    "紐西蘭",
+    "新西兰"
+   ]
+  },
+  {
+   "region_id": "GB",
+   "display_name": "英國",
+   "names": [
+    "United Kingdom",
+    "UK",
+    "U.K.",
+    "Britain",
+    "Great Britain",
+    "England",
+    "Scotland",
+    "Wales",
+    "英國",
+    "英国"
+   ]
+  },
+  {
+   "region_id": "IE",
+   "display_name": "愛爾蘭",
+   "names": [
+    "Ireland",
+    "Republic of Ireland",
+    "愛爾蘭",
+    "爱尔兰"
+   ]
+  },
+  {
+   "region_id": "FR",
+   "display_name": "法國",
+   "names": [
+    "France",
+    "法國",
+    "法国"
+   ]
+  },
+  {
+   "region_id": "DE",
+   "display_name": "德國",
+   "names": [
+    "Germany",
+    "Deutschland",
+    "德國",
+    "德国"
+   ]
+  },
+  {
+   "region_id": "NL",
+   "display_name": "荷蘭",
+   "names": [
+    "Netherlands",
+    "The Netherlands",
+    "Nederland",
+    "荷蘭",
+    "荷兰"
+   ]
+  },
+  {
+   "region_id": "BE",
+   "display_name": "比利時",
+   "names": [
+    "Belgium",
+    "Belgique",
+    "België",
+    "比利時",
+    "比利时"
+   ]
+  },
+  {
+   "region_id": "IT",
+   "display_name": "義大利",
+   "names": [
+    "Italy",
+    "Italia",
+    "義大利",
+    "意大利"
+   ]
+  },
+  {
+   "region_id": "ES",
+   "display_name": "西班牙",
+   "names": [
+    "Spain",
+    "España",
+    "西班牙"
+   ]
+  },
+  {
+   "region_id": "PT",
+   "display_name": "葡萄牙",
+   "names": [
+    "Portugal",
+    "葡萄牙"
+   ]
+  },
+  {
+   "region_id": "CH",
+   "display_name": "瑞士",
+   "names": [
+    "Switzerland",
+    "Schweiz",
+    "Suisse",
+    "Svizzera",
+    "瑞士"
+   ]
+  },
+  {
+   "region_id": "AT",
+   "display_name": "奧地利",
+   "names": [
+    "Austria",
+    "Österreich",
+    "奧地利",
+    "奥地利"
+   ]
+  },
+  {
+   "region_id": "DK",
+   "display_name": "丹麥",
+   "names": [
+    "Denmark",
+    "Danmark",
+    "丹麥",
+    "丹麦"
+   ]
+  },
+  {
+   "region_id": "SE",
+   "display_name": "瑞典",
+   "names": [
+    "Sweden",
+    "Sverige",
+    "瑞典"
+   ]
+  },
+  {
+   "region_id": "NO",
+   "display_name": "挪威",
+   "names": [
+    "Norway",
+    "Norge",
+    "挪威"
+   ]
+  },
+  {
+   "region_id": "FI",
+   "display_name": "芬蘭",
+   "names": [
+    "Finland",
+    "Suomi",
+    "芬蘭",
+    "芬兰"
+   ]
+  },
+  {
+   "region_id": "PL",
+   "display_name": "波蘭",
+   "names": [
+    "Poland",
+    "Polska",
+    "波蘭",
+    "波兰"
+   ]
+  },
+  {
+   "region_id": "CZ",
+   "display_name": "捷克",
+   "names": [
+    "Czech Republic",
+    "Czechia",
+    "Česko",
+    "捷克"
+   ]
+  },
+  {
+   "region_id": "HU",
+   "display_name": "匈牙利",
+   "names": [
+    "Hungary",
+    "Magyarország",
+    "匈牙利"
+   ]
+  },
+  {
+   "region_id": "GR",
+   "display_name": "希臘",
+   "names": [
+    "Greece",
+    "希臘",
+    "希腊"
+   ]
+  },
+  {
+   "region_id": "TR",
+   "display_name": "土耳其",
+   "names": [
+    "Turkey",
+    "Türkiye",
+    "土耳其"
+   ]
+  },
+  {
+   "region_id": "RU",
+   "display_name": "俄羅斯",
+   "names": [
+    "Russia",
+    "俄羅斯",
+    "俄罗斯"
+   ]
+  },
+  {
+   "region_id": "UA",
+   "display_name": "烏克蘭",
+   "names": [
+    "Ukraine",
+    "烏克蘭",
+    "乌克兰"
+   ]
+  },
+  {
+   "region_id": "AZ",
+   "display_name": "亞塞拜然",
+   "names": [
+    "Azerbaijan",
+    "亞塞拜然",
+    "阿塞拜疆"
+   ]
+  },
+  {
+   "region_id": "SA",
+   "display_name": "沙烏地阿拉伯",
+   "names": [
+    "Saudi Arabia",
+    "Kingdom of Saudi Arabia",
+    "沙烏地阿拉伯",
+    "沙特阿拉伯"
+   ]
+  },
+  {
+   "region_id": "AE",
+   "display_name": "阿拉伯聯合大公國",
+   "names": [
+    "United Arab Emirates",
+    "UAE",
+    "阿拉伯聯合大公國",
+    "阿联酋"
+   ]
+  },
+  {
+   "region_id": "QA",
+   "display_name": "卡達",
+   "names": [
+    "Qatar",
+    "卡達",
+    "卡塔尔"
+   ]
+  },
+  {
+   "region_id": "IL",
+   "display_name": "以色列",
+   "names": [
+    "Israel",
+    "以色列"
+   ]
+  },
+  {
+   "region_id": "IR",
+   "display_name": "伊朗",
+   "names": [
+    "Iran",
+    "伊朗"
+   ]
+  },
+  {
+   "region_id": "EG",
+   "display_name": "埃及",
+   "names": [
+    "Egypt",
+    "埃及"
+   ]
+  },
+  {
+   "region_id": "NG",
+   "display_name": "奈及利亞",
+   "names": [
+    "Nigeria",
+    "奈及利亞",
+    "尼日利亚"
+   ]
+  },
+  {
+   "region_id": "TZ",
+   "display_name": "坦尚尼亞",
+   "names": [
+    "Tanzania",
+    "坦尚尼亞",
+    "坦桑尼亚"
+   ]
+  },
+  {
+   "region_id": "ZA",
+   "display_name": "南非",
+   "names": [
+    "South Africa",
+    "南非"
+   ]
+  },
+  {
+   "region_id": "US",
+   "display_name": "美國",
+   "names": [
+    "United States",
+    "United States of America",
+    "USA",
+    "U.S.",
+    "U.S.A.",
+    "美國",
+    "美国"
+   ]
+  },
+  {
+   "region_id": "CA",
+   "display_name": "加拿大",
+   "names": [
+    "Canada",
+    "加拿大"
+   ]
+  },
+  {
+   "region_id": "MX",
+   "display_name": "墨西哥",
+   "names": [
+    "Mexico",
+    "México",
+    "墨西哥"
+   ]
+  },
+  {
+   "region_id": "BR",
+   "display_name": "巴西",
+   "names": [
+    "Brazil",
+    "Brasil",
+    "巴西"
+   ]
+  },
+  {
+   "region_id": "CL",
+   "display_name": "智利",
+   "names": [
+    "Chile",
+    "智利"
+   ]
+  },
+  {
+   "region_id": "AR",
+   "display_name": "阿根廷",
+   "names": [
+    "Argentina",
+    "阿根廷"
+   ]
+  },
+  {
+   "region_id": "CO",
+   "display_name": "哥倫比亞",
+   "names": [
+    "Colombia",
+    "哥倫比亞",
+    "哥伦比亚"
+   ]
+  },
+  {
+   "region_id": "PE",
+   "display_name": "秘魯",
+   "names": [
+    "Peru",
+    "Perú",
+    "秘魯",
+    "秘鲁"
+   ]
+  },
+  {
+   "region_id": "VE",
+   "display_name": "委內瑞拉",
+   "names": [
+    "Venezuela",
+    "委內瑞拉",
+    "委内瑞拉"
+   ]
+  }
+ ],
+ "places": [
+  {
+   "region_id": "TW",
+   "cities": [
+    "Taipei",
+    "Taipei City",
+    "New Taipei",
+    "Taoyuan",
+    "Taichung",
+    "Kaohsiung",
+    "Tainan",
+    "臺北",
+    "台北",
+    "臺北市",
+    "台北市",
+    "新北",
+    "新北市",
+    "桃園",
+    "臺中",
+    "台中",
+    "高雄",
+    "臺南",
+    "台南"
+   ],
+   "systems": [
+    "Taipei Metro",
+    "Taipei MRT",
+    "臺北捷運",
+    "台北捷運",
+    "Kaohsiung MRT",
+    "高雄捷運",
+    "Taoyuan Metro",
+    "桃園捷運",
+    "Taichung MRT",
+    "臺中捷運",
+    "台中捷運"
+   ]
+  },
+  {
+   "region_id": "CN",
+   "cities": [
+    "Beijing",
+    "Shanghai",
+    "Guangzhou",
+    "Shenzhen",
+    "Chengdu",
+    "Chongqing",
+    "Wuhan",
+    "Hangzhou",
+    "Nanjing",
+    "Xi'an",
+    "Tianjin",
+    "Suzhou",
+    "Qingdao",
+    "Wenzhou",
+    "Xiamen",
+    "Zhengzhou",
+    "Changsha",
+    "Hefei",
+    "Kunming",
+    "Dalian",
+    "Shenyang",
+    "Harbin",
+    "Fuzhou",
+    "Nanning",
+    "Jinan",
+    "Ningbo",
+    "北京",
+    "上海",
+    "广州",
+    "廣州",
+    "深圳",
+    "成都",
+    "重庆",
+    "重慶",
+    "武汉",
+    "武漢",
+    "杭州",
+    "南京",
+    "西安",
+    "天津",
+    "苏州",
+    "蘇州",
+    "青岛",
+    "青島",
+    "温州",
+    "溫州",
+    "厦门",
+    "廈門",
+    "郑州",
+    "鄭州",
+    "长沙",
+    "長沙",
+    "合肥",
+    "昆明",
+    "大连",
+    "大連",
+    "沈阳",
+    "瀋陽",
+    "哈尔滨",
+    "哈爾濱",
+    "福州",
+    "南宁",
+    "南寧",
+    "济南",
+    "濟南",
+    "宁波",
+    "寧波"
+   ],
+   "systems": [
+    "Beijing Subway",
+    "Shanghai Metro",
+    "Guangzhou Metro",
+    "Shenzhen Metro",
+    "北京地铁",
+    "上海地铁",
+    "广州地铁",
+    "深圳地铁",
+    "温州轨道交通",
+    "温州市域铁路"
+   ]
+  },
+  {
+   "region_id": "HK",
+   "cities": [
+    "Kowloon",
+    "Shau Kei Wan",
+    "Sha Tin",
+    "Tuen Mun",
+    "Tsuen Wan",
+    "New Territories",
+    "筲箕灣",
+    "九龍",
+    "新界",
+    "沙田",
+    "屯門",
+    "荃灣"
+   ],
+   "systems": [
+    "Hong Kong Tramways",
+    "香港電車",
+    "MTR Corporation",
+    "港鐵",
+    "港铁",
+    "港鐵公司"
+   ]
+  },
+  {
+   "region_id": "MO",
+   "cities": [],
+   "systems": [
+    "Macau LRT",
+    "Macao Light Rapid Transit",
+    "澳門輕軌",
+    "澳门轻轨"
+   ]
+  },
+  {
+   "region_id": "JP",
+   "cities": [
+    "Tokyo",
+    "Osaka",
+    "Nagoya",
+    "Yokohama",
+    "Kyoto",
+    "Kobe",
+    "Fukuoka",
+    "Sapporo",
+    "Sendai",
+    "Hiroshima",
+    "Nagasaki",
+    "Utsunomiya",
+    "Okinawa",
+    "東京",
+    "大阪",
+    "名古屋",
+    "横浜",
+    "京都",
+    "神戸",
+    "福岡",
+    "札幌",
+    "仙台",
+    "広島",
+    "長崎",
+    "宇都宮"
+   ],
+   "systems": [
+    "Tokyo Metro",
+    "東京メトロ",
+    "Toei Subway",
+    "都営地下鉄",
+    "Osaka Metro",
+    "大阪メトロ",
+    "Hiroshima Electric Railway",
+    "広島電鉄"
+   ]
+  },
+  {
+   "region_id": "KR",
+   "cities": [
+    "Seoul",
+    "Busan",
+    "Incheon",
+    "Daegu",
+    "Daejeon",
+    "Gwangju",
+    "Ulsan",
+    "Hwaseong",
+    "서울",
+    "부산",
+    "인천",
+    "대구",
+    "대전",
+    "광주",
+    "울산",
+    "화성"
+   ],
+   "systems": [
+    "Seoul Metro",
+    "서울교통공사",
+    "서울 지하철",
+    "Busan Metro",
+    "부산교통공사"
+   ]
+  },
+  {
+   "region_id": "SG",
+   "cities": [
+    "Jurong"
+   ],
+   "systems": [
+    "Singapore MRT",
+    "SMRT",
+    "SBS Transit"
+   ]
+  },
+  {
+   "region_id": "MY",
+   "cities": [
+    "Kuala Lumpur",
+    "Penang",
+    "Johor Bahru"
+   ],
+   "systems": [
+    "Rapid KL"
+   ]
+  },
+  {
+   "region_id": "TH",
+   "cities": [
+    "Bangkok",
+    "กรุงเทพมหานคร"
+   ],
+   "systems": [
+    "BTS Skytrain",
+    "Bangkok MRT"
+   ]
+  },
+  {
+   "region_id": "VN",
+   "cities": [
+    "Hanoi",
+    "Ha Noi",
+    "Hà Nội",
+    "Ho Chi Minh City",
+    "HCMC",
+    "Saigon",
+    "Thành phố Hồ Chí Minh",
+    "Phu Quoc",
+    "河内",
+    "河內",
+    "胡志明市"
+   ],
+   "systems": [
+    "Hanoi Metro",
+    "Ho Chi Minh City Metro",
+    "Hanoi Metropolitan Railway Management Board"
+   ]
+  },
+  {
+   "region_id": "PH",
+   "cities": [
+    "Manila",
+    "Metro Manila",
+    "Quezon City",
+    "Cebu"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "ID",
+   "cities": [
+    "Jakarta"
+   ],
+   "systems": [
+    "MRT Jakarta",
+    "LRT Jakarta"
+   ]
+  },
+  {
+   "region_id": "IN",
+   "cities": [
+    "Delhi",
+    "New Delhi",
+    "Mumbai",
+    "Chennai",
+    "Bengaluru",
+    "Bangalore",
+    "Kolkata",
+    "Hyderabad",
+    "Ahmedabad",
+    "Pune",
+    "Kochi",
+    "Lucknow",
+    "Jaipur",
+    "Nagpur",
+    "Kanpur",
+    "Agra",
+    "Bhopal",
+    "Indore",
+    "Patna"
+   ],
+   "systems": [
+    "Delhi Metro",
+    "DMRC",
+    "Delhi Metro Rail Corporation",
+    "Mumbai Metro",
+    "Chennai Metro",
+    "Chennai Metro Rail",
+    "Namma Metro",
+    "Kolkata Metro"
+   ]
+  },
+  {
+   "region_id": "PK",
+   "cities": [
+    "Lahore",
+    "Karachi"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "BD",
+   "cities": [
+    "Dhaka"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "AU",
+   "cities": [
+    "Sydney",
+    "Melbourne",
+    "Brisbane",
+    "Perth",
+    "Adelaide",
+    "Canberra",
+    "Gold Coast",
+    "Parramatta",
+    "New South Wales",
+    "NSW",
+    "Queensland"
+   ],
+   "systems": [
+    "Sydney Metro",
+    "Yarra Trams",
+    "Metro Trains Melbourne",
+    "Transport for NSW",
+    "Suburban Rail Loop",
+    "Canberra Metro"
+   ]
+  },
+  {
+   "region_id": "NZ",
+   "cities": [
+    "Auckland",
+    "Wellington"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "GB",
+   "cities": [
+    "London",
+    "Manchester",
+    "Birmingham",
+    "Glasgow",
+    "Edinburgh",
+    "Nottingham",
+    "Sheffield",
+    "Croydon",
+    "Liverpool",
+    "Leeds",
+    "Newcastle upon Tyne",
+    "Blackpool",
+    "Coventry",
+    "Wolverhampton",
+    "Cardiff"
+   ],
+   "systems": [
+    "Transport for London",
+    "TfL",
+    "London Underground",
+    "London Overground",
+    "Elizabeth line",
+    "Docklands Light Railway",
+    "DLR",
+    "London Trams",
+    "Tramlink",
+    "Glasgow Subway",
+    "Manchester Metrolink",
+    "Tyne and Wear Metro",
+    "West Midlands Metro",
+    "Sheffield Supertram",
+    "Nottingham Express Transit",
+    "Edinburgh Trams",
+    "Network Rail"
+   ]
+  },
+  {
+   "region_id": "IE",
+   "cities": [
+    "Dublin"
+   ],
+   "systems": [
+    "Luas"
+   ]
+  },
+  {
+   "region_id": "FR",
+   "cities": [
+    "Paris",
+    "Lyon",
+    "Marseille",
+    "Lille",
+    "Toulouse",
+    "Rennes",
+    "Bordeaux",
+    "Nantes",
+    "Strasbourg",
+    "Nice",
+    "Montpellier",
+    "Grenoble",
+    "Saint-Étienne",
+    "Rouen",
+    "Île-de-France"
+   ],
+   "systems": [
+    "RATP",
+    "Île-de-France Mobilités",
+    "Grand Paris Express",
+    "Métro de Paris",
+    "Paris Métro"
+   ]
+  },
+  {
+   "region_id": "DE",
+   "cities": [
+    "Berlin",
+    "Munich",
+    "München",
+    "Hamburg",
+    "Frankfurt am Main",
+    "Cologne",
+    "Köln",
+    "Stuttgart",
+    "Düsseldorf",
+    "Nuremberg",
+    "Nürnberg",
+    "Dresden",
+    "Leipzig",
+    "Hannover",
+    "Hanover",
+    "Bremen",
+    "Essen",
+    "Dortmund"
+   ],
+   "systems": [
+    "BVG",
+    "Berliner Verkehrsbetriebe",
+    "MVG",
+    "Hamburger Hochbahn",
+    "Berlin U-Bahn",
+    "Munich U-Bahn"
+   ]
+  },
+  {
+   "region_id": "NL",
+   "cities": [
+    "Amsterdam",
+    "Rotterdam",
+    "The Hague",
+    "Den Haag",
+    "Utrecht",
+    "Delft"
+   ],
+   "systems": [
+    "GVB",
+    "RET",
+    "HTM"
+   ]
+  },
+  {
+   "region_id": "BE",
+   "cities": [
+    "Brussels",
+    "Bruxelles",
+    "Brussel",
+    "Antwerp",
+    "Antwerpen",
+    "Ghent",
+    "Gent"
+   ],
+   "systems": [
+    "STIB",
+    "De Lijn"
+   ]
+  },
+  {
+   "region_id": "IT",
+   "cities": [
+    "Rome",
+    "Roma",
+    "Milan",
+    "Milano",
+    "Naples",
+    "Napoli",
+    "Turin",
+    "Torino",
+    "Genoa",
+    "Genova",
+    "Brescia",
+    "Catania",
+    "Florence",
+    "Firenze",
+    "Bologna"
+   ],
+   "systems": [
+    "Metropolitana di Milano",
+    "Metropolitana di Roma"
+   ]
+  },
+  {
+   "region_id": "ES",
+   "cities": [
+    "Madrid",
+    "Barcelona",
+    "Seville",
+    "Sevilla",
+    "Bilbao",
+    "Málaga",
+    "Malaga",
+    "Palma",
+    "Zaragoza"
+   ],
+   "systems": [
+    "Metro de Madrid",
+    "Metro de Barcelona",
+    "TMB"
+   ]
+  },
+  {
+   "region_id": "PT",
+   "cities": [
+    "Lisbon",
+    "Lisboa",
+    "Porto"
+   ],
+   "systems": [
+    "Metro do Porto",
+    "Metropolitano de Lisboa"
+   ]
+  },
+  {
+   "region_id": "CH",
+   "cities": [
+    "Zurich",
+    "Zürich",
+    "Geneva",
+    "Genève",
+    "Basel",
+    "Bern",
+    "Lausanne"
+   ],
+   "systems": [
+    "Bernmobil",
+    "VBZ",
+    "TPG"
+   ]
+  },
+  {
+   "region_id": "AT",
+   "cities": [
+    "Vienna",
+    "Wien",
+    "Graz",
+    "Linz",
+    "Innsbruck"
+   ],
+   "systems": [
+    "Wiener Linien"
+   ]
+  },
+  {
+   "region_id": "DK",
+   "cities": [
+    "Copenhagen",
+    "København",
+    "Aarhus",
+    "Odense"
+   ],
+   "systems": [
+    "Metroselskabet",
+    "Copenhagen Metro",
+    "Københavns Metro",
+    "København S-Bane",
+    "Copenhagen S-train",
+    "DSB"
+   ]
+  },
+  {
+   "region_id": "SE",
+   "cities": [
+    "Stockholm",
+    "Gothenburg",
+    "Göteborg",
+    "Malmö"
+   ],
+   "systems": [
+    "Stockholm Metro",
+    "Stockholms tunnelbana"
+   ]
+  },
+  {
+   "region_id": "NO",
+   "cities": [
+    "Oslo",
+    "Bergen",
+    "Trondheim"
+   ],
+   "systems": [
+    "Ruter",
+    "Sporveien",
+    "Oslo Metro"
+   ]
+  },
+  {
+   "region_id": "FI",
+   "cities": [
+    "Helsinki",
+    "Tampere",
+    "Espoo"
+   ],
+   "systems": [
+    "HSL"
+   ]
+  },
+  {
+   "region_id": "PL",
+   "cities": [
+    "Warsaw",
+    "Warszawa",
+    "Kraków",
+    "Krakow",
+    "Wrocław",
+    "Gdańsk",
+    "Poznań",
+    "Łódź"
+   ],
+   "systems": [
+    "Warsaw Metro"
+   ]
+  },
+  {
+   "region_id": "CZ",
+   "cities": [
+    "Prague",
+    "Praha",
+    "Brno",
+    "Ostrava"
+   ],
+   "systems": [
+    "Prague Metro"
+   ]
+  },
+  {
+   "region_id": "HU",
+   "cities": [
+    "Budapest"
+   ],
+   "systems": [
+    "BKV"
+   ]
+  },
+  {
+   "region_id": "GR",
+   "cities": [
+    "Athens",
+    "Thessaloniki"
+   ],
+   "systems": [
+    "Athens Metro"
+   ]
+  },
+  {
+   "region_id": "TR",
+   "cities": [
+    "Istanbul",
+    "İstanbul",
+    "Ankara",
+    "Izmir",
+    "İzmir",
+    "Bursa"
+   ],
+   "systems": [
+    "Metro Istanbul",
+    "IETT",
+    "İETT"
+   ]
+  },
+  {
+   "region_id": "RU",
+   "cities": [
+    "Moscow",
+    "Saint Petersburg",
+    "St. Petersburg"
+   ],
+   "systems": [
+    "Moscow Metro"
+   ]
+  },
+  {
+   "region_id": "UA",
+   "cities": [
+    "Kyiv",
+    "Kiev",
+    "Kharkiv",
+    "Dnipro"
+   ],
+   "systems": [
+    "Kyiv Metro"
+   ]
+  },
+  {
+   "region_id": "AZ",
+   "cities": [
+    "Baku"
+   ],
+   "systems": [
+    "Baku Metro",
+    "Baku Metropolitan Closed Joint Stock Company"
+   ]
+  },
+  {
+   "region_id": "SA",
+   "cities": [
+    "Riyadh",
+    "Jeddah",
+    "Mecca",
+    "Makkah"
+   ],
+   "systems": [
+    "Riyadh Metro",
+    "Royal Commission for Riyadh City",
+    "RCRC"
+   ]
+  },
+  {
+   "region_id": "AE",
+   "cities": [
+    "Dubai",
+    "Abu Dhabi"
+   ],
+   "systems": [
+    "Dubai Metro"
+   ]
+  },
+  {
+   "region_id": "QA",
+   "cities": [
+    "Doha"
+   ],
+   "systems": [
+    "Doha Metro"
+   ]
+  },
+  {
+   "region_id": "IL",
+   "cities": [
+    "Tel Aviv",
+    "Jerusalem"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "IR",
+   "cities": [
+    "Tehran",
+    "Mashhad",
+    "Isfahan",
+    "Shiraz",
+    "Tabriz"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "EG",
+   "cities": [
+    "Cairo",
+    "Alexandria",
+    "New Administrative Capital"
+   ],
+   "systems": [
+    "Cairo Metro",
+    "National Authority for Tunnels"
+   ]
+  },
+  {
+   "region_id": "NG",
+   "cities": [
+    "Lagos"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "TZ",
+   "cities": [
+    "Dar es Salaam"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "ZA",
+   "cities": [
+    "Johannesburg",
+    "Cape Town"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "US",
+   "cities": [
+    "New York",
+    "New York City",
+    "NYC",
+    "Manhattan",
+    "Brooklyn",
+    "Chicago",
+    "Los Angeles",
+    "San Francisco",
+    "Washington, D.C.",
+    "Boston",
+    "Philadelphia",
+    "Atlanta",
+    "Seattle",
+    "Denver",
+    "Dallas",
+    "Houston",
+    "Miami",
+    "Minneapolis",
+    "Phoenix",
+    "Salt Lake City",
+    "San Diego",
+    "St. Louis",
+    "St Louis",
+    "Baltimore",
+    "Pittsburgh",
+    "Honolulu",
+    "Charlotte",
+    "Sacramento",
+    "Cleveland",
+    "Detroit",
+    "Illinois",
+    "MidAmerica St Louis Airport"
+   ],
+   "systems": [
+    "MTA",
+    "Metropolitan Transportation Authority",
+    "New York City Transit",
+    "New York City Subway",
+    "BART",
+    "WMATA",
+    "CTA",
+    "SEPTA",
+    "MBTA",
+    "LA Metro",
+    "Sound Transit",
+    "TriMet",
+    "MARTA",
+    "Valley Metro",
+    "St. Louis MetroLink",
+    "St Louis MetroLink",
+    "St. Clair County Transit District"
+   ]
+  },
+  {
+   "region_id": "CA",
+   "cities": [
+    "Toronto",
+    "Montreal",
+    "Montréal",
+    "Vancouver",
+    "Ottawa",
+    "Calgary",
+    "Edmonton"
+   ],
+   "systems": [
+    "TTC",
+    "Metrolinx",
+    "OC Transpo",
+    "Réseau express métropolitain"
+   ]
+  },
+  {
+   "region_id": "MX",
+   "cities": [
+    "Mexico City",
+    "Ciudad de México",
+    "CDMX",
+    "Guadalajara",
+    "Monterrey"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "BR",
+   "cities": [
+    "São Paulo",
+    "Sao Paulo",
+    "Rio de Janeiro",
+    "Brasília",
+    "Belo Horizonte",
+    "Porto Alegre",
+    "Recife",
+    "Salvador",
+    "Fortaleza"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "AR",
+   "cities": [
+    "Buenos Aires"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "CO",
+   "cities": [
+    "Bogotá",
+    "Bogota",
+    "Medellín",
+    "Medellin"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "PE",
+   "cities": [
+    "Lima"
+   ],
+   "systems": []
+  },
+  {
+   "region_id": "VE",
+   "cities": [
+    "Caracas"
+   ],
+   "systems": []
+  }
+ ],
+ "ambiguous_names": [
+  "Korea",
+  "Georgia",
+  "Victoria",
+  "Washington",
+  "Newcastle",
+  "Frankfurt",
+  "Santiago",
+  "Valencia",
+  "Metrolink",
+  "MetroLink",
+  "DART",
+  "TransLink",
+  "SkyTrain",
+  "Waterloo",
+  "America",
+  "US",
+  "MTR",
+  "Metro",
+  "LTA",
+  "SL",
+  "RTA",
+  "Cambridge",
+  "Hamilton"
+ ],
+ "generic_transit_terms": [
+  "metro",
+  "metro system",
+  "metro line",
+  "metro network",
+  "subway",
+  "subway system",
+  "underground",
+  "the underground",
+  "tube",
+  "the tube",
+  "tram",
+  "trams",
+  "tramway",
+  "tram network",
+  "streetcar",
+  "light rail",
+  "light rail system",
+  "light railway",
+  "LRT",
+  "MRT",
+  "monorail",
+  "people mover",
+  "urban rail",
+  "urban rail transit",
+  "rail",
+  "railway",
+  "rail network",
+  "train",
+  "trains",
+  "commuter rail",
+  "suburban rail",
+  "S-Bahn",
+  "U-Bahn",
+  "Straßenbahn",
+  "Stadtbahn",
+  "Métro",
+  "tramway urbain",
+  "metropolitana",
+  "tranvía",
+  "metrô",
+  "地鐵",
+  "地铁",
+  "捷運",
+  "捷运",
+  "輕軌",
+  "轻轨",
+  "電車",
+  "电车",
+  "有軌電車",
+  "有轨电车",
+  "軌道交通",
+  "轨道交通",
+  "城市軌道交通",
+  "城市轨道交通",
+  "市域鐵路",
+  "市域铁路",
+  "地下鉄",
+  "路面電車",
+  "モノレール",
+  "鉄道",
+  "지하철",
+  "도시철도",
+  "트램",
+  "경전철",
+  "전철"
+ ]
+}

@@ -13,6 +13,8 @@ import hashlib
 import json
 from typing import Any, Protocol
 
+from .exact_text import exact_occurrence_offsets
+
 
 class SemanticRelation(StrEnum):
     SAME_EVENT = "SAME_EVENT"
@@ -172,27 +174,18 @@ def _resolve_evidence_quotes(
             raise InvalidSemanticJudgeResponse("evidence references an unknown segment")
         if not isinstance(exact_quote, str) or not exact_quote:
             raise InvalidSemanticJudgeResponse("exact_quote must be a non-empty string")
-        occurrences = _exact_occurrence_offsets(segments[segment_id], exact_quote)
+        occurrences = exact_occurrence_offsets(segments[segment_id], exact_quote)
         if not occurrences:
             raise InvalidSemanticJudgeResponse("exact_quote does not occur in segment")
-        if len(occurrences) != 1:
-            raise InvalidSemanticJudgeResponse("exact_quote occurrence is ambiguous")
-        start = occurrences[0]
-        end = start + len(exact_quote)
-        if start < 0 or start >= end or end > len(segments[segment_id]):
-            raise InvalidSemanticJudgeResponse("derived span offsets are out of range")
-        if segments[segment_id][start:end] != exact_quote:
-            raise InvalidSemanticJudgeResponse("derived span does not match exact_quote")
-        validated.append(BodySpan(segment_id, start, end))
+        # EXACT_TEXT_ALL_OCCURRENCES: identical text at every occurrence is
+        # recorded; no occurrence is selected.
+        for start in occurrences:
+            end = start + len(exact_quote)
+            if start < 0 or start >= end or end > len(segments[segment_id]):
+                raise InvalidSemanticJudgeResponse("derived span offsets are out of range")
+            if segments[segment_id][start:end] != exact_quote:
+                raise InvalidSemanticJudgeResponse("derived span does not match exact_quote")
+            span = BodySpan(segment_id, start, end)
+            if span not in validated:
+                validated.append(span)
     return tuple(validated)
-
-
-def _exact_occurrence_offsets(source: str, value: str) -> tuple[int, ...]:
-    """Return every exact occurrence, including overlapping occurrences."""
-
-    offsets: list[int] = []
-    cursor = source.find(value)
-    while cursor >= 0:
-        offsets.append(cursor)
-        cursor = source.find(value, cursor + 1)
-    return tuple(offsets)

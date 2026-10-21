@@ -20,6 +20,7 @@ from .category_semantic_provider import build_maiagent_category_classifier
 from .debug_service import evidence_projection, execution_trace
 from .classifier import Classifier
 from .contracts import (
+    SemanticProviderConfigurationFailure,
     EvidenceResult,
     EvidenceState,
     RegionMode,
@@ -109,6 +110,9 @@ def _delivery_configuration(
 
 class ProductionRunStatus(StrEnum):
     SUCCESS = "SUCCESS"
+    # RC-6: the formal artifact was produced, but some subjects were left
+    # unfinished by technical failures and are disclosed; not a complete success.
+    SUCCESS_WITH_TECHNICAL_GAPS = "SUCCESS_WITH_TECHNICAL_GAPS"
     TECHNICAL_FAILURE = "TECHNICAL_FAILURE"
     CONFIGURATION_FAILURE = "CONFIGURATION_FAILURE"
     APPLICATION_FAILURE = "APPLICATION_FAILURE"
@@ -365,6 +369,17 @@ class ProductionRunResult:
 
     @property
     def successful(self) -> bool:
+        """A formal artifact was legally produced (complete or with disclosed gaps)."""
+
+        return self.status in {
+            ProductionRunStatus.SUCCESS,
+            ProductionRunStatus.SUCCESS_WITH_TECHNICAL_GAPS,
+        }
+
+    @property
+    def complete(self) -> bool:
+        """Only an unrestricted success: no technical gap was disclosed."""
+
         return self.status is ProductionRunStatus.SUCCESS
 
     @property
@@ -528,6 +543,12 @@ def _stage_counts(result: ReportApplicationResult) -> dict[str, int]:
         values["validation_failed"] = len(result.validation_result.failed)
     if result.final_report is not None:
         values["final_report_events"] = result.final_report.event_count
+    gaps = tuple(getattr(result, "technical_gaps", ()) or ())
+    values["technical_gaps"] = len(gaps)
+    for gap in gaps:
+        key = f"technical_gaps_{gap.stage.lower()}"
+        values[key] = values.get(key, 0) + 1
+    values["metadata_exclusions"] = len(tuple(getattr(result, "metadata_exclusions", ()) or ()))
     return values
 
 
@@ -656,6 +677,7 @@ class ProductionRunner:
             trace.outcome(
                 result.successful,
                 None if result.final_report is None else result.final_report.report_id,
+                partial=result.status is ProductionRunStatus.SUCCESS_WITH_TECHNICAL_GAPS,
             )
             return result
 
@@ -676,6 +698,17 @@ class ProductionRunner:
             self._diagnostic_collector.clear()
         try:
             result = self._application.run(mode, period_start=start, period_end=end)
+        except SemanticProviderConfigurationFailure as exc:
+            return ProductionRunResult(
+                ProductionRunStatus.CONFIGURATION_FAILURE,
+                start,
+                end,
+                mode,
+                {},
+                failure_stage="application",
+                failure_class=exc.failure_class,
+                diagnostic="semantic provider configuration or authentication failed",
+            )
         except Exception as exc:
             return ProductionRunResult(
                 ProductionRunStatus.APPLICATION_FAILURE,
@@ -777,8 +810,9 @@ class ProductionRunner:
             "search_failure_details": failure_projection[4],
         }
         diagnostic_fields.update(evidence_fields)
+        technical_gaps = tuple(getattr(result, "technical_gaps", ()) or ())
         return ProductionRunResult(
-            ProductionRunStatus.SUCCESS,
+            ProductionRunStatus.SUCCESS_WITH_TECHNICAL_GAPS if technical_gaps else ProductionRunStatus.SUCCESS,
             start,
             end,
             mode,

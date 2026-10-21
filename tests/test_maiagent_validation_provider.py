@@ -4,6 +4,7 @@ import json
 import math
 import unittest
 
+from src.weekly_report.contracts import SemanticProviderTechnicalFailure
 from src.weekly_report.maiagent_transport import MaiAgentHttpResponse
 from src.weekly_report.maiagent_validation_provider import (
     HELPER_VERSION,
@@ -72,15 +73,26 @@ class MaiAgentValidationProviderTests(unittest.TestCase):
         self.assertEqual(model_input["helper_version"], HELPER_VERSION)
         self.assertEqual(tuple(model_input["instructions"]), VALIDATION_INSTRUCTIONS)
         self.assertEqual(model_input["validation_request"], request.as_payload())
-        self.assertEqual(set(model_input["validation_request"]), {"event_id", "evidence_sources", "writer_prose"})
+        self.assertEqual(set(model_input["validation_request"]), {"event_id", "evidence_sources", "writer_fields"})
+        units = [
+            unit for field in model_input["validation_request"]["writer_fields"] for unit in field["units"]
+        ]
+        self.assertEqual(
+            [unit["unit_id"] for unit in units], ["headline-1", "factual_summary-1", "taipei_insight-1"]
+        )
         self.assertNotIn("MAIAGENT_CHATBOT_ID", json.dumps(model_input))
 
     def test_response_schema_has_no_extra_fields_or_offsets(self):
         self.assertEqual(set(MAIAGENT_VALIDATION_RESPONSE_SCHEMA["properties"]), {"event_id", "field_assessments"})
         field = MAIAGENT_VALIDATION_RESPONSE_SCHEMA["properties"]["field_assessments"]["items"]
-        self.assertEqual(set(field["properties"]), {"field_name", "language_assessment", "units"})
-        unit = field["properties"]["units"]["items"]
-        self.assertEqual(set(unit["properties"]), {"writer_quote", "assessment", "evidence_citations"})
+        self.assertEqual(set(field["properties"]), {"field_name", "language_assessment", "unit_assessments"})
+        unit = field["properties"]["unit_assessments"]["items"]
+        # RC-7: the helper references Validator unit IDs and never re-types Writer text.
+        self.assertEqual(set(unit["properties"]), {"unit_id", "assessment", "evidence_citations"})
+        self.assertNotIn("writer_quote", json.dumps(MAIAGENT_VALIDATION_RESPONSE_SCHEMA))
+        self.assertEqual((PROMPT_VERSION, SCHEMA_VERSION), (
+            "validation-evidence-writer-v2", "validation-semantic-check-proposal-v2"
+        ))
         self.assertNotIn("offset", json.dumps(MAIAGENT_VALIDATION_RESPONSE_SCHEMA))
 
     def test_provider_makes_one_stateless_call_with_shared_helper(self):
@@ -99,13 +111,16 @@ class MaiAgentValidationProviderTests(unittest.TestCase):
         self.assertEqual(envelope["attachments"], [])
         self.assertFalse(envelope["is_streaming"])
 
-    def test_transport_failure_is_safe_and_has_no_retry(self):
+    def test_transport_failure_is_safe_and_retried_once(self):
+        # RC-6: a timeout gets exactly one identical retry, then a typed
+        # technical failure that is never a semantic FAIL.
         transport = _Transport(error=TimeoutError())
         provider = MaiAgentValidationProposalProvider(_config(), transport=transport)
-        with self.assertRaises(MaiAgentValidationProviderFailure) as context:
+        with self.assertRaises(SemanticProviderTechnicalFailure) as context:
             provider(_request())
         self.assertNotIn("test-key", str(context.exception))
-        self.assertEqual(len(transport.calls), 1)
+        self.assertEqual(context.exception.failure_class, "TIMEOUT")
+        self.assertEqual(len(transport.calls), 2)
 
     def test_config_rejects_invalid_values_and_redacts_credentials(self):
         self.assertNotIn("test-key", repr(_config()))

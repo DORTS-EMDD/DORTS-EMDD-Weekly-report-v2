@@ -10,7 +10,11 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
+from .exact_text import exact_occurrence_offsets
 from .contracts import (
+    ProposalContractViolation,
+    SemanticProviderConfigurationFailure,
+    SemanticProviderTechnicalFailure,
     CategoryState,
     EventDecisionRecord,
     EvidenceState,
@@ -23,6 +27,7 @@ from .contracts import (
     ReportabilitySemanticProposal,
     ReportabilitySemanticProposalProvider,
     ReportabilitySemanticRequest,
+    ReportabilityProposalViolation,
     ReportabilityStageFailure,
     ReportabilityState,
     ReportabilitySupportSpan,
@@ -136,25 +141,25 @@ def _proposal(value: object, *, event_id: str) -> ReportabilitySemanticProposal:
     return trusted_proposal
 
 
-def _unique_quote_span(
+def _quote_spans(
     citation: ReportabilitySemanticCitation,
     bodies: Mapping[str, str],
     event_id: str,
-) -> ReportabilitySupportSpan:
+) -> tuple[ReportabilitySupportSpan, ...]:
     if citation.candidate_id not in bodies:
         raise _technical("reportability citation references a non-member candidate", event_id)
     body = bodies[citation.candidate_id]
     quote = citation.exact_quote
-    start = body.find(quote)
-    if start < 0:
+    occurrences = exact_occurrence_offsets(body, quote)
+    if not occurrences:
         raise _technical("reportability citation exact_quote not found", event_id)
-    second = body.find(quote, start + 1)
-    if second >= 0:
-        raise _technical("reportability citation exact_quote ambiguous", event_id)
-    end = start + len(quote)
-    if end <= start or end > len(body) or body[start:end] != quote:
-        raise _technical("reportability citation span does not exactly map to source content", event_id)
-    return ReportabilitySupportSpan(citation.candidate_id, start, end)
+    spans: list[ReportabilitySupportSpan] = []
+    for start in occurrences:
+        end = start + len(quote)
+        if end <= start or end > len(body) or body[start:end] != quote:
+            raise _technical("reportability citation span does not exactly map to source content", event_id)
+        spans.append(ReportabilitySupportSpan(citation.candidate_id, start, end))
+    return tuple(spans)
 
 
 class Reportability:
@@ -256,10 +261,11 @@ class Reportability:
             for member_record in records
         }
         if proposal.proposed_state is ReportabilityState.REPORTABLE:
-            support_spans = tuple(
-                _unique_quote_span(citation, bodies, event_id)
+            support_spans = tuple(dict.fromkeys(
+                span
                 for citation in proposal.support_citations
-            )
+                for span in _quote_spans(citation, bodies, event_id)
+            ))
             try:
                 provenance = ReportabilityEvidenceProvenance(
                     examined_candidate_ids=request_ids,
@@ -299,16 +305,20 @@ class Reportability:
         request = self._request(record)
         try:
             raw_proposal = self._proposal_provider(request)
+        except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure):
+            # RC-6: typed technical failures pass through unchanged.
+            raise
         except Exception:
             failure = _technical("reportability semantic provider failed", event_id)
         else:
             try:
                 proposal = _proposal(raw_proposal, event_id=event_id)
-            except ReportabilityStageFailure:
-                raise
+                return self._accept_proposal(proposal, request, tuple(record.member_records))
+            except ReportabilityStageFailure as exc:
+                violation = ReportabilityProposalViolation(exc.reason, event_id=event_id)
             except Exception:
-                raise _technical("malformed reportability proposal", event_id) from None
-            return self._accept_proposal(proposal, request, tuple(record.member_records))
+                violation = ReportabilityProposalViolation("malformed reportability proposal", event_id=event_id)
+            raise violation from None
         # Raise after leaving the provider exception handler so the raw
         # provider exception is not retained as implicit __context__.
         raise failure
@@ -317,14 +327,24 @@ class Reportability:
         """Evaluate one reachable EventDecisionRecord without fallback or retry."""
 
         event_id = self._event_id(record)
+        proposal_violation = False
         try:
             result = self._evaluate_once(record, event_id)
+        except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure):
+            raise
+        except ReportabilityProposalViolation as exc:
+            reason = exc.reason
+            proposal_violation = True
         except ReportabilityStageFailure as exc:
             reason = exc.reason
         except Exception:
             reason = "reportability stage failed"
         else:
             return result
+
+        if proposal_violation:
+            # Raised outside the handler: no provider-controlled context.
+            raise ReportabilityProposalViolation(reason, event_id=event_id)
 
         # Construct and raise outside the exception handler so the public
         # failure has no provider-controlled exception context or traceback.

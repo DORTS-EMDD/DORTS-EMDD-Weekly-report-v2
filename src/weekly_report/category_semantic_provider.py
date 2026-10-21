@@ -30,6 +30,8 @@ from .maiagent_transport import (
     UrllibMaiAgentJsonTransport,
     load_shared_maiagent_values,
     parse_maiagent_response,
+    MAIAGENT_HELPER_TIMEOUT_SECONDS,
+    request_maiagent_proposal,
 )
 
 
@@ -208,7 +210,7 @@ class CategorySemanticProviderConfig:
     endpoint: str
     model_identifier: str
     api_key: str
-    timeout_seconds: float = 45.0
+    timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS
     provider_identifier: str = "responses-api-compatible"
 
     def __post_init__(self) -> None:
@@ -408,7 +410,7 @@ class MaiAgentCategorySemanticProviderConfig:
     api_base: str
     api_key: str
     chatbot_id: str
-    timeout_seconds: float = 45.0
+    timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS
 
     def __post_init__(self) -> None:
         try:
@@ -497,28 +499,20 @@ class MaiAgentCategorySemanticProvider:
             separators=(",", ":"),
         ).encode("utf-8")
         provenance = self._provenance()
-        try:
-            response = self._transport(
-                self._config.completion_endpoint,
-                headers={
-                    "Authorization": f"Api-Key {self._config.api_key}",
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                },
-                body=body,
-                timeout_seconds=self._config.timeout_seconds,
-            )
-        except Exception:
-            raise CategorySemanticProviderFailure(provenance) from None
-
-        if not isinstance(response, MaiAgentHttpResponse) or response.status_code != 200:
-            raise CategorySemanticProviderFailure(provenance)
-        try:
-            proposal = _parse_maiagent_response(response.body)
-        except InvalidCategorySemanticResponse as exc:
-            raise InvalidCategorySemanticResponse(
-                str(exc), provenance=provenance
-            ) from None
+        # Technical failures propagate as typed SemanticProviderTechnicalFailure
+        # after the shared bounded retry; the Classifier validates the proposal.
+        proposal = request_maiagent_proposal(
+            self._transport,
+            self._config.completion_endpoint,
+            headers={
+                "Authorization": f"Api-Key {self._config.api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            body=body,
+            timeout_seconds=self._config.timeout_seconds,
+            task="category_semantic_proposal",
+        )
         return CategorySemanticHelperResult(proposal=proposal, provenance=provenance)
 
     @staticmethod

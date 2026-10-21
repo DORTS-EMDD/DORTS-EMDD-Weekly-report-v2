@@ -12,7 +12,11 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from .exact_text import EXACT_TEXT_ALL_OCCURRENCES, exact_occurrence_offsets
 from .contracts import (
+    ProposalContractViolation,
+    SemanticProviderConfigurationFailure,
+    SemanticProviderTechnicalFailure,
     CategoryResult,
     CategoryState,
     EMSystemId,
@@ -132,7 +136,15 @@ class TaxonomyStageFailure(RuntimeError):
         super().__init__(reason)
 
 
-EXACT_TEXT_UNIQUE_RESOLUTION = "EXACT_TEXT_UNIQUE_RESOLUTION"
+class TaxonomyProposalViolation(TaxonomyStageFailure, ProposalContractViolation):
+    """A parseable helper proposal violated the Taxonomy contract (RC-6).
+
+    It isolates only this EventGroup as a technical gap; upstream invariant
+    breaches remain plain ``TaxonomyStageFailure`` and abort the formal run.
+    """
+
+
+EXACT_TEXT_RESOLUTION = EXACT_TEXT_ALL_OCCURRENCES
 
 
 _PROPOSAL_FIELDS = frozenset(
@@ -267,11 +279,11 @@ def _parse_systems(value: object, event_id: str) -> tuple[EMSystemId, ...]:
     return canonical
 
 
-def _unique_quote_span(
+def _quote_spans(
     citation: TaxonomySemanticCitation,
     bodies: Mapping[str, str],
     event_id: str,
-) -> TaxonomySupportSpan:
+) -> tuple[TaxonomySupportSpan, ...]:
     if not isinstance(citation.candidate_id, str) or not citation.candidate_id.strip():
         raise _technical("taxonomy citation requires candidate_id", event_id)
     if citation.candidate_id not in bodies:
@@ -286,16 +298,16 @@ def _unique_quote_span(
         raise _technical("taxonomy citation has an invalid system ID", event_id) from exc
 
     body = bodies[citation.candidate_id]
-    start = body.find(citation.exact_quote)
-    if start < 0:
+    occurrences = exact_occurrence_offsets(body, citation.exact_quote)
+    if not occurrences:
         raise _technical("taxonomy citation exact_quote was not found", event_id)
-    second = body.find(citation.exact_quote, start + 1)
-    if second >= 0:
-        raise _technical("taxonomy citation exact_quote is ambiguous", event_id)
-    end = start + len(citation.exact_quote)
-    if start < 0 or end <= start or end > len(body) or body[start:end] != citation.exact_quote:
-        raise _technical("taxonomy citation span does not exactly map to source content", event_id)
-    return TaxonomySupportSpan(system, citation.candidate_id, start, end)
+    spans: list[TaxonomySupportSpan] = []
+    for start in occurrences:
+        end = start + len(citation.exact_quote)
+        if end <= start or end > len(body) or body[start:end] != citation.exact_quote:
+            raise _technical("taxonomy citation span does not exactly map to source content", event_id)
+        spans.append(TaxonomySupportSpan(system, citation.candidate_id, start, end))
+    return tuple(spans)
 
 
 def _canonical_span_order(span: TaxonomySupportSpan) -> tuple[int, str, int, int]:
@@ -346,6 +358,9 @@ class Taxonomy:
             )
             try:
                 raw_proposal = self._proposal_provider(request)
+            except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure):
+                # RC-6: typed technical failures pass through unchanged.
+                raise
             except Exception as exc:
                 failure = _technical(
                     f"taxonomy semantic provider failed: {type(exc).__name__}",
@@ -354,14 +369,19 @@ class Taxonomy:
             else:
                 try:
                     proposal = _proposal(raw_proposal, event_id=event_group.event_id)
-                except TaxonomyStageFailure:
-                    raise
+                    return self._accept_proposal(proposal, event_group, ordered_records)
+                except TaxonomyStageFailure as exc:
+                    violation = TaxonomyProposalViolation(exc.reason, event_id=event_group.event_id)
                 except Exception:
-                    raise _technical("malformed taxonomy proposal", event_group.event_id) from None
-                return self._accept_proposal(proposal, event_group, ordered_records)
+                    violation = TaxonomyProposalViolation(
+                        "malformed taxonomy proposal", event_id=event_group.event_id
+                    )
+                raise violation from None
             # Raise after leaving the provider exception handler so the raw
             # provider exception is not retained as implicit __context__.
             raise failure
+        except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure, TaxonomyProposalViolation):
+            raise
         except TaxonomyStageFailure as exc:
             if not isinstance(event_group, EventGroup):
                 raise
@@ -417,14 +437,16 @@ class Taxonomy:
         state = _parse_state(proposal.taxonomy_state, event_group.event_id)
         systems = _parse_systems(proposal.systems, event_group.event_id)
         bodies = {record.candidate.candidate_id: record.evidence.substantive_content for record in records}
-        support = tuple(
-            _unique_quote_span(citation, bodies, event_group.event_id)
+        support = tuple(dict.fromkeys(
+            span
             for citation in proposal.support_citations
-        )
-        conflict = tuple(
-            _unique_quote_span(citation, bodies, event_group.event_id)
+            for span in _quote_spans(citation, bodies, event_group.event_id)
+        ))
+        conflict = tuple(dict.fromkeys(
+            span
             for citation in proposal.conflict_citations
-        )
+            for span in _quote_spans(citation, bodies, event_group.event_id)
+        ))
         support = tuple(sorted(support, key=_canonical_span_order))
         conflict = tuple(sorted(conflict, key=_canonical_span_order))
 
@@ -483,7 +505,7 @@ TaxonomyOwner = Taxonomy
 
 
 __all__ = [
-    "EXACT_TEXT_UNIQUE_RESOLUTION",
+    "EXACT_TEXT_RESOLUTION",
     "EMTaxonomy",
     "Taxonomy",
     "TaxonomyOwner",
@@ -492,5 +514,6 @@ __all__ = [
     "TaxonomySemanticProposal",
     "TaxonomySemanticProposalProvider",
     "TaxonomySemanticRequest",
+    "TaxonomyProposalViolation",
     "TaxonomyStageFailure",
 ]

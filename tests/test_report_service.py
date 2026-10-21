@@ -28,12 +28,18 @@ from src.weekly_report.contracts import (
     TemporalResult,
 )
 from src.weekly_report.contracts import CanonicalCandidate
+from src.weekly_report.evidence_service import EvidenceService
 from src.weekly_report.report_service import (
+    FormalMetadataBasis,
     FormalMetadataDiagnosticReason,
     FormalMetadataFailure,
     FormalMetadataFailureReason,
     ReportService,
 )
+
+# Fixtures resolve regions with the authoritative EvidenceService rule (RC-4)
+# instead of inventing a resolution in the test.
+_REGION_OWNER = EvidenceService(fetcher=lambda _url: None)
 from src.weekly_report.report_workflow import ReportWorkflowResult
 from src.weekly_report.validator import Validator
 from src.weekly_report.writer import WriterReportBlock
@@ -64,6 +70,10 @@ def _record(
         transit_system_name=transit_system_name,
         location=location or "",
         metadata_support=tuple(support),
+        region_resolution=_REGION_OWNER._resolve_region(
+            {"country": country, "transit_system_name": transit_system_name, "location": location},
+            (),
+        ),
     )
     evidence = EvidenceResult(
         candidate_id,
@@ -144,19 +154,20 @@ def _semantic_provider(request):
         "event_id": request.event_id,
         "field_assessments": [
             {
-                "field_name": field_name,
+                "field_name": field_name.value,
                 "language_assessment": "TRADITIONAL_CHINESE",
-                "units": [
+                "unit_assessments": [
                     {
-                        "writer_quote": value,
+                        "unit_id": unit_id,
                         "assessment": "ANALYSIS" if field_name == "taipei_insight" else "SUPPORTED",
                         "evidence_citations": [
                             {"candidate_id": source.candidate_id, "exact_quote": source.substantive_content}
                         ],
                     }
+                    for unit_id in unit_ids
                 ],
             }
-            for field_name, value in request.writer_prose.as_mapping().items()
+            for field_name, unit_ids in request.unit_ids_by_field().items()
         ],
     }
 
@@ -198,7 +209,10 @@ class ReportServiceTests(TestCase):
         result = self.service.project_formal_metadata((_workflow_result(),))[0]
         self.assertEqual(result.event_id, "E1")
         self.assertEqual(result.display_date, "2026-09-15")
-        self.assertEqual(result.country, "Taiwan")
+        # RC-4: the source value "Taiwan" is SOURCE_STATED and displayed with
+        # the versioned reference display name.
+        self.assertEqual(result.country, "臺灣")
+        self.assertEqual(result.country_basis, FormalMetadataBasis.SOURCE_STATED)
         self.assertEqual(result.transit_system_name, "Metro")
         self.assertEqual(result.location, "Taipei")
         self.assertEqual(result.category, "採購事件")
@@ -217,7 +231,7 @@ class ReportServiceTests(TestCase):
         result = self.service.project_formal_metadata(
             (_workflow_result(records=records, canonical_candidate_id="C1"),)
         )[0]
-        self.assertEqual(result.country, "Taiwan")
+        self.assertEqual(result.country, "臺灣")
         self.assertEqual(result.transit_system_name, "Metro")
 
     def test_repeated_identical_country_projects_exact_value(self) -> None:
@@ -225,7 +239,7 @@ class ReportServiceTests(TestCase):
         result = self.service.project_formal_metadata(
             (_workflow_result(records=records),)
         )[0]
-        self.assertEqual(result.country, "Taiwan")
+        self.assertEqual(result.country, "臺灣")
 
     def test_repeated_identical_transit_system_projects_exact_value(self) -> None:
         records = (
@@ -238,7 +252,7 @@ class ReportServiceTests(TestCase):
         self.assertEqual(result.transit_system_name, "Metro Alpha")
 
     def test_required_country_conflict_fails_without_canonical_preference(self) -> None:
-        records = (_record("C1", country="Taiwan"), _record("C2", country="Japan"))
+        records = (_record("C1", country="Taiwan"), _record("C2", country="Japan", location="Tokyo"))
         with self.assertRaises(FormalMetadataFailure) as context:
             self.service.project_formal_metadata(
                 (_workflow_result(records=records, canonical_candidate_id="C1"),)
@@ -246,30 +260,30 @@ class ReportServiceTests(TestCase):
         self.assertEqual(context.exception.reason, FormalMetadataFailureReason.CONFLICTING_COUNTRY)
         self.assertEqual(context.exception.candidate_ids, ("C1", "C2"))
 
-    def test_missing_system_fails(self) -> None:
-        with self.assertRaises(FormalMetadataFailure) as context:
-            self.service.project_formal_metadata(
-                (_workflow_result(records=(_record("C1", transit_system_name=None),)),)
-            )
-        self.assertEqual(
-            context.exception.reason,
-            FormalMetadataFailureReason.MISSING_TRANSIT_SYSTEM_NAME,
-        )
+    def test_missing_system_is_disclosed_as_not_stated(self) -> None:
+        # RC-4: a source that names no specific system is "not stated"; it no
+        # longer aborts the formal run and is never filled with a city or mode.
+        result = self.service.project_formal_metadata(
+            (_workflow_result(records=(_record("C1", transit_system_name=None),)),)
+        )[0]
+        self.assertIsNone(result.transit_system_name)
+        self.assertEqual(result.transit_system_basis, FormalMetadataBasis.NOT_STATED)
 
-    def test_transit_system_conflict_fails_without_canonical_preference(self) -> None:
+    def test_transit_system_conflict_is_unresolved_without_canonical_preference(self) -> None:
+        # RC-4: conflicting system names are recorded and none is chosen.
         records = (
             _record("C1", transit_system_name="Metro Alpha"),
             _record("C2", transit_system_name="Metro Beta"),
         )
-        with self.assertRaises(FormalMetadataFailure) as context:
-            self.service.project_formal_metadata(
-                (_workflow_result(records=records, canonical_candidate_id="C1"),)
-            )
+        result = self.service.project_formal_metadata(
+            (_workflow_result(records=records, canonical_candidate_id="C1"),)
+        )[0]
+        self.assertIsNone(result.transit_system_name)
+        self.assertEqual(result.transit_system_basis, FormalMetadataBasis.UNRESOLVED)
         self.assertEqual(
-            context.exception.reason,
-            FormalMetadataFailureReason.CONFLICTING_TRANSIT_SYSTEM_NAME,
+            [(item.field_name, item.reason, item.candidate_ids) for item in result.diagnostics],
+            [("transit_system_name", FormalMetadataDiagnosticReason.CONFLICTING_OPTIONAL_TRANSIT_SYSTEM, ("C1", "C2"))],
         )
-        self.assertEqual(context.exception.candidate_ids, ("C1", "C2"))
 
     def test_location_conflict_is_omitted_with_diagnostic(self) -> None:
         records = (_record("C1", location="Taipei"), _record("C2", location="Kaohsiung"))
@@ -419,13 +433,40 @@ class ReportServiceTests(TestCase):
             )
         self.assertEqual(context.exception.reason, FormalMetadataFailureReason.STRUCTURAL_INCONSISTENCY)
 
-    def test_required_failure_does_not_return_partial_projection(self) -> None:
+    def test_strict_projection_does_not_return_partial_projection(self) -> None:
         valid = _workflow_result("E1")
-        invalid = _workflow_result("E2", records=(_record("C2", country=None),))
+        conflicting = _workflow_result(
+            "E2",
+            records=(_record("C2", country="Taiwan"), _record("C3", country="Japan", location="Tokyo")),
+            canonical_candidate_id="C2",
+        )
         with self.assertRaises(FormalMetadataFailure) as context:
-            self.service.project_formal_metadata((valid, invalid))
+            self.service.project_formal_metadata((valid, conflicting))
         self.assertEqual(context.exception.event_id, "E2")
-        self.assertEqual(context.exception.reason, FormalMetadataFailureReason.MISSING_COUNTRY)
+        self.assertEqual(context.exception.reason, FormalMetadataFailureReason.CONFLICTING_COUNTRY)
+
+    def test_population_isolates_country_conflict_to_one_event(self) -> None:
+        # RC-5: a legal event-level data conflict excludes only that event.
+        valid = _workflow_result("E1")
+        conflicting = _workflow_result(
+            "E2",
+            records=(_record("C2", country="Taiwan"), _record("C3", country="Japan", location="Tokyo")),
+            canonical_candidate_id="C2",
+        )
+        projection = self.service.project_formal_metadata_population((valid, conflicting))
+        self.assertEqual([item.event_id for item in projection.metadata], ["E1"])
+        self.assertEqual(
+            [(item.event_id, item.reason, item.candidate_ids) for item in projection.exclusions],
+            [("E2", FormalMetadataFailureReason.CONFLICTING_COUNTRY, ("C2", "C3"))],
+        )
+
+    def test_population_still_aborts_on_invariant_breach(self) -> None:
+        # RC-5: invariant breaches are never disguised as data insufficiency.
+        valid = _workflow_result("E1")
+        broken = _workflow_result("E2", records=(_record("C2", source_url="not a url"),))
+        with self.assertRaises(FormalMetadataFailure) as context:
+            self.service.project_formal_metadata_population((valid, broken))
+        self.assertEqual(context.exception.reason, FormalMetadataFailureReason.INVALID_CANONICAL_SOURCE)
 
 
 if __name__ == "__main__":

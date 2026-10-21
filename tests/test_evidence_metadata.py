@@ -138,6 +138,8 @@ class MetadataContractTests(unittest.TestCase):
         self.assertEqual(extraction.observations[0].support_spans[0].as_mapping(), {"segment_id": "s1", "start": 0, "end": 6})
 
     def test_validator_rejects_provider_offsets_and_strict_schema_errors(self):
+        # Malformed response or observation shapes still invalidate the whole
+        # proposal; provider offsets are never accepted.
         request = _request(("s1", "Taiwan Metro opened in Taipei."))
         cases = [
             {},
@@ -145,40 +147,86 @@ class MetadataContractTests(unittest.TestCase):
             {"observations": [{"field_name": "country", "value": "Taiwan", "support_spans": []}]},
             {"observations": [{"field_name": "country", "value": "Taiwan", "segment_id": "s1", "start": 0}]},
             {"observations": [{"field_name": "country", "value": "Taiwan", "segment_id": "s1", "end": 6}]},
-            {"observations": [{"field_name": "country", "value": "Taiwan", "segment_id": "unknown"}]},
             {"observations": [{"field_name": "city", "value": "Taiwan", "segment_id": "s1"}]},
-            {"observations": [{"field_name": "country", "value": "   ", "segment_id": "s1"}]},
         ]
         for raw in cases:
             with self.subTest(raw=raw), self.assertRaises(InvalidEvidenceMetadataResponse):
                 validate_evidence_metadata_response(raw, request)
+
+    def test_value_failures_invalidate_only_their_field(self):
+        # RC-3: field-level validation; other valid fields are retained.
+        request = _request(("s1", "Taiwan Metro opened in Taipei."))
+        for proposal, reason in (
+            (_proposal("country", "Taiwan", "unknown"), "UNKNOWN_SEGMENT"),
+            (_proposal("country", "   ", "s1"), "VALUE_INVALID"),
+            (_proposal("country", "Korea", "s1"), "VALUE_NOT_IN_SEGMENT"),
+        ):
+            with self.subTest(reason=reason):
+                extraction = validate_evidence_metadata_response(
+                    {"observations": [proposal, _proposal("location", "Taipei", "s1")]},
+                    request,
+                )
+                self.assertEqual([item.field_name for item in extraction.observations], ["location"])
+                self.assertEqual(
+                    [(item.field_name, item.reason) for item in extraction.field_diagnostics],
+                    [("country", reason)],
+                )
         with self.assertRaises(ValueError):
             EvidenceMetadataRequest("C1", (PrincipalBodySegment("dup", "Taiwan"), PrincipalBodySegment("dup", "Taiwan")))
 
-    def test_validator_requires_one_exact_occurrence_and_rejects_normalization_or_fuzzy_matching(self):
+    def test_validator_records_every_exact_occurrence_without_selecting_one(self):
+        # RC-3 (EXACT_TEXT_ALL_OCCURRENCES): repeated identical values are
+        # valid and every occurrence, including overlaps, is recorded.
+        for name, value, text, expected in (
+            ("duplicate", "Japan", "Japan Japan", [(0, 5), (6, 11)]),
+            ("overlap", "aa", "aaaa", [(0, 2), (1, 3), (2, 4)]),
+        ):
+            with self.subTest(case=name):
+                extraction = validate_evidence_metadata_response(
+                    {"observations": [_proposal("country", value, "s1")]},
+                    _request(("s1", text)),
+                )
+                self.assertEqual(
+                    [(span.start, span.end) for span in extraction.observations[0].support_spans],
+                    expected,
+                )
+
+    def test_validator_rejects_normalization_or_fuzzy_matching(self):
         cases = (
             ("zero", "Korea", "Taiwan Metro"),
-            ("duplicate", "Japan", "Japan Japan"),
-            ("overlap", "aa", "aaaa"),
             ("whitespace", " Japan", "Japan"),
             ("case", "japan", "Japan"),
             ("fuzzy", "Jpn", "Japan"),
         )
         for name, value, text in cases:
-            with self.subTest(case=name), self.assertRaises(InvalidEvidenceMetadataResponse):
-                validate_evidence_metadata_response(
+            with self.subTest(case=name):
+                extraction = validate_evidence_metadata_response(
                     {"observations": [_proposal("country", value, "s1")]},
                     _request(("s1", text)),
                 )
+                self.assertEqual(extraction.observations, ())
+                self.assertEqual(
+                    [(item.field_name, item.reason) for item in extraction.field_diagnostics],
+                    [("country", "VALUE_NOT_IN_SEGMENT")],
+                )
 
-    def test_validator_rejects_distinct_values_for_same_field(self):
-        request = _request(("s1", "Taiwan and Japan"))
-        with self.assertRaises(InvalidEvidenceMetadataResponse) as raised:
-            validate_evidence_metadata_response(
-                {"observations": [_proposal("country", "Taiwan", "s1"), _proposal("country", "Japan", "s1")]},
-                request,
-            )
-        self.assertEqual(raised.exception.detail, "same_source_distinct_values")
+    def test_validator_records_distinct_values_as_field_conflict_without_choosing(self):
+        request = _request(("s1", "Taiwan and Japan in Taipei"))
+        extraction = validate_evidence_metadata_response(
+            {
+                "observations": [
+                    _proposal("country", "Taiwan", "s1"),
+                    _proposal("country", "Japan", "s1"),
+                    _proposal("location", "Taipei", "s1"),
+                ]
+            },
+            request,
+        )
+        self.assertEqual([item.field_name for item in extraction.observations], ["location"])
+        self.assertEqual(
+            [(item.field_name, item.reason, item.proposed_values) for item in extraction.field_diagnostics],
+            [("country", "SAME_SOURCE_DISTINCT_VALUES", ("Taiwan", "Japan"))],
+        )
 
     def test_validator_preserves_segment_specific_support_and_does_not_accept_ambiguous_segment(self):
         request = _request(("s1", "Taiwan Metro"), ("s2", "Japan Metro"))
@@ -190,11 +238,15 @@ class MetadataContractTests(unittest.TestCase):
             tuple(span.as_mapping() for span in extraction.observations[0].support_spans),
             ({"segment_id": "s1", "start": 0, "end": 6},),
         )
-        with self.assertRaises(InvalidEvidenceMetadataResponse):
-            validate_evidence_metadata_response(
-                {"observations": [_proposal("country", "Taiwan", "unknown")]},
-                request,
-            )
+        unknown = validate_evidence_metadata_response(
+            {"observations": [_proposal("country", "Taiwan", "unknown")]},
+            request,
+        )
+        self.assertEqual(unknown.observations, ())
+        self.assertEqual(
+            [(item.field_name, item.reason) for item in unknown.field_diagnostics],
+            [("country", "UNKNOWN_SEGMENT")],
+        )
 
     def test_validator_derives_diagnostic_sentence_offsets_in_python(self):
         text = "Country: Japan. Transit system: Sakura Metro. Location: Sakura City."
@@ -275,7 +327,7 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
             return {
                 "observations": [
                     _proposal("country", "Taiwan", "body-0001"),
-                    _proposal("transit_system_name", "Metro", "body-0001"),
+                    _proposal("transit_system_name", "Taiwan Metro", "body-0001"),
                     _proposal("location", "Taipei Central", "body-0001"),
                 ]
             }
@@ -286,8 +338,13 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
         )
         self.assertEqual(result.state, EvidenceState.READY)
         self.assertEqual(result.identity_facts.country, "Taiwan")
-        self.assertEqual(result.identity_facts.transit_system_name, "Metro")
+        self.assertEqual(result.identity_facts.transit_system_name, "Taiwan Metro")
         self.assertEqual(result.identity_facts.location, "Taipei Central")
+        resolution = result.identity_facts.region_resolution
+        self.assertEqual(
+            (resolution.basis.value, resolution.region_id, resolution.source_field, resolution.source_value),
+            ("SOURCE_STATED", "TW", "country", "Taiwan"),
+        )
         self.assertEqual(result.provenance["metadata_extraction_status"], "valid_metadata")
         self.assertEqual(
             result.provenance["principal_source_headlines"],
@@ -303,7 +360,6 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
     def test_not_configured_zero_timeout_transport_and_malformed_keep_ready(self):
         for extractor, expected in (
             (None, "not_configured"),
-            (_MetadataExtractor(response=lambda _text: {"observations": []}), "valid_zero_metadata"),
             (_MetadataExtractor(error=TimeoutError()), "timeout"),
             (_MetadataExtractor(error=RuntimeError("secret")), "transport_error"),
             (_MetadataExtractor(response=lambda _text: {"observations": [{"bad": 1}]}), "invalid_response"),
@@ -316,6 +372,33 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
                 self.assertEqual(result.provenance["metadata_extraction_status"], expected)
                 self.assertIsNone(result.identity_facts)
                 self.assertNotIn("secret", str(result.provenance))
+
+    def test_valid_zero_metadata_is_recorded_as_not_stated(self):
+        # RC-4: a valid empty proposal means the source states no geography;
+        # it is recorded as NOT_STATED, never as an established country.
+        result = _service(_MetadataExtractor(response=lambda _text: {"observations": []})).evaluate(
+            CanonicalCandidate("C1", "Title", "https://source.test/article")
+        )
+        self.assertEqual(result.provenance["metadata_extraction_status"], "valid_zero_metadata")
+        self.assertIsNone(result.identity_facts.country)
+        self.assertEqual(result.identity_facts.region_resolution.basis.value, "NOT_STATED")
+
+    def test_generic_mode_word_is_not_a_transit_system_name(self):
+        # RC-4: a mode word ("Metro") or a city is never stored as a system name.
+        def response(_text):
+            return {
+                "observations": [
+                    _proposal("transit_system_name", "Metro", "body-0001"),
+                    _proposal("location", "Taipei Central", "body-0001"),
+                ]
+            }
+
+        result = _service(_MetadataExtractor(response=response)).evaluate(
+            CanonicalCandidate("C1", "Title", "https://source.test/article")
+        )
+        self.assertIsNone(result.identity_facts.transit_system_name)
+        self.assertEqual(result.identity_facts.unresolved_metadata_fields, ("transit_system_name",))
+        self.assertEqual(result.provenance["metadata_extraction_status"], "partial_metadata")
 
     def test_metadata_diagnostics_are_flat_and_provider_errors_are_safe(self):
         extractor = _MetadataExtractor(error=RuntimeError("secret-provider-message"))
@@ -352,7 +435,6 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
             (_MetadataExtractor(error=TimeoutError()), "timeout", ""),
             (_MetadataExtractor(error=RuntimeError("secret-provider-message")), "transport_error", ""),
             (_MetadataExtractor(response=lambda _text: {"bad": True}), "invalid_response", "schema_invalid"),
-            (_MetadataExtractor(response=distinct), "invalid_response", "same_source_distinct_values"),
             (_MetadataExtractor(response=mixed), "invalid_response", "schema_invalid"),
         ):
             with self.subTest(status=status, detail=detail):
@@ -365,6 +447,16 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
                 self.assertEqual(result.provenance["metadata_extraction_detail"], detail)
                 self.assertEqual(len(extractor.requests), 1)
                 self.assertNotIn("secret-provider-message", str(result.provenance))
+
+        # RC-3: same-source distinct values are a recorded field conflict; the
+        # other fields stay usable and no value is chosen.
+        extractor = _MetadataExtractor(response=distinct)
+        result = _service(extractor).evaluate(CanonicalCandidate("C1", "Title", "https://source.test/article"))
+        self.assertEqual(result.provenance["metadata_extraction_status"], "partial_metadata")
+        self.assertEqual(result.provenance["metadata_extraction_detail"], "country:UNRESOLVED")
+        self.assertIsNone(result.identity_facts.country)
+        self.assertEqual(result.identity_facts.region_resolution.basis.value, "UNRESOLVED")
+        self.assertEqual(len(extractor.requests), 1)
 
     def test_service_level_multi_segment_mapping_uses_ordered_segments(self):
         assessment = StructuralAssessment(
@@ -451,7 +543,10 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
             )
         )
         request = extractor.requests[0]
-        self.assertEqual(result.identity_facts, None)
+        # RC-4: discovery title "Japan" never becomes country; zero source
+        # metadata is NOT_STATED.
+        self.assertIsNone(result.identity_facts.country)
+        self.assertEqual(result.identity_facts.region_resolution.basis.value, "NOT_STATED")
         self.assertFalse(hasattr(request, "title"))
         self.assertFalse(hasattr(request, "publisher"))
         self.assertFalse(hasattr(request, "search_snippet"))
@@ -475,7 +570,7 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
         extraction = validate_evidence_metadata_response(raw, request)
         from src.weekly_report.evidence_service import EvidenceService
         body = "  Taiwan Metro opened at Taipei  .".strip()
-        facts = EvidenceService._translate_metadata(extraction, request, body)
+        facts = EvidenceService(lambda _url: None)._translate_metadata(extraction, request, body)
         self.assertEqual(body[facts.metadata_support[0].start:facts.metadata_support[0].end], "Taiwan")
         self.assertEqual(body[facts.metadata_support[1].start:facts.metadata_support[1].end], "Taipei")
 

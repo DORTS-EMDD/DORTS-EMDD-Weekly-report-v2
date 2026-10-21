@@ -204,8 +204,10 @@ class ExecutionTrace:
                                ("github_run_attempt", values.get("GITHUB_RUN_ATTEMPT")))
         }
 
-    def outcome(self, successful: bool, report_id: str | None = None) -> None:
-        self._outcome = "COMPLETED" if successful else "FAILED"
+    def outcome(self, successful: bool, report_id: str | None = None, *, partial: bool = False) -> None:
+        """COMPLETED, PARTIAL (artifact with disclosed technical gaps), or FAILED."""
+
+        self._outcome = ("PARTIAL" if partial else "COMPLETED") if successful else "FAILED"
         self.bind_report_id(report_id)
 
     def bind_report_id(self, report_id: str | None) -> None:
@@ -223,7 +225,7 @@ class ExecutionTrace:
                 "NOT_REACHED", "STARTED", "RUNNING", "PARTIAL", "COMPLETED", "FAILED",
             } or event not in {
                 "STAGE_STARTED", "STAGE_PROGRESS", "STAGE_COMPLETED", "STAGE_FAILED",
-                "EXECUTION_STARTED", "EXECUTION_COMPLETED", "EXECUTION_FAILED",
+                "EXECUTION_STARTED", "EXECUTION_COMPLETED", "EXECUTION_PARTIAL", "EXECUTION_FAILED",
             }:
                 self._enabled = False
                 return

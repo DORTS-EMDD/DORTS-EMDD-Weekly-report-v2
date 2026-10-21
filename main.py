@@ -32,7 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     with execution_trace() as trace:
         code = _main(argv)
-        trace.outcome(code == 0)
+        trace.outcome(code in (0, 2), partial=code == 2)
         return code
 
 
@@ -49,7 +49,10 @@ def _main(argv: list[str] | None = None) -> int:
         print(f"status=CONFIGURATION_FAILURE failure_class={type(exc).__name__} diagnostic=production configuration unavailable")
         return 1
     print(result.summary())
-    return 0 if result.successful else 1
+    if result.complete:
+        return 0
+    # Artifact produced with disclosed technical gaps: not a complete success.
+    return 2 if result.successful else 1
 
 
 if __name__ == "__main__":

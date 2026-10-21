@@ -6,6 +6,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
+from .exact_text import exact_occurrence_offsets
 from .semantic_judge import BodySpan, PrincipalBodySegment
 
 
@@ -46,8 +47,18 @@ class MetadataFieldObservation:
 
 
 @dataclass(frozen=True, slots=True)
+class MetadataFieldDiagnostic:
+    """Why one governed field was invalidated; other fields are unaffected."""
+
+    field_name: MetadataFieldName
+    reason: str
+    proposed_values: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class EvidenceMetadataExtraction:
     observations: tuple[MetadataFieldObservation, ...]
+    field_diagnostics: tuple[MetadataFieldDiagnostic, ...] = ()
 
 
 class EvidenceMetadataExtractor(Protocol):
@@ -71,9 +82,13 @@ def validate_evidence_metadata_response(
 
     The subordinate model chooses a governed field, its exact source-surface
     value, and the segment that contains it.  Python owns character-coordinate
-    derivation: a proposal is accepted only when that value occurs exactly once
-    in the named segment.  ``str.find`` is advanced by one code point so
-    overlapping occurrences are counted as ambiguous too.
+    derivation under EXACT_TEXT_ALL_OCCURRENCES: every exact occurrence of the
+    unchanged value in the named segment is recorded and none is selected.
+
+    A malformed response or observation shape invalidates the whole proposal.
+    A value that is blank, names an unknown segment, or does not occur in it
+    invalidates only its field; same-source distinct values for one field are
+    a recorded conflict and that field is invalidated without choosing a value.
     """
 
     if not isinstance(raw_response, Mapping) or set(raw_response) != {"observations"}:
@@ -83,8 +98,10 @@ def validate_evidence_metadata_response(
         raise InvalidEvidenceMetadataResponse("schema_invalid")
 
     segments = {segment.segment_id: segment.text for segment in request.principal_body_segments}
-    ordered: list[MetadataFieldObservation] = []
-    by_field: dict[str, MetadataFieldObservation] = {}
+    field_order: list[str] = []
+    values_by_field: dict[str, list[str]] = {}
+    spans_by_field: dict[str, list[BodySpan]] = {}
+    failures_by_field: dict[str, str] = {}
     for raw_observation in raw_observations:
         if not isinstance(raw_observation, Mapping) or set(raw_observation) != _OBSERVATION_FIELDS:
             raise InvalidEvidenceMetadataResponse("schema_invalid")
@@ -93,50 +110,44 @@ def validate_evidence_metadata_response(
         segment_id = raw_observation["segment_id"]
         if not isinstance(field_name, str) or field_name not in _GOVERNED_FIELDS:
             raise InvalidEvidenceMetadataResponse("schema_invalid")
+        if field_name not in field_order:
+            field_order.append(field_name)
+            values_by_field[field_name] = []
+            spans_by_field[field_name] = []
+
         if not isinstance(value, str) or not value.strip():
-            raise InvalidEvidenceMetadataResponse("schema_invalid")
-        if not isinstance(segment_id, str) or segment_id not in segments:
-            raise InvalidEvidenceMetadataResponse("schema_invalid")
-
-        occurrence_offsets = _exact_occurrence_offsets(segments[segment_id], value)
-        if len(occurrence_offsets) != 1:
-            raise InvalidEvidenceMetadataResponse("schema_invalid")
-        start = occurrence_offsets[0]
-        end = start + len(value)
-        if segments[segment_id][start:end] != value:
-            raise InvalidEvidenceMetadataResponse("schema_invalid")
-        spans = [BodySpan(segment_id, start, end)]
-
-        prior = by_field.get(field_name)
-        if prior is None:
-            observation = MetadataFieldObservation(field_name, value, tuple(spans))
-            by_field[field_name] = observation
-            ordered.append(observation)
+            failures_by_field.setdefault(field_name, "VALUE_INVALID")
             continue
-        if prior.value != value:
-            raise InvalidEvidenceMetadataResponse("same_source_distinct_values")
-        combined = list(prior.support_spans)
-        seen = set(combined)
-        for span in spans:
-            if span not in seen:
-                seen.add(span)
-                combined.append(span)
-        replacement = MetadataFieldObservation(field_name, prior.value, tuple(combined))
-        by_field[field_name] = replacement
-        ordered[ordered.index(prior)] = replacement
+        if value not in values_by_field[field_name]:
+            values_by_field[field_name].append(value)
+        if not isinstance(segment_id, str) or segment_id not in segments:
+            failures_by_field.setdefault(field_name, "UNKNOWN_SEGMENT")
+            continue
+        occurrences = exact_occurrence_offsets(segments[segment_id], value)
+        if not occurrences:
+            failures_by_field.setdefault(field_name, "VALUE_NOT_IN_SEGMENT")
+            continue
+        for start in occurrences:
+            end = start + len(value)
+            if segments[segment_id][start:end] != value:
+                raise InvalidEvidenceMetadataResponse("schema_invalid")
+            span = BodySpan(segment_id, start, end)
+            if span not in spans_by_field[field_name]:
+                spans_by_field[field_name].append(span)
 
-    return EvidenceMetadataExtraction(tuple(ordered))
-
-
-def _exact_occurrence_offsets(source: str, value: str) -> tuple[int, ...]:
-    """Return every exact occurrence, including overlapping occurrences."""
-
-    offsets: list[int] = []
-    cursor = source.find(value)
-    while cursor >= 0:
-        offsets.append(cursor)
-        cursor = source.find(value, cursor + 1)
-    return tuple(offsets)
+    observations: list[MetadataFieldObservation] = []
+    diagnostics: list[MetadataFieldDiagnostic] = []
+    for field_name in field_order:
+        values = tuple(values_by_field[field_name])
+        if field_name in failures_by_field:
+            diagnostics.append(MetadataFieldDiagnostic(field_name, failures_by_field[field_name], values))
+        elif len(values) > 1:
+            diagnostics.append(MetadataFieldDiagnostic(field_name, "SAME_SOURCE_DISTINCT_VALUES", values))
+        else:
+            observations.append(
+                MetadataFieldObservation(field_name, values[0], tuple(spans_by_field[field_name]))
+            )
+    return EvidenceMetadataExtraction(tuple(observations), tuple(diagnostics))
 
 
 def _is_array(value: object) -> bool:
