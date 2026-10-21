@@ -36,7 +36,6 @@ from src.weekly_report.scope_classifier import ScopeClassifier, ScopeValidationO
 
 
 ARTIFACT_VERSION = "scope-acceptance-case-v1"
-DEFAULT_ARTIFACT_DIRECTORY = REPOSITORY_ROOT
 MAX_CASES_PER_RUN = 20
 MAX_PROPOSAL_BYTES = 512 * 1024
 _SAFE_CASE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$")
@@ -151,7 +150,7 @@ def capture_case(
     provider: Any,
     *,
     run_id: str,
-    artifact_directory: str | Path = DEFAULT_ARTIFACT_DIRECTORY,
+    artifact_directory: str | Path,
     code_revision: str | None = None,
     secret_values: tuple[str, ...] = (),
 ) -> Path:
@@ -352,6 +351,7 @@ def main(argv: list[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
     capture_parser = subparsers.add_parser("capture", help="make one configured provider call per fixed input case")
     capture_parser.add_argument("--input", required=True, type=Path, help="JSON object with a cases array")
+    capture_parser.add_argument("--artifact-dir", required=True, type=Path, help="existing directory outside the repository root")
     replay_parser = subparsers.add_parser("replay", help="replay one saved parsed proposal offline")
     replay_parser.add_argument("artifact", type=Path)
     args = parser.parse_args(argv)
@@ -371,7 +371,7 @@ def main(argv: list[str] | None = None) -> int:
     secret_values = (config.api_key, config.chatbot_id)
     validated_cases = [_validate_case(case, secret_values=secret_values) for case in cases]
     paths = [
-        capture_case(case, provider, run_id=run_id, secret_values=secret_values)
+        capture_case(case, provider, run_id=run_id, artifact_directory=args.artifact_dir, secret_values=secret_values)
         for case in validated_cases
     ]
     print(json.dumps({"run_id": run_id, "case_count": len(paths), "artifact_paths": [str(path) for path in paths]}, ensure_ascii=False))

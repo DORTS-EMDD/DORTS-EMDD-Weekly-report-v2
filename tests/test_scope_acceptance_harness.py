@@ -14,24 +14,16 @@ from src.weekly_report.evidence_sentences import segment_evidence_sentences
 from src.weekly_report.maiagent_scope_provider import MaiAgentScopeProviderFailure
 from src.weekly_report.scope_classifier import SCOPE_PROPOSAL_SCHEMA_VERSION, ScopeClassifier, ScopeProposalViolation
 
-ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture
-def capture_artifact():
-    paths = []
-
+def capture_artifact(tmp_path):
     def capture(case, provider, **kwargs):
         kwargs["run_id"] = f"test-{uuid4().hex}-{kwargs['run_id']}"
-        kwargs["artifact_directory"] = ROOT
-        path = capture_case(case, provider, **kwargs)
-        paths.append(path)
-        return path
+        kwargs["artifact_directory"] = tmp_path
+        return capture_case(case, provider, **kwargs)
 
-    yield capture
-    for path in paths:
-        if path.parent.resolve() == ROOT.resolve() and path.name.startswith(".scope-acceptance-test-"):
-            path.unlink(missing_ok=True)
+    return capture
 
 
 POSITIVE_SOURCE = "The operator installed platform doors on the Metro line."
