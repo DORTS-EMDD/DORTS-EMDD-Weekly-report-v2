@@ -1,0 +1,59 @@
+{
+ "run_started_utc": "2026-10-21T03:36:19.709907+00:00",
+ "git_head": "9cc0e85744c6307b578654469b5327c763cbb686",
+ "dry_run": false,
+ "period": [
+  "2026-10-14",
+  "2026-10-20"
+ ],
+ "abort": "MAIAGENT_CALL_BUDGET_EXCEEDED (700)",
+ "wall_clock_seconds": 3929.7,
+ "budgets": {
+  "http": [
+   1400,
+   1500
+  ],
+  "http_by_kind": {
+   "rss": 117,
+   "link_resolution": 842,
+   "publisher_fetch": 441
+  },
+  "maiagent_calls": [
+   700,
+   700
+  ],
+  "seconds": 6000
+ },
+ "run_status": null,
+ "run_failure": null,
+ "stage_counts": null,
+ "stage_elapsed_ms": {
+  "Search": 74125,
+  "Acquisition": 15,
+  "Normalization": 140,
+  "Evidence": 2450734,
+  "Scope": 803750,
+  "Temporal": 31,
+  "EventIdentity": 63,
+  "Category": 185530,
+  "Taxonomy": 163280,
+  "Reportability": 181359,
+  "Ordering": 15,
+  "FormalMetadata": 31,
+  "Writer": 70125
+ },
+ "maiagent_calls_by_task": {
+  "evidence_semantic_judge": 199,
+  "evidence_metadata_extraction": 161,
+  "scope_semantic_proposal": 170,
+  "category_semantic_proposal": 59,
+  "taxonomy_semantic_proposal": 50,
+  "reportability_semantic_proposal": 48,
+  "writer": 13
+ },
+ "maiagent_outcomes": {
+  "HTTP_200": 697,
+  "TIMEOUT": 3
+ },
+ "final_report_event_count": null
+}
