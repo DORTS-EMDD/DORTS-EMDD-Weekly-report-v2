@@ -1,5 +1,5 @@
 {
-  "configuration_version": "search-discovery-v5",
+  "configuration_version": "search-discovery-v6",
   "region_modes": [
     "selected",
     "global"
@@ -376,17 +376,15 @@
       "intent_vocabulary": {
         "technology": {
           "urban_rail_terms": [
-            "metro",
-            "subway",
-            "MRT",
-            "LRT",
+            "metro line",
+            "metro station",
+            "subway line",
             "light rail",
             "tram",
-            "tramway",
             "streetcar",
-            "AGT",
-            "monorail",
-            "people mover"
+            "LRT",
+            "MRT",
+            "monorail"
           ],
           "technology_terms": [
             "CBTC",
@@ -421,11 +419,12 @@
         },
         "major_incident": {
           "urban_rail_terms": [
-            "metro",
-            "subway",
-            "LRT",
+            "metro line",
+            "metro station",
+            "subway station",
+            "light rail",
             "tram",
-            "light rail"
+            "LRT"
           ],
           "accident_terms": [
             "collision",
@@ -455,10 +454,11 @@
         },
         "operations": {
           "urban_rail_terms": [
-            "metro",
-            "subway",
-            "tram",
-            "light rail"
+            "metro line",
+            "metro station",
+            "subway line",
+            "light rail",
+            "tram"
           ],
           "policy_terms": [
             "policy",
@@ -495,10 +495,10 @@
         },
         "procurement": {
           "urban_rail_terms": [
-            "metro",
-            "subway",
-            "tram",
+            "metro line",
+            "metro system",
             "light rail",
+            "tram",
             "urban rail"
           ],
           "tender_terms": [

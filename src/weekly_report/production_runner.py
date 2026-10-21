@@ -70,8 +70,8 @@ from .validator import Validator
 
 
 PRODUCTION_METADATA_MODEL = "GPT-OSS-120B"
-# Six probes spread across the search-discovery-v5 plan (RC-12).
-HEALTH_PROBE_ORDINALS = (1, 10, 60, 65, 115, 122)
+# Six probes spread across the search-discovery-v6 plan (RC-14).
+HEALTH_PROBE_ORDINALS = (1, 10, 55, 60, 110, 117)
 
 
 class ProductionConfigurationError(RuntimeError):

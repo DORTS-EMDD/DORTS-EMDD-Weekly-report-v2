@@ -162,9 +162,14 @@ class SearchPlannerTests(unittest.TestCase):
     def test_mode_terms_are_required_in_titles_and_trade_press_is_restricted(self) -> None:
         plan = SearchPlanner(self.production_registry).plan("selected")
         editions = [item for item in plan.items if item.query_family_id == "urban_rail_or_groups"]
-        self.assertTrue(editions and all(item.query.startswith("(intitle:") for item in editions))
+        self.assertTrue(editions and all("intitle:" in item.query for item in editions))
+        # RC-14: English mode terms are unambiguous phrases, never bare
+        # "metro"/"subway" (newspapers, "metro area", companies, sports).
+        english = [item.query for item in editions if item.language_profile == "en"]
+        self.assertTrue(english and all("intitle:metro" not in query and "intitle:subway" not in query for query in english))
+        self.assertTrue(all('"metro line"' in query for query in english))
         self.assertFalse(any('intitle:"' in item.query for item in plan.items))
-        self.assertTrue(any('"people mover"' in item.query for item in editions))
+        self.assertTrue(any('"light rail"' in item.query for item in editions))
         trade = [item for item in plan.items if item.query_family_id == "rail_trade_press"]
         self.assertEqual({(item.market_id, item.intent.value) for item in trade}, {("united_kingdom", "technology")})
         self.assertEqual(len(trade), 2)

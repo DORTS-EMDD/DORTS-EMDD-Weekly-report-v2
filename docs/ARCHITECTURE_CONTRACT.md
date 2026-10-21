@@ -282,6 +282,26 @@ bodies.
 EVIDENCE_STRUCTURAL_REVISION = RC-13
 ```
 
+### A.8 RC-14 Unambiguous English discovery terms (2026-10-21, user-approved)
+
+P1c showed that bare English "metro" and "subway" match newspapers named
+Metro, "metro area" stories, companies, sports conferences and restaurants,
+and that Google's title operator also matches the publisher name appended to
+RSS titles. The governed English discovery mode terms are therefore phrases
+(`metro line`, `metro station`, `subway line`/`subway station`,
+`metro system`) plus unambiguous single words (`tram`, `streetcar`, `LRT`,
+`MRT`, `monorail`); see `docs/SEARCH_LANGUAGE_PROFILES.md`. Discovery terms
+never decide Scope.
+
+Cross-language duplicates of one story (for example one aggregator's Korean,
+Japanese and French copies) remain separate Candidates until Event Identity,
+the single dedup owner; P1c showed they are rejected structurally before any
+MaiAgent call, so no pre-Evidence dedup stage is added.
+
+```text
+SEARCH_CONFIGURATION_VERSION = search-discovery-v6
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -449,7 +469,7 @@ HIDDEN_TRANSPORT_RETRY = FORBIDDEN
 REDIRECT_FOLLOW_COUNT = 0
 PAGINATION = ONE_PROVIDER_REQUEST_PAGE_ONLY
 EXECUTION_CONCURRENCY = SEQUENTIAL
-SEARCH_CONFIGURATION_VERSION = search-discovery-v5
+SEARCH_CONFIGURATION_VERSION = search-discovery-v6
 PROVIDER_PROFILE_ELIGIBILITY_OWNER = RegionRegistry
 ```
 
