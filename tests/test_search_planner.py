@@ -163,6 +163,8 @@ class SearchPlannerTests(unittest.TestCase):
         plan = SearchPlanner(self.production_registry).plan("selected")
         editions = [item for item in plan.items if item.query_family_id == "urban_rail_or_groups"]
         self.assertTrue(editions and all(item.query.startswith("(intitle:") for item in editions))
+        self.assertFalse(any('intitle:"' in item.query for item in plan.items))
+        self.assertTrue(any('"people mover"' in item.query for item in editions))
         trade = [item for item in plan.items if item.query_family_id == "rail_trade_press"]
         self.assertEqual({(item.market_id, item.intent.value) for item in trade}, {("united_kingdom", "technology")})
         self.assertEqual(len(trade), 2)

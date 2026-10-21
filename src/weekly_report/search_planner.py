@@ -38,7 +38,10 @@ def _query_words(query: str) -> int:
 def _or_group(terms: tuple[str, ...], *, prefix: str = "") -> str:
     """Render governed terms as one OR group; multi-word terms are quoted."""
 
-    rendered = [prefix + (f'"{term}"' if any(character.isspace() for character in term) else term) for term in terms]
+    # A title operator binds only to the next word, so a multi-word term keeps
+    # its quoted phrase without the prefix ("intitle:\"people mover\"" would
+    # match any title containing "people").
+    rendered = [f'"{term}"' if any(character.isspace() for character in term) else prefix + term for term in terms]
     return "(" + " OR ".join(rendered) + ")"
 
 
