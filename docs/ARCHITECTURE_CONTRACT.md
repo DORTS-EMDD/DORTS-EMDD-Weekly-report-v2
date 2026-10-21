@@ -202,6 +202,41 @@ REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v2 (RC-10, section N
 SCOPE_INVALID_PROPOSAL = TECHNICAL_GAP (not OUT_OF_SCOPE)
 ```
 
+### A.5 RC-11 Bounded discovery and Google News link resolution (2026-10-21, user-approved)
+
+The first audit showed that a formal run could not produce a report: Google
+News RSS items link to `news.google.com` redirect pages that Evidence
+correctly rejects, the 449-request plan had no period bound, and non-English
+editions received English words ("Japan urban rail 通信"). The user approved
+fixing link resolution and search scale together.
+
+* Search window: the formal report period is a `SearchWindow` on every
+  `SearchPlanItem` and part of plan identity. The Google News provider adds the
+  provider's own `after:`/`before:` operators. The window only scopes
+  discovery; Temporal remains the sole owner of date validity.
+* Query family `urban_rail_or_groups` (`search-discovery-v4`): one request per
+  supported market edition and intent written only in that profile's governed
+  vocabulary, `(mode terms OR …) (intent terms OR …)`. Intent terms are packed
+  into as few requests as fit the 32-word provider bound. The selected plan
+  shrinks from 449 to 207 requests; the legacy one-term-per-request form
+  remains supported.
+* Each discovery result keeps the provider-declared publisher origin (RSS
+  `<source url>`) as discovery metadata only.
+* EvidenceService resolves a Google News article link to the publisher URL it
+  points to (`google_news_links.py`): an offline decode for older IDs, else
+  Google News' own article endpoint. Only a non-Google http(s) publisher URL is
+  accepted; when the provider declared a publisher origin, the resolved host
+  must belong to it (`PUBLISHER_ORIGIN_MISMATCH` otherwise). The publisher page
+  is then fetched and judged as any source; no Google page, title or snippet
+  becomes Evidence. Failures are `LINK_RESOLUTION` rejections that record
+  whether the cause was transport or an unresolvable link.
+
+```text
+SEARCH_CONFIGURATION_VERSION = search-discovery-v4
+SEARCH_WINDOW = REPORT_PERIOD (discovery scoping only)
+GOOGLE_NEWS_LINK_RESOLUTION_OWNER = EvidenceService
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -369,7 +404,7 @@ HIDDEN_TRANSPORT_RETRY = FORBIDDEN
 REDIRECT_FOLLOW_COUNT = 0
 PAGINATION = ONE_PROVIDER_REQUEST_PAGE_ONLY
 EXECUTION_CONCURRENCY = SEQUENTIAL
-SEARCH_CONFIGURATION_VERSION = search-discovery-v3
+SEARCH_CONFIGURATION_VERSION = search-discovery-v4
 PROVIDER_PROFILE_ELIGIBILITY_OWNER = RegionRegistry
 ```
 

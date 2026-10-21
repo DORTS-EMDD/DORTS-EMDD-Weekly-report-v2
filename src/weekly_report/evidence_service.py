@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 import codecs
+from dataclasses import replace
 import ipaddress
 import re
 import socket
@@ -51,6 +52,13 @@ from .semantic_judge import (
 )
 from .evidence_document import DocumentSegment, PrincipalDocumentStatus, assess_document
 from .geographic_reference import GeographicMatchKind, GeographicReference, default_geographic_reference
+from .google_news_links import (
+    GoogleNewsLinkResolver,
+    LinkResolutionError,
+    LinkResolutionFailure,
+    is_google_news_article_url,
+    same_publisher,
+)
 
 
 Fetcher = Callable[[str], FetchedSource | Mapping[str, Any] | object]
@@ -508,8 +516,10 @@ class EvidenceService:
         judge_metadata: JudgeMetadata | None = None,
         metadata_extractor: EvidenceMetadataExtractor | None = None,
         geographic_reference: GeographicReference | None = None,
+        link_resolver: GoogleNewsLinkResolver | None = None,
     ) -> None:
         self._timeout_seconds = float(timeout_seconds)
+        self._link_resolver = link_resolver
         self._geographic_reference = geographic_reference or default_geographic_reference()
         self._fetcher = fetcher or (
             lambda url: _default_fetcher(url, self._timeout_seconds)
@@ -530,6 +540,49 @@ class EvidenceService:
                 {},
                 evidence_rejection_gate="URL_VALIDATION",
             )
+        if not is_google_news_article_url(input_url):
+            return self._evaluate_source(item, input_url)
+
+        # RC-11: a Google News discovery link is resolved to the publisher
+        # article it points to; only the publisher page can become Evidence.
+        link: dict[str, Any] = {"discovery_url": input_url}
+        if self._link_resolver is None:
+            link["link_resolution"] = "NOT_CONFIGURED"
+            return self._rejected(item, RejectReason.URL_UNRESOLVED, link, evidence_rejection_gate="LINK_RESOLUTION")
+        try:
+            resolution = self._link_resolver.resolve(input_url)
+        except LinkResolutionError as exc:
+            link.update(link_resolution=exc.failure.value, link_resolution_detail=exc.detail)
+            reason = (
+                RejectReason.CONTENT_UNAVAILABLE
+                if exc.failure is LinkResolutionFailure.TRANSPORT
+                else RejectReason.URL_UNRESOLVED
+            )
+            return self._rejected(item, reason, link, evidence_rejection_gate="LINK_RESOLUTION")
+        publisher_url = _normalise_url(resolution.publisher_url)
+        link.update(
+            link_resolution=resolution.method,
+            link_resolution_requests=resolution.requests,
+            link_resolved_url=publisher_url,
+        )
+        origin = same_publisher(item.publisher_url, publisher_url)
+        link["publisher_origin_check"] = "NOT_DECLARED" if origin is None else ("MATCH" if origin else "MISMATCH")
+        if not publisher_url:
+            return self._rejected(item, RejectReason.URL_UNRESOLVED, link, evidence_rejection_gate="LINK_RESOLUTION")
+        if origin is False:
+            link["source_provenance_mismatch_reason"] = "PUBLISHER_ORIGIN_MISMATCH"
+            return self._rejected(
+                item,
+                RejectReason.SOURCE_PAGE_MISMATCH,
+                link,
+                evidence_rejection_gate="SOURCE_PROVENANCE",
+                canonical_source_url=publisher_url,
+            )
+        result = self._evaluate_source(item, publisher_url)
+        return replace(result, provenance={**dict(result.provenance), **link})
+
+    def _evaluate_source(self, item: CanonicalCandidate, input_url: str) -> EvidenceResult:
+        """Acquire and assess the source page at ``input_url``."""
 
         fetch_started = perf_counter()
         try:
@@ -1107,6 +1160,7 @@ class EvidenceService:
     ) -> EvidenceResult:
         allowed_gates = {
             "URL_VALIDATION",
+            "LINK_RESOLUTION",
             "FETCH_TRANSPORT",
             "HTTP_STATUS",
             "CONTENT_TYPE",

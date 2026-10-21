@@ -1,5 +1,5 @@
 {
-  "configuration_version": "search-discovery-v3",
+  "configuration_version": "search-discovery-v4",
   "region_modes": [
     "selected",
     "global"
@@ -2343,18 +2343,16 @@
   ],
   "query_families": [
     {
-      "family_id": "urban_rail_intent",
+      "family_id": "urban_rail_or_groups",
       "templates": [
-        "{market} {anchor} {intent_term}"
+        "{mode_terms} {intent_terms}"
       ],
-      "anchor_terms": [
-        "urban rail"
-      ],
+      "anchor_terms": [],
       "vocabulary_groups": {
-        "technology": ["technology_terms"],
-        "major_incident": ["accident_terms"],
-        "operations": ["policy_terms"],
-        "procurement": ["tender_terms"]
+        "technology": ["technology_terms", "new_material_terms", "new_method_terms"],
+        "major_incident": ["accident_terms", "disruption_terms", "technical_failure_terms", "safety_terms"],
+        "operations": ["policy_terms", "dispute_terms", "opening_service_terms", "fare_ticketing_terms", "operating_method_terms"],
+        "procurement": ["tender_terms", "procurement_terms", "award_terms", "contract_terms"]
       },
       "provider_target": "google_news_rss"
     }

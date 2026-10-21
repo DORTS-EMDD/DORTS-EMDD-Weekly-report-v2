@@ -156,6 +156,13 @@ intent and profile. It **MUST** enforce a configured query budget and stable
 ordering. It **MUST NOT** generate an unbounded Cartesian product of markets,
 languages, synonyms, systems, and intents.
 
+RC-11 (`search-discovery-v4`, ARCHITECTURE_CONTRACT §A.5): the production
+family writes one request per supported market edition and intent entirely in
+that profile's governed vocabulary, `(mode terms OR …) (intent terms OR …)`,
+packing intent terms into as few requests as fit 32 words. Locality comes from
+the provider edition (`hl`/`gl`/`ceid`), not from an English market name, and
+every request is bounded to the report period.
+
 Query families are bounded discovery composition templates governed by the
 Search Planner. They may reference urban-rail anchors, intent/action terms,
 market/operator terms, and optional technical vocabulary. Query counts,

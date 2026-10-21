@@ -7,6 +7,7 @@ import json
 from typing import Iterable
 
 from .contracts import (
+    SearchWindow,
     DiscoveryIntent,
     ProviderProfileEligibility,
     QueryFamilyConfig,
@@ -25,6 +26,22 @@ def _stable_digest(value: object) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+_MODE_GROUP = "urban_rail_terms"
+# Google ignores words beyond 32 per query; OR operators are counted too.
+_MAX_QUERY_WORDS = 32
+
+
+def _query_words(query: str) -> int:
+    return len(query.replace("(", " ").replace(")", " ").split())
+
+
+def _or_group(terms: tuple[str, ...]) -> str:
+    """Render governed terms as one OR group; multi-word terms are quoted."""
+
+    rendered = [f'"{term}"' if any(character.isspace() for character in term) else term for term in terms]
+    return "(" + " OR ".join(rendered) + ")"
+
+
 class SearchPlanner:
     """The only owner of deterministic discovery plan construction."""
 
@@ -37,8 +54,12 @@ class SearchPlanner:
         self,
         mode: RegionMode | str,
         intents: Iterable[DiscoveryIntent | str] | None = None,
+        *,
+        window: SearchWindow | None = None,
     ) -> SearchPlan:
         mode = RegionMode(mode)
+        if window is not None and not isinstance(window, SearchWindow):
+            raise TypeError("SearchPlanner window must be a SearchWindow")
         selected_intents = self._canonical_intents(intents)
         items: list[SearchPlanItem] = []
         configured_markets = self._registry.markets_for(mode)
@@ -80,6 +101,8 @@ class SearchPlanner:
                                     "ceid": encoding.ceid,
                                 },
                             }
+                            if window is not None:
+                                payload["search_window"] = window.as_mapping()
                             items.append(
                                 SearchPlanItem(
                                     plan_item_id=f"search_{_stable_digest(payload)}",
@@ -92,6 +115,7 @@ class SearchPlanner:
                                     query=query,
                                     locale=self._registry.profile(profile_id).locale,
                                     provider_encoding=encoding,
+                                    search_window=window,
                                 )
                             )
                             intent_item_counts[intent] += 1
@@ -140,6 +164,7 @@ class SearchPlanner:
                         "gl": item.provider_encoding.gl,
                         "ceid": item.provider_encoding.ceid,
                     },
+                    **({"search_window": item.search_window.as_mapping()} if item.search_window else {}),
                 }
                 for item in items
             ],
@@ -175,7 +200,45 @@ class SearchPlanner:
             intent_terms.extend(profile.intent_vocabulary[intent.value][group_name])
         if not intent_terms:
             raise ValueError("query family resolved no governed vocabulary terms")
-        intent_terms = tuple(intent_terms)
+        intent_terms = tuple(dict.fromkeys(intent_terms))
+        if any("{intent_terms}" in template for template in family.templates):
+            # OR-group family: one request per market, language and intent,
+            # written entirely in the profile's own governed vocabulary.
+            mode_terms = tuple(dict.fromkeys(profile.intent_vocabulary[intent.value].get(_MODE_GROUP, ())))
+            if "{mode_terms}" in "".join(family.templates) and not mode_terms:
+                raise ValueError("query family resolved no governed mode terms")
+            queries = []
+            for template in family.templates:
+                def render(chunk: tuple[str, ...]) -> str:
+                    try:
+                        query = template.format(
+                            market=market.display_name,
+                            mode_terms=_or_group(mode_terms),
+                            intent_terms=_or_group(chunk),
+                        )
+                    except (KeyError, IndexError, ValueError) as exc:
+                        raise ValueError("query family template has unsupported placeholders") from exc
+                    if not query.strip():
+                        raise ValueError("query family generated an empty query")
+                    return " ".join(query.split())
+
+                # Search engines ignore words beyond a fixed query length, so
+                # intent terms are packed into as few requests as fit.
+                chunk: list[str] = []
+                for term in intent_terms:
+                    if chunk and _query_words(render(tuple(chunk + [term]))) > _MAX_QUERY_WORDS:
+                        queries.append(render(tuple(chunk)))
+                        chunk = []
+                    chunk.append(term)
+                if chunk:
+                    queries.append(render(tuple(chunk)))
+                if any(_query_words(query) > _MAX_QUERY_WORDS for query in queries):
+                    raise ValueError("query family cannot fit the bounded query length")
+            if len(queries) > self._registry.planning_limits.max_concrete_requests_per_family:
+                raise ValueError("query family exceeds bounded concrete request limit")
+            if len(queries) != len(set(queries)):
+                raise ValueError("query family generated duplicate concrete queries")
+            return tuple(queries)
         anchors = family.anchor_terms or ("",)
         combinations = len(family.templates) * len(anchors) * len(intent_terms)
         if combinations > self._registry.planning_limits.max_concrete_requests_per_family:

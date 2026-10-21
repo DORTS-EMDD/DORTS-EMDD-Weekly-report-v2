@@ -16,6 +16,7 @@ import os
 from types import MappingProxyType
 from typing import Any, Protocol
 
+from .google_news_links import GoogleNewsLinkResolver
 from .category_semantic_provider import build_maiagent_category_classifier
 from .debug_service import evidence_projection, execution_trace
 from .classifier import Classifier
@@ -69,7 +70,8 @@ from .validator import Validator
 
 
 PRODUCTION_METADATA_MODEL = "GPT-OSS-120B"
-HEALTH_PROBE_ORDINALS = (1, 10, 225, 230, 440, 449)
+# Six probes spread across the search-discovery-v4 plan (RC-11).
+HEALTH_PROBE_ORDINALS = (1, 10, 100, 105, 200, 207)
 
 
 class ProductionConfigurationError(RuntimeError):
@@ -616,6 +618,7 @@ class ProductionRunner:
             semantic_judge=judge,
             judge_metadata=getattr(judge, "metadata", None),
             metadata_extractor=metadata_extractor,
+            link_resolver=GoogleNewsLinkResolver(),
         )
         classifier = build_maiagent_category_classifier(transport=transport, environ=values)
         taxonomy_provider = build_maiagent_taxonomy_provider(transport=transport, environ=values)

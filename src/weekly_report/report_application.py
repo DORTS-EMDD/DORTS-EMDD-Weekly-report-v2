@@ -28,6 +28,7 @@ from .contracts import (
     SearchObservation,
     SearchPlan,
     SearchTerminalStatus,
+    SearchWindow,
     ScopeResult,
     ScopeState,
     SemanticProviderTechnicalFailure,
@@ -618,9 +619,9 @@ class ReportApplication:
         period_start: date | str,
         period_end: date | str,
     ) -> ReportApplicationResult:
-        self._temporal_rule.validate_period(period_start, period_end)
+        window_start, window_end = self._temporal_rule.validate_period(period_start, period_end)
         with observe_stage("Search") as observation:
-            plan = self._planner.plan(mode, intents=intents)
+            plan = self._planner.plan(mode, intents=intents, window=SearchWindow(window_start, window_end))
             observation.input_count = len(plan.items)
             execution = self._executor.execute(plan)
             observation.observe(execution, final=True)

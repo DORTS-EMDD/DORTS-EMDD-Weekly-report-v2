@@ -540,6 +540,7 @@ class CanonicalCandidate:
     discovery_intent: str = ""
     search_snippet: str = ""
     source_type: str = "web_source"
+    publisher_url: str = ""
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "CanonicalCandidate":
@@ -554,6 +555,7 @@ class CanonicalCandidate:
             discovery_intent=str(value.get("discovery_intent", "")),
             search_snippet=str(value.get("search_snippet", "")),
             source_type=str(value.get("source_type", "web_source")),
+            publisher_url=str(value.get("publisher_url", "")),
         )
 
 
@@ -1713,6 +1715,26 @@ class QueryFamilyConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class SearchWindow:
+    """Inclusive report-period window used only to scope discovery requests.
+
+    It never decides date validity: Temporal remains the sole date owner.
+    """
+
+    start: date
+    end: date
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.start, date) or not isinstance(self.end, date):
+            raise TypeError("SearchWindow requires calendar dates")
+        if self.start > self.end:
+            raise ValueError("SearchWindow start must not be after end")
+
+    def as_mapping(self) -> dict[str, str]:
+        return {"start": self.start.isoformat(), "end": self.end.isoformat()}
+
+
+@dataclass(frozen=True, slots=True)
 class SearchPlanItem:
     """One frozen, independently-attemptable concrete discovery request."""
 
@@ -1726,10 +1748,13 @@ class SearchPlanItem:
     query: str
     provider_encoding: GoogleNewsRssEncoding
     locale: str = ""
+    search_window: "SearchWindow | None" = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.plan_item_id, str) or not self.plan_item_id.strip():
             raise ValueError("SearchPlanItem requires plan_item_id")
+        if self.search_window is not None and not isinstance(self.search_window, SearchWindow):
+            raise TypeError("SearchPlanItem search_window must be a SearchWindow")
         if not isinstance(self.market_id, str) or not self.market_id.strip():
             raise ValueError("SearchPlanItem requires market_id")
         try:
@@ -1840,13 +1865,16 @@ class DiscoveryResult:
     publisher: str = ""
     published_at: str = ""
     snippet: str = ""
+    # Publisher origin declared by the discovery provider (for example the RSS
+    # <source url>). Discovery metadata only; never Evidence.
+    publisher_url: str = ""
 
     def __post_init__(self) -> None:
         if not isinstance(self.title, str) or not self.title.strip():
             raise ValueError("DiscoveryResult requires title")
         if not isinstance(self.url, str) or not self.url.strip():
             raise ValueError("DiscoveryResult requires url")
-        for field_name in ("publisher", "published_at", "snippet"):
+        for field_name in ("publisher", "published_at", "snippet", "publisher_url"):
             if not isinstance(getattr(self, field_name), str):
                 raise TypeError("DiscoveryResult metadata must be strings")
 

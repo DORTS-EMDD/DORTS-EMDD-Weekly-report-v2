@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
+from datetime import timedelta
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -227,7 +228,9 @@ def _parse_rss(body: bytes) -> tuple[DiscoveryResult, ...]:
         publisher = _single_text(item, "source", required=False)
         published_at = _single_text(item, "pubdate", required=False)
         snippet = _single_text(item, "description", required=False)
-        results.append(DiscoveryResult(title, url, publisher, published_at, snippet))
+        sources = [child for child in list(item) if _local_name(child.tag) == "source"]
+        publisher_url = str(sources[0].attrib.get("url", "")).strip() if len(sources) == 1 else ""
+        results.append(DiscoveryResult(title, url, publisher, published_at, snippet, publisher_url))
     return tuple(results)
 
 
@@ -256,9 +259,13 @@ class GoogleNewsRssProvider(SearchProvider):
         if item.provider_target is not SearchProviderId.GOOGLE_NEWS_RSS:
             raise ValueError("GoogleNewsRssProvider requires google_news_rss")
         encoding = item.provider_encoding
+        q = item.query
+        if item.search_window is not None:
+            # Google News date operators; "before" is exclusive.
+            q = f"{q} after:{item.search_window.start.isoformat()} before:{(item.search_window.end + timedelta(days=1)).isoformat()}"
         query = urlencode(
             (
-                ("q", item.query),
+                ("q", q),
                 ("hl", encoding.hl),
                 ("gl", encoding.gl),
                 ("ceid", encoding.ceid),

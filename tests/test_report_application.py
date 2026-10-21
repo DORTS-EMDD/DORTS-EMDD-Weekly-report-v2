@@ -110,7 +110,7 @@ class FixturePlanner(SearchPlanner):
         super().__init__(registry)
         self._plan = plan
 
-    def plan(self, mode, intents=None):
+    def plan(self, mode, intents=None, *, window=None):
         return self._plan
 
 

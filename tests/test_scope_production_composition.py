@@ -55,7 +55,7 @@ class _OfflineSearchProvider:
 class _OfflinePlanner(SearchPlanner):
     """One-item plan at the ordinary planner boundary for an offline run."""
 
-    def plan(self, mode, intents=None):
+    def plan(self, mode, intents=None, *, window=None):
         return SearchPlan(
             "offline-scope-plan",
             RegionMode.SELECTED,

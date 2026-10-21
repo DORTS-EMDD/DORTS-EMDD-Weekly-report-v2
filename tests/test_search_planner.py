@@ -13,7 +13,7 @@ from src.weekly_report.contracts import (
     SearchCoverageGapReason,
 )
 from src.weekly_report.region_registry import RegionRegistry
-from src.weekly_report.search_planner import SearchPlanner
+from src.weekly_report.search_planner import SearchPlanner, _query_words
 
 
 class SearchPlannerTests(unittest.TestCase):
@@ -61,13 +61,25 @@ class SearchPlannerTests(unittest.TestCase):
         plan = self.planner.plan("selected", intents=(DiscoveryIntent.TECHNOLOGY,))
         south_korea_profiles = {item.language_profile for item in plan.items if item.market_id == "south_korea"}
         self.assertEqual(south_korea_profiles, {"ko"})
-        expected_count = sum(
-            len(self.registry.profile(profile_id).intent_vocabulary["technology"]["technology_terms"])
+        supported = {
+            (market.market_id, profile_id)
             for market in self.registry.selected_markets
             for profile_id in self.registry.profiles_for_market(market)
             if self.registry.provider_profile_binding(market.market_id, profile_id, "google_news_rss").eligibility.value == "SUPPORTED"
+        }
+        # RC-11: every supported edition is planned, in its own vocabulary,
+        # within the 32-word query bound, and far below one request per term.
+        self.assertEqual({(item.market_id, item.language_profile) for item in plan.items}, supported)
+        self.assertTrue(all(_query_words(item.query) <= 32 for item in plan.items))
+        per_term = sum(
+            len(self.registry.profile(profile_id).intent_vocabulary["technology"][group])
+            for _market, profile_id in supported
+            for group in ("technology_terms", "new_material_terms", "new_method_terms")
         )
-        self.assertEqual(len(plan.items), expected_count)
+        self.assertLess(len(plan.items), per_term)
+        korean = [item.query for item in plan.items if item.language_profile == "ko"]
+        self.assertTrue(korean and all("urban rail" not in query and "South Korea" not in query for query in korean))
+        self.assertTrue(all(" OR " in item.query for item in plan.items))
 
     def test_production_selected_planning_exposes_denmark_coverage_gap(self) -> None:
         plan = SearchPlanner(self.production_registry).plan("selected")
@@ -108,7 +120,17 @@ class SearchPlannerTests(unittest.TestCase):
 
     def test_concrete_requests_from_one_family_have_distinct_stable_ids(self) -> None:
         source = copy.deepcopy(self.source)
-        source["query_families"][0]["templates"].append("{market} {anchor} {intent_term} update")
+        # The legacy one-term-per-request family remains supported.
+        source["query_families"][0].update(
+            templates=["{market} {anchor} {intent_term}", "{market} {anchor} {intent_term} update"],
+            anchor_terms=["urban rail"],
+            vocabulary_groups={
+                "technology": ["technology_terms"],
+                "major_incident": ["accident_terms"],
+                "operations": ["policy_terms"],
+                "procurement": ["tender_terms"],
+            },
+        )
         registry = RegionRegistry.from_mapping(source)
         plan = SearchPlanner(registry).plan("selected", intents=(DiscoveryIntent.PROCUREMENT,))
         ids = tuple(item.plan_item_id for item in plan.items)
@@ -120,6 +142,22 @@ class SearchPlannerTests(unittest.TestCase):
             len(queries),
             2 * len(self.registry.profile("ko").intent_vocabulary["procurement"]["tender_terms"]),
         )
+
+    def test_search_window_scopes_every_item_and_changes_plan_identity(self) -> None:
+        from datetime import date
+
+        from src.weekly_report.contracts import SearchWindow
+        from src.weekly_report.google_news_rss_provider import GoogleNewsRssProvider
+
+        window = SearchWindow(date(2026, 10, 12), date(2026, 10, 18))
+        unbounded = self.planner.plan("selected", intents=(DiscoveryIntent.TECHNOLOGY,))
+        bounded = self.planner.plan("selected", intents=(DiscoveryIntent.TECHNOLOGY,), window=window)
+        self.assertTrue(all(item.search_window == window for item in bounded.items))
+        self.assertNotEqual(unbounded.plan_id, bounded.plan_id)
+        url = GoogleNewsRssProvider.request_url(bounded.items[0])
+        self.assertIn("after%3A2026-10-12", url)
+        self.assertIn("before%3A2026-10-19", url)
+        self.assertNotIn("after%3A", GoogleNewsRssProvider.request_url(unbounded.items[0]))
 
     def test_query_generation_is_bounded(self) -> None:
         source = copy.deepcopy(self.source)

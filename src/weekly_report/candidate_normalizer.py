@@ -110,6 +110,7 @@ class CandidateNormalizer:
                     discovery_intent=min(item.plan_item.intent.value for item in records),
                     search_snippet=selected.raw_result.snippet,
                     source_type="web_source",
+                    publisher_url=selected.raw_result.publisher_url,
                 )
                 origins = tuple(
                     AcquisitionOrigin(acquisition_id_for(item), item)
