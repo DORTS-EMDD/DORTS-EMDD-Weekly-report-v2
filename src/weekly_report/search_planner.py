@@ -35,10 +35,10 @@ def _query_words(query: str) -> int:
     return len(query.replace("(", " ").replace(")", " ").split())
 
 
-def _or_group(terms: tuple[str, ...]) -> str:
+def _or_group(terms: tuple[str, ...], *, prefix: str = "") -> str:
     """Render governed terms as one OR group; multi-word terms are quoted."""
 
-    rendered = [f'"{term}"' if any(character.isspace() for character in term) else term for term in terms]
+    rendered = [prefix + (f'"{term}"' if any(character.isspace() for character in term) else term) for term in terms]
     return "(" + " OR ".join(rendered) + ")"
 
 
@@ -73,6 +73,10 @@ class SearchPlanner:
             for intent in selected_intents:
                 for profile_id in profiles:
                     for family in self._registry.query_families:
+                        if family.market_ids and market.market_id not in family.market_ids:
+                            continue
+                        if family.intents and intent.value not in family.intents:
+                            continue
                         market_binding_count += 1
                         binding = self._registry.provider_profile_binding(
                             market.market_id, profile_id, family.provider_target
@@ -201,10 +205,11 @@ class SearchPlanner:
         if not intent_terms:
             raise ValueError("query family resolved no governed vocabulary terms")
         intent_terms = tuple(dict.fromkeys(intent_terms))
-        if any("{intent_terms}" in template for template in family.templates):
+        if any("{intent_terms}" in template or "{mode_terms}" in template or "{" not in template for template in family.templates):
             # OR-group family: one request per market, language and intent,
             # written entirely in the profile's own governed vocabulary.
             mode_terms = tuple(dict.fromkeys(profile.intent_vocabulary[intent.value].get(_MODE_GROUP, ())))
+            mode_group = _or_group(mode_terms, prefix="intitle:" if family.mode_terms_in_title else "")
             if "{mode_terms}" in "".join(family.templates) and not mode_terms:
                 raise ValueError("query family resolved no governed mode terms")
             queries = []
@@ -213,7 +218,7 @@ class SearchPlanner:
                     try:
                         query = template.format(
                             market=market.display_name,
-                            mode_terms=_or_group(mode_terms),
+                            mode_terms=mode_group,
                             intent_terms=_or_group(chunk),
                         )
                     except (KeyError, IndexError, ValueError) as exc:
@@ -224,6 +229,9 @@ class SearchPlanner:
 
                 # Search engines ignore words beyond a fixed query length, so
                 # intent terms are packed into as few requests as fit.
+                if "{intent_terms}" not in template:
+                    queries.append(render(intent_terms))
+                    continue
                 chunk: list[str] = []
                 for term in intent_terms:
                     if chunk and _query_words(render(tuple(chunk + [term]))) > _MAX_QUERY_WORDS:

@@ -236,9 +236,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-11 修訂（2026-10-20～21，使用者核准）
+### RC-3～RC-12 修訂（2026-10-20～21，使用者核准）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.5 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.6 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -272,6 +272,9 @@ Transport retry 與 semantic correction 必須分開計算。
 * RC-11（§A.5）：搜尋以報告期間為範圍；每個語言版本與 intent 以該語言詞彙的 OR
   群組查詢（449 → 207 次）；Google News 連結由 EvidenceService 解析為出版者文章，
   並核對 RSS 宣告的出版者網域，只有出版者頁面可成為 Evidence。
+* RC-12（§A.6）：以 RSS 發布時間過濾期間外結果（缺時間者保留，日期有效性仍由
+  Temporal 判定）；運具詞須出現在標題、只用具體意圖詞；新增專業軌道媒體查詢；
+  搜尋計畫 207 → 122 次。
 
 ## 13. Report / Delivery
 
@@ -421,5 +424,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-11 APPLIED (2026-10-21, user-approved)
+CONTRACT_REVISION = RC-3..RC-12 APPLIED (2026-10-21, user-approved)
 ```

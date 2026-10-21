@@ -159,6 +159,17 @@ class SearchPlannerTests(unittest.TestCase):
         self.assertIn("before%3A2026-10-19", url)
         self.assertNotIn("after%3A", GoogleNewsRssProvider.request_url(unbounded.items[0]))
 
+    def test_mode_terms_are_required_in_titles_and_trade_press_is_restricted(self) -> None:
+        plan = SearchPlanner(self.production_registry).plan("selected")
+        editions = [item for item in plan.items if item.query_family_id == "urban_rail_or_groups"]
+        self.assertTrue(editions and all(item.query.startswith("(intitle:") for item in editions))
+        trade = [item for item in plan.items if item.query_family_id == "rail_trade_press"]
+        self.assertEqual({(item.market_id, item.intent.value) for item in trade}, {("united_kingdom", "technology")})
+        self.assertEqual(len(trade), 2)
+        self.assertTrue(all("site:railwaygazette.com" in item.query or "site:railwaypro.com" in item.query for item in trade))
+        self.assertTrue(all(_query_words(item.query) <= 32 for item in plan.items))
+        self.assertLess(len(plan.items), 207)
+
     def test_query_generation_is_bounded(self) -> None:
         source = copy.deepcopy(self.source)
         source["query_families"][0]["templates"] = [f"{{market}} {{anchor}} {{intent_term}} {index}" for index in range(65)]

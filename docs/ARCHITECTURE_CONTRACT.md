@@ -237,6 +237,34 @@ SEARCH_WINDOW = REPORT_PERIOD (discovery scoping only)
 GOOGLE_NEWS_LINK_RESOLUTION_OWNER = EvidenceService
 ```
 
+### A.6 RC-12 Discovery precision (2026-10-21, user-approved)
+
+P1 (`acceptance/phase_a/REPORT.md` §14) measured the v4 plan: link resolution
+succeeded for 102/102 samples, but 61% of results lay outside the period
+(the provider's date operators are largely ignored) and 6,192 candidates were
+produced, many unrelated ("Metro" newspapers, "metro area", municipal
+"Città Metropolitana"). The user approved improving precision.
+
+* Publication window: the Google News provider keeps only results whose own
+  RSS publication time can fall inside the `SearchWindow` (one day of slack for
+  time zones); a missing or unparseable timestamp is kept. This scopes
+  discovery like the date operators do and never decides date validity.
+* `urban_rail_or_groups` requires a governed mode term in the article title
+  (`mode_terms_in_title`) and uses only the specific intent groups:
+  technology/new-material terms, accident/technical-failure terms,
+  opening/service terms, and award/tender terms. Broad policy, dispute, fare,
+  disruption and generic method words are no longer discovery terms.
+* `rail_trade_press` adds two requests on the UK English edition for the
+  technology intent, restricted to specialist rail media, carrying the
+  new-technology and new-method priority. A query family may now be limited to
+  configured `market_ids` and `intents`.
+* The selected plan is 122 requests (v4: 207; v3: 449).
+
+```text
+SEARCH_CONFIGURATION_VERSION = search-discovery-v5
+DISCOVERY_PUBLICATION_WINDOW = PROVIDER_TIMESTAMP ±1 DAY (missing kept)
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -404,7 +432,7 @@ HIDDEN_TRANSPORT_RETRY = FORBIDDEN
 REDIRECT_FOLLOW_COUNT = 0
 PAGINATION = ONE_PROVIDER_REQUEST_PAGE_ONLY
 EXECUTION_CONCURRENCY = SEQUENTIAL
-SEARCH_CONFIGURATION_VERSION = search-discovery-v4
+SEARCH_CONFIGURATION_VERSION = search-discovery-v5
 PROVIDER_PROFILE_ELIGIBILITY_OWNER = RegionRegistry
 ```
 

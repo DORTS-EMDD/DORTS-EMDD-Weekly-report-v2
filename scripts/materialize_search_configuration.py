@@ -142,7 +142,7 @@ def _validate_governance_documents(registry: RegionRegistry) -> None:
         r"REDIRECT_FOLLOW_COUNT\s*=\s*0",
         r"PAGINATION\s*=\s*ONE_PROVIDER_REQUEST_PAGE_ONLY",
         r"EXECUTION_CONCURRENCY\s*=\s*SEQUENTIAL",
-        r"SEARCH_CONFIGURATION_VERSION\s*=\s*search-discovery-v4",
+        r"SEARCH_CONFIGURATION_VERSION\s*=\s*search-discovery-v5",
         r"PROVIDER_PROFILE_ELIGIBILITY_OWNER\s*=\s*RegionRegistry",
     ):
         if re.search(marker, architecture) is None:

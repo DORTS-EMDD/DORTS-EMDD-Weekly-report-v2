@@ -163,6 +163,12 @@ packing intent terms into as few requests as fit 32 words. Locality comes from
 the provider edition (`hl`/`gl`/`ceid`), not from an English market name, and
 every request is bounded to the report period.
 
+RC-12 (`search-discovery-v5`, ARCHITECTURE_CONTRACT §A.6): the governed mode
+terms must appear in the article title (`intitle:`), only the specific intent
+groups are discovery terms, results the provider dates outside the report
+period are dropped, and a two-request specialist rail-media family on the UK
+English edition carries the new-technology and new-method priority.
+
 Query families are bounded discovery composition templates governed by the
 Search Planner. They may reference urban-rail anchors, intent/action terms,
 market/operator terms, and optional technical vocabulary. Query counts,

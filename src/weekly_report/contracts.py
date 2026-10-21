@@ -1675,10 +1675,28 @@ class QueryFamilyConfig:
     vocabulary_groups: Mapping[str, tuple[str, ...]]
     provider_target: SearchProviderId | str
     anchor_terms: tuple[str, ...] = ()
+    # RC-12: optional restriction of a family to some markets and intents
+    # (empty means all), and governed mode terms required in the title.
+    market_ids: tuple[str, ...] = ()
+    intents: tuple[str, ...] = ()
+    mode_terms_in_title: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.family_id, str) or not self.family_id.strip():
             raise ValueError("query family requires family_id")
+        market_ids = tuple(self.market_ids)
+        if any(not isinstance(value, str) or not value.strip() for value in market_ids) or len(market_ids) != len(set(market_ids)):
+            raise ValueError("query family market_ids must be unique non-empty strings")
+        object.__setattr__(self, "market_ids", market_ids)
+        try:
+            intents = tuple(DiscoveryIntent(value).value for value in self.intents)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("query family intents must be discovery intents") from exc
+        if len(intents) != len(set(intents)):
+            raise ValueError("query family intents must be unique")
+        object.__setattr__(self, "intents", intents)
+        if not isinstance(self.mode_terms_in_title, bool):
+            raise TypeError("query family mode_terms_in_title must be a bool")
         templates = tuple(self.templates)
         if not templates or any(not isinstance(value, str) or not value.strip() for value in templates):
             raise ValueError("query family requires non-empty templates")

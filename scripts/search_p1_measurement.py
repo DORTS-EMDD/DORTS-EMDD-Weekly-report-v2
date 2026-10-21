@@ -91,9 +91,22 @@ def main() -> int:
         (out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
 
     # --- Search (production planner, provider, executor) -----------------
+    provider_counts = Counter()
+
     def rss_transport(url: str, timeout: float):
         budget.take("rss")
-        return rss_module._default_transport(url, timeout)
+        response = rss_module._default_transport(url, timeout)
+        # Observation only: count what the provider returned before its
+        # publication-window filter.
+        try:
+            parsed = rss_module._parse_rss(response.body if isinstance(response.body, bytes) else str(response.body).encode())
+            provider_counts["provider_items"] += len(parsed)
+            provider_counts["provider_items_in_window"] += sum(
+                1 for result in parsed if rss_module.published_within(result.published_at, window)
+            )
+        except Exception:
+            provider_counts["unparsed_responses"] += 1
+        return response
 
     registry = RegionRegistry.from_file()
     plan = SearchPlanner(registry).plan("selected", window=window)
@@ -129,6 +142,9 @@ def main() -> int:
         "raw_pubdate_outside_window": sum(1 for value in raw_dates if value and not window.start <= value <= window.end),
         "raw_pubdate_missing": sum(1 for value in raw_dates if value is None),
         "results_per_successful_request": round(len(acquisitions) / max(1, statuses.get("SUCCESS_WITH_RESULTS", 0)), 1),
+        "provider_items_before_window_filter": provider_counts["provider_items"],
+        "provider_items_kept_by_window_filter": provider_counts["provider_items_in_window"],
+        "raw_results_by_family": dict(Counter(record.plan_item.query_family_id for record in acquisitions)),
         "requests_hitting_100_cap": sum(1 for attempt in execution.attempt_results if len(attempt.results) >= 100),
     }
     save("search")
@@ -148,6 +164,21 @@ def main() -> int:
         "duplicate_title_candidates": sum(count - 1 for count in titles.values() if count > 1),
         "top_publishers": Counter(candidate.publisher for candidate in candidates).most_common(15),
     }
+    families_by_candidate = {
+        item.candidate.candidate_id: sorted({origin.record.plan_item.query_family_id for origin in item.acquisition_origins})
+        for item in normalized.normalized_candidates
+    }
+    summary["candidates"] = [
+        {
+            "candidate_id": candidate.candidate_id,
+            "intent": candidate.discovery_intent,
+            "families": families_by_candidate.get(candidate.candidate_id, []),
+            "publisher": candidate.publisher,
+            "title": candidate.title[:160],
+            "published_at": candidate.published_at,
+        }
+        for candidate in candidates
+    ]
     save("normalization")
 
     # --- Evidence sample (resolution + fetch, no semantic judge) -------------

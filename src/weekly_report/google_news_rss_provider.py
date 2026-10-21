@@ -9,7 +9,8 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from datetime import timedelta
+from datetime import timedelta, timezone
+from email.utils import parsedate_to_datetime
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -192,6 +193,26 @@ def _response_parts(value: RssTransportResponse, request_url: str) -> tuple[byte
     return (body.encode("utf-8") if isinstance(body, str) else body), status, final_url, headers
 
 
+# One day of slack on each side absorbs time-zone differences between the
+# provider's UTC timestamps and the report period.
+WINDOW_SLACK = timedelta(days=1)
+
+
+def published_within(published_at: str, window) -> bool:
+    """Whether a result's own publication time can fall inside the window.
+
+    RC-12: this only scopes discovery to the requested period, the same way
+    the provider's date operators do; a missing or unparseable timestamp is
+    kept, and Temporal remains the sole owner of date validity.
+    """
+
+    try:
+        published = parsedate_to_datetime(published_at).astimezone(timezone.utc).date()
+    except (TypeError, ValueError, IndexError):
+        return True
+    return window.start - WINDOW_SLACK <= published <= window.end + WINDOW_SLACK
+
+
 def _local_name(tag: str) -> str:
     return tag.rsplit("}", 1)[-1].casefold()
 
@@ -299,6 +320,8 @@ class GoogleNewsRssProvider(SearchProvider):
                     http_status=status,
                 )
             results = _parse_rss(body)
+            if request.search_window is not None:
+                results = tuple(result for result in results if published_within(result.published_at, request.search_window))
             if not results:
                 return SearchAttemptResult(request.plan_item_id, SearchTerminalStatus.SUCCESS_ZERO_RESULTS)
             return SearchAttemptResult(

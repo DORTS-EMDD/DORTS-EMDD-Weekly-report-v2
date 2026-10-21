@@ -91,6 +91,53 @@ class GoogleNewsLinkTests(unittest.TestCase):
         self.assertEqual((result.publisher, result.publisher_url), ("Railway Gazette", "https://www.railwaygazette.com"))
 
 
+class PublicationWindowTests(unittest.TestCase):
+    """RC-12: discovery keeps only results the provider dates inside the period."""
+
+    def test_window_uses_provider_timestamps_with_one_day_slack(self):
+        from datetime import date
+
+        from src.weekly_report.contracts import SearchWindow
+        from src.weekly_report.google_news_rss_provider import published_within
+
+        window = SearchWindow(date(2026, 10, 14), date(2026, 10, 20))
+        self.assertTrue(published_within("Wed, 15 Oct 2026 08:00:00 GMT", window))
+        self.assertTrue(published_within("Mon, 13 Oct 2026 22:00:00 GMT", window))
+        self.assertFalse(published_within("Sat, 11 Oct 2026 08:00:00 GMT", window))
+        self.assertFalse(published_within("Fri, 03 Apr 2026 08:00:00 GMT", window))
+        self.assertTrue(published_within("", window))
+        self.assertTrue(published_within("not a date", window))
+
+    def test_provider_drops_results_dated_outside_the_window(self):
+        from datetime import date
+
+        from src.weekly_report.contracts import (
+            DiscoveryIntent,
+            GoogleNewsRssEncoding,
+            RegionMode,
+            SearchPlanItem,
+            SearchProviderId,
+            SearchTerminalStatus,
+            SearchWindow,
+        )
+        from src.weekly_report.google_news_rss_provider import GoogleNewsRssProvider, RssTransportResponse
+
+        body = (
+            "<rss><channel>"
+            "<item><title>in</title><link>https://a.test/1</link><pubDate>Wed, 15 Oct 2026 08:00:00 GMT</pubDate></item>"
+            "<item><title>old</title><link>https://a.test/2</link><pubDate>Fri, 03 Apr 2026 08:00:00 GMT</pubDate></item>"
+            "</channel></rss>"
+        ).encode()
+        item = SearchPlanItem(
+            "p1", "united_kingdom", RegionMode.SELECTED, DiscoveryIntent.TECHNOLOGY, "en", "family",
+            SearchProviderId.GOOGLE_NEWS_RSS, "metro", GoogleNewsRssEncoding("en-GB", "GB", "GB:en"), "en-GB",
+            search_window=SearchWindow(date(2026, 10, 14), date(2026, 10, 20)),
+        )
+        result = GoogleNewsRssProvider(lambda url, timeout: RssTransportResponse(body)).execute(item)
+        self.assertEqual(result.status, SearchTerminalStatus.SUCCESS_WITH_RESULTS)
+        self.assertEqual([entry.title for entry in result.results], ["in"])
+
+
 class EvidenceLinkResolutionTests(unittest.TestCase):
     def _candidate(self, publisher_url="https://www.railwaygazette.com"):
         return CanonicalCandidate("C1", "Chennai Metro opens Yellow Line", LINK, "Railway Gazette", publisher_url=publisher_url)

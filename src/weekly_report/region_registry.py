@@ -22,7 +22,7 @@ from .contracts import (
 
 
 CONFIGURATION_PATH = Path(__file__).with_name("search_configuration.json")
-CONFIGURATION_VERSION = "search-discovery-v4"
+CONFIGURATION_VERSION = "search-discovery-v5"
 
 
 def _tuple_strings(value: Any, field_name: str) -> tuple[str, ...]:
@@ -131,6 +131,9 @@ class RegionRegistry:
                 anchor_terms=_tuple_strings(item.get("anchor_terms", ()), "query family anchor terms"),
                 vocabulary_groups=item.get("vocabulary_groups", {}),
                 provider_target=item.get("provider_target", ""),
+                market_ids=_tuple_strings(item.get("market_ids", ()), "query family market ids"),
+                intents=_tuple_strings(item.get("intents", ()), "query family intents"),
+                mode_terms_in_title=item.get("mode_terms_in_title", False),
             )
             for item in value.get("query_families", ())
         )
@@ -255,6 +258,9 @@ class RegionRegistry:
         family_ids = tuple(family.family_id for family in self.query_families)
         if len(family_ids) != len(set(family_ids)):
             raise ValueError("query family IDs must be unique")
+        configured_market_ids = {market.market_id for market in all_markets}
+        if any(market_id not in configured_market_ids for family in self.query_families for market_id in family.market_ids):
+            raise ValueError("query family market_ids must resolve to configured markets")
         for family in self.query_families:
             for intent in DiscoveryIntent:
                 if any(
@@ -383,6 +389,9 @@ class RegionRegistry:
                     "anchor_terms": list(family.anchor_terms),
                     "vocabulary_groups": {key: list(value) for key, value in family.vocabulary_groups.items()},
                     "provider_target": family.provider_target,
+                    **({"market_ids": list(family.market_ids)} if family.market_ids else {}),
+                    **({"intents": list(family.intents)} if family.intents else {}),
+                    **({"mode_terms_in_title": True} if family.mode_terms_in_title else {}),
                 }
                 for family in self.query_families
             ],

@@ -1,5 +1,5 @@
 {
-  "configuration_version": "search-discovery-v4",
+  "configuration_version": "search-discovery-v5",
   "region_modes": [
     "selected",
     "global"
@@ -2349,12 +2349,30 @@
       ],
       "anchor_terms": [],
       "vocabulary_groups": {
-        "technology": ["technology_terms", "new_material_terms", "new_method_terms"],
-        "major_incident": ["accident_terms", "disruption_terms", "technical_failure_terms", "safety_terms"],
-        "operations": ["policy_terms", "dispute_terms", "opening_service_terms", "fare_ticketing_terms", "operating_method_terms"],
-        "procurement": ["tender_terms", "procurement_terms", "award_terms", "contract_terms"]
+        "technology": ["technology_terms", "new_material_terms"],
+        "major_incident": ["accident_terms", "technical_failure_terms"],
+        "operations": ["opening_service_terms"],
+        "procurement": ["award_terms", "tender_terms"]
       },
-      "provider_target": "google_news_rss"
+      "provider_target": "google_news_rss",
+      "mode_terms_in_title": true
+    },
+    {
+      "family_id": "rail_trade_press",
+      "templates": [
+        "(metro OR subway OR tram OR \"light rail\" OR monorail) (site:railwaygazette.com OR site:railjournal.com OR site:railway-technology.com OR site:railway-news.com OR site:masstransitmag.com)",
+        "(metro OR subway OR tram OR \"light rail\" OR monorail) (site:globalrailwayreview.com OR site:railwaypro.com OR site:railtech.com OR site:intelligenttransport.com OR site:urban-transport-magazine.com)"
+      ],
+      "anchor_terms": [],
+      "vocabulary_groups": {
+        "technology": ["new_method_terms"],
+        "major_incident": ["accident_terms"],
+        "operations": ["opening_service_terms"],
+        "procurement": ["award_terms"]
+      },
+      "provider_target": "google_news_rss",
+      "market_ids": ["united_kingdom"],
+      "intents": ["technology"]
     }
   ],
   "planning_limits": {

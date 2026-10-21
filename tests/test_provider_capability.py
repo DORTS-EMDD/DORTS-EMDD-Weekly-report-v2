@@ -96,7 +96,7 @@ class ProviderCapabilityTests(unittest.TestCase):
 
     def test_materialized_population_is_exactly_36_with_20_supported(self) -> None:
         registry = RegionRegistry.from_mapping(self.source)
-        self.assertEqual(registry.configuration_version, "search-discovery-v4")
+        self.assertEqual(registry.configuration_version, "search-discovery-v5")
         self.assertEqual(len(registry.provider_profile_bindings), 36)
         self.assertEqual(
             sum(binding.eligibility is ProviderProfileEligibility.SUPPORTED for binding in registry.provider_profile_bindings),
