@@ -236,9 +236,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-8 修訂（2026-10-20，使用者核准）
+### RC-3～RC-10 修訂（2026-10-20～21，使用者核准）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.3。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.4 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -264,6 +264,11 @@ Transport retry 與 semantic correction 必須分開計算。
   引文內；noneligible 關係只針對焦點行動；發生於合格系統車站、月臺、列車等設施的
   事件可為 IN_SCOPE（報導價值由 Reportability 判定）；commuter／suburban／S-Bahn
   名稱不自動納入或排除，須來源支持其為都市軌道系統。
+* RC-9（§A.4）：Python 將 Evidence 切成編號句子，Scope 與 Validator 只以句子 ID
+  引用來源，不再重打原文；Scope 提案違反契約時為已揭露的技術缺口，不得當成
+  OUT_OF_SCOPE；Validator 的一次改寫重驗已接上，Writer 會收到未通過的單元。
+* RC-10（§N）：Reportability helper 必須收到契約的報導價值路徑；一般治安、醫療或
+  個人事件僅造成短暫局部服務調整者不成報。
 
 ## 13. Report / Delivery
 
@@ -413,5 +418,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-8 APPLIED (2026-10-20, user-approved)
+CONTRACT_REVISION = RC-3..RC-10 APPLIED (2026-10-21, user-approved)
 ```

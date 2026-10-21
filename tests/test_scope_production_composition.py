@@ -98,23 +98,24 @@ class _OfflineScopeProposal:
     def __call__(self, request):
         content = request.principal_content
         negative = "conventional" in content.casefold() or "intercity" in content.casefold()
-        quote = content
-        width = max(1, len(quote) // 4)
-        action_quote = quote[:width]
-        target_quote = quote[width : width * 2]
-        system_quote = quote[width * 2 : width * 3] or quote[width * 2 :]
+        ids = [sentence.sentence_id for sentence in request.principal_sentences]
+        first = request.principal_sentences[0].text
+        width = max(1, len(first) // 4)
+        action_quote = first[:width]
+        target_quote = first[width : width * 2]
+        system_quote = first[width * 2 : width * 3] or first[width * 2 :]
         return {
             "candidate_id": request.candidate_id,
             "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION,
-            "event_focus": {"status": "RESOLVED", "quote": quote},
+            "event_focus": {"status": "RESOLVED", "sentence_ids": ids},
             "action": {"label": action_quote},
             "target": {"label": target_quote},
             "system": {"label": system_quote},
             "eligible_mode_family": "NON_ELIGIBLE" if negative else "METRO",
-            "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "quote": quote},
-            "target_system": {"status": "ESTABLISHED", "relation": "BELONGS_TO", "quote": quote, "target_reference": target_quote},
-            "ambiguity": {"status": "NONE", "quote": quote},
-            "noneligible_relation": {"status": "PRESENT" if negative else "ABSENT", "quote": quote},
+            "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "sentence_ids": ids},
+            "target_system": {"status": "ESTABLISHED", "relation": "BELONGS_TO", "sentence_ids": ids},
+            "ambiguity": {"status": "NONE", "sentence_ids": []},
+            "noneligible_relation": {"status": "PRESENT" if negative else "ABSENT", "sentence_ids": ids if negative else []},
             "noneligible_kind": "NON_URBAN_RAIL" if negative else "NONE",
             "event_status": "ASSERTED",
             "decision": "OUT_OF_SCOPE_SUPPORT" if negative else "IN_SCOPE_SUPPORT",
@@ -245,24 +246,27 @@ def test_real_production_factory_offline_pairs_scope_and_temporal_without_live_i
             proposal = {"observations": []}
         elif task == "scope_semantic_proposal":
             scope_request = request["scope_request"]
-            content = scope_request["principal_content"]
+            sentences = scope_request["principal_sentences"]
+            content = " ".join(sentence["text"] for sentence in sentences)
             negative = "conventional" in content.casefold() or "intercity" in content.casefold()
-            width = max(1, len(content) // 4)
-            action_quote = content[:width]
-            target_quote = content[width : width * 2]
-            system_quote = content[width * 2 : width * 3] or content[width * 2 :]
+            ids = [sentence["sentence_id"] for sentence in sentences]
+            first = sentences[0]["text"]
+            width = max(1, len(first) // 4)
+            action_quote = first[:width]
+            target_quote = first[width : width * 2]
+            system_quote = first[width * 2 : width * 3] or first[width * 2 :]
             proposal = {
                 "candidate_id": scope_request["candidate_id"],
                 "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION,
-                "event_focus": {"status": "RESOLVED", "quote": content},
+                "event_focus": {"status": "RESOLVED", "sentence_ids": ids},
                 "action": {"label": action_quote},
                 "target": {"label": target_quote},
                 "system": {"label": system_quote},
                 "eligible_mode_family": "NON_ELIGIBLE" if negative else "METRO",
-                "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "quote": content},
-                "target_system": {"status": "ESTABLISHED", "relation": "BELONGS_TO", "quote": content, "target_reference": target_quote},
-                "ambiguity": {"status": "NONE", "quote": content},
-                "noneligible_relation": {"status": "PRESENT" if negative else "ABSENT", "quote": content},
+                "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "sentence_ids": ids},
+                "target_system": {"status": "ESTABLISHED", "relation": "BELONGS_TO", "sentence_ids": ids},
+                "ambiguity": {"status": "NONE", "sentence_ids": []},
+                "noneligible_relation": {"status": "PRESENT" if negative else "ABSENT", "sentence_ids": ids if negative else []},
                 "noneligible_kind": "NON_URBAN_RAIL" if negative else "NONE",
                 "event_status": "ASSERTED",
                 "decision": "OUT_OF_SCOPE_SUPPORT" if negative else "IN_SCOPE_SUPPORT",
@@ -310,6 +314,9 @@ def test_real_production_factory_offline_pairs_scope_and_temporal_without_live_i
 
     assert type(runner.application.scope_classifier) is ScopeClassifier
     assert getattr(runner.application.scope_classifier, "_semantic_helper") is not None
+    # Contract section Q: one Validator-directed Writer correction per event.
+    correction = getattr(runner.application.validator, "_correction_provider")
+    assert correction is not None and getattr(correction, "__name__", "") == "correct"
     assert [item.state.value for item in result.evidence_results] == [
         "EVIDENCE_READY",
         "EVIDENCE_READY",

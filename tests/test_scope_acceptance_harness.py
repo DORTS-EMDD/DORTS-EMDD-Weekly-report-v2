@@ -10,8 +10,9 @@ import pytest
 
 from scripts.scope_acceptance import capture_case, replay_artifact
 from src.weekly_report.contracts import EvidenceResult, EvidenceState, ScopeDiagnostic, ScopeState
+from src.weekly_report.evidence_sentences import segment_evidence_sentences
 from src.weekly_report.maiagent_scope_provider import MaiAgentScopeProviderFailure
-from src.weekly_report.scope_classifier import SCOPE_PROPOSAL_SCHEMA_VERSION, ScopeClassifier
+from src.weekly_report.scope_classifier import SCOPE_PROPOSAL_SCHEMA_VERSION, ScopeClassifier, ScopeProposalViolation
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -46,6 +47,10 @@ def _evidence(content: str, candidate_id: str = "C1") -> EvidenceResult:
     )
 
 
+def _ids(content: str) -> list[str]:
+    return [sentence.sentence_id for sentence in segment_evidence_sentences(content)]
+
+
 def _semantic_proposal(
     content: str,
     *,
@@ -62,18 +67,19 @@ def _semantic_proposal(
     noneligible_status: str = "ABSENT",
     noneligible_kind: str = "NONE",
 ) -> dict:
+    ids = _ids(content)
     return {
         "candidate_id": candidate_id,
         "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION,
-        "event_focus": {"status": "RESOLVED", "quote": content},
+        "event_focus": {"status": "RESOLVED", "sentence_ids": ids},
         "action": {"label": action},
         "target": {"label": target},
         "system": {"label": system},
         "eligible_mode_family": mode,
-        "action_target": {"status": action_status, "relation": action_relation, "quote": content},
-        "target_system": {"status": system_status, "relation": system_relation, "quote": content, "target_reference": target},
-        "ambiguity": {"status": "NONE", "quote": content},
-        "noneligible_relation": {"status": noneligible_status, "quote": content},
+        "action_target": {"status": action_status, "relation": action_relation, "sentence_ids": ids},
+        "target_system": {"status": system_status, "relation": system_relation, "sentence_ids": ids},
+        "ambiguity": {"status": "NONE", "sentence_ids": []},
+        "noneligible_relation": {"status": noneligible_status, "sentence_ids": ids if noneligible_status == "PRESENT" else []},
         "noneligible_kind": noneligible_kind,
         "event_status": "ASSERTED",
         "decision": decision,
@@ -91,197 +97,121 @@ def _case(content: str = POSITIVE_SOURCE, **values) -> dict:
     }
 
 
+def _classify(proposal: dict, content: str, observations: list | None = None):
+    return ScopeClassifier(lambda _request: proposal).classify(
+        _evidence(content), observation_hook=None if observations is None else observations.append
+    )
+
+
+def _violation(proposal: dict, content: str) -> str:
+    with pytest.raises(ScopeProposalViolation) as caught:
+        _classify(proposal, content)
+    return caught.value.failure_class
+
+
 def test_semantic_endpoints_support_a_real_positive_and_valid_negative():
-    positive = _semantic_proposal(POSITIVE_SOURCE)
-    result = ScopeClassifier(lambda _request: positive).classify(_evidence(POSITIVE_SOURCE))
-    assert result.state is ScopeState.IN_SCOPE
+    assert _classify(_semantic_proposal(POSITIVE_SOURCE), POSITIVE_SOURCE).state is ScopeState.IN_SCOPE
 
     negative = _semantic_proposal(
         NEGATIVE_SOURCE,
         decision="OUT_OF_SCOPE_SUPPORT",
-        action="installed",
         target="public sculptures",
         system="Metro station",
         system_relation="LOCATED_AT",
     )
-    result = ScopeClassifier(lambda _request: negative).classify(_evidence(NEGATIVE_SOURCE))
+    result = _classify(negative, NEGATIVE_SOURCE)
     assert result.state is ScopeState.OUT_OF_SCOPE
     assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
 
 
-def test_labels_anchored_in_one_relation_quote_accept_distinguishable_roles():
+def test_labels_inside_one_cited_sentence_accept_distinguishable_roles():
     source = "The operator installs platform doors on the Metro system."
-    shared_quote = "installs platform doors"
-    proposal = _semantic_proposal(
-        source,
-        action="installs",
-        target="platform doors",
-        system="Metro system",
-    )
-    proposal["action_target"]["quote"] = shared_quote
-    proposal["target_system"]["quote"] = "installs platform doors on the Metro system"
     observations = []
-
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(source), observation_hook=observations.append
-    )
-
+    result = _classify(_semantic_proposal(source, action="installs", system="Metro system"), source, observations)
     assert result.state is ScopeState.IN_SCOPE
     assert observations[0].first_rejection_predicate is None
 
 
-def test_endpoint_label_outside_its_relation_quote_is_rejected():
-    source = "The operator installs platform doors on the Metro system."
-    proposal = _semantic_proposal(
-        source,
-        action="installs",
-        target="Metro",
-        system="Metro system",
-    )
-    proposal["action_target"]["quote"] = "installs platform doors"
-    observations = []
+def test_endpoint_label_outside_its_relation_sentences_is_a_violation():
+    source = "The operator installs platform doors. The doors serve the Metro system."
+    proposal = _semantic_proposal(source, action="installs", target="Metro", system="Metro system")
+    proposal["action_target"]["sentence_ids"] = ["S1"]
+    assert _violation(proposal, source) == "ACTION_TARGET_CONTAINMENT"
 
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(source), observation_hook=observations.append
-    )
-
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "ACTION_TARGET_CONTAINMENT"
-
-    invented = _semantic_proposal(source, target="platform screens")
-    observations.clear()
-    result = ScopeClassifier(lambda _request: invented).classify(
-        _evidence(source), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "ENDPOINT_LABEL"
+    invented = _semantic_proposal(source, action="installs", target="platform screens", system="Metro system")
+    assert _violation(invented, source) == "ENDPOINT_LABEL"
 
 
-def test_uncertain_proposal_with_shared_distinguishable_quotes_remains_out_of_scope():
+def test_uncertain_proposal_remains_a_validated_out_of_scope():
     source = "合成技術公告。地下鉄事業者は駅のホームドア監視システムを導入し、試験結果と運用開始を発表した。本文は都市鉄道の地下鉄システムとその技術措置を明確に説明している。"
-    event = "地下鉄事業者は駅のホームドア監視システムを導入し"
     proposal = _semantic_proposal(
-        source,
-        decision="UNCERTAIN",
-        mode="UNKNOWN",
-        action="導入",
-        target="ホームドア監視システム",
-        system="地下鉄システム",
+        source, decision="UNCERTAIN", mode="UNKNOWN", action="導入", target="ホームドア監視システム", system="地下鉄システム"
     )
-    proposal["event_focus"] = {"status": "RESOLVED", "quote": event}
-    proposal["action_target"]["quote"] = event
-    proposal["target_system"] = {"status": "UNESTABLISHED", "relation": "UNRESOLVED", "quote": "", "target_reference": ""}
+    proposal["event_focus"]["sentence_ids"] = ["S2"]
+    proposal["action_target"]["sentence_ids"] = ["S2"]
+    proposal["target_system"] = {"status": "UNESTABLISHED", "relation": "UNRESOLVED", "sentence_ids": []}
     observations = []
-
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(source), observation_hook=observations.append
-    )
-
+    result = _classify(proposal, source, observations)
     assert result.state is ScopeState.OUT_OF_SCOPE
     assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
     assert observations[0].first_rejection_predicate is None
     assert observations[0].response_status == "OWNER_VALIDATED"
 
 
-def test_first_actual_rejection_is_recorded_for_invalid_quotes_and_candidate_identity():
-    bad_quote = _semantic_proposal(POSITIVE_SOURCE)
-    bad_quote["action_target"]["quote"] = "not present in the source"
+def test_invalid_citation_and_identity_are_violations_and_provenance_is_bounded():
+    bad = _semantic_proposal(POSITIVE_SOURCE)
+    bad["action_target"]["sentence_ids"] = ["S9"]
     observations = []
-    result = ScopeClassifier(lambda _request: bad_quote).classify(
-        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "QUOTE_NOT_FOUND"
+    with pytest.raises(ScopeProposalViolation):
+        _classify(bad, POSITIVE_SOURCE, observations)
+    assert observations[0].first_rejection_predicate == "CITATION_INVALID"
 
-    # RC-3: a repeated string is no longer rejected for repetition; the
-    # system endpoint is accepted only inside the relation quotation that
-    # establishes it, and its provenance is bounded to that context.
-    repeated_source = "The Metro operator installed platform doors on the Metro line."
-    repeated = _semantic_proposal(
-        repeated_source,
-        action="installed",
-        target="platform doors",
-        system="Metro",
-    )
-    repeated["target_system"]["quote"] = "platform doors on the Metro line"
-    observations.clear()
-    result = ScopeClassifier(lambda _request: repeated).classify(
-        _evidence(repeated_source), observation_hook=observations.append
-    )
-    assert observations[0].first_rejection_predicate is None
+    # A repeated string elsewhere is never support: the system label is
+    # recorded only inside the sentence cited by the target-system relation.
+    source = "The Metro operator won an award. It installed platform doors on the Metro line."
+    repeated = _semantic_proposal(source, system="Metro")
+    repeated["event_focus"]["sentence_ids"] = ["S2"]
+    repeated["action_target"]["sentence_ids"] = ["S2"]
+    repeated["target_system"]["sentence_ids"] = ["S2"]
+    result = _classify(repeated, source)
     assert result.state is ScopeState.IN_SCOPE
-    line_metro = repeated_source.index("Metro line")
-    assert result.provenance["relation_support"]["system"] == [
-        {"start": line_metro, "end": line_metro + len("Metro")}
-    ]
+    line_metro = source.index("Metro line")
+    assert result.provenance["relation_support"]["system"] == [{"start": line_metro, "end": line_metro + len("Metro")}]
 
-    # Repeated text cannot stitch a relation across unrelated contexts: the
-    # system endpoint must lie inside the target-system quotation.
-    stitched = _semantic_proposal(repeated_source, system="Metro operator")
-    stitched["target_system"]["quote"] = "platform doors on the Metro line"
-    observations.clear()
-    result = ScopeClassifier(lambda _request: stitched).classify(
-        _evidence(repeated_source), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "TARGET_SYSTEM_CONTAINMENT"
+    stitched = _semantic_proposal(source, system="Metro operator")
+    stitched["target_system"]["sentence_ids"] = ["S2"]
+    assert _violation(stitched, source) == "TARGET_SYSTEM_CONTAINMENT"
 
-    wrong_identity = _semantic_proposal(POSITIVE_SOURCE, candidate_id="C2")
-    observations.clear()
-    ScopeClassifier(lambda _request: wrong_identity).classify(
-        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
-    )
-    assert observations[0].first_rejection_predicate == "CANDIDATE_ID"
+    assert _violation(_semantic_proposal(POSITIVE_SOURCE, candidate_id="C2"), POSITIVE_SOURCE) == "CANDIDATE_ID"
 
 
-def test_relation_endpoint_mismatch_and_contradictory_statuses_fail_closed():
+def test_relation_endpoint_mismatch_is_a_violation_and_contradiction_stays_out():
     source = "The operator installed platform doors. The Metro line commissioned new signalling equipment."
-    mismatch = _semantic_proposal(
-        source,
-        action="installed",
-        target="platform doors",
-        system="Metro line",
-    )
-    mismatch["target_system"]["quote"] = "The Metro line commissioned new signalling equipment."
-    observations = []
-    result = ScopeClassifier(lambda _request: mismatch).classify(
-        _evidence(source), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "TARGET_SYSTEM_CONTAINMENT"
+    mismatch = _semantic_proposal(source)
+    mismatch["target_system"]["sentence_ids"] = ["S2"]
+    assert _violation(mismatch, source) == "TARGET_SYSTEM_CONTAINMENT"
 
     contradictory = _semantic_proposal(POSITIVE_SOURCE, action_status="UNESTABLISHED")
-    observations.clear()
-    result = ScopeClassifier(lambda _request: contradictory).classify(
-        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
-    )
+    observations = []
+    result = _classify(contradictory, POSITIVE_SOURCE, observations)
     assert result.state is ScopeState.OUT_OF_SCOPE
     assert observations[0].first_rejection_predicate == "POSITIVE_ACCEPTANCE_CONDITION"
 
 
-def test_status_conditional_empty_quotes_are_accepted_without_fabricated_spans():
-    proposal = _semantic_proposal(POSITIVE_SOURCE)
-    proposal["ambiguity"]["quote"] = ""
-    proposal["noneligible_relation"]["quote"] = ""
-    observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
-    )
+def test_status_conditional_empty_citations_are_accepted_without_fabricated_spans():
+    result = _classify(_semantic_proposal(POSITIVE_SOURCE), POSITIVE_SOURCE)
     assert result.state is ScopeState.IN_SCOPE
-    assert observations[0].first_rejection_predicate is None
     assert "ambiguity" not in result.provenance["relation_support"]
     assert "noneligible_relation" not in result.provenance["relation_support"]
 
 
-def test_unestablished_target_system_accepts_empty_quotes_and_fails_closed():
+def test_unestablished_target_system_accepts_empty_citation_and_stays_out():
     content = "The operator installed platform doors near an unidentified transit facility."
     proposal = _semantic_proposal(content, decision="UNCERTAIN")
     proposal["system"] = {"label": ""}
-    proposal["target_system"] = {"status": "UNESTABLISHED", "relation": "UNRESOLVED", "quote": "", "target_reference": ""}
+    proposal["target_system"] = {"status": "UNESTABLISHED", "relation": "UNRESOLVED", "sentence_ids": []}
     observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(content), observation_hook=observations.append
-    )
+    result = _classify(proposal, content, observations)
     assert result.state is ScopeState.OUT_OF_SCOPE
     assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
     assert observations[0].first_rejection_predicate is None
@@ -289,211 +219,99 @@ def test_unestablished_target_system_accepts_empty_quotes_and_fails_closed():
     assert "target_system" not in result.provenance["relation_support"]
 
 
-def test_unestablished_action_target_accepts_empty_relation_quote():
+def test_unestablished_action_target_accepts_empty_citation():
     proposal = _semantic_proposal(POSITIVE_SOURCE, decision="UNCERTAIN")
-    proposal["action_target"] = {"status": "UNESTABLISHED", "relation": "UNRESOLVED", "quote": ""}
-    observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
-    )
+    proposal["action_target"] = {"status": "UNESTABLISHED", "relation": "UNRESOLVED", "sentence_ids": []}
+    result = _classify(proposal, POSITIVE_SOURCE)
     assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate is None
     assert "action_target" not in result.provenance["relation_support"]
 
 
-def test_established_positive_target_system_requires_exact_quote():
+def test_established_relation_requires_a_citation():
     proposal = _semantic_proposal(POSITIVE_SOURCE)
-    proposal["target_system"]["quote"] = ""
-    observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "QUOTE_MISSING"
+    proposal["target_system"]["sentence_ids"] = []
+    assert _violation(proposal, POSITIVE_SOURCE) == "CITATION_MISSING"
+
+    conflicting = _semantic_proposal(POSITIVE_SOURCE, decision="UNCERTAIN")
+    conflicting["action_target"] = {"status": "CONFLICTING", "relation": "AFFECTS", "sentence_ids": []}
+    assert _violation(conflicting, POSITIVE_SOURCE) == "CITATION_MISSING"
 
 
-def test_positive_relation_with_nonexistent_quote_is_rejected():
+def test_nonempty_optional_citation_is_still_validated():
     proposal = _semantic_proposal(POSITIVE_SOURCE)
-    proposal["action_target"]["quote"] = "installed the signal doors on the Metro line"
-    observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "QUOTE_NOT_FOUND"
-
-
-def test_established_relation_with_wrong_endpoint_is_rejected():
-    content = "The operator installed platform doors. The Metro line serves the central district."
-    proposal = _semantic_proposal(
-        content,
-        action="installed",
-        target="platform doors",
-        system="Metro line",
-    )
-    proposal["target_system"]["quote"] = "The Metro line serves the central district."
-    observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(content), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "TARGET_SYSTEM_CONTAINMENT"
+    proposal["ambiguity"]["sentence_ids"] = ["S7"]
+    assert _violation(proposal, POSITIVE_SOURCE) == "CITATION_INVALID"
 
 
 def test_positive_relation_cannot_borrow_system_from_another_event():
     source = "The Metro line renewed signalling equipment. The port installed cargo monitors for harbor businesses."
-    candidate_event = "The port installed cargo monitors for harbor businesses."
-    shared_quote = "installed cargo monitors"
-    proposal = _semantic_proposal(
-        source,
-        action="installed",
-        target="cargo monitors",
-        system="Metro line",
-    )
-    proposal["event_focus"] = {"status": "RESOLVED", "quote": candidate_event}
-    proposal["action_target"]["quote"] = candidate_event
-    proposal["target_system"]["quote"] = source
-    observations = []
-
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(source), observation_hook=observations.append
-    )
-
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "EVENT_FOCUS_CONTAINMENT"
+    proposal = _semantic_proposal(source, target="cargo monitors")
+    proposal["event_focus"]["sentence_ids"] = ["S2"]
+    proposal["action_target"]["sentence_ids"] = ["S2"]
+    proposal["target_system"]["sentence_ids"] = ["S1", "S2"]
+    assert _violation(proposal, source) == "EVENT_FOCUS_CONTAINMENT"
 
 
 def test_location_only_relation_cannot_promote_scope():
-    content = "The city installed public sculptures at the Metro station for the neighboring park."
-    proposal = _semantic_proposal(
-        content,
-        decision="IN_SCOPE_SUPPORT",
-        action="installed",
-        target="public sculptures",
-        system="Metro station",
-    )
-    proposal["target_system"] = {
-        "status": "ESTABLISHED",
-        "relation": "LOCATED_AT",
-        "quote": "public sculptures at the Metro station",
-        "target_reference": "public sculptures",
-    }
-    result = ScopeClassifier(lambda _request: proposal).classify(_evidence(content))
+    proposal = _semantic_proposal(NEGATIVE_SOURCE, target="public sculptures", system="Metro station", system_relation="LOCATED_AT")
+    result = _classify(proposal, NEGATIVE_SOURCE)
     assert result.state is ScopeState.OUT_OF_SCOPE
     assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
 
 
 @pytest.mark.parametrize("relation", ["OWNED_BY", "OPERATED_BY"])
 def test_operator_or_ownership_relation_cannot_promote_scope(relation):
-    proposal = _semantic_proposal(POSITIVE_SOURCE)
-    proposal["target_system"]["relation"] = relation
-    result = ScopeClassifier(lambda _request: proposal).classify(_evidence(POSITIVE_SOURCE))
+    result = _classify(_semantic_proposal(POSITIVE_SOURCE, system_relation=relation), POSITIVE_SOURCE)
     assert result.state is ScopeState.OUT_OF_SCOPE
     assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
 
 
-def test_nonempty_optional_quote_is_still_validated():
-    proposal = _semantic_proposal(POSITIVE_SOURCE)
-    proposal["ambiguity"]["quote"] = "no ambiguity is stated here"
-    observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "QUOTE_NOT_FOUND"
-
-
-def test_conflicting_relation_requires_a_source_quotation():
-    proposal = _semantic_proposal(POSITIVE_SOURCE, decision="UNCERTAIN")
-    proposal["action_target"] = {"status": "CONFLICTING", "relation": "AFFECTS", "quote": ""}
-    observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "QUOTE_MISSING"
-
-
-def test_noneligible_diagnostic_requires_relevant_source_quote():
-    content = "The city installed public sculptures at the Metro station for the neighboring park."
+def test_noneligible_diagnostic_requires_the_focus_target_or_system():
+    source = "The city installed public sculptures at the Metro station. This serves the neighboring park."
     proposal = _semantic_proposal(
-        content,
+        source,
         decision="OUT_OF_SCOPE_SUPPORT",
         mode="NON_ELIGIBLE",
-        action="installed",
         target="public sculptures",
         system="Metro station",
         noneligible_status="PRESENT",
         noneligible_kind="NON_URBAN_RAIL",
     )
-    proposal["noneligible_relation"]["quote"] = "for the neighboring park"
-    observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(content), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
-    assert observations[0].first_rejection_predicate == "NONELIGIBLE_RELATION_ENDPOINT"
+    proposal["noneligible_relation"]["sentence_ids"] = ["S2"]
+    assert _violation(proposal, source) == "NONELIGIBLE_RELATION_ENDPOINT"
 
 
 @pytest.mark.parametrize(
     ("field", "value"),
-    [
-        ("event_status", "CONDITIONAL"),
-        ("event_status", "NEGATED"),
-        ("ambiguity.status", "CONFLICTING"),
-    ],
+    [("event_status", "CONDITIONAL"), ("event_status", "NEGATED"), ("ambiguity.status", "CONFLICTING")],
 )
-def test_conflicting_conditional_and_negated_claims_remain_fail_closed(field, value):
+def test_conflicting_conditional_and_negated_claims_remain_out_of_scope(field, value):
     proposal = _semantic_proposal(POSITIVE_SOURCE)
     if field == "ambiguity.status":
-        proposal["ambiguity"]["status"] = value
-        proposal["ambiguity"]["quote"] = "The operator installed platform doors on the Metro line."
+        proposal["ambiguity"] = {"status": value, "sentence_ids": ["S1"]}
     else:
         proposal[field] = value
     observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
-    )
+    result = _classify(proposal, POSITIVE_SOURCE, observations)
     assert result.state is ScopeState.OUT_OF_SCOPE
     assert observations[0].first_rejection_predicate == "POSITIVE_ACCEPTANCE_CONDITION"
 
 
-def test_meaningful_action_target_and_system_quotes_preserve_positive_acceptance():
-    content = "The operator fitted platform doors as a component of the Metro line."
-    proposal = {
-        "candidate_id": "C1",
-        "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION,
-        "event_focus": {"status": "RESOLVED", "quote": content},
-        "action": {"label": "fitted"},
-        "target": {"label": "platform doors"},
-        "system": {"label": "Metro line"},
-        "eligible_mode_family": "METRO",
-        "action_target": {"status": "ESTABLISHED", "relation": "AFFECTS", "quote": "fitted platform doors"},
-        "target_system": {"status": "ESTABLISHED", "relation": "PART_OF", "quote": "platform doors as a component of the Metro line", "target_reference": "platform doors"},
-        "ambiguity": {"status": "NONE", "quote": ""},
-        "noneligible_relation": {"status": "ABSENT", "quote": ""},
-        "noneligible_kind": "NONE",
-        "event_status": "ASSERTED",
-        "decision": "IN_SCOPE_SUPPORT",
-    }
-    result = ScopeClassifier(lambda _request: proposal).classify(_evidence(content))
+def test_meaningful_action_target_and_system_citations_preserve_positive_acceptance():
+    content = "The operator fitted platform doors. The platform doors are a component of the Metro line."
+    proposal = _semantic_proposal(content, action="fitted", system="Metro line", system_relation="PART_OF")
+    proposal["action_target"]["sentence_ids"] = ["S1"]
+    proposal["target_system"]["sentence_ids"] = ["S2"]
+    result = _classify(proposal, content)
     assert result.state is ScopeState.IN_SCOPE
     assert result.diagnostic is ScopeDiagnostic.NONE
 
 
 def test_existing_citation_can_pass_mechanical_checks_without_proving_semantics(capture_artifact):
-    # The quote exists, but "at the Metro station" supports location only.
-    # The current owner checks structure and relation labels, not semantic truth.
-    proposal = _semantic_proposal(
-        NEGATIVE_SOURCE,
-        action="installed",
-        target="public sculptures",
-        system="Metro station",
-        system_relation="BELONGS_TO",
-    )
-    result = ScopeClassifier(lambda _request: proposal).classify(_evidence(NEGATIVE_SOURCE))
-    assert result.state is ScopeState.IN_SCOPE
+    # The citation exists, but "at the Metro station" supports location only.
+    # The owner checks structure and relation labels, not semantic truth.
+    proposal = _semantic_proposal(NEGATIVE_SOURCE, target="public sculptures", system="Metro station", system_relation="BELONGS_TO")
+    assert _classify(proposal, NEGATIVE_SOURCE).state is ScopeState.IN_SCOPE
 
     artifact_path = capture_artifact(
         _case(NEGATIVE_SOURCE, case_id="citation-limitation"),
@@ -514,19 +332,16 @@ def test_capture_stores_complete_proposal_and_replay_makes_no_provider_call(capt
         calls.append(request)
         return proposal
 
-    artifact_path = capture_artifact(
-        _case(), provider, run_id="offline-replay", code_revision="b" * 40
-    )
+    artifact_path = capture_artifact(_case(), provider, run_id="offline-replay", code_revision="b" * 40)
     artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
-    production_result = ScopeClassifier(lambda _request: proposal).classify(_evidence(POSITIVE_SOURCE))
+    production_result = _classify(proposal, POSITIVE_SOURCE)
     assert artifact["provider_response_parse_status"] == "PARSED"
     assert artifact["provider_proposal"] == proposal
     assert artifact["provider_proposal"]["action"]["label"] == "installed"
     assert artifact["source_content"] == POSITIVE_SOURCE
     assert artifact["source_content_sha256"]
     assert artifact["first_rejection_predicate"] is None
-    assert artifact["python_scope_state"] == "IN_SCOPE"
-    assert artifact["python_scope_state"] == production_result.state.value
+    assert artifact["python_scope_state"] == production_result.state.value == "IN_SCOPE"
     assert artifact["python_scope_diagnostic"] == production_result.diagnostic.value
     assert len(calls) == 1
 
@@ -542,20 +357,19 @@ def test_capture_stores_complete_proposal_and_replay_makes_no_provider_call(capt
     assert len(calls) == 1
 
 
-def test_replay_reproduces_the_first_owner_rejection(capture_artifact):
+def test_replay_reproduces_a_proposal_violation(capture_artifact):
     proposal = _semantic_proposal(POSITIVE_SOURCE)
-    proposal["action_target"]["quote"] = "missing endpoint"
+    proposal["action_target"]["sentence_ids"] = ["S5"]
     artifact_path = capture_artifact(
-        _case(case_id="owner-rejection"),
-        lambda _request: proposal,
-        run_id="rejection-replay",
-        code_revision="c" * 40,
+        _case(case_id="owner-rejection"), lambda _request: proposal, run_id="rejection-replay", code_revision="c" * 40
     )
     artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
-    assert artifact["first_rejection_predicate"] == "QUOTE_NOT_FOUND"
+    assert artifact["first_rejection_predicate"] == "CITATION_INVALID"
+    assert artifact["python_scope_state"] == "PROPOSAL_VIOLATION"
+    assert artifact["acceptance_status"] == "PROPOSAL_CONTRACT_VIOLATION"
     replay = replay_artifact(artifact_path)
     assert replay["replay_status"] == "PASS"
-    assert replay["first_rejection_predicate"] == "QUOTE_NOT_FOUND"
+    assert replay["first_rejection_predicate"] == "CITATION_INVALID"
     assert replay["provider_call_count"] == 0
 
     artifact["candidate_title"] = "changed after capture"
@@ -566,27 +380,19 @@ def test_replay_reproduces_the_first_owner_rejection(capture_artifact):
 
 
 def test_provider_parse_failure_is_distinguished_and_safe(capture_artifact):
-    case = _case(case_id="parse-failure")
-
     def provider(_request):
-        raise MaiAgentScopeProviderFailure(
-            "MaiAgent Scope provider response was invalid", failure_category="RESPONSE_PARSE"
-        )
+        raise MaiAgentScopeProviderFailure("MaiAgent Scope provider response was invalid", failure_category="RESPONSE_PARSE")
 
-    artifact_path = capture_artifact(
-        case,
-        provider,
-        run_id="parse-status",
-        code_revision="d" * 40,
-    )
+    artifact_path = capture_artifact(_case(case_id="parse-failure"), provider, run_id="parse-status", code_revision="d" * 40)
     artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
     assert artifact["provider_response_parse_status"] == "FAILED"
     assert artifact["technical_failure_category"] == "RESPONSE_PARSE"
     assert "provider_proposal" in artifact and artifact["provider_proposal"] is None
-    assert replay_artifact(artifact_path)["provider_call_count"] == 0
-    assert replay_artifact(artifact_path)["replay_status"] == "BLOCKED"
-    assert replay_artifact(artifact_path)["provider_response_parse_status"] == "FAILED"
-    assert replay_artifact(artifact_path)["owner_replay_status"] == "NOT_REPLAYABLE"
+    replay = replay_artifact(artifact_path)
+    assert replay["provider_call_count"] == 0
+    assert replay["replay_status"] == "BLOCKED"
+    assert replay["provider_response_parse_status"] == "FAILED"
+    assert replay["owner_replay_status"] == "NOT_REPLAYABLE"
 
 
 def test_capture_blocks_secret_values_and_observation_cannot_change_decision(capture_artifact):
@@ -607,45 +413,25 @@ def test_capture_blocks_secret_values_and_observation_cannot_change_decision(cap
     assert artifact["acceptance_status"] == "CAPTURE_INCOMPLETE"
 
     proposal = _semantic_proposal(POSITIVE_SOURCE)
-    expected = ScopeClassifier(lambda _request: proposal).classify(_evidence(POSITIVE_SOURCE))
+    expected = _classify(proposal, POSITIVE_SOURCE)
 
     def broken_observer(_observation):
         raise RuntimeError("observer failure")
 
-    observed = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(POSITIVE_SOURCE), observation_hook=broken_observer
-    )
+    observed = ScopeClassifier(lambda _request: proposal).classify(_evidence(POSITIVE_SOURCE), observation_hook=broken_observer)
     assert observed == expected
 
 
 def test_target_may_be_the_eligible_system_itself():
     # SC-1: a new line or network is both the affected target and the system.
     source = "Egypt is exploring a hydrogen-powered tram network for its New Administrative Capital."
-    proposal = _semantic_proposal(
-        source,
-        mode="TRAM",
-        action="exploring",
-        target="a hydrogen-powered tram network",
-        system="a hydrogen-powered tram network",
-    )
-    proposal["action_target"]["quote"] = "Egypt is exploring a hydrogen-powered tram network"
-    proposal["target_system"]["quote"] = "a hydrogen-powered tram network"
-    observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(source), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.IN_SCOPE
-    assert observations[0].first_rejection_predicate is None
+    label = "a hydrogen-powered tram network"
+    proposal = _semantic_proposal(source, mode="TRAM", action="exploring", target=label, system=label)
+    assert _classify(proposal, source).state is ScopeState.IN_SCOPE
 
 
 def test_action_label_must_differ_from_target_label():
-    proposal = _semantic_proposal(POSITIVE_SOURCE, action="platform doors")
-    observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(POSITIVE_SOURCE), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "ENDPOINT_ROLE_DISTINCTNESS"
+    assert _violation(_semantic_proposal(POSITIVE_SOURCE, action="platform doors"), POSITIVE_SOURCE) == "ENDPOINT_ROLE_DISTINCTNESS"
 
 
 def test_event_on_a_station_platform_of_the_system_is_in_scope():
@@ -653,81 +439,50 @@ def test_event_on_a_station_platform_of_the_system_is_in_scope():
     # tied to that system; reportability is decided by Reportability.
     source = "A man died after being shot on a northbound E train platform at the Seventh Avenue-53rd Street subway station."
     proposal = _semantic_proposal(
-        source,
-        mode="SUBWAY",
-        action="shot",
-        target="northbound E train platform",
-        system="subway station",
-        action_relation="LOCATED_AT",
-        system_relation="PART_OF",
+        source, mode="SUBWAY", action="shot", target="northbound E train platform", system="subway station",
+        action_relation="LOCATED_AT", system_relation="PART_OF",
     )
-    proposal["action_target"]["quote"] = "shot on a northbound E train platform"
-    proposal["target_system"]["quote"] = "northbound E train platform at the Seventh Avenue-53rd Street subway station"
-    result = ScopeClassifier(lambda _request: proposal).classify(_evidence(source))
-    assert result.state is ScopeState.IN_SCOPE
+    assert _classify(proposal, source).state is ScopeState.IN_SCOPE
 
 
 def test_location_without_system_membership_stays_out_of_scope():
-    # D1 does not turn proximity or a located-at system relation into scope.
     proposal = _semantic_proposal(
-        NEGATIVE_SOURCE,
-        action="installed",
-        target="public sculptures",
-        system="Metro station",
-        action_relation="LOCATED_AT",
-        system_relation="LOCATED_AT",
+        NEGATIVE_SOURCE, target="public sculptures", system="Metro station",
+        action_relation="LOCATED_AT", system_relation="LOCATED_AT",
     )
-    result = ScopeClassifier(lambda _request: proposal).classify(_evidence(NEGATIVE_SOURCE))
+    result = _classify(proposal, NEGATIVE_SOURCE)
     assert result.state is ScopeState.OUT_OF_SCOPE
     assert result.diagnostic is ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
 
 
 def test_noneligible_relation_of_another_action_is_not_a_focus_relation():
     # SC-2: a bus pilot in the same article is not the focus action's
-    # noneligible relation; recording it there is an invalid proposal.
+    # noneligible relation; recording it there is a violation.
     source = "Seoul will add eight express trains on Metro Line 9. The city will also pilot four express bus routes."
     proposal = _semantic_proposal(
-        source,
-        action="add",
-        target="eight express trains",
-        system="Metro Line 9",
-        noneligible_status="PRESENT",
-        noneligible_kind="EXCLUDED_TRANSPORT_MODE",
-        mode="NON_ELIGIBLE",
-        decision="OUT_OF_SCOPE_SUPPORT",
+        source, action="add", target="eight express trains", system="Metro Line 9",
+        noneligible_status="PRESENT", noneligible_kind="EXCLUDED_TRANSPORT_MODE", mode="NON_ELIGIBLE", decision="OUT_OF_SCOPE_SUPPORT",
     )
-    proposal["noneligible_relation"]["quote"] = "The city will also pilot four express bus routes."
-    observations = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        _evidence(source), observation_hook=observations.append
-    )
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "NONELIGIBLE_RELATION_ENDPOINT"
+    proposal["noneligible_relation"]["sentence_ids"] = ["S2"]
+    assert _violation(proposal, source) == "NONELIGIBLE_RELATION_ENDPOINT"
 
-    focus_only = _semantic_proposal(
-        source, action="add", target="eight express trains", system="Metro Line 9"
-    )
-    focus_only["action_target"]["quote"] = "add eight express trains on Metro Line 9"
-    focus_only["target_system"]["quote"] = "eight express trains on Metro Line 9"
-    assert ScopeClassifier(lambda _request: focus_only).classify(_evidence(source)).state is ScopeState.IN_SCOPE
+    focus_only = _semantic_proposal(source, action="add", target="eight express trains", system="Metro Line 9")
+    focus_only["action_target"]["sentence_ids"] = ["S1"]
+    focus_only["target_system"]["sentence_ids"] = ["S1"]
+    assert _classify(focus_only, source).state is ScopeState.IN_SCOPE
 
 
 def test_endpoint_provenance_records_labels_inside_their_contexts_only():
     source = "The Metro operator installed platform doors on the Metro line."
-    proposal = _semantic_proposal(source, system="Metro")
-    proposal["action_target"]["quote"] = "installed platform doors"
-    proposal["target_system"]["quote"] = "platform doors on the Metro line"
-    result = ScopeClassifier(lambda _request: proposal).classify(_evidence(source))
+    result = _classify(_semantic_proposal(source, system="Metro line"), source)
     assert result.state is ScopeState.IN_SCOPE
     support = result.provenance["relation_support"]
     doors = source.index("platform doors")
-    assert support["action"] == [{"start": source.index("installed"), "end": source.index("installed") + len("installed")}]
     assert support["target"] == [{"start": doors, "end": doors + len("platform doors")}]
-    line_metro = source.index("Metro line")
-    assert support["system"] == [{"start": line_metro, "end": line_metro + len("Metro")}]
     assert result.provenance["endpoint_labels"] == {
-        "action": "installed", "target": "platform doors", "system": "Metro", "target_reference": "platform doors"
+        "action": "installed", "target": "platform doors", "system": "Metro line", "target_reference": "platform doors"
     }
+    assert result.provenance["cited_sentence_ids"]["target_system"] == ["S1"]
 
 
 HANOI = (
@@ -736,83 +491,50 @@ HANOI = (
 )
 
 
-def _anaphora_proposal(*, focus=HANOI, reference="The five lines", system="five metro lines"):
-    proposal = _semantic_proposal(
-        HANOI, action="build", target="five metro lines", system=system
-    )
-    proposal["event_focus"]["quote"] = focus
-    proposal["action_target"]["quote"] = "signed contracts to build five metro lines"
-    proposal["target_system"] = {
-        "status": "ESTABLISHED",
-        "relation": "PART_OF",
-        "quote": "The five lines, namely No. 1, 2, 8, 10, and 14, include depots.",
-        "target_reference": reference,
-    }
+def _anaphora_proposal(*, focus=("S1", "S2", "S3"), reference="The five lines", system="five metro lines"):
+    proposal = _semantic_proposal(HANOI, action="build", target="five metro lines", system=system, system_relation="PART_OF")
+    proposal["event_focus"]["sentence_ids"] = list(focus)
+    proposal["action_target"]["sentence_ids"] = ["S1"]
+    proposal["target_system"] = {"status": "ESTABLISHED", "relation": "PART_OF", "sentence_ids": ["S3"], "target_reference": reference}
     return proposal
 
 
 def test_same_event_reference_to_a_target_that_is_the_system_is_accepted():
     # Legitimate anaphora: the source refers back to "five metro lines" as
-    # "The five lines"; no quotation repeating the label is fabricated.
-    observations = []
-    result = ScopeClassifier(lambda _request: _anaphora_proposal()).classify(
-        _evidence(HANOI), observation_hook=observations.append
-    )
+    # "The five lines"; no citation repeating the label is required.
+    assert _ids(HANOI) == ["S1", "S2", "S3"]
+    result = _classify(_anaphora_proposal(), HANOI)
     assert result.state is ScopeState.IN_SCOPE
-    assert observations[0].first_rejection_predicate is None
     reference = HANOI.index("The five lines")
-    assert result.provenance["relation_support"]["target_reference"] == [
-        {"start": reference, "end": reference + len("The five lines")}
-    ]
+    assert result.provenance["relation_support"]["target_reference"] == [{"start": reference, "end": reference + len("The five lines")}]
 
 
-def test_reference_must_occur_in_the_quote_and_stay_in_the_event_focus():
-    absent = _anaphora_proposal(reference="the new lines")
-    observations = []
-    ScopeClassifier(lambda _request: absent).classify(_evidence(HANOI), observation_hook=observations.append)
-    assert observations[0].first_rejection_predicate == "ENDPOINT_LABEL"
-
+def test_reference_must_occur_in_the_citation_and_stay_in_the_event_focus():
+    assert _violation(_anaphora_proposal(reference="the new lines"), HANOI) == "ENDPOINT_LABEL"
     # The reference sentence lies outside the Candidate focus: no borrowing.
-    narrow = _anaphora_proposal(focus="Hanoi has signed contracts to build five metro lines totaling about 253.5 kilometers.")
-    observations.clear()
-    result = ScopeClassifier(lambda _request: narrow).classify(_evidence(HANOI), observation_hook=observations.append)
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "EVENT_FOCUS_CONTAINMENT"
-
-    # A distinct system must still be named inside the target-system quotation.
-    other_system = _anaphora_proposal(system="Hanoi")
-    observations.clear()
-    result = ScopeClassifier(lambda _request: other_system).classify(_evidence(HANOI), observation_hook=observations.append)
-    assert result.state is ScopeState.OUT_OF_SCOPE
-    assert observations[0].first_rejection_predicate == "TARGET_SYSTEM_CONTAINMENT"
+    assert _violation(_anaphora_proposal(focus=("S1",)), HANOI) == "EVENT_FOCUS_CONTAINMENT"
+    # A distinct system must still be named inside the target-system citation.
+    assert _violation(_anaphora_proposal(system="Hanoi"), HANOI) == "TARGET_SYSTEM_CONTAINMENT"
 
 
 def test_omitted_target_reference_means_the_target_label():
     proposal = _semantic_proposal(POSITIVE_SOURCE)
-    del proposal["target_system"]["target_reference"]
-    assert ScopeClassifier(lambda _request: proposal).classify(_evidence(POSITIVE_SOURCE)).state is ScopeState.IN_SCOPE
+    assert "target_reference" not in proposal["target_system"]
+    assert _classify(proposal, POSITIVE_SOURCE).state is ScopeState.IN_SCOPE
 
-    missing_label = _semantic_proposal(POSITIVE_SOURCE)
-    del missing_label["target_system"]["target_reference"]
-    missing_label["target_system"]["quote"] = "on the Metro line"
-    observations = []
-    ScopeClassifier(lambda _request: missing_label).classify(_evidence(POSITIVE_SOURCE), observation_hook=observations.append)
-    assert observations[0].first_rejection_predicate == "TARGET_SYSTEM_CONTAINMENT"
+    source = "The operator installed platform doors. They are on the Metro line."
+    missing_label = _semantic_proposal(source)
+    missing_label["target_system"]["sentence_ids"] = ["S2"]
+    assert _violation(missing_label, source) == "TARGET_SYSTEM_CONTAINMENT"
 
 
-def test_operator_service_reference_cannot_turn_buses_into_urban_rail():
+def test_operator_service_cannot_turn_buses_into_urban_rail():
     source = "The Metro operator bought new buses. The buses will serve suburban routes."
-    proposal = _semantic_proposal(
-        source, decision="IN_SCOPE_SUPPORT", action="bought", target="new buses", system="Metro operator",
-        system_relation="OPERATED_BY",
-    )
-    proposal["target_system"]["target_reference"] = "new buses"
-    result = ScopeClassifier(lambda _request: proposal).classify(_evidence(source))
-    assert result.state is ScopeState.OUT_OF_SCOPE
+    proposal = _semantic_proposal(source, action="bought", target="new buses", system="Metro operator", system_relation="OPERATED_BY")
+    proposal["target_system"]["sentence_ids"] = ["S1"]
+    assert _classify(proposal, source).state is ScopeState.OUT_OF_SCOPE
 
 
 def test_private_acceptance_directory_is_ignored_by_git():
-    from pathlib import Path
-
     ignore_lines = (Path(__file__).resolve().parents[1] / ".gitignore").read_text(encoding="utf-8").splitlines()
     assert "/.scope-acceptance-*.json" in ignore_lines

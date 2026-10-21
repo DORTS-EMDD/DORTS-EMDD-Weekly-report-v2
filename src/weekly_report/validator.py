@@ -8,16 +8,17 @@ from enum import StrEnum
 from typing import Any, Protocol
 from urllib.parse import urlparse
 
-from .exact_text import exact_occurrence_offsets
+from .evidence_sentences import EvidenceSentence, resolve_sentence_ids, segment_evidence_sentences
 from .contracts import (
     SemanticProviderConfigurationFailure,
+    ProposalContractViolation,
     SemanticProviderTechnicalFailure,
     TechnicalGap,
     TechnicalGapKind,
 )
 from .report_service import FormalReportMetadata
 from .report_workflow import ReportWorkflowResult
-from .writer import WriterReportBlock
+from .writer import WriterFailure, WriterReportBlock
 
 
 class ValidationLanguageAssessment(StrEnum):
@@ -90,15 +91,21 @@ class _ValidationProposalCitationError(ValueError):
 class ValidationEvidenceSource:
     candidate_id: str
     substantive_content: str
+    # RC-9: the helper reads and cites Python-segmented sentences.
+    sentences: tuple[EvidenceSentence, ...] = dataclass_field(init=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.candidate_id, str) or not self.candidate_id.strip():
             raise ValueError("Validation evidence source requires candidate_id")
         if not isinstance(self.substantive_content, str) or not self.substantive_content.strip():
             raise ValueError("Validation evidence source requires substantive_content")
+        object.__setattr__(self, "sentences", segment_evidence_sentences(self.substantive_content))
 
-    def as_mapping(self) -> dict[str, str]:
-        return {"candidate_id": self.candidate_id, "substantive_content": self.substantive_content}
+    def as_mapping(self) -> dict[str, object]:
+        return {
+            "candidate_id": self.candidate_id,
+            "sentences": [sentence.as_mapping() for sentence in self.sentences],
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -244,13 +251,17 @@ class ValidationSemanticRequest:
 @dataclass(frozen=True, slots=True)
 class ValidationEvidenceCitation:
     candidate_id: str
-    exact_quote: str
+    sentence_ids: tuple[str, ...]
 
     def __post_init__(self) -> None:
         if not isinstance(self.candidate_id, str) or not self.candidate_id.strip():
             raise ValueError("Validation citation requires candidate_id")
-        if not isinstance(self.exact_quote, str) or not self.exact_quote.strip():
-            raise ValueError("Validation citation requires exact_quote")
+        if isinstance(self.sentence_ids, str):
+            raise ValueError("Validation citation sentence_ids must be an array")
+        ids = tuple(self.sentence_ids)
+        if not ids or any(not isinstance(value, str) or not value.strip() for value in ids):
+            raise ValueError("Validation citation requires sentence_ids")
+        object.__setattr__(self, "sentence_ids", ids)
 
 
 @dataclass(frozen=True, slots=True)
@@ -337,13 +348,15 @@ class ValidationSemanticProposal:
                 citations: list[ValidationEvidenceCitation] = []
                 for raw_citation in raw_citations:
                     if not isinstance(raw_citation, Mapping) or set(raw_citation) != {
-                        "candidate_id", "exact_quote"
+                        "candidate_id", "sentence_ids"
                     }:
                         raise ValueError("Validation citation fields do not match the exact schema")
                     try:
+                        if not isinstance(raw_citation["sentence_ids"], (list, tuple)):
+                            raise ValueError("sentence_ids must be an array")
                         citations.append(
                             ValidationEvidenceCitation(
-                                raw_citation["candidate_id"], raw_citation["exact_quote"]
+                                raw_citation["candidate_id"], tuple(raw_citation["sentence_ids"])
                             )
                         )
                     except (TypeError, ValueError) as exc:
@@ -488,39 +501,41 @@ class Validator:
         for result, metadata, initial_block in zip(ordered_results, formal_metadata, writer_blocks, strict=True):
             self._validate_event_boundary(result, metadata, initial_block)
             block = initial_block
+            event_id = result.event_group.event_id
             try:
-                reasons = self._semantic_reasons(result, block)
+                reasons, feedback = self._semantic_assessment(result, block)
             except (SemanticProviderTechnicalFailure, ValidationStageFailure) as failure:
                 if on_event_technical_gap is None:
                     raise
-                if isinstance(failure, SemanticProviderTechnicalFailure):
-                    gap = TechnicalGap.from_failure("Validator", result.event_group.event_id, failure)
-                else:
-                    gap = TechnicalGap(
-                        "Validator",
-                        result.event_group.event_id,
-                        TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION,
-                        failure.reason.value if hasattr(failure.reason, "value") else str(failure.reason),
-                        1,
-                    )
-                on_event_technical_gap(gap)
+                on_event_technical_gap(self._technical_gap(event_id, failure))
                 continue
             corrected = False
             if reasons and self._correction_provider is not None:
                 correction_calls += 1
                 corrected = True
                 try:
-                    block = self._correction_provider(result, block, tuple(reasons))
+                    # The Writer receives the unit-level findings, so it can
+                    # remove or fix exactly the unsupported statements.
+                    block = self._correction_provider(result, block, feedback)
                     if not isinstance(block, WriterReportBlock):
                         raise TypeError("correction provider must return WriterReportBlock")
                     self._validate_event_boundary(result, metadata, block)
-                    reasons = self._semantic_reasons(result, block)
-                except ValidationStageFailure:
-                    raise
+                    reasons, _ = self._semantic_assessment(result, block)
+                except (SemanticProviderTechnicalFailure, ValidationStageFailure, ProposalContractViolation, WriterFailure) as failure:
+                    # A failed correction attempt is a technical gap for this
+                    # event only; the initial block was already bounded.
+                    if on_event_technical_gap is None:
+                        if isinstance(failure, ValidationStageFailure):
+                            raise
+                        raise ValidationStageFailure(
+                            ValidationStageFailureReason.CORRECTION_FAILURE, event_id=event_id
+                        ) from None
+                    on_event_technical_gap(self._technical_gap(event_id, failure, correction=True))
+                    continue
                 except Exception:
                     raise ValidationStageFailure(
                         ValidationStageFailureReason.CORRECTION_FAILURE,
-                        event_id=result.event_group.event_id,
+                        event_id=event_id,
                     ) from None
             if reasons:
                 failed.append(ValidationEventFailure(result.event_group.event_id, reasons, corrected))
@@ -606,20 +621,44 @@ class Validator:
             ValidationWriterProse(block.headline, block.factual_summary, block.taipei_insight),
         )
 
+    @staticmethod
+    def _technical_gap(event_id: str, failure: BaseException, *, correction: bool = False) -> TechnicalGap:
+        if isinstance(failure, SemanticProviderTechnicalFailure):
+            return TechnicalGap.from_failure("Validator", event_id, failure)
+        if isinstance(failure, ValidationStageFailure):
+            failure_class = failure.reason.value
+        else:
+            failure_class = "CORRECTION_FAILURE"
+        if correction and not failure_class.startswith("CORRECTION"):
+            failure_class = f"CORRECTION_{failure_class}"
+        return TechnicalGap("Validator", event_id, TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION, failure_class, 1)
+
     def _semantic_reasons(
         self,
         result: ReportWorkflowResult,
         block: WriterReportBlock,
     ) -> tuple[str, ...]:
+        return self._semantic_assessment(result, block)[0]
+
+    def _semantic_assessment(
+        self,
+        result: ReportWorkflowResult,
+        block: WriterReportBlock,
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        """Return the failure reasons and unit-level correction feedback."""
+
         request = self._request_for_event(result, block)
         proposal = self._call_semantic_provider(request)
         self._validate_proposal_structure(request, proposal)
         reasons: list[str] = []
+        feedback: list[str] = []
+        unit_text = {unit.unit_id: unit.text for unit in request.writer_units}
         fields = {field.field_name: field for field in proposal.field_assessments}
         for field_name in self._FIELD_NAMES:
             field = fields[field_name]
             if field.language_assessment is not ValidationLanguageAssessment.TRADITIONAL_CHINESE:
                 reasons.append(f"language_{field_name.value}")
+                feedback.append(f"{field_name.value}: language {field.language_assessment.value}; rewrite in Traditional Chinese")
             allowed = (
                 {ValidationUnitAssessment.SUPPORTED}
                 if field_name is not ValidationFieldName.TAIPEI_INSIGHT
@@ -628,12 +667,13 @@ class Validator:
             for unit in field.unit_assessments:
                 if unit.assessment not in allowed:
                     reasons.append(f"semantic_{field_name.value}_{unit.assessment.value.lower()}")
+                    feedback.append(f"{unit.unit_id} {unit.assessment.value}: {unit_text[unit.unit_id]}")
                 elif not unit.evidence_citations:
                     raise ValidationStageFailure(
                         ValidationStageFailureReason.INVALID_CITATION,
                         event_id=request.event_id,
                     )
-        return tuple(dict.fromkeys(reasons))
+        return tuple(dict.fromkeys(reasons)), tuple(dict.fromkeys(feedback))
 
     def _call_semantic_provider(self, request: ValidationSemanticRequest) -> ValidationSemanticProposal:
         self.semantic_call_count += 1
@@ -683,7 +723,7 @@ class Validator:
                 ValidationStageFailureReason.FIELD_SET_MISMATCH,
                 event_id=request.event_id,
             )
-        sources = {source.candidate_id: source.substantive_content for source in request.evidence_sources}
+        sources = {source.candidate_id: source.sentences for source in request.evidence_sources}
         expected_units = request.unit_ids_by_field()
         for field in proposal.field_assessments:
             # Python owns segmentation; the proposal must assess every
@@ -701,9 +741,9 @@ class Validator:
                             ValidationStageFailureReason.INVALID_CITATION,
                             event_id=request.event_id,
                         )
-                    # EXACT_TEXT_ALL_OCCURRENCES: an exact citation is valid
-                    # when it occurs at least once in the cited source.
-                    if not exact_occurrence_offsets(sources[citation.candidate_id], citation.exact_quote):
+                    # RC-9: a citation names Python-segmented sentences of
+                    # the cited source; unknown or repeated IDs are invalid.
+                    if resolve_sentence_ids(sources[citation.candidate_id], citation.sentence_ids) is None:
                         raise ValidationStageFailure(
                             ValidationStageFailureReason.INVALID_CITATION,
                             event_id=request.event_id,

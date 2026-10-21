@@ -90,9 +90,15 @@ class MaiAgentValidationProviderTests(unittest.TestCase):
         # RC-7: the helper references Validator unit IDs and never re-types Writer text.
         self.assertEqual(set(unit["properties"]), {"unit_id", "assessment", "evidence_citations"})
         self.assertNotIn("writer_quote", json.dumps(MAIAGENT_VALIDATION_RESPONSE_SCHEMA))
+        # RC-9: Evidence citations name Python sentence IDs, never copied text.
+        citation = unit["properties"]["evidence_citations"]["items"]
+        self.assertEqual(set(citation["properties"]), {"candidate_id", "sentence_ids"})
+        self.assertNotIn("exact_quote", json.dumps(MAIAGENT_VALIDATION_RESPONSE_SCHEMA))
         self.assertEqual((PROMPT_VERSION, SCHEMA_VERSION), (
-            "validation-evidence-writer-v2", "validation-semantic-check-proposal-v2"
+            "validation-evidence-writer-v3", "validation-semantic-check-proposal-v3"
         ))
+        source = build_maiagent_validation_model_input(_request())["validation_request"]["evidence_sources"][0]
+        self.assertEqual(source["sentences"], [{"sentence_id": "S1", "text": "Metro Taipei completed signalling testing."}])
         self.assertNotIn("offset", json.dumps(MAIAGENT_VALIDATION_RESPONSE_SCHEMA))
 
     def test_provider_makes_one_stateless_call_with_shared_helper(self):

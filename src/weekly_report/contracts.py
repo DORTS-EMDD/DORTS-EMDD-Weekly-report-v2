@@ -2299,9 +2299,10 @@ class SemanticProviderConfigurationFailure(RuntimeError):
 class ProposalContractViolation(RuntimeError):
     """Marker for a parseable helper proposal that violates its contract.
 
-    Only owners whose contract defines no fail-closed content outcome for an
-    invalid proposal (Taxonomy, Reportability, Writer, Validator) raise it.  It
-    isolates the one subject as a technical gap; it is never retried.
+    Owners raise it when a parseable proposal cannot be validated (Scope since
+    RC-9, Taxonomy, Reportability, Writer, Validator).  It isolates the one
+    subject as a disclosed technical gap, never a content decision, and it is
+    never retried.  A subclass may carry a ``failure_class`` predicate.
     """
 
 
@@ -2352,7 +2353,14 @@ class TechnicalGap:
             )
             return cls(stage, subject_id, kind, failure.failure_class, failure.attempts)
         if isinstance(failure, ProposalContractViolation):
-            return cls(stage, subject_id, TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION, "PROPOSAL_INVALID", 1)
+            failure_class = getattr(failure, "failure_class", None)
+            return cls(
+                stage,
+                subject_id,
+                TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION,
+                failure_class if isinstance(failure_class, str) and failure_class else "PROPOSAL_INVALID",
+                1,
+            )
         raise TypeError("TechnicalGap requires a technical failure or proposal violation")
 
 

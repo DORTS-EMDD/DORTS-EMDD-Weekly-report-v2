@@ -31,59 +31,49 @@ def test_scope_model_input_is_versioned_and_task_specific():
     assert payload["authoritative_response_contract"]["json_schema"] is MAIAGENT_SCOPE_RESPONSE_SCHEMA
 
 
-def test_prompt_and_schema_express_conditional_quote_obligations():
+def test_prompt_and_schema_express_conditional_citation_obligations():
     payload = build_maiagent_scope_model_input(_request())
     instructions = " ".join(payload["instructions"])
     schema = MAIAGENT_SCOPE_RESPONSE_SCHEMA["properties"]
-    # RC-8: v5 anchors endpoint labels inside relation quotations; endpoints
-    # carry no quotations of their own.
-    assert PROMPT_VERSION == "scope-event-target-system-v7"
-    assert SCOPE_PROPOSAL_SCHEMA_VERSION == "scope-semantic-proposal-v3"
-    assert "records every occurrence" in MAIAGENT_SCOPE_RESPONSE_SCHEMA["description"]
-    assert "occur exactly once" not in instructions
-    assert "Every nonempty quotation" in instructions
-    assert "LOCATED_AT, OWNED_BY, and OPERATED_BY never establish target-to-system eligibility" in instructions
+    # RC-9: citations are Python sentence IDs; no field carries copied text.
+    assert PROMPT_VERSION == "scope-event-target-system-v8"
+    assert SCOPE_PROPOSAL_SCHEMA_VERSION == "scope-semantic-proposal-v4"
+    assert payload["scope_request"]["principal_sentences"][0]["sentence_id"] == "S1"
+    assert "principal_content" not in payload["scope_request"]
+    assert "quote" not in json.dumps(MAIAGENT_SCOPE_RESPONSE_SCHEMA["required"])
+    for record in ("event_focus", "action_target", "target_system", "ambiguity", "noneligible_relation"):
+        assert "sentence_ids" in schema[record]["required"]
+        assert "quote" not in schema[record]["properties"]
     for endpoint in ("action", "target", "system"):
         assert set(schema[endpoint]["properties"]) == {"label"}
-    assert "UNRESOLVED" in schema["event_focus"]["properties"]["quote"]["description"]
-    assert "ESTABLISHED or CONFLICTING" in schema["action_target"]["properties"]["quote"]["description"]
-    assert "action and target labels" in schema["action_target"]["properties"]["quote"]["description"]
-    assert "target_reference and the system label" in schema["target_system"]["properties"]["quote"]["description"]
-    assert "same-event reference" in schema["target_system"]["properties"]["target_reference"]["description"]
-    assert "target_reference" not in MAIAGENT_SCOPE_RESPONSE_SCHEMA["properties"]["target_system"]["required"]
-    assert "NONE or UNRESOLVED" in schema["ambiguity"]["properties"]["quote"]["description"]
-    assert "focus action's own target or system" in schema["noneligible_relation"]["properties"]["quote"]["description"]
+    assert "target_reference" not in schema["target_system"]["required"]
+    assert "Cite Evidence only by sentence_id" in instructions
+    assert "Never copy, retype" in instructions
+    assert "LOCATED_AT, OWNED_BY, and OPERATED_BY never establish target-to-system eligibility" in instructions
 
 
-def test_scope_prompt_v6_states_relation_anchored_labels_and_boundary_rules():
+def test_scope_prompt_v8_states_relation_anchored_labels_and_boundary_rules():
     instructions = " ".join(SCOPE_SEMANTIC_INSTRUCTIONS)
-    # SC-1: labels anchored in relation quotations; target may equal system.
-    assert "Endpoints are labels, not quotations" in instructions
+    # SC-1: labels anchored in the cited relation sentences; target may equal system.
+    assert "Endpoints are labels" in instructions
     assert "do not translate, paraphrase, normalize" in instructions
     assert "must contain both the action label and the target label" in instructions
-    assert "must contain the target label and the system label" in instructions
-    assert "put that exact reference in target_system.target_reference" in instructions
-    assert "Uncertainty about details that leave the system unchanged" in instructions
-    assert "Never invent a quotation that repeats the target label" in instructions
+    assert "the exact referring words in target_system.target_reference" in instructions
+    assert "may be the same text when the action affects the system itself" in instructions
+    assert "Do not borrow support from a separate event" in instructions
     assert "that phrase already states membership" in instructions
     assert "is PART_OF that system" in instructions
     assert "not the contract document itself" in instructions
     assert "never become urban rail through the operator" in instructions
-    assert "may be the same text when the action affects the system itself" in instructions
-    assert "must not borrow support from a separate event" in instructions
     # SC-2: noneligible relation only for the focus action.
     assert "noneligible_relation concerns only the Candidate focus action's own target or system" in instructions
     assert "When status is ABSENT, noneligible_kind must be NONE" in instructions
-    assert "mode must be NON_ELIGIBLE" in instructions
     # D1: events on or in a facility of the system; proximity is not LOCATED_AT.
     assert "Proximity, nearby or adjacent locations are never LOCATED_AT" in instructions
     # D2: commuter/suburban/S-Bahn labels neither include nor exclude.
     assert "neither include nor exclude a system by name" in instructions
     assert "never URBAN_RAIL" in instructions
-    assert "NON_ELIGIBLE and UNKNOWN are valid" in instructions
-    assert "anaphora, demonstratives, possessives, component relationships, and cross-sentence" in instructions
-    assert "A location, operator identity alone, ownership identity, generic equipment word, or nearby station is not target-to-system membership" in instructions
-    assert "action_target ESTABLISHED even if target_system is UNESTABLISHED" in instructions
+    assert "Uncertainty about details that leave the system unchanged" in instructions
     assert "Do not force a positive proposal" in instructions
 
 

@@ -3,20 +3,26 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Callable, Protocol
 
 from .contracts import (
     EvidenceResult,
     EvidenceState,
+    ProposalContractViolation,
     ScopeDiagnostic,
     ScopeResult,
     ScopeState,
     SemanticProviderConfigurationFailure,
     SemanticProviderTechnicalFailure,
 )
-from .exact_text import exact_occurrence_offsets
+from .evidence_sentences import (
+    EvidenceSentence,
+    cited_text,
+    resolve_sentence_ids,
+    segment_evidence_sentences,
+)
 
 
 class ScopeSemanticSupport(StrEnum):
@@ -37,12 +43,17 @@ class ScopeSemanticRequest:
     candidate_title: str
     principal_content: str
     source_metadata: Mapping[str, Any]
+    # RC-9: the helper reads and cites Python-segmented sentences.
+    principal_sentences: tuple[EvidenceSentence, ...] = field(init=False)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "principal_sentences", segment_evidence_sentences(self.principal_content))
 
     def as_payload(self) -> dict[str, Any]:
         return {
             "candidate_id": self.candidate_id,
             "candidate_title": self.candidate_title,
-            "principal_content": self.principal_content,
+            "principal_sentences": [sentence.as_mapping() for sentence in self.principal_sentences],
             "source_metadata": dict(self.source_metadata),
         }
 
@@ -61,12 +72,28 @@ class ScopeSemanticResponse:
 
 @dataclass(frozen=True, slots=True)
 class ScopeValidationObservation:
-    """Read-only facts emitted from the owner's existing validation pass."""
+    """Read-only facts emitted from the owner's existing validation pass.
+
+    ``scope_state`` and ``diagnostic`` are None when the proposal violated its
+    contract: no Scope decision exists for that Candidate.
+    """
 
     first_rejection_predicate: str | None
     response_status: str
-    scope_state: ScopeState
-    diagnostic: ScopeDiagnostic
+    scope_state: ScopeState | None
+    diagnostic: ScopeDiagnostic | None
+
+
+class ScopeProposalViolation(ProposalContractViolation):
+    """RC-9: a parseable Scope proposal the owner cannot validate.
+
+    It is a disclosed Candidate TechnicalGap, never OUT_OF_SCOPE: a system or
+    helper defect must not be presented as news that failed the Scope rule.
+    """
+
+    def __init__(self, predicate: str) -> None:
+        self.failure_class = predicate
+        super().__init__(f"Scope proposal violated its contract: {predicate}")
 
 
 class ScopeSemanticHelper(Protocol):
@@ -74,29 +101,35 @@ class ScopeSemanticHelper(Protocol):
         ...
 
 
-SCOPE_PROPOSAL_SCHEMA_VERSION = "scope-semantic-proposal-v3"
+SCOPE_PROPOSAL_SCHEMA_VERSION = "scope-semantic-proposal-v4"
 SUPPORTED_SCOPE_MODE_FAMILIES = (
     "METRO", "MRT", "SUBWAY", "LIGHT_RAIL", "TRAM", "URBAN_RAIL", "AGT", "MONORAIL", "PEOPLE_MOVER"
 )
 
-_LABEL_DESCRIPTION = "Short exact source-surface substring naming the {role}; never a quotation of its own. It must appear inside the relation quotation that establishes it."
+_LABEL_DESCRIPTION = "Short exact source-surface substring naming the {role}. It must appear inside the sentences cited by the relation that establishes it."
+_SENTENCE_IDS = {"type": "array", "items": {"type": "string"}}
+
+
+def _cited(description: str) -> dict[str, Any]:
+    return {**_SENTENCE_IDS, "description": description}
+
 
 SCOPE_SEMANTIC_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "description": "RC-8: endpoints are labels anchored inside relation quotations. Every nonempty quotation must be an exact unchanged source substring of principal_content; Python records every occurrence. action and target labels must appear inside the action_target quotation; the target_reference and system label must appear inside the target_system quotation (target_reference is the target label itself or a same-event reference to it, such as 'the five lines'); both relation quotations must lie inside the event_focus quotation.",
+    "description": "RC-9: cite Evidence only by sentence_id from principal_sentences; never copy source text into a citation. action and target labels must appear inside the sentences cited by action_target; target_reference (or the target label) and the system label must appear inside the sentences cited by target_system; every relation sentence must lie within the event_focus sentence range.",
     "additionalProperties": False,
     "properties": {
         "candidate_id": {"type": "string"},
         "schema_version": {"type": "string", "enum": [SCOPE_PROPOSAL_SCHEMA_VERSION]},
-        "event_focus": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["RESOLVED", "UNRESOLVED", "CONFLICTING"]}, "quote": {"type": "string", "description": "Required as a nonempty exact source quotation for RESOLVED or CONFLICTING; empty is allowed for UNRESOLVED. Every nonempty value is validated."}}, "required": ["status", "quote"]},
+        "event_focus": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["RESOLVED", "UNRESOLVED", "CONFLICTING"]}, "sentence_ids": _cited("Required and nonempty for RESOLVED or CONFLICTING: the sentences describing the Candidate event; the focus is the range from the first to the last cited sentence. Empty for UNRESOLVED.")}, "required": ["status", "sentence_ids"]},
         "action": {"type": "object", "additionalProperties": False, "properties": {"label": {"type": "string", "description": _LABEL_DESCRIPTION.format(role="asserted action")}}, "required": ["label"]},
         "target": {"type": "object", "additionalProperties": False, "properties": {"label": {"type": "string", "description": _LABEL_DESCRIPTION.format(role="claimed affected target, or the station, platform, train or facility where the Candidate event takes place")}}, "required": ["label"]},
         "system": {"type": "object", "additionalProperties": False, "properties": {"label": {"type": "string", "description": _LABEL_DESCRIPTION.format(role="transport system") + " Empty is allowed when the system is unknown or unestablished. It may equal the target label when the action affects the system itself."}}, "required": ["label"]},
         "eligible_mode_family": {"type": "string", "enum": [*SUPPORTED_SCOPE_MODE_FAMILIES, "NON_ELIGIBLE", "UNKNOWN"]},
-        "action_target": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["ESTABLISHED", "UNESTABLISHED", "CONFLICTING"]}, "relation": {"type": "string", "enum": ["AFFECTS", "LOCATED_AT", "MENTIONS", "UNRESOLVED"]}, "quote": {"type": "string", "description": "Required as a nonempty exact source quotation when status is ESTABLISHED or CONFLICTING; empty is allowed for UNESTABLISHED. Every nonempty value is validated. An ESTABLISHED or CONFLICTING relation quotation must contain the action and target labels. LOCATED_AT means the Candidate event takes place on or in the target station, platform, train, depot or track; proximity is never LOCATED_AT."}}, "required": ["status", "relation", "quote"]},
-        "target_system": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["ESTABLISHED", "UNESTABLISHED", "CONFLICTING"]}, "relation": {"type": "string", "enum": ["BELONGS_TO", "PART_OF", "FUNCTIONS_FOR", "LOCATED_AT", "OWNED_BY", "OPERATED_BY", "UNRESOLVED"]}, "quote": {"type": "string", "description": "Required as a nonempty exact source quotation when status is ESTABLISHED or CONFLICTING; empty is allowed for UNESTABLISHED. Every nonempty value is validated. For an ESTABLISHED or CONFLICTING relation, the quotation must contain target_reference and the system label (the system label may be omitted only when it equals the target label). Only BELONGS_TO, PART_OF, and FUNCTIONS_FOR can support eligible membership."}, "target_reference": {"type": "string", "description": "Optional. The exact surface form inside this quotation that refers to the target when it differs from the target label: a same-event reference such as 'the five lines', 'the line', 'its' or '該線'. Omitted or empty means the target label itself."}}, "required": ["status", "relation", "quote"]},
-        "ambiguity": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["NONE", "UNRESOLVED", "CONFLICTING"]}, "quote": {"type": "string", "description": "Required as a nonempty exact source quotation for CONFLICTING; empty is allowed for NONE or UNRESOLVED. Every nonempty value is validated."}}, "required": ["status", "quote"]},
-        "noneligible_relation": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["ABSENT", "PRESENT", "UNRESOLVED"]}, "quote": {"type": "string", "description": "Concerns only the Candidate focus action's own target or system; other actions in the same document are never recorded here. Required as a nonempty exact source quotation for PRESENT; empty is allowed for ABSENT or UNRESOLVED. A PRESENT quotation must contain the target or system label. Every nonempty value is validated."}}, "required": ["status", "quote"]},
+        "action_target": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["ESTABLISHED", "UNESTABLISHED", "CONFLICTING"]}, "relation": {"type": "string", "enum": ["AFFECTS", "LOCATED_AT", "MENTIONS", "UNRESOLVED"]}, "sentence_ids": _cited("Required and nonempty when ESTABLISHED or CONFLICTING; empty for UNESTABLISHED. The cited sentences must contain the action and target labels. LOCATED_AT means the Candidate event takes place on or in the target station, platform, train, depot or track; proximity is never LOCATED_AT.")}, "required": ["status", "relation", "sentence_ids"]},
+        "target_system": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["ESTABLISHED", "UNESTABLISHED", "CONFLICTING"]}, "relation": {"type": "string", "enum": ["BELONGS_TO", "PART_OF", "FUNCTIONS_FOR", "LOCATED_AT", "OWNED_BY", "OPERATED_BY", "UNRESOLVED"]}, "sentence_ids": _cited("Required and nonempty when ESTABLISHED or CONFLICTING; empty for UNESTABLISHED. The cited sentences must contain target_reference (or the target label) and the system label; the system label may be absent only when it equals the target label. Only BELONGS_TO, PART_OF, and FUNCTIONS_FOR can support eligible membership."), "target_reference": {"type": "string", "description": "Optional. The exact words in the cited sentences that refer to the target when the target label itself is absent there: a same-event reference such as 'the five lines', 'This', 'the line' or '該線'. Omitted or empty means the target label itself."}}, "required": ["status", "relation", "sentence_ids"]},
+        "ambiguity": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["NONE", "UNRESOLVED", "CONFLICTING"]}, "sentence_ids": _cited("Required and nonempty for CONFLICTING; empty otherwise.")}, "required": ["status", "sentence_ids"]},
+        "noneligible_relation": {"type": "object", "additionalProperties": False, "properties": {"status": {"type": "string", "enum": ["ABSENT", "PRESENT", "UNRESOLVED"]}, "sentence_ids": _cited("Concerns only the Candidate focus action's own target or system. Required and nonempty for PRESENT and must contain the target or system label; empty otherwise.")}, "required": ["status", "sentence_ids"]},
         "noneligible_kind": {"type": "string", "enum": ["NONE", "EXCLUDED_TRANSPORT_MODE", "NON_URBAN_RAIL", "UNRESOLVED"]},
         "event_status": {"type": "string", "enum": ["ASSERTED", "NEGATED", "CONDITIONAL", "UNASSERTED"]},
         "decision": {"type": "string", "enum": ["IN_SCOPE_SUPPORT", "OUT_OF_SCOPE_SUPPORT", "UNCERTAIN"]},
@@ -110,6 +143,12 @@ _POSITIVE_ACTION_TARGET_RELATIONS = frozenset({"AFFECTS", "LOCATED_AT"})
 _POSITIVE_TARGET_SYSTEM_RELATIONS = frozenset({"BELONGS_TO", "PART_OF", "FUNCTIONS_FOR"})
 
 
+class _Violation(Exception):
+    def __init__(self, predicate: str) -> None:
+        super().__init__(predicate)
+        self.predicate = predicate
+
+
 def _strict_record(value: object, keys: tuple[str, ...]) -> Mapping[str, Any] | None:
     if not isinstance(value, Mapping) or set(value) != set(keys):
         return None
@@ -120,30 +159,12 @@ def _text(value: object) -> str | None:
     return value if isinstance(value, str) and value.strip() else None
 
 
-def _locate_quote(content: str, value: object) -> tuple[tuple[ScopeSupportSpan, ...], str | None]:
-    """Locate every exact occurrence (EXACT_TEXT_ALL_OCCURRENCES)."""
-
-    quote = _text(value)
-    if quote is None:
-        return (), "QUOTE_MISSING"
-    occurrences = exact_occurrence_offsets(content, quote)
-    if not occurrences:
-        return (), "QUOTE_NOT_FOUND"
-    return tuple(ScopeSupportSpan(start, start + len(quote)) for start in occurrences), None
+def _within(label: str, text: str) -> bool:
+    return label.casefold() in text.casefold()
 
 
-def _within_context(inner: str, context: str) -> bool:
-    """Same-context rule: an endpoint must lie inside one context quotation.
-
-    Every occurrence of ``context`` then contains an occurrence of ``inner``,
-    so a relation can never be assembled from unrelated occurrences.
-    """
-
-    return inner.casefold() in context.casefold()
-
-
-def _label_spans(content: str, contexts: tuple[ScopeSupportSpan, ...], label: str) -> tuple[ScopeSupportSpan, ...]:
-    """Record the label's occurrences inside its establishing contexts only."""
+def _label_spans(content: str, contexts: tuple[EvidenceSentence, ...], label: str) -> tuple[ScopeSupportSpan, ...]:
+    """Record the label's occurrences inside its establishing sentences only."""
 
     folded_label = label.casefold()
     found: set[tuple[int, int]] = set()
@@ -159,161 +180,156 @@ def _label_spans(content: str, contexts: tuple[ScopeSupportSpan, ...], label: st
     return tuple(ScopeSupportSpan(start, end) for start, end in sorted(found))
 
 
-def _proposal_support(
-    proposal: Mapping[str, Any],
-    request: ScopeSemanticRequest,
-    rejected_predicates: list[str] | None = None,
-):
-    """Validate the complete relation and derive coordinates locally (RC-8)."""
-    def reject(predicate: str):
-        if rejected_predicates is not None:
-            rejected_predicates.append(predicate)
-        return None
+def _proposal_support(proposal: Mapping[str, Any], request: ScopeSemanticRequest):
+    """Validate the complete relation and derive coordinates locally (RC-8/RC-9).
+
+    Raises ``_Violation`` when the proposal breaks its contract; returns the
+    owner's decision otherwise.
+    """
 
     required = {"candidate_id", "schema_version", "event_focus", "action", "target", "system", "eligible_mode_family", "action_target", "target_system", "ambiguity", "noneligible_relation", "noneligible_kind", "event_status", "decision"}
     if set(proposal) != required:
-        return reject("TOP_LEVEL_SHAPE")
+        raise _Violation("TOP_LEVEL_SHAPE")
     if proposal.get("candidate_id") != request.candidate_id:
-        return reject("CANDIDATE_ID")
+        raise _Violation("CANDIDATE_ID")
     if proposal.get("schema_version") != SCOPE_PROPOSAL_SCHEMA_VERSION:
-        return reject("SCHEMA_VERSION")
+        raise _Violation("SCHEMA_VERSION")
     mode = proposal.get("eligible_mode_family")
     if mode not in (*SUPPORTED_SCOPE_MODE_FAMILIES, "NON_ELIGIBLE", "UNKNOWN"):
-        return reject("MODE_FAMILY")
+        raise _Violation("MODE_FAMILY")
     if proposal.get("event_status") not in {"ASSERTED", "NEGATED", "CONDITIONAL", "UNASSERTED"}:
-        return reject("EVENT_STATUS")
-    if proposal.get("noneligible_kind") not in {"NONE", "EXCLUDED_TRANSPORT_MODE", "NON_URBAN_RAIL", "UNRESOLVED"}:
-        return reject("NONELIGIBLE_KIND")
+        raise _Violation("EVENT_STATUS")
+    kind = proposal.get("noneligible_kind")
+    if kind not in {"NONE", "EXCLUDED_TRANSPORT_MODE", "NON_URBAN_RAIL", "UNRESOLVED"}:
+        raise _Violation("NONELIGIBLE_KIND")
     decision = proposal.get("decision")
     if decision not in {item.value for item in ScopeSemanticSupport}:
-        return reject("DECISION_ENUM")
+        raise _Violation("DECISION_ENUM")
 
-    focus = _strict_record(proposal.get("event_focus"), ("status", "quote"))
+    focus = _strict_record(proposal.get("event_focus"), ("status", "sentence_ids"))
     action = _strict_record(proposal.get("action"), ("label",))
     target = _strict_record(proposal.get("target"), ("label",))
     system = _strict_record(proposal.get("system"), ("label",))
-    action_target = _strict_record(proposal.get("action_target"), ("status", "relation", "quote"))
+    action_target = _strict_record(proposal.get("action_target"), ("status", "relation", "sentence_ids"))
     # target_reference is optional; omitted or empty means the target label.
     raw_target_system = proposal.get("target_system")
-    target_system = _strict_record(raw_target_system, ("status", "relation", "quote", "target_reference")) or _strict_record(raw_target_system, ("status", "relation", "quote"))
-    ambiguity = _strict_record(proposal.get("ambiguity"), ("status", "quote"))
-    noneligible = _strict_record(proposal.get("noneligible_relation"), ("status", "quote"))
-    if any(item is None for item in (focus, action, target, system, action_target, target_system, ambiguity, noneligible)):
-        return reject("NESTED_RECORD_SHAPE")
-    assert focus is not None and action is not None and target is not None and system is not None
-    assert action_target is not None and target_system is not None and ambiguity is not None and noneligible is not None
+    target_system = _strict_record(raw_target_system, ("status", "relation", "sentence_ids", "target_reference")) or _strict_record(raw_target_system, ("status", "relation", "sentence_ids"))
+    ambiguity = _strict_record(proposal.get("ambiguity"), ("status", "sentence_ids"))
+    noneligible = _strict_record(proposal.get("noneligible_relation"), ("status", "sentence_ids"))
+    records = {"event_focus": focus, "action_target": action_target, "target_system": target_system, "ambiguity": ambiguity, "noneligible_relation": noneligible}
+    if any(item is None for item in (action, target, system, *records.values())):
+        raise _Violation("NESTED_RECORD_SHAPE")
+    assert action is not None and target is not None and system is not None and target_system is not None and action_target is not None
 
-    statuses = {"focus": focus["status"], "action_target": action_target["status"], "target_system": target_system["status"], "ambiguity": ambiguity["status"], "noneligible": noneligible["status"]}
-    if statuses["focus"] not in {"RESOLVED", "UNRESOLVED", "CONFLICTING"} or statuses["action_target"] not in {"ESTABLISHED", "UNESTABLISHED", "CONFLICTING"} or statuses["target_system"] not in {"ESTABLISHED", "UNESTABLISHED", "CONFLICTING"} or statuses["ambiguity"] not in {"NONE", "UNRESOLVED", "CONFLICTING"} or statuses["noneligible"] not in {"ABSENT", "PRESENT", "UNRESOLVED"}:
-        return reject("STATUS_CONSISTENCY")
+    statuses = {name: record["status"] for name, record in records.items()}  # type: ignore[index]
+    if statuses["event_focus"] not in {"RESOLVED", "UNRESOLVED", "CONFLICTING"} or statuses["action_target"] not in {"ESTABLISHED", "UNESTABLISHED", "CONFLICTING"} or statuses["target_system"] not in {"ESTABLISHED", "UNESTABLISHED", "CONFLICTING"} or statuses["ambiguity"] not in {"NONE", "UNRESOLVED", "CONFLICTING"} or statuses["noneligible_relation"] not in {"ABSENT", "PRESENT", "UNRESOLVED"}:
+        raise _Violation("STATUS_CONSISTENCY")
     if action_target["relation"] not in {"AFFECTS", "LOCATED_AT", "MENTIONS", "UNRESOLVED"} or target_system["relation"] not in {"BELONGS_TO", "PART_OF", "FUNCTIONS_FOR", "LOCATED_AT", "OWNED_BY", "OPERATED_BY", "UNRESOLVED"}:
-        return reject("RELATION_TYPE")
-    kind = proposal["noneligible_kind"]
+        raise _Violation("RELATION_TYPE")
     action_target_claimed = statuses["action_target"] in {"ESTABLISHED", "CONFLICTING"}
     target_system_claimed = statuses["target_system"] in {"ESTABLISHED", "CONFLICTING"}
-
-    content = request.principal_content
-    quote_required = {
-        "event_focus": statuses["focus"] in {"RESOLVED", "CONFLICTING"},
+    citation_required = {
+        "event_focus": statuses["event_focus"] in {"RESOLVED", "CONFLICTING"},
         "action_target": action_target_claimed,
         "target_system": target_system_claimed,
         "ambiguity": statuses["ambiguity"] == "CONFLICTING",
-        "noneligible_relation": statuses["noneligible"] == "PRESENT",
+        "noneligible_relation": statuses["noneligible_relation"] == "PRESENT",
     }
-    spans: dict[str, tuple[ScopeSupportSpan, ...]] = {}
-    quotes: dict[str, str] = {}
-    records = (("event_focus", focus), ("action_target", action_target), ("target_system", target_system), ("ambiguity", ambiguity), ("noneligible_relation", noneligible))
-    for name, record in records:
-        quote = record["quote"]
-        if quote == "" and not quote_required[name]:
+
+    # RC-9: citations are sentence IDs produced by Python segmentation.
+    sentences = request.principal_sentences
+    cited: dict[str, tuple[EvidenceSentence, ...]] = {}
+    for name, record in records.items():
+        ids = record["sentence_ids"]  # type: ignore[index]
+        if not isinstance(ids, (list, tuple)):
+            raise _Violation("NESTED_RECORD_SHAPE")
+        if not ids:
+            if citation_required[name]:
+                raise _Violation("CITATION_MISSING")
             continue
-        located, quote_failure = _locate_quote(content, quote)
-        if not located:
-            return reject(quote_failure or "QUOTE_NOT_FOUND")
-        spans[name] = located
-        quotes[name] = quote
+        resolved = resolve_sentence_ids(sentences, ids)
+        if resolved is None:
+            raise _Violation("CITATION_INVALID")
+        cited[name] = resolved
 
-    if statuses["noneligible"] == "ABSENT" and kind != "NONE":
-        return reject("NONELIGIBLE_CONSISTENCY")
-    if statuses["noneligible"] == "PRESENT" and (mode != "NON_ELIGIBLE" or kind not in {"EXCLUDED_TRANSPORT_MODE", "NON_URBAN_RAIL"}):
-        return reject("NONELIGIBLE_CONSISTENCY")
+    if statuses["noneligible_relation"] == "ABSENT" and kind != "NONE":
+        raise _Violation("NONELIGIBLE_CONSISTENCY")
+    if statuses["noneligible_relation"] == "PRESENT" and (mode in SUPPORTED_SCOPE_MODE_FAMILIES or kind not in {"EXCLUDED_TRANSPORT_MODE", "NON_URBAN_RAIL"}):
+        raise _Violation("NONELIGIBLE_CONSISTENCY")
 
+    content = request.principal_content
     labels = {"action": _text(action["label"]), "target": _text(target["label"]), "system": _text(system["label"]), "target_reference": _text(target_system.get("target_reference"))}
     if labels["target_reference"] is None and target_system_claimed:
         labels["target_reference"] = labels["target"]
     if labels["action"] is None or labels["target"] is None or (target_system_claimed and labels["system"] is None):
-        return reject("ENDPOINT_LABEL")
+        raise _Violation("ENDPOINT_LABEL")
     # A label not anchored by a claimed relation asserts nothing, but it must
     # still be source text.
-    for role, label in labels.items():
-        if label is not None and label.casefold() not in content.casefold():
-            return reject("ENDPOINT_LABEL")
-    action_label, target_label, system_label = labels["action"], labels["target"], labels["system"]
-    target_reference = labels["target_reference"]
+    for label in labels.values():
+        if label is not None and not _within(label, content):
+            raise _Violation("ENDPOINT_LABEL")
+    action_label, target_label, system_label, target_reference = labels["action"], labels["target"], labels["system"], labels["target_reference"]
     # The action must be distinguishable from what it acts on.  Target and
     # system may name the same entity when the action affects the system itself.
     if any(value is not None and action_label.casefold() == value.casefold() for value in (target_label, system_label, target_reference)):
-        return reject("ENDPOINT_ROLE_DISTINCTNESS")
+        raise _Violation("ENDPOINT_ROLE_DISTINCTNESS")
 
-    # Same-context rule: each endpoint label must lie inside the relation
-    # quotation that establishes it.
+    # Same-context rule: each endpoint label lies inside the sentences cited
+    # by the relation that establishes it.
     if action_target_claimed:
-        if not _within_context(action_label, quotes["action_target"]) or not _within_context(target_label, quotes["action_target"]):
-            return reject("ACTION_TARGET_CONTAINMENT")
+        text = cited_text(cited["action_target"])
+        if not _within(action_label, text) or not _within(target_label, text):
+            raise _Violation("ACTION_TARGET_CONTAINMENT")
     if target_system_claimed:
-        # The target may be referred to by a same-event reference (anaphora,
-        # demonstrative, possessive) inside the target-system quotation; a
-        # system that is the target itself needs no second mention.
+        text = cited_text(cited["target_system"])
         identity = system_label.casefold() == target_label.casefold()
-        if not _within_context(target_reference, quotes["target_system"]) or not (identity or _within_context(system_label, quotes["target_system"])):
-            return reject("TARGET_SYSTEM_CONTAINMENT")
+        if not _within(target_reference, text) or not (identity or _within(system_label, text)):
+            raise _Violation("TARGET_SYSTEM_CONTAINMENT")
         # A reference other than the target label is bounded to the Candidate
-        # event: both relation quotations must lie inside a resolved focus.
-        if target_reference.casefold() != target_label.casefold() and statuses["focus"] != "RESOLVED":
-            return reject("TARGET_REFERENCE_CONTEXT")
+        # event: both relations must lie inside a resolved focus.
+        if target_reference.casefold() != target_label.casefold() and statuses["event_focus"] != "RESOLVED":
+            raise _Violation("TARGET_REFERENCE_CONTEXT")
 
-    focus_text = quotes.get("event_focus")
-    if focus_text is not None and statuses["focus"] == "RESOLVED":
-        for name in ("action_target", "target_system"):
-            if name in quotes and quote_required[name] and quotes[name] not in focus_text:
-                return reject("EVENT_FOCUS_CONTAINMENT")
+    if statuses["event_focus"] == "RESOLVED":
+        focus_sentences = cited["event_focus"]
+        first, last = focus_sentences[0].start, focus_sentences[-1].end
+        for name in ("action_target", "target_system", "noneligible_relation"):
+            if name in cited and any(sentence.start < first or sentence.end > last for sentence in cited[name]):
+                raise _Violation("NONELIGIBLE_EVENT_FOCUS" if name == "noneligible_relation" else "EVENT_FOCUS_CONTAINMENT")
 
-    if statuses["noneligible"] == "PRESENT":
+    if statuses["noneligible_relation"] == "PRESENT":
         # SC-2: the noneligible relation concerns only the focus action's own
         # target or system.
-        noneligible_text = quotes["noneligible_relation"]
+        text = cited_text(cited["noneligible_relation"])
         endpoints = [target_label] + ([system_label] if system_label is not None else [])
-        if not any(_within_context(label, noneligible_text) for label in endpoints):
-            return reject("NONELIGIBLE_RELATION_ENDPOINT")
-        if focus_text is not None and statuses["focus"] == "RESOLVED":
-            if noneligible_text not in focus_text:
-                return reject("NONELIGIBLE_EVENT_FOCUS")
+        if not any(_within(label, text) for label in endpoints):
+            raise _Violation("NONELIGIBLE_RELATION_ENDPOINT")
 
-    positive = (decision == ScopeSemanticSupport.IN_SCOPE_SUPPORT.value and statuses["focus"] == "RESOLVED" and proposal["event_status"] == "ASSERTED" and statuses["action_target"] == "ESTABLISHED" and action_target["relation"] in _POSITIVE_ACTION_TARGET_RELATIONS and statuses["target_system"] == "ESTABLISHED" and target_system["relation"] in _POSITIVE_TARGET_SYSTEM_RELATIONS and statuses["ambiguity"] == "NONE" and statuses["noneligible"] == "ABSENT" and mode in SUPPORTED_SCOPE_MODE_FAMILIES)
-    if decision == ScopeSemanticSupport.IN_SCOPE_SUPPORT.value and not positive:
-        reject("POSITIVE_ACCEPTANCE_CONDITION")
+    positive = (decision == ScopeSemanticSupport.IN_SCOPE_SUPPORT.value and statuses["event_focus"] == "RESOLVED" and proposal["event_status"] == "ASSERTED" and statuses["action_target"] == "ESTABLISHED" and action_target["relation"] in _POSITIVE_ACTION_TARGET_RELATIONS and statuses["target_system"] == "ESTABLISHED" and target_system["relation"] in _POSITIVE_TARGET_SYSTEM_RELATIONS and statuses["ambiguity"] == "NONE" and statuses["noneligible_relation"] == "ABSENT" and mode in SUPPORTED_SCOPE_MODE_FAMILIES)
+    # A well-formed proposal whose own relations do not establish an eligible
+    # relation is a legitimate owner decision, not a violation.
+    first_rejection = "POSITIVE_ACCEPTANCE_CONDITION" if decision == ScopeSemanticSupport.IN_SCOPE_SUPPORT.value and not positive else None
     support = ScopeSemanticSupport.IN_SCOPE_SUPPORT if positive else ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT
     diagnostic = ScopeDiagnostic.NONE if positive else ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
-    if not positive and decision == ScopeSemanticSupport.OUT_OF_SCOPE_SUPPORT.value and mode == "NON_ELIGIBLE" and statuses["noneligible"] == "PRESENT" and statuses["focus"] == "RESOLVED" and proposal["event_status"] == "ASSERTED":
-        diagnostic = ScopeDiagnostic(proposal["noneligible_kind"]) if proposal["noneligible_kind"] in {item.value for item in ScopeDiagnostic} else ScopeDiagnostic.SCOPE_NOT_ESTABLISHED
+    if not positive and statuses["noneligible_relation"] == "PRESENT" and statuses["event_focus"] == "RESOLVED" and proposal["event_status"] == "ASSERTED":
+        diagnostic = ScopeDiagnostic(kind)
 
-    # Endpoint provenance is bounded by the quotation that establishes it:
-    # only label occurrences inside that context are recorded, so a repeated
-    # string elsewhere in the source never appears as support.
     relation_support = {
-        role: [{"start": span.start, "end": span.end} for span in located]
-        for role, located in spans.items()
+        name: [{"start": sentence.start, "end": sentence.end} for sentence in located]
+        for name, located in cited.items()
     }
     endpoint_contexts = {
-        "action": spans.get("action_target", ()) if action_target_claimed else (),
-        "target": spans.get("action_target", ()) if action_target_claimed else (),
-        "target_reference": spans.get("target_system", ()) if target_system_claimed else (),
-        "system": spans.get("target_system", ()) if target_system_claimed else (),
+        "action": cited.get("action_target", ()) if action_target_claimed else (),
+        "target": cited.get("action_target", ()) if action_target_claimed else (),
+        "target_reference": cited.get("target_system", ()) if target_system_claimed else (),
+        "system": cited.get("target_system", ()) if target_system_claimed else (),
     }
     for role, contexts in endpoint_contexts.items():
         if contexts and labels[role] is not None:
             relation_support[role] = [{"start": span.start, "end": span.end} for span in _label_spans(content, contexts, labels[role])]
-    return support, diagnostic, {"decision_basis": "scope_semantic_proposal", "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION, "candidate_event_focus": relation_support.get("event_focus"), "eligible_mode_family": mode, "action_target_relation": action_target["relation"], "target_system_relation": target_system["relation"], "endpoint_labels": dict(labels), "relation_support": relation_support}
+    cited_ids = {name: [sentence.sentence_id for sentence in located] for name, located in cited.items()}
+    provenance = {"decision_basis": "scope_semantic_proposal", "schema_version": SCOPE_PROPOSAL_SCHEMA_VERSION, "candidate_event_focus": relation_support.get("event_focus"), "eligible_mode_family": mode, "action_target_relation": action_target["relation"], "target_system_relation": target_system["relation"], "endpoint_labels": dict(labels), "cited_sentence_ids": cited_ids, "relation_support": relation_support}
+    return support, diagnostic, provenance, first_rejection
 
 
 def _coerce_response(value: object) -> ScopeSemanticResponse | None:
@@ -339,7 +355,7 @@ class ScopeClassifier:
         candidate_title: str = "",
         observation_hook: Callable[[ScopeValidationObservation], None] | None = None,
     ) -> ScopeResult:
-        def observe(result: ScopeResult, first_rejection: str | None, response_status: str) -> None:
+        def observe(result: ScopeResult | None, first_rejection: str | None, response_status: str) -> None:
             if observation_hook is None:
                 return
             try:
@@ -347,13 +363,17 @@ class ScopeClassifier:
                     ScopeValidationObservation(
                         first_rejection,
                         response_status,
-                        result.state,
-                        result.diagnostic,
+                        None if result is None else result.state,
+                        None if result is None else result.diagnostic,
                     )
                 )
             except Exception:
                 # Observation cannot change the owner's decision or failure behavior.
                 return
+
+        def violation(predicate: str) -> ScopeProposalViolation:
+            observe(None, predicate, "PROPOSAL_VIOLATION")
+            return ScopeProposalViolation(predicate)
 
         if evidence.state is not EvidenceState.READY:
             raise ValueError("ScopeClassifier requires EVIDENCE_READY evidence")
@@ -367,32 +387,20 @@ class ScopeClassifier:
         except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure):
             # RC-6: a technical failure is not OUT_OF_SCOPE.
             raise
-        except Exception as exc:
-            result = self._out_of_scope(evidence.candidate_id, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED, {"decision_basis": "scope_semantic_proposal", "helper_error": type(exc).__name__})
-            observe(result, None, "PROVIDER_FAILURE")
-            return result
-        if response is None or response.proposal is None:
-            result = self._out_of_scope(evidence.candidate_id, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED, {"decision_basis": "scope_semantic_proposal", "helper_response": "invalid"})
-            observe(result, "PROPOSAL_MISSING", "INVALID_RESPONSE")
-            return result
-        rejected_predicates: list[str] | None = [] if observation_hook is not None else None
-        try:
-            accepted = _proposal_support(response.proposal, request, rejected_predicates)
         except Exception:
-            accepted = None
-            if rejected_predicates is not None:
-                rejected_predicates.append("VALIDATOR_EXCEPTION")
-        first_rejection = rejected_predicates[0] if rejected_predicates else None
-        if accepted is None:
-            result = self._out_of_scope(evidence.candidate_id, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED, {"decision_basis": "scope_semantic_proposal", "proposal": "rejected"})
-            observe(result, first_rejection, "OWNER_REJECTED")
-            return result
-        support, diagnostic, provenance = accepted
+            raise violation("PROVIDER_FAILURE") from None
+        if response is None or response.proposal is None:
+            raise violation("PROPOSAL_MISSING")
+        try:
+            support, diagnostic, provenance, first_rejection = _proposal_support(response.proposal, request)
+        except _Violation as rejected:
+            raise violation(rejected.predicate) from None
+        except Exception:
+            raise violation("VALIDATOR_EXCEPTION") from None
         if support is ScopeSemanticSupport.IN_SCOPE_SUPPORT:
             result = ScopeResult(candidate_id=evidence.candidate_id, state=ScopeState.IN_SCOPE, provenance=provenance)
-            observe(result, first_rejection, "OWNER_VALIDATED")
-            return result
-        result = self._out_of_scope(evidence.candidate_id, diagnostic, provenance)
+        else:
+            result = self._out_of_scope(evidence.candidate_id, diagnostic, provenance)
         observe(result, first_rejection, "OWNER_VALIDATED")
         return result
 
@@ -403,4 +411,4 @@ class ScopeClassifier:
         return ScopeResult(candidate_id=candidate_id, state=ScopeState.OUT_OF_SCOPE, diagnostic=diagnostic, provenance=dict(provenance))
 
 
-__all__ = ["SCOPE_PROPOSAL_SCHEMA_VERSION", "SCOPE_SEMANTIC_RESPONSE_SCHEMA", "SUPPORTED_SCOPE_MODE_FAMILIES", "ScopeClassifier", "ScopeSemanticHelper", "ScopeSemanticRequest", "ScopeSemanticResponse", "ScopeSemanticSupport", "ScopeSupportSpan", "ScopeValidationObservation"]
+__all__ = ["SCOPE_PROPOSAL_SCHEMA_VERSION", "SCOPE_SEMANTIC_RESPONSE_SCHEMA", "SUPPORTED_SCOPE_MODE_FAMILIES", "ScopeClassifier", "ScopeProposalViolation", "ScopeSemanticHelper", "ScopeSemanticRequest", "ScopeSemanticResponse", "ScopeSemanticSupport", "ScopeSupportSpan", "ScopeValidationObservation"]

@@ -423,6 +423,11 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--replay-from", help="summary.json of a live run; replays its HTML and MaiAgent responses offline")
     parser.add_argument("--replay-scratch", help="scratch dir of the replayed live run")
+    parser.add_argument(
+        "--live-maiagent",
+        action="store_true",
+        help="with --replay-from: replay only the archived HTML (no Evidence HTTP) and call MaiAgent live",
+    )
     parser.add_argument("--http-budget", type=int, default=80)
     parser.add_argument("--maiagent-budget", type=int, default=160)
     parser.add_argument("--seconds", type=int, default=45 * 60)
@@ -438,9 +443,10 @@ def main() -> int:
 
     replay_summary = None
     if args.replay_from:
-        args.dry_run = True
         replay_summary = json.loads(Path(args.replay_from).read_text(encoding="utf-8"))
-        record_owner_outputs()
+        if not args.live_maiagent:
+            args.dry_run = True
+            record_owner_outputs()
     if args.dry_run:
         block_network()
     # Search must never reach the network in this harness.
@@ -451,7 +457,9 @@ def main() -> int:
     if replay_summary is not None:
         source = Path(args.replay_scratch)
         real_fetch = ReplayFetcher(replay_summary, source / "raw", slot_by_url)
-        inner_maiagent = ReplayMaiAgent(replay_summary, source / "maiagent")
+        inner_maiagent = (
+            UrllibMaiAgentJsonTransport() if args.live_maiagent else ReplayMaiAgent(replay_summary, source / "maiagent")
+        )
     else:
         real_fetch = fake_fetcher if args.dry_run else evidence_module._default_fetcher
         inner_maiagent = fake_maiagent if args.dry_run else UrllibMaiAgentJsonTransport()

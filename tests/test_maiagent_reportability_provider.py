@@ -321,5 +321,21 @@ class MaiAgentReportabilityProviderTests(unittest.TestCase):
         self.assertEqual(len(transport.calls), 1)
 
 
+class ReportabilityCriteriaTests(unittest.TestCase):
+    """RC-10: the contract's accepted value paths reach the helper."""
+
+    def test_instructions_carry_the_contract_value_paths_and_incident_boundary(self):
+        from src.weekly_report.maiagent_reportability_provider import PROMPT_VERSION, REPORTABILITY_INSTRUCTIONS
+
+        instructions = " ".join(REPORTABILITY_INSTRUCTIONS)
+        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v2")
+        self.assertIn("Accepted value paths", instructions)
+        self.assertIn("substantive technical research, testing, pilots or deployments", instructions)
+        self.assertIn("procurement, demonstration or trial activity", instructions)
+        self.assertIn("An ordinary crime, assault, medical or personal incident", instructions)
+        self.assertIn("Relevance to Taipei alone never makes an event REPORTABLE", instructions)
+        self.assertIn("No path requires novelty", instructions)
+
+
 if __name__ == "__main__":
     unittest.main()

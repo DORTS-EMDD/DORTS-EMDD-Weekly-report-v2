@@ -47,7 +47,7 @@ def _proposal(request, *, assessment_overrides=None, language_overrides=None):
                             unit_id, assessment_overrides.get(name, default)
                         ),
                         "evidence_citations": [
-                            {"candidate_id": source.candidate_id, "exact_quote": source.substantive_content}
+                            {"candidate_id": source.candidate_id, "sentence_ids": [source.sentences[0].sentence_id]}
                         ],
                     }
                     for unit_id in unit_ids
@@ -113,7 +113,7 @@ class ValidatorTests(TestCase):
 
         def provider(request):
             proposal = _proposal(request)
-            proposal["field_assessments"][0]["unit_assessments"][0]["evidence_citations"][0]["exact_quote"] = "missing"
+            proposal["field_assessments"][0]["unit_assessments"][0]["evidence_citations"][0]["sentence_ids"] = ["S99"]
             return proposal
 
         with self.assertRaises(ValidationStageFailure) as context:
@@ -171,6 +171,58 @@ class ValidatorTests(TestCase):
             ).validate((result,), (_metadata(result),), (_block(),))
         self.assertEqual(context.exception.reason, ValidationStageFailureReason.PROVIDER_FAILURE)
         self.assertEqual(corrections, [])
+
+
+class CorrectionTests(TestCase):
+    """The single correction receives unit-level findings and stays event-local."""
+
+    _SUMMARY = "Metro 完成測試。Metro 將於明年通車。"
+
+    def test_correction_receives_the_unsupported_unit_text(self):
+        result = _workflow_result("E1")
+        received = []
+
+        def provider(request):
+            if request.writer_prose.factual_summary == self._SUMMARY:
+                return _proposal(request, assessment_overrides={"factual_summary-2": "UNSUPPORTED"})
+            return _proposal(request)
+
+        def correction(upstream, block, feedback):
+            received.append(feedback)
+            return _block("E1", summary="Metro 完成測試。")
+
+        validation = Validator(correction_provider=correction, semantic_provider=provider).validate(
+            (result,), (_metadata(result),), (_block(summary=self._SUMMARY),)
+        )
+        self.assertEqual(validation.pass_count, 1)
+        self.assertEqual(received, [("factual_summary-2 UNSUPPORTED: Metro 將於明年通車。",)])
+
+    def test_correction_technical_failure_is_an_event_gap_in_the_formal_run(self):
+        from src.weekly_report.contracts import SemanticProviderTechnicalFailure
+
+        result = _workflow_result("E1")
+        gaps = []
+
+        def correction(*_args):
+            raise SemanticProviderTechnicalFailure("TIMEOUT", attempts=2, transient=True)
+
+        provider = lambda request: _proposal(request, assessment_overrides={"factual_summary": "UNSUPPORTED"})
+        validation = Validator(correction_provider=correction, semantic_provider=provider).validate(
+            (result,), (_metadata(result),), (_block(summary=self._SUMMARY),), on_event_technical_gap=gaps.append
+        )
+        self.assertEqual((validation.pass_count, len(validation.failed)), (0, 0))
+        self.assertEqual([gap.failure_class for gap in gaps], ["TIMEOUT"])
+
+    def test_untyped_correction_defect_still_aborts(self):
+        # A correction provider returning a non-block is a programming defect,
+        # not an event-level technical gap.
+        result = _workflow_result("E1")
+        provider = lambda request: _proposal(request, assessment_overrides={"factual_summary": "UNSUPPORTED"})
+        with self.assertRaises(ValidationStageFailure) as context:
+            Validator(correction_provider=lambda *_args: "not a block", semantic_provider=provider).validate(
+                (result,), (_metadata(result),), (_block(summary=self._SUMMARY),), on_event_technical_gap=lambda _gap: None
+            )
+        self.assertEqual(context.exception.reason, ValidationStageFailureReason.CORRECTION_FAILURE)
 
 
 class WriterSegmentationTests(TestCase):

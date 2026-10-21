@@ -285,13 +285,15 @@ relationship, event negation/conditions, and a proposal decision
 ```
 
 The `scope_semantic_proposal` task is proposal-only. Every material positive
-relationship must carry an exact quotation from the supplied principal
-content. ScopeClassifier validates the candidate identity, versioned strict
-shape, relationship endpoints, event focus, same-document quotations, and
-mechanically derives any coordinates. Under RC-3 (ARCHITECTURE_CONTRACT §A.1)
-a quotation is located at every exact occurrence and none is selected.
+relationship must cite the supplied principal content. Since RC-9
+(ARCHITECTURE_CONTRACT §A.4) the helper receives the content as Python-segmented
+sentences and cites only sentence IDs; "quotation" below means the cited
+sentences. ScopeClassifier validates the candidate identity, versioned strict
+shape, relationship endpoints, event focus, citations, and mechanically derives
+every coordinate. The event focus is the range from its first to its last cited
+sentence; every relation sentence must lie inside it.
 
-RC-8 (ARCHITECTURE_CONTRACT §A.3), schema `scope-semantic-proposal-v3`:
+RC-8 (ARCHITECTURE_CONTRACT §A.3), schema `scope-semantic-proposal-v4`:
 
 * Endpoints are labels, not quotations. The action, target and system labels
   are short exact source-surface substrings, matched case-insensitively.
@@ -326,10 +328,13 @@ helper must not search, fetch, use external facts, infer from publisher
 reputation, or decide Date, Event Identity, Category, E&M Taxonomy,
 Reportability, diagnostics, or the final Scope state.
 
-`UNCERTAIN`, malformed parseable output, and invalid quotations cannot be
+`UNCERTAIN`, malformed parseable output, and invalid citations cannot be
 repaired by keywords, retried until a desired answer appears, or rescued
-downstream. When eligible mode support remains unestablished, the Scope
-Classifier returns `OUT_OF_SCOPE` with `SCOPE_NOT_ESTABLISHED`. Under RC-6, a
+downstream. When a well-formed proposal leaves eligible mode support
+unestablished, the Scope Classifier returns `OUT_OF_SCOPE` with
+`SCOPE_NOT_ESTABLISHED`. A parseable proposal that violates this contract is a
+disclosed Candidate `TechnicalGap` (`ScopeProposalViolation`, RC-9), never
+`OUT_OF_SCOPE`. Under RC-6, a
 timeout, connection failure, HTTP 429/5xx or unparseable response that persists
 after the single shared transport retry is a disclosed Candidate `TechnicalGap`,
 never `OUT_OF_SCOPE`.

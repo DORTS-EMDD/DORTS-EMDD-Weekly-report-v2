@@ -22,6 +22,7 @@ from .contracts import (
     EventIdentityRecord,
     EventIdentityRun,
     NormalizedCandidate,
+    ProposalContractViolation,
     RegionMode,
     SearchExecutionResult,
     SearchObservation,
@@ -689,7 +690,9 @@ class ReportApplication:
                         evidence,
                         candidate_title=normalized_candidate.candidate.title,
                     )
-                except SemanticProviderTechnicalFailure as failure:
+                except (SemanticProviderTechnicalFailure, ProposalContractViolation) as failure:
+                    # RC-9: a proposal the owner cannot validate is a disclosed
+                    # technical gap, never OUT_OF_SCOPE.
                     technical_gaps.append(
                         TechnicalGap.from_failure("Scope", normalized_candidate.candidate.candidate_id, failure)
                     )

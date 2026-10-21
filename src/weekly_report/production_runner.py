@@ -635,7 +635,10 @@ class ProductionRunner:
         validation_provider = build_maiagent_validation_provider(transport=transport, environ=values)
         if writer is None or validation_provider is None:
             raise ProductionConfigurationError("Writer and Validator configuration is unavailable")
-        validator = Validator(semantic_provider=validation_provider)
+        # One Validator-directed correction per event (contract section Q)
+        # uses the same Writer with unit-level findings; it is never a
+        # transport retry.
+        validator = Validator(correction_provider=writer.correct, semantic_provider=validation_provider)
         delivery, recipient = _delivery_configuration(values)
         application = build_report_application(
             registry,

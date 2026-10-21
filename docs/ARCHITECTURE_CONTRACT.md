@@ -92,8 +92,10 @@ subject, kind, failure class, attempts); it is not an Evidence, Scope,
 Category, Taxonomy, Reportability or Validation state. Where an owner contract
 has no fail-closed content outcome for an invalid parseable proposal
 (Taxonomy, Reportability, Writer, Validator), that proposal-contract violation
-is also an event-level `TechnicalGap`. Evidence, Scope and Category keep their
-existing fail-closed outcomes for invalid parseable proposals. Other subjects
+is also an event-level `TechnicalGap`. Since RC-9 an invalid parseable Scope
+proposal is a Candidate `TechnicalGap` as well, never `OUT_OF_SCOPE`. Evidence
+and Category keep their existing fail-closed outcomes for invalid parseable
+proposals. Other subjects
 continue. A run with any technical gap is `SUCCESS_WITH_TECHNICAL_GAPS` (RunTrace
 `EXECUTION_PARTIAL`, CLI exit code 2), never an unrestricted success, and the
 formal artifact discloses technical gaps, data exclusions and Validation FAILs.
@@ -157,12 +159,47 @@ in `docs/SCOPE_CONTRACT.md` §6.2 and §9:
   a system. An eligible family requires the source itself to describe the
   system as metro, light rail, tram or urban rapid transit.
 
-ScopeClassifier remains the sole owner and still fails closed on any invalid
-proposal; no retry, vote, fallback or keyword rule is added.
+ScopeClassifier remains the sole owner; no retry, vote, fallback or keyword
+rule is added.
+
+### A.4 RC-9 Sentence-ID citations and disclosed proposal violations (2026-10-21, user-approved)
+
+Live acceptance showed one shared root cause behind Scope mis-rejections and
+Validator citation gaps: helpers were asked to re-type source text, and they
+dropped, inserted or translated characters ("Hitachi Rail will supply" for
+"Hitachi will supply", "下一" for "다음"). The user authorized fixing the
+common root cause.
+
+* `src/weekly_report/evidence_sentences.py` deterministically segments
+  authoritative Evidence text into ordered sentences `S1`, `S2`, … with exact
+  offsets; every non-whitespace character belongs to exactly one sentence.
+  It is purely mechanical and decides nothing.
+* Scope and Validator helpers receive Evidence only as these sentences and cite
+  Evidence only by sentence IDs. A citation is valid when its IDs exist and are
+  not repeated; Python derives every coordinate. Labels (Scope) must occur in
+  the cited sentences. Evidence, metadata, Category, Taxonomy and
+  Reportability keep `EXACT_TEXT_ALL_OCCURRENCES` quotations; they showed no
+  citation failures in Phase A and move only with new evidence.
+* A parseable Scope proposal that violates its contract (shape, citation,
+  label containment, focus containment, field consistency) raises
+  `ScopeProposalViolation` and becomes a disclosed Candidate `TechnicalGap`
+  with the violated predicate as failure class. Only a well-formed proposal
+  produces `IN_SCOPE` or `OUT_OF_SCOPE`, so a system defect is never reported
+  as news that failed the Scope rule. A `PRESENT` noneligible relation needs a
+  non-eligible or unknown mode, not specifically `NON_ELIGIBLE`.
+* The Validator-directed correction (§Q) is wired in production: the Writer
+  receives the unit IDs, assessments and texts that failed, and a technical
+  failure during correction is an event-level gap, not a run abort.
 
 ```text
-SCOPE_PROMPT_VERSION = scope-event-target-system-v6
-SCOPE_SCHEMA_VERSION = scope-semantic-proposal-v3
+EVIDENCE_CITATION = SENTENCE_ID (Scope, Validator)
+SCOPE_PROMPT_VERSION = scope-event-target-system-v8
+SCOPE_SCHEMA_VERSION = scope-semantic-proposal-v4
+VALIDATION_PROMPT_VERSION = validation-evidence-writer-v3
+VALIDATION_SCHEMA_VERSION = validation-semantic-check-proposal-v3
+WRITER_PROMPT_VERSION = formal-report-writer-v2
+REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v2 (RC-10, section N)
+SCOPE_INVALID_PROPOSAL = TECHNICAL_GAP (not OUT_OF_SCOPE)
 ```
 
 ## B. Authoritative Owners
@@ -2364,6 +2401,21 @@ workflow-only or unsupported events remain negative when the evidence does
 not establish one of these paths. A Taipei reference alone cannot rescue a
 low-value event.
 
+RC-10 (2026-10-21): an incident follows the safety/failure/service-impact path
+only when it concerns the rail system's own safety, equipment, infrastructure
+or operations (for example derailment, collision, fire, power, signal, door or
+vehicle failure, track intrusion, evacuation, structural damage, or a
+substantial service suspension), or when the operator or authority takes a
+safety, investigation or corrective measure. An ordinary crime, assault,
+medical or personal incident that merely took place on rail premises, whose
+only rail consequence is a brief local service adjustment, is
+`NOT_REPORTABLE` unless the evidence reports a rail safety measure, rail
+safety investigation or lasting operational change. Opening or construction
+of a line, extension or station is a concrete service or engineering change.
+These accepted value paths are part of the `reportability_semantic_proposal`
+instructions (prompt `reportability-principal-body-v2`); before RC-10 the
+helper received no selection criteria.
+
 Source quality and evidence readiness remain owned by EvidenceService.
 Reportability uses only the complete authoritative substantive content of
 the EventGroup members. It does not use title-only evidence, snippets,
@@ -2498,7 +2550,7 @@ upstream states, create the authoritative reason, bypass exact-quote validation,
 or decide workflow continuation. Reportability remains the sole Python owner.
 
 The Reportability task contract is independently versioned as
-`reportability_semantic_proposal`, prompt `reportability-principal-body-v1`, and
+`reportability_semantic_proposal`, prompt `reportability-principal-body-v2` (RC-10), and
 schema `reportability-semantic-proposal-v1`. Its request is exactly
 `ReportabilitySemanticRequest.as_payload()` with `event_id` and the complete
 lexically ordered member population (`candidate_id`, unmodified
@@ -3054,7 +3106,8 @@ units.
 
 Each bounded request contains exactly `event_id`, `evidence_sources`, and
 `writer_fields`. Each evidence source contains exactly `candidate_id` and
-`substantive_content`. `writer_fields` contains, in field order, one object per
+`sentences`, the RC-9 segmentation of its substantive content (each sentence
+exactly `sentence_id` and `text`). `writer_fields` contains, in field order, one object per
 prose field with exactly `field_name` and `units`; each unit contains exactly
 `unit_id` and `text`. Evidence
 sources are the authoritative substantive-content inputs used for the event
@@ -3103,9 +3156,8 @@ operating conditions, regulations, laws, requirements, projects, incidents, or
 installed capability. `UNSUPPORTED` and `UNCERTAIN` cannot pass. Their citation
 lists may be empty, but any supplied citation must be valid.
 
-Every citation references a supplied `candidate_id` and contains an unchanged,
-non-empty exact quote occurring at least once in that source's
-`substantive_content` (RC-3 `EXACT_TEXT_ALL_OCCURRENCES`). Python derives
+Every citation references a supplied `candidate_id` and a non-empty list of
+that source's sentence IDs without repetition (RC-9). Python derives
 coordinates. Provider numeric
 offsets, fuzzy matching, normalization, translation repair, citation repair,
 and provider-authored offsets are forbidden. Exact citation existence proves
@@ -3128,7 +3180,9 @@ pass, every language assessment is `TRADITIONAL_CHINESE`, and every substantive
 unit is `SUPPORTED` or permitted `ANALYSIS`.
 
 At most one well-formed semantic failure may receive a Validator-directed Writer
-correction. The correction uses the same authoritative Evidence and cannot
+correction; production wires it (RC-9). The Writer receives each failed unit's
+`unit_id`, assessment and text, and any language finding. The correction uses
+the same authoritative Evidence and cannot
 change metadata, `event_id`, event population, upstream decisions, or Ordering.
 The corrected block must pass structural validation and receive one fresh
 semantic-helper call. The maximum is one Writer drafting call, two
@@ -3144,7 +3198,8 @@ For one event, timeout or HTTP failure after the RC-6 transport retry, malformed
 outer or inner response, schema violation, unknown proposal event_id, missing
 required fields, incomplete or duplicated unit coverage, or invalid citation is an
 event-level `TechnicalGap` (RC-6). Neither can become a semantic content FAIL
-or trigger correction; repeated exact citations are valid (RC-3).
+or trigger correction. A technical failure during the correction itself is an
+event-level `TechnicalGap` as well.
 
 A well-formed proposal containing `UNSUPPORTED`, `UNCERTAIN`,
 `NOT_TRADITIONAL_CHINESE`, or language `UNCERTAIN` is an event-level semantic

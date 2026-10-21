@@ -21,7 +21,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from src.weekly_report.contracts import EvidenceResult, EvidenceState
+from src.weekly_report.contracts import EvidenceResult, EvidenceState, ProposalContractViolation
 from src.weekly_report.maiagent_scope_provider import (
     HELPER_VERSION,
     PROMPT_VERSION,
@@ -128,11 +128,17 @@ def _failure_category(exc: Exception) -> str:
     return "PROVIDER_FAILURE"
 
 
+# RC-9: a proposal the owner cannot validate has no Scope state.
+VIOLATION_STATE = "PROPOSAL_VIOLATION"
+
+
 def _acceptance_status(parse_status: str, first_rejection: str | None, scope_state: str) -> str:
     if parse_status == "PARSED_CAPTURE_BLOCKED":
         return "CAPTURE_INCOMPLETE"
     if parse_status == "FAILED":
         return "PROVIDER_FAILURE"
+    if scope_state == VIOLATION_STATE:
+        return "PROPOSAL_CONTRACT_VIOLATION"
     if first_rejection is not None:
         return "OWNER_VALIDATION_REJECTED"
     if scope_state == "IN_SCOPE":
@@ -227,12 +233,13 @@ def capture_case(
     def observe(value: ScopeValidationObservation) -> None:
         artifact["first_rejection_predicate"] = value.first_rejection_predicate
         artifact["owner_observation_status"] = value.response_status
-        artifact["python_scope_state"] = value.scope_state.value
-        artifact["python_scope_diagnostic"] = value.diagnostic.value
+        state = VIOLATION_STATE if value.scope_state is None else value.scope_state.value
+        artifact["python_scope_state"] = state
+        artifact["python_scope_diagnostic"] = None if value.diagnostic is None else value.diagnostic.value
         artifact["acceptance_status"] = _acceptance_status(
             artifact["provider_response_parse_status"],
             value.first_rejection_predicate,
-            value.scope_state.value,
+            state,
         )
         _write_atomic(artifact_path, artifact)
 
@@ -242,11 +249,15 @@ def capture_case(
         substantive_content=source_content,
         provenance=source_metadata,
     )
-    result = ScopeClassifier(RecordingProvider()).classify(
-        evidence,
-        candidate_title=safe_case["candidate_title"],
-        observation_hook=observe,
-    )
+    try:
+        result = ScopeClassifier(RecordingProvider()).classify(
+            evidence,
+            candidate_title=safe_case["candidate_title"],
+            observation_hook=observe,
+        )
+    except ProposalContractViolation:
+        _write_atomic(artifact_path, artifact)
+        return artifact_path
     artifact["python_scope_state"] = result.state.value
     artifact["python_scope_diagnostic"] = result.diagnostic.value
     artifact["acceptance_status"] = _acceptance_status(
@@ -297,23 +308,27 @@ def replay_artifact(path: str | Path) -> dict[str, Any]:
         provenance=metadata,
     )
     observations: list[ScopeValidationObservation] = []
-    result = ScopeClassifier(lambda _request: proposal).classify(
-        evidence,
-        candidate_title=artifact["candidate_title"],
-        observation_hook=observations.append,
-    )
+    try:
+        result = ScopeClassifier(lambda _request: proposal).classify(
+            evidence,
+            candidate_title=artifact["candidate_title"],
+            observation_hook=observations.append,
+        )
+        state, diagnostic = result.state.value, result.diagnostic.value
+    except ProposalContractViolation:
+        state, diagnostic = VIOLATION_STATE, None
     first_rejection = observations[0].first_rejection_predicate if observations else None
     reproduced = (
-        result.state.value == artifact.get("python_scope_state")
-        and result.diagnostic.value == artifact.get("python_scope_diagnostic")
+        state == artifact.get("python_scope_state")
+        and diagnostic == artifact.get("python_scope_diagnostic")
         and first_rejection == artifact.get("first_rejection_predicate")
     )
     return {
         "replay_status": "PASS" if reproduced else "FAIL",
         "provider_response_parse_status": artifact["provider_response_parse_status"],
         "owner_replay_status": "PASS" if reproduced else "FAIL",
-        "scope_state": result.state.value,
-        "diagnostic": result.diagnostic.value,
+        "scope_state": state,
+        "diagnostic": diagnostic,
         "first_rejection_predicate": first_rejection,
         "provider_call_count": 0,
     }

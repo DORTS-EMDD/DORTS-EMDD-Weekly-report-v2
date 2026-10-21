@@ -85,7 +85,7 @@ def _semantic_provider(request):
                 "unit_assessments": [{
                     "unit_id": unit_id,
                     "assessment": "ANALYSIS" if field_name == "taipei_insight" else "SUPPORTED",
-                    "evidence_citations": [{"candidate_id": source.candidate_id, "exact_quote": source.substantive_content}],
+                    "evidence_citations": [{"candidate_id": source.candidate_id, "sentence_ids": [source.sentences[0].sentence_id]}],
                 } for unit_id in unit_ids],
             }
             for field_name, unit_ids in request.unit_ids_by_field().items()
@@ -2256,6 +2256,42 @@ class TechnicalGapIsolationTests(TestCase):
         self.assertEqual(result.final_report.event_count, 1)
         self.assertEqual(result.final_report.disclosure.technical_gap_count, 1)
         self.assertIn("技術問題未完成處理", result.final_report.content)
+
+    def test_scope_proposal_violation_is_a_disclosed_gap_not_out_of_scope(self):
+        # RC-9: a Scope proposal the owner cannot validate is a technical gap.
+        from src.weekly_report.scope_classifier import ScopeProposalViolation
+
+        class _ViolatingScope(RecordingScopeClassifier):
+            def __init__(self):
+                super().__init__()
+                self.violations = 0
+
+            def classify(self, evidence, *, candidate_title=""):
+                if self.violations == 0:
+                    self.violations += 1
+                    raise ScopeProposalViolation("CITATION_INVALID")
+                return super().classify(evidence, candidate_title=candidate_title)
+
+        result = self._app(
+            TwoFormalResultProvider(),
+            evidence_service=FormalEvidenceService(),
+            scope_classifier=_ViolatingScope(),
+            temporal_rule=RecordingTemporalRule(default_date=date(2026, 9, 18)),
+            event_identity=RecordingEventIdentity(),
+            classifier=RecordingClassifier(),
+            report_workflow=RecordingDownstreamWorkflow(reportable=True),
+            ordering=RecordingOrdering(),
+            report_service=ReportService(),
+            writer=ReportWriter(provider=lambda request: _block(request["writer_request"]["event_id"])),
+            validator=Validator(semantic_provider=_semantic_provider),
+        ).run("selected")
+        self.assertEqual(
+            [(gap.stage, gap.kind, gap.failure_class) for gap in result.technical_gaps],
+            [("Scope", TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION, "CITATION_INVALID")],
+        )
+        self.assertEqual(len(result.scope_results), 1)
+        self.assertTrue(all(scope.state is ScopeState.IN_SCOPE for scope in result.scope_results))
+        self.assertEqual(result.final_report.disclosure.technical_gap_count, 1)
 
     def test_writer_technical_failure_isolates_one_event_and_is_disclosed(self):
         calls = []
