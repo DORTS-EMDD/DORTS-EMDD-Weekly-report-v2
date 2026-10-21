@@ -362,3 +362,22 @@ FALSE_IN_SCOPE = 0
 TESTS = 979 passed；GOLDEN = 29 passed
 PRODUCTION_READY = 否
 ```
+
+
+## 12. 共同根因修復（RC-9、RC-10，2026-10-21，離線驗證）
+
+- Git checkpoint（分支 `v2/real-evidence-recovery`，未 push）：
+  - `9c404cc`：RC-2～RC-8 與 Phase A 驗收紀錄。
+  - `5032ebc`：RC-9、RC-10。
+  - 兩者均在乾淨 worktree 驗證全部測試通過。未提交的僅剩先前既有、與本工作無關的 9 個 Golden 檔與 `__init__.py` 排序。
+- RC-9（共同根因：模型重打來源文字會抄錯）：
+  - Python 將 Evidence 切成編號句子；Scope 與 Validator 只以句子 ID 引用。
+  - 在 13 筆真實原文上，切句逐字覆蓋全部文字。
+  - Scope 提案違反契約 → 已揭露的技術缺口（不再偽裝成 OUT_OF_SCOPE）。
+  - Validator 的一次改寫重驗已接上，Writer 會收到未通過單元的原文。
+- RC-10：Reportability helper 原本沒有收到任何選題標準；現已帶入契約的報導價值路徑，並明定一般治安、個人事件不成報。
+- Writer prompt v2：數字、時間照原文；不猜譯專有名詞；不留英文一般詞。
+- 離線整合：以 live3 封存 HTML 與舊 MaiAgent 回應完整重放（無網路）。13 筆 Evidence READY 不變；13 筆舊格式 Scope 回應全數成為「技術缺口」並揭露，未被當成 OUT_OF_SCOPE。
+- 測試 989 通過（乾淨 worktree）；Golden 29 通過。
+- 尚未進行：新 prompt 的真實 MaiAgent 驗收（需預算核准）。
+- 正式 Search 至報告的完整流程仍有已知阻礙：Google News RSS 連結從未被解析為出版者文章；Phase A 是以 manifest 直接提供出版者網址繞過。
