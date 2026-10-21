@@ -1,0 +1,22 @@
+{
+ "labelled_before_live_call": "2026-10-21, from titles and leading Evidence text only",
+ "same_event_groups": {
+  "lima_line2_three_stations": ["0e6e5a02", "5795a859", "5f567224"],
+  "cnn_seoul_subway": ["fa3430de", "c5a8720c"],
+  "nagoya_derailment_drill": ["b9b000d8", "8dcf519a"],
+  "tokyo_hibiya_overrun": ["0316e854", "4adf74b5"],
+  "yangsan_governor_test_ride": ["8a0a846f", "097bdf90", "024846e6", "13fd592d", "72f29017"],
+  "ulsan_depot_relocation": ["696a8c70", "8d204454", "dff12f2e", "56a532bc", "6335bb1b", "b95fdd78", "938639e7", "72af1abb"],
+  "wirye_councillor_meeting": ["9e310f2b", "81412571"]
+ },
+ "ambiguous_not_scored": [
+  ["103019a0", "4fe8f58b"],
+  ["e739e44b", "696a8c70", "8d204454", "dff12f2e", "56a532bc", "6335bb1b", "b95fdd78", "938639e7", "72af1abb"]
+ ],
+ "must_stay_apart": [
+  ["6e184cf5", "f083377d"],
+  ["359601cb", "dcd5e307", "9e310f2b"],
+  ["adb60f31", "696a8c70"],
+  ["4b21749d", "fa3430de"]
+ ]
+}
