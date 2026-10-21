@@ -1,0 +1,1281 @@
+{
+  "run_started_utc": "2026-10-21T01:15:56.579613+00:00",
+  "git_head": "031479f56f6b6bd50570fb533a2b35deeae75715",
+  "dry_run": false,
+  "period": [
+    "2026-10-12",
+    "2026-10-18"
+  ],
+  "abort": null,
+  "wall_clock_seconds": 279.3,
+  "budgets": {
+    "evidence_http": [
+      22,
+      40
+    ],
+    "maiagent_calls": [
+      62,
+      100
+    ],
+    "seconds": 1800
+  },
+  "search": {
+    "plan_items_replayed_offline": 449,
+    "manifest_rows_served": [
+      "P04",
+      "P05",
+      "P06",
+      "C05",
+      "P07",
+      "P08",
+      "P09",
+      "P13",
+      "C01",
+      "C06",
+      "P02",
+      "P10",
+      "P11",
+      "P12",
+      "P14",
+      "C02",
+      "P01",
+      "P03",
+      "C03",
+      "C04"
+    ]
+  },
+  "run_status": "SUCCESS_WITH_TECHNICAL_GAPS",
+  "run_failure": {
+    "stage": null,
+    "class": null,
+    "diagnostic": null
+  },
+  "replayed_owner_outputs": [],
+  "stage_counts": {
+    "search_plan": 449,
+    "search_attempts": 449,
+    "search_unattempted": 0,
+    "acquisitions": 20,
+    "normalized_observations": 449,
+    "evidence_results": 20,
+    "scope_results": 11,
+    "temporal_results": 9,
+    "event_identity_records": 6,
+    "category_results": 6,
+    "downstream_results": 4,
+    "ordered_results": 3,
+    "formal_metadata": 3,
+    "writer_blocks": 3,
+    "validation_passed": 3,
+    "validation_failed": 0,
+    "final_report_events": 3,
+    "technical_gaps": 4,
+    "technical_gaps_scope": 2,
+    "technical_gaps_taxonomy": 1,
+    "technical_gaps_reportability": 1,
+    "metadata_exclusions": 0
+  },
+  "stage_elapsed_ms": {
+    "Search": 30,
+    "Acquisition": 0,
+    "Normalization": 0,
+    "Evidence": 87719,
+    "Scope": 48594,
+    "Temporal": 0,
+    "EventIdentity": 0,
+    "Category": 18483,
+    "Taxonomy": 16328,
+    "Reportability": 14015,
+    "Ordering": 0,
+    "FormalMetadata": 0,
+    "Writer": 70500,
+    "Validator": 23484,
+    "Assembly": 0
+  },
+  "maiagent_calls_by_task": {
+    "evidence_semantic_judge": 13,
+    "evidence_metadata_extraction": 13,
+    "scope_semantic_proposal": 13,
+    "category_semantic_proposal": 6,
+    "taxonomy_semantic_proposal": 5,
+    "reportability_semantic_proposal": 4,
+    "writer": 4,
+    "validation_semantic_check": 4
+  },
+  "maiagent_outcomes": {
+    "HTTP_200": 61,
+    "TIMEOUT": 1
+  },
+  "maiagent_calls": [
+    {
+      "index": 1,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 7360,
+      "outcome": "HTTP_200",
+      "latency_s": 3.422,
+      "response_bytes": 2411
+    },
+    {
+      "index": 2,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 5939,
+      "outcome": "HTTP_200",
+      "latency_s": 4.687,
+      "response_bytes": 4265
+    },
+    {
+      "index": 3,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 6187,
+      "outcome": "HTTP_200",
+      "latency_s": 3.484,
+      "response_bytes": 2039
+    },
+    {
+      "index": 4,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 4818,
+      "outcome": "HTTP_200",
+      "latency_s": 5.266,
+      "response_bytes": 4706
+    },
+    {
+      "index": 5,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 6599,
+      "outcome": "HTTP_200",
+      "latency_s": 2.969,
+      "response_bytes": 2453
+    },
+    {
+      "index": 6,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 5302,
+      "outcome": "HTTP_200",
+      "latency_s": 2.687,
+      "response_bytes": 1505
+    },
+    {
+      "index": 7,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 7357,
+      "outcome": "HTTP_200",
+      "latency_s": 3.407,
+      "response_bytes": 2171
+    },
+    {
+      "index": 8,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 5967,
+      "outcome": "HTTP_200",
+      "latency_s": 2.563,
+      "response_bytes": 1163
+    },
+    {
+      "index": 9,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 4619,
+      "outcome": "HTTP_200",
+      "latency_s": 3.891,
+      "response_bytes": 2285
+    },
+    {
+      "index": 10,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 3354,
+      "outcome": "HTTP_200",
+      "latency_s": 2.641,
+      "response_bytes": 1907
+    },
+    {
+      "index": 11,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 8302,
+      "outcome": "HTTP_200",
+      "latency_s": 2.954,
+      "response_bytes": 2747
+    },
+    {
+      "index": 12,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 6852,
+      "outcome": "HTTP_200",
+      "latency_s": 3.562,
+      "response_bytes": 2900
+    },
+    {
+      "index": 13,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 9497,
+      "outcome": "HTTP_200",
+      "latency_s": 2.985,
+      "response_bytes": 2027
+    },
+    {
+      "index": 14,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 8281,
+      "outcome": "HTTP_200",
+      "latency_s": 4.031,
+      "response_bytes": 1427
+    },
+    {
+      "index": 15,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 7415,
+      "outcome": "HTTP_200",
+      "latency_s": 3.703,
+      "response_bytes": 1811
+    },
+    {
+      "index": 16,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 6160,
+      "outcome": "HTTP_200",
+      "latency_s": 2.531,
+      "response_bytes": 1187
+    },
+    {
+      "index": 17,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 7146,
+      "outcome": "HTTP_200",
+      "latency_s": 2.875,
+      "response_bytes": 2165
+    },
+    {
+      "index": 18,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 5795,
+      "outcome": "HTTP_200",
+      "latency_s": 3.297,
+      "response_bytes": 1706
+    },
+    {
+      "index": 19,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 7975,
+      "outcome": "HTTP_200",
+      "latency_s": 3.406,
+      "response_bytes": 1571
+    },
+    {
+      "index": 20,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 6648,
+      "outcome": "HTTP_200",
+      "latency_s": 4.188,
+      "response_bytes": 1205
+    },
+    {
+      "index": 21,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 4994,
+      "outcome": "HTTP_200",
+      "latency_s": 2.937,
+      "response_bytes": 2708
+    },
+    {
+      "index": 22,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 3800,
+      "outcome": "HTTP_200",
+      "latency_s": 2.64,
+      "response_bytes": 1256
+    },
+    {
+      "index": 23,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 4479,
+      "outcome": "HTTP_200",
+      "latency_s": 3.235,
+      "response_bytes": 1652
+    },
+    {
+      "index": 24,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 3309,
+      "outcome": "HTTP_200",
+      "latency_s": 2.406,
+      "response_bytes": 1181
+    },
+    {
+      "index": 25,
+      "task": "evidence_semantic_judge",
+      "request_bytes": 5885,
+      "outcome": "HTTP_200",
+      "latency_s": 2.36,
+      "response_bytes": 1502
+    },
+    {
+      "index": 26,
+      "task": "evidence_metadata_extraction",
+      "request_bytes": 4630,
+      "outcome": "HTTP_200",
+      "latency_s": 3.406,
+      "response_bytes": 3512
+    },
+    {
+      "index": 27,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 27101,
+      "outcome": "HTTP_200",
+      "latency_s": 3.61,
+      "response_bytes": 2696
+    },
+    {
+      "index": 28,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 23051,
+      "outcome": "HTTP_200",
+      "latency_s": 3.5,
+      "response_bytes": 2720
+    },
+    {
+      "index": 29,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 26943,
+      "outcome": "HTTP_200",
+      "latency_s": 3.344,
+      "response_bytes": 2750
+    },
+    {
+      "index": 30,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 25365,
+      "outcome": "HTTP_200",
+      "latency_s": 3.75,
+      "response_bytes": 2675
+    },
+    {
+      "index": 31,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 26210,
+      "outcome": "HTTP_200",
+      "latency_s": 4.047,
+      "response_bytes": 2849
+    },
+    {
+      "index": 32,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 26509,
+      "outcome": "HTTP_200",
+      "latency_s": 3.641,
+      "response_bytes": 2684
+    },
+    {
+      "index": 33,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 29517,
+      "outcome": "HTTP_200",
+      "latency_s": 3.344,
+      "response_bytes": 2768
+    },
+    {
+      "index": 34,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 24852,
+      "outcome": "HTTP_200",
+      "latency_s": 3.86,
+      "response_bytes": 2744
+    },
+    {
+      "index": 35,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 24614,
+      "outcome": "HTTP_200",
+      "latency_s": 3.984,
+      "response_bytes": 2879
+    },
+    {
+      "index": 36,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 26120,
+      "outcome": "HTTP_200",
+      "latency_s": 3.406,
+      "response_bytes": 2732
+    },
+    {
+      "index": 37,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 18679,
+      "outcome": "HTTP_200",
+      "latency_s": 4.344,
+      "response_bytes": 2615
+    },
+    {
+      "index": 38,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 18205,
+      "outcome": "HTTP_200",
+      "latency_s": 3.781,
+      "response_bytes": 2615
+    },
+    {
+      "index": 39,
+      "task": "scope_semantic_proposal",
+      "request_bytes": 23029,
+      "outcome": "HTTP_200",
+      "latency_s": 3.485,
+      "response_bytes": 2900
+    },
+    {
+      "index": 40,
+      "task": "category_semantic_proposal",
+      "request_bytes": 10405,
+      "outcome": "HTTP_200",
+      "latency_s": 2.656,
+      "response_bytes": 1640
+    },
+    {
+      "index": 41,
+      "task": "category_semantic_proposal",
+      "request_bytes": 11094,
+      "outcome": "HTTP_200",
+      "latency_s": 2.704,
+      "response_bytes": 1535
+    },
+    {
+      "index": 42,
+      "task": "category_semantic_proposal",
+      "request_bytes": 13384,
+      "outcome": "HTTP_200",
+      "latency_s": 3.984,
+      "response_bytes": 1886
+    },
+    {
+      "index": 43,
+      "task": "category_semantic_proposal",
+      "request_bytes": 11290,
+      "outcome": "HTTP_200",
+      "latency_s": 2.625,
+      "response_bytes": 1451
+    },
+    {
+      "index": 44,
+      "task": "category_semantic_proposal",
+      "request_bytes": 11795,
+      "outcome": "HTTP_200",
+      "latency_s": 3.39,
+      "response_bytes": 1451
+    },
+    {
+      "index": 45,
+      "task": "category_semantic_proposal",
+      "request_bytes": 9733,
+      "outcome": "HTTP_200",
+      "latency_s": 2.937,
+      "response_bytes": 1439
+    },
+    {
+      "index": 46,
+      "task": "taxonomy_semantic_proposal",
+      "request_bytes": 8567,
+      "outcome": "HTTP_200",
+      "latency_s": 3.5,
+      "response_bytes": 2780
+    },
+    {
+      "index": 47,
+      "task": "taxonomy_semantic_proposal",
+      "request_bytes": 10881,
+      "outcome": "HTTP_200",
+      "latency_s": 3.187,
+      "response_bytes": 1949
+    },
+    {
+      "index": 48,
+      "task": "taxonomy_semantic_proposal",
+      "request_bytes": 8760,
+      "outcome": "HTTP_200",
+      "latency_s": 3.171,
+      "response_bytes": 2147
+    },
+    {
+      "index": 49,
+      "task": "taxonomy_semantic_proposal",
+      "request_bytes": 9248,
+      "outcome": "HTTP_200",
+      "latency_s": 3.562,
+      "response_bytes": 1880
+    },
+    {
+      "index": 50,
+      "task": "taxonomy_semantic_proposal",
+      "request_bytes": 7230,
+      "outcome": "HTTP_200",
+      "latency_s": 2.735,
+      "response_bytes": 1757
+    },
+    {
+      "index": 51,
+      "task": "reportability_semantic_proposal",
+      "request_bytes": 8214,
+      "outcome": "HTTP_200",
+      "latency_s": 2.922,
+      "response_bytes": 2099
+    },
+    {
+      "index": 52,
+      "task": "reportability_semantic_proposal",
+      "request_bytes": 10528,
+      "outcome": "HTTP_200",
+      "latency_s": 3.781,
+      "response_bytes": 3257
+    },
+    {
+      "index": 53,
+      "task": "reportability_semantic_proposal",
+      "request_bytes": 8407,
+      "outcome": "HTTP_200",
+      "latency_s": 3.594,
+      "response_bytes": 2927
+    },
+    {
+      "index": 54,
+      "task": "reportability_semantic_proposal",
+      "request_bytes": 6877,
+      "outcome": "HTTP_200",
+      "latency_s": 3.625,
+      "response_bytes": 2804
+    },
+    {
+      "index": 55,
+      "task": "writer",
+      "request_bytes": 4606,
+      "outcome": "HTTP_200",
+      "latency_s": 5.547,
+      "response_bytes": 2720
+    },
+    {
+      "index": 56,
+      "task": "writer",
+      "request_bytes": 8257,
+      "outcome": "HTTP_200",
+      "latency_s": 6.093,
+      "response_bytes": 3728
+    },
+    {
+      "index": 57,
+      "task": "writer",
+      "request_bytes": 5943,
+      "outcome": "TIMEOUT",
+      "latency_s": 45.219
+    },
+    {
+      "index": 58,
+      "task": "writer",
+      "request_bytes": 5943,
+      "outcome": "HTTP_200",
+      "latency_s": 13.578,
+      "response_bytes": 3074
+    },
+    {
+      "index": 59,
+      "task": "validation_semantic_check",
+      "request_bytes": 7680,
+      "outcome": "HTTP_200",
+      "latency_s": 5.359,
+      "response_bytes": 5282
+    },
+    {
+      "index": 60,
+      "task": "validation_semantic_check",
+      "request_bytes": 7680,
+      "outcome": "HTTP_200",
+      "latency_s": 5.235,
+      "response_bytes": 5264
+    },
+    {
+      "index": 61,
+      "task": "validation_semantic_check",
+      "request_bytes": 12692,
+      "outcome": "HTTP_200",
+      "latency_s": 5.687,
+      "response_bytes": 5996
+    },
+    {
+      "index": 62,
+      "task": "validation_semantic_check",
+      "request_bytes": 9809,
+      "outcome": "HTTP_200",
+      "latency_s": 7.047,
+      "response_bytes": 5966
+    }
+  ],
+  "evidence_requests": [
+    {
+      "slot": "C04",
+      "url": "https://www.globalrailwayreview.com/network-rail-wales-and-borders-fits-weather-stations-to-gsm-r-masts-for-severe-weather-response/2136750.article",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.globalrailwayreview.com/network-rail-wales-and-borders-fits-weather-stations-to-gsm-r-masts-for-severe-weather-response/2136750.article",
+      "content_type": "text/html; charset=utf-8",
+      "content_chars": 176634,
+      "sha256": "42380d358a3c570068952f943e469320a87cc9ae2cda33076dd323d2d22c589a",
+      "redirect_chain": [
+        "https://www.globalrailwayreview.com/network-rail-wales-and-borders-fits-weather-stations-to-gsm-r-masts-for-severe-weather-response/2136750.article"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.032
+    },
+    {
+      "slot": "P05",
+      "url": "https://abc7ny.com/post/nyc-subway-shooting-53rd-street-station-leaves-man-critically-injured/19948241/",
+      "outcome": "HTTP_200",
+      "final_url": "https://abc7ny.com/post/nyc-subway-shooting-53rd-street-station-leaves-man-critically-injured/19948241/",
+      "content_type": "text/html; charset=utf-8",
+      "content_chars": 243738,
+      "sha256": "af46f7964ebe047f8f890146dbbc8d99fe520f2f5424bca282270daf00416c83",
+      "redirect_chain": [
+        "https://abc7ny.com/post/nyc-subway-shooting-53rd-street-station-leaves-man-critically-injured/19948241/"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.032
+    },
+    {
+      "slot": "P03",
+      "url": "https://www.newarab.com/news/egypt-explores-hydrogen-tram-new-capital-amid-economic-woes",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.newarab.com/news/egypt-explores-hydrogen-tram-new-capital-amid-economic-woes",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 162556,
+      "sha256": "4749a8d082ec7e206263af810f98cc62c96d637ff74fdf18f54d888d1899edf2",
+      "redirect_chain": [
+        "https://www.newarab.com/news/egypt-explores-hydrogen-tram-new-capital-amid-economic-woes"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.047
+    },
+    {
+      "slot": "P11",
+      "url": "https://www.adb.org/news/adb-approves-302-million-loan-modernize-baku-metro-signaling-and-digital-operations",
+      "outcome": "ERROR:_EvidenceFetchError",
+      "status_code": 403,
+      "failing_host": "www.adb.org",
+      "http_requests": 1,
+      "latency_s": 0.0
+    },
+    {
+      "slot": "P08",
+      "url": "https://www.railwaygazette.com/india/2026/10/13/chennai-metro-opens-first-section-of-the-yellow-line-as-phase-ii-expansion-gathers-pace/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/india/2026/10/13/chennai-metro-opens-first-section-of-the-yellow-line-as-phase-ii-expansion-gathers-pace/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 92578,
+      "sha256": "a96f12885eb560df0c6ce1c0b32be4d7d21c4bd1a3201d526f82e2051943f423",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/india/2026/10/13/chennai-metro-opens-first-section-of-the-yellow-line-as-phase-ii-expansion-gathers-pace/"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.047
+    },
+    {
+      "slot": "P09",
+      "url": "https://www.yna.co.kr/view/MYH20261014022200038",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.yna.co.kr/view/MYH20261014022200038",
+      "content_type": "text/html;charset=UTF-8",
+      "content_chars": 137744,
+      "sha256": "bc52341f5c1c59e6739ff41a805bebcc34bb24fe1932d65e38c716d012768599",
+      "redirect_chain": [
+        "https://www.yna.co.kr/view/MYH20261014022200038"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.047
+    },
+    {
+      "slot": "C01",
+      "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxPZnZmZ0xrWlFxY1lBYjllU1dwMmZfMUo1QVNPMlVQYXpBemJHcmhWRmFhWnNPLVBaRk5VMENPRllIYzNBanpqZlVsUnlKVDVESE8xNkFuNTN5cXpLb2NYMnd1X3JUclZ5eWhibUc4YkRqRkQzR1hkck9Ga04weDQyeF85amxXTUZ5ZEFXakwwempjLWoxWDlSTzc0QnR5SHhZQk9DRTJCVklGZHVHS3plY0FB?oc=5",
+      "outcome": "HTTP_200",
+      "final_url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxPZnZmZ0xrWlFxY1lBYjllU1dwMmZfMUo1QVNPMlVQYXpBemJHcmhWRmFhWnNPLVBaRk5VMENPRllIYzNBanpqZlVsUnlKVDVESE8xNkFuNTN5cXpLb2NYMnd1X3JUclZ5eWhibUc4YkRqRkQzR1hkck9Ga04weDQyeF85amxXTUZ5ZEFXakwwempjLWoxWDlSTzc0QnR5SHhZQk9DRTJCVklGZHVHS3plY0FB?oc=5&hl=en-US&gl=US&ceid=US:en",
+      "content_type": "text/html; charset=utf-8",
+      "content_chars": 584884,
+      "sha256": "9c8d26a9672b78234cd079188e96b83ef6a9eaf43b0ef53670d5202dfe58bcbe",
+      "redirect_chain": [
+        "https://news.google.com/rss/articles/CBMisgFBVV95cUxPZnZmZ0xrWlFxY1lBYjllU1dwMmZfMUo1QVNPMlVQYXpBemJHcmhWRmFhWnNPLVBaRk5VMENPRllIYzNBanpqZlVsUnlKVDVESE8xNkFuNTN5cXpLb2NYMnd1X3JUclZ5eWhibUc4YkRqRkQzR1hkck9Ga04weDQyeF85amxXTUZ5ZEFXakwwempjLWoxWDlSTzc0QnR5SHhZQk9DRTJCVklGZHVHS3plY0FB?oc=5",
+        "https://news.google.com/rss/articles/CBMisgFBVV95cUxPZnZmZ0xrWlFxY1lBYjllU1dwMmZfMUo1QVNPMlVQYXpBemJHcmhWRmFhWnNPLVBaRk5VMENPRllIYzNBanpqZlVsUnlKVDVESE8xNkFuNTN5cXpLb2NYMnd1X3JUclZ5eWhibUc4YkRqRkQzR1hkck9Ga04weDQyeF85amxXTUZ5ZEFXakwwempjLWoxWDlSTzc0QnR5SHhZQk9DRTJCVklGZHVHS3plY0FB?oc=5&hl=en-US&gl=US&ceid=US:en"
+      ],
+      "http_requests": 2,
+      "latency_s": 0.047
+    },
+    {
+      "slot": "C03",
+      "url": "https://www.railwaygazette.com/netherlands/2026/10/06/delft-tramway-extension-to-university-opens-with-custom-power-feed-to-minimise-electromagnetic-interference/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/netherlands/2026/10/06/delft-tramway-extension-to-university-opens-with-custom-power-feed-to-minimise-electromagnetic-interference/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 95565,
+      "sha256": "bd94f78a22f1d040dfd7ad5f676003c191346c4b79246d4347d47359a6fd0b50",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/netherlands/2026/10/06/delft-tramway-extension-to-university-opens-with-custom-power-feed-to-minimise-electromagnetic-interference/"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.031
+    },
+    {
+      "slot": "P06",
+      "url": "https://www.railbusinessuk.com/light-rail/2026/10/14/tram-safety-reviewed-ahead-of-10th-anniversary-of-croydon-derailment/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railbusinessuk.com/light-rail/2026/10/14/tram-safety-reviewed-ahead-of-10th-anniversary-of-croydon-derailment/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 58439,
+      "sha256": "2288b79bfbd5ea29d6eb5b1141e476e2e67f964cc5301b3b81c311e87908f772",
+      "redirect_chain": [
+        "https://www.railbusinessuk.com/light-rail/2026/10/14/tram-safety-reviewed-ahead-of-10th-anniversary-of-croydon-derailment/"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.031
+    },
+    {
+      "slot": "P12",
+      "url": "https://www.spa.gov.sa/en/N2700572",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.spa.gov.sa/en/N2700572",
+      "content_type": "text/html; charset=utf-8",
+      "content_chars": 141866,
+      "sha256": "66c3dc60344653250e1938d43f4a71839160fda23240217b6f60a5a04df3ce0f",
+      "redirect_chain": [
+        "https://www.spa.gov.sa/en/N2700572"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.031
+    },
+    {
+      "slot": "P14",
+      "url": "https://news.tuoitre.vn/hanoi-strikes-deals-for-5-metro-lines-targets-2030-completion-103261016123017314.htm",
+      "outcome": "HTTP_200",
+      "final_url": "https://news.tuoitre.vn/hanoi-strikes-deals-for-5-metro-lines-targets-2030-completion-103261016123017314.htm",
+      "content_type": "text/html; charset=utf-8",
+      "content_chars": 86229,
+      "sha256": "843af61a38aec74cd05c2822e585be2e2a1b86da01082a66fe3ce540fb97ca88",
+      "redirect_chain": [
+        "https://news.tuoitre.vn/hanoi-strikes-deals-for-5-metro-lines-targets-2030-completion-103261016123017314.htm"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.015
+    },
+    {
+      "slot": "P10",
+      "url": "https://www.railwaygazette.com/denmark/2026/10/14/kobenhavn-metro-operating-contract-signed/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/denmark/2026/10/14/kobenhavn-metro-operating-contract-signed/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 88900,
+      "sha256": "12de534a64966fceee9577a30b93a08ae6ff2377afee80e4ccd73ddfdbd60a15",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/denmark/2026/10/14/kobenhavn-metro-operating-contract-signed/"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.016
+    },
+    {
+      "slot": "P02",
+      "url": "https://www.railwaygazette.com/denmark/2026/10/13/hitachi-rail-awarded-kobenhavn-s-bane-automation-support-systems-contract/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/denmark/2026/10/13/hitachi-rail-awarded-kobenhavn-s-bane-automation-support-systems-contract/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 90650,
+      "sha256": "282f22dd98aa26343434cfbe1f69c403e6b37f17f510d048ec08b0f61732760b",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/denmark/2026/10/13/hitachi-rail-awarded-kobenhavn-s-bane-automation-support-systems-contract/"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.031
+    },
+    {
+      "slot": "P07",
+      "url": "https://www.railwaygazette.com/usa/2026/10/16/st-louis-metrolink-completes-192m-extension-to-midamerica-airport/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/usa/2026/10/16/st-louis-metrolink-completes-192m-extension-to-midamerica-airport/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 93105,
+      "sha256": "091f7984c79b1788885ae775e06327b716195859ede61db624d673026e7a4bf8",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/usa/2026/10/16/st-louis-metrolink-completes-192m-extension-to-midamerica-airport/"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.016
+    },
+    {
+      "slot": "C06",
+      "url": "https://www.railwaygazette.com/category/urban/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/category/urban/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 79057,
+      "sha256": "b1424581830d1b5dc111dd8b5ce8a1b5d4b32ea2fac9988953a43a5f38194046",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/category/urban/"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.031
+    },
+    {
+      "slot": "C02",
+      "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxPWG52aGh6cVB1T3oxUktJNFhnUEZxMW9Jc0xoblBwUkhadWNHUGRBLThvZ3dwT0FTX2lOTjRGMXk0R2JuNFViUjVPTUpqRElyaWUwZGgxckJsdHRSS0NOc2dYREdxd3pmMTdTUTBFNkk1VEYzUnp0YnJIbnF5aFExcXhyTkZvRkFaTkNfVm16VUlBYXUyaUU2T0ZNNjFLcnB0N2VnMVNpbXZUd3Rj?oc=5",
+      "outcome": "HTTP_200",
+      "final_url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxPWG52aGh6cVB1T3oxUktJNFhnUEZxMW9Jc0xoblBwUkhadWNHUGRBLThvZ3dwT0FTX2lOTjRGMXk0R2JuNFViUjVPTUpqRElyaWUwZGgxckJsdHRSS0NOc2dYREdxd3pmMTdTUTBFNkk1VEYzUnp0YnJIbnF5aFExcXhyTkZvRkFaTkNfVm16VUlBYXUyaUU2T0ZNNjFLcnB0N2VnMVNpbXZUd3Rj?oc=5&hl=en-US&gl=US&ceid=US:en",
+      "content_type": "text/html; charset=utf-8",
+      "content_chars": 584719,
+      "sha256": "c21cfdb2bf62c6f5cd9a6e82811d3919383400085807f02e8dd9989e8ebafc5b",
+      "redirect_chain": [
+        "https://news.google.com/rss/articles/CBMirAFBVV95cUxPWG52aGh6cVB1T3oxUktJNFhnUEZxMW9Jc0xoblBwUkhadWNHUGRBLThvZ3dwT0FTX2lOTjRGMXk0R2JuNFViUjVPTUpqRElyaWUwZGgxckJsdHRSS0NOc2dYREdxd3pmMTdTUTBFNkk1VEYzUnp0YnJIbnF5aFExcXhyTkZvRkFaTkNfVm16VUlBYXUyaUU2T0ZNNjFLcnB0N2VnMVNpbXZUd3Rj?oc=5",
+        "https://news.google.com/rss/articles/CBMirAFBVV95cUxPWG52aGh6cVB1T3oxUktJNFhnUEZxMW9Jc0xoblBwUkhadWNHUGRBLThvZ3dwT0FTX2lOTjRGMXk0R2JuNFViUjVPTUpqRElyaWUwZGgxckJsdHRSS0NOc2dYREdxd3pmMTdTUTBFNkk1VEYzUnp0YnJIbnF5aFExcXhyTkZvRkFaTkNfVm16VUlBYXUyaUU2T0ZNNjFLcnB0N2VnMVNpbXZUd3Rj?oc=5&hl=en-US&gl=US&ceid=US:en"
+      ],
+      "http_requests": 2,
+      "latency_s": 0.031
+    },
+    {
+      "slot": "P04",
+      "url": "https://www.info.gov.hk/gia/general/202610/12/P2026101200687.htm",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.info.gov.hk/gia/general/202610/12/P2026101200687.htm",
+      "content_type": "text/html",
+      "content_chars": 12905,
+      "sha256": "06ea282bb6524c664f95c472fc3aff39161379e68c05064c90c5b42acc8743eb",
+      "redirect_chain": [
+        "https://www.info.gov.hk/gia/general/202610/12/P2026101200687.htm"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.015
+    },
+    {
+      "slot": "P01",
+      "url": "https://news.66wz.com/system/2026/10/13/105853227.shtml",
+      "outcome": "ERROR:OSError",
+      "status_code": null,
+      "failing_host": null,
+      "http_requests": 1,
+      "latency_s": 0.0
+    },
+    {
+      "slot": "C05",
+      "url": "https://www.info.gov.hk/gia/general/202610/12/P2026101200683.htm",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.info.gov.hk/gia/general/202610/12/P2026101200683.htm",
+      "content_type": "text/html",
+      "content_chars": 11745,
+      "sha256": "04ea136c2cbc700d42e6233868f835e2be5bfb70675716a3093c513e2434950e",
+      "redirect_chain": [
+        "https://www.info.gov.hk/gia/general/202610/12/P2026101200683.htm"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.015
+    },
+    {
+      "slot": "P13",
+      "url": "https://www.railwaygazette.com/china/2026/10/16/hong-kong-northern-link-spur-line-approved/",
+      "outcome": "HTTP_200",
+      "final_url": "https://www.railwaygazette.com/china/2026/10/16/hong-kong-northern-link-spur-line-approved/",
+      "content_type": "text/html; charset=UTF-8",
+      "content_chars": 87747,
+      "sha256": "68c24df263e06eb256207f7557c5d39516b33835047e00a65ee32d3c4ebe695d",
+      "redirect_chain": [
+        "https://www.railwaygazette.com/china/2026/10/16/hong-kong-northern-link-spur-line-approved/"
+      ],
+      "http_requests": 1,
+      "latency_s": 0.047
+    }
+  ],
+  "slot_by_candidate": {
+    "cand_def8c0e6a6349e29169b713d0f1c60f26ece477f0cd0c81a66d0f41f2fe3e001": "P01",
+    "cand_852a5a2c66a0b32d628b864e9e2b6903abac7f4c8cef95331c12cd739321672e": "P02",
+    "cand_35715280c182ed913d20e155935fb7c36c9b5e0f2de61dc09fc6ffe528678666": "P03",
+    "cand_cec1a71da5fbbadfc5a49a754f995ec8ed91b01a25cd8ebb3cf082e5f9eb26f6": "P04",
+    "cand_0f1744e5368eade1fb68c3ee7c553472bc8696627bb4dc923557593d51d8dfe1": "P05",
+    "cand_623d96a8b6fec20f9ad631cfae9f9a92e3aa46114b18d2860cc45cc0a4e77f23": "P06",
+    "cand_8e4faea5f05ed5aba2bd2c246d7a0c096924f4507ab2885a14f7986409fc6e67": "P07",
+    "cand_3f4ec8810a1e9a27038eaa66bd698ac36d5fec07740a1d4dca62daf5ecacf66a": "P08",
+    "cand_535cd70492d878a1c14fc70cec12ae6389a782b59e5e050eebcaafe1c3f086f8": "P09",
+    "cand_76ba99791a910fae30c40cd8972f1cacb8436fe0901befaeb5fa2ddc517c8560": "P10",
+    "cand_3ca38502e7a7e171dfedb475c1d0ca54884ee195de36e02f43da77bbb26fe80c": "P11",
+    "cand_6755dcb911a7d73154d21bbb77ba19aa044844acaeade970950a3414f6836c76": "P12",
+    "cand_eca442a083c76a0dd4ee6d3c697e7d26cfee8d437c4ee7410a95849e1ec268a1": "P13",
+    "cand_73cb37ffb473c4b6f88509d55d1e697aed71c0d2f405068ef17e3df223c34510": "P14",
+    "cand_58e0dbef930ec292bde8b78114c1c5cc3629eb5790ddfc95397e14d4906a7f06": "C01",
+    "cand_a42a03257e5f61dec26e8dc7c215128dedbe458fb4e2018a8af725d50d95f0b1": "C02",
+    "cand_5c5bdfc5b08f5cd7a265a311bcb2a13a96f15e895790ed9730fa19c094453fe3": "C03",
+    "cand_09c42d97d7ac0d2d84c58b9029a038af2ae9dbfd351320f12e353162b98ba89b": "C04",
+    "cand_ea46d287d96bc40234529698b482ba8e31d69bed6fb4fbe0bb728655d4147cf9": "C05",
+    "cand_9107b4afda3e1790117626f02e6296185aae57f805d220f3a70b2a8daed1ef56": "C06"
+  },
+  "final_report_event_count": 3,
+  "slot_outcomes": {
+    "C01": {
+      "evidence": "EVIDENCE_REJECTED",
+      "gate": "SOURCE_PROVENANCE",
+      "judge": null,
+      "metadata": null,
+      "region": null,
+      "system_name": null
+    },
+    "C02": {
+      "evidence": "EVIDENCE_REJECTED",
+      "gate": "SOURCE_PROVENANCE",
+      "judge": null,
+      "metadata": null,
+      "region": null,
+      "system_name": null
+    },
+    "C03": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "partial_metadata",
+      "region": [
+        "UNRESOLVED",
+        null,
+        "INVALID_FIELD"
+      ],
+      "system_name": null,
+      "scope": "IN_SCOPE",
+      "scope_detail": "NONE",
+      "date_valid": false,
+      "date": "2026-10-06"
+    },
+    "C04": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "partial_metadata",
+      "region": [
+        "UNRESOLVED",
+        null,
+        "UNRECOGNIZED_VALUE"
+      ],
+      "system_name": "Wales and Borders route",
+      "scope": "OUT_OF_SCOPE",
+      "scope_detail": "SCOPE_NOT_ESTABLISHED"
+    },
+    "C05": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "partial_metadata",
+      "region": [
+        "UNRESOLVED",
+        null,
+        "INVALID_FIELD"
+      ],
+      "system_name": null,
+      "scope": "IN_SCOPE",
+      "scope_detail": "NONE",
+      "date_valid": false,
+      "date": null
+    },
+    "C06": {
+      "evidence": "EVIDENCE_REJECTED",
+      "gate": "PRINCIPAL_DOCUMENT",
+      "judge": null,
+      "metadata": null,
+      "region": null,
+      "system_name": null
+    },
+    "P01": {
+      "evidence": "EVIDENCE_REJECTED",
+      "gate": "FETCH_TRANSPORT",
+      "judge": null,
+      "metadata": null,
+      "region": null,
+      "system_name": null
+    },
+    "P02": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "partial_metadata",
+      "region": [
+        "SOURCE_STATED",
+        "丹麥",
+        ""
+      ],
+      "system_name": null,
+      "scope": "OUT_OF_SCOPE",
+      "scope_detail": "NON_URBAN_RAIL"
+    },
+    "P03": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "partial_metadata",
+      "region": [
+        "SOURCE_STATED",
+        "埃及",
+        ""
+      ],
+      "system_name": "hydrogen-powered tram network",
+      "scope": "IN_SCOPE",
+      "scope_detail": "NONE",
+      "date_valid": true,
+      "date": "2026-10-12",
+      "event_id": "evt_da9b16bf038a118663dc757c",
+      "category": "CATEGORY_UNRESOLVED",
+      "primary_category": null,
+      "taxonomy": [],
+      "taxonomy_state": "NOT_EVALUATED",
+      "reportability": "NOT_EVALUATED"
+    },
+    "P04": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "valid_metadata",
+      "region": [
+        "SOURCE_STATED",
+        "香港",
+        ""
+      ],
+      "system_name": "Hong Kong Tramways",
+      "scope": "IN_SCOPE",
+      "scope_detail": "NONE",
+      "date_valid": false,
+      "date": null
+    },
+    "P05": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "partial_metadata",
+      "region": [
+        "UNRESOLVED",
+        null,
+        "INVALID_FIELD"
+      ],
+      "system_name": null,
+      "technical_gap": [
+        "Scope",
+        "PROPOSAL_CONTRACT_VIOLATION",
+        "ACTION_TARGET_CONTAINMENT",
+        1
+      ]
+    },
+    "P06": {
+      "evidence": "EVIDENCE_REJECTED",
+      "gate": "PRINCIPAL_DOCUMENT",
+      "judge": null,
+      "metadata": null,
+      "region": null,
+      "system_name": null
+    },
+    "P07": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "valid_metadata",
+      "region": [
+        "SOURCE_STATED",
+        "美國",
+        ""
+      ],
+      "system_name": "MetroLink",
+      "scope": "IN_SCOPE",
+      "scope_detail": "NONE",
+      "date_valid": true,
+      "date": "2026-10-16",
+      "event_id": "evt_1b3d778985588d0683389b85",
+      "category": "CATEGORY_ASSIGNED",
+      "primary_category": "營運動態",
+      "technical_gap": [
+        "Taxonomy",
+        "PROPOSAL_CONTRACT_VIOLATION",
+        "PROPOSAL_INVALID",
+        1
+      ]
+    },
+    "P08": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "valid_metadata",
+      "region": [
+        "SOURCE_STATED",
+        "印度",
+        ""
+      ],
+      "system_name": "Chennai Metro",
+      "scope": "IN_SCOPE",
+      "scope_detail": "NONE",
+      "date_valid": true,
+      "date": "2026-10-13",
+      "event_id": "evt_65ddafcf2c21e04a99a84bdb",
+      "category": "CATEGORY_ASSIGNED",
+      "primary_category": "營運動態",
+      "taxonomy": [
+        "電聯車",
+        "號誌"
+      ],
+      "taxonomy_state": "TAXONOMY_EVALUATED",
+      "reportability": "REPORTABLE",
+      "country": [
+        "印度",
+        "SOURCE_STATED"
+      ],
+      "transit_system": [
+        "Chennai Metro",
+        "SOURCE_STATED"
+      ],
+      "validation": "PASS"
+    },
+    "P09": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "partial_metadata",
+      "region": [
+        "UNRESOLVED",
+        null,
+        "UNRECOGNIZED_VALUE"
+      ],
+      "system_name": "지하철 9호선",
+      "technical_gap": [
+        "Scope",
+        "PROPOSAL_CONTRACT_VIOLATION",
+        "ENDPOINT_LABEL",
+        1
+      ]
+    },
+    "P10": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "valid_metadata",
+      "region": [
+        "SOURCE_STATED",
+        "丹麥",
+        ""
+      ],
+      "system_name": "København metro",
+      "scope": "IN_SCOPE",
+      "scope_detail": "NONE",
+      "date_valid": true,
+      "date": "2026-10-14",
+      "event_id": "evt_b3acded0a0a7f25f700d8fa0",
+      "category": "CATEGORY_ASSIGNED",
+      "primary_category": "採購事件",
+      "technical_gap": [
+        "Reportability",
+        "PROPOSAL_CONTRACT_VIOLATION",
+        "PROPOSAL_INVALID",
+        1
+      ]
+    },
+    "P11": {
+      "evidence": "EVIDENCE_REJECTED",
+      "gate": "FETCH_TRANSPORT",
+      "judge": null,
+      "metadata": null,
+      "region": null,
+      "system_name": null
+    },
+    "P12": {
+      "evidence": "EVIDENCE_REJECTED",
+      "gate": "SOURCE_PROVENANCE",
+      "judge": null,
+      "metadata": null,
+      "region": null,
+      "system_name": null
+    },
+    "P13": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "partial_metadata",
+      "region": [
+        "SOURCE_STATED",
+        "中國大陸",
+        ""
+      ],
+      "system_name": "Hong Kong and Shenzhen",
+      "scope": "IN_SCOPE",
+      "scope_detail": "NONE",
+      "date_valid": true,
+      "date": "2026-10-16",
+      "event_id": "evt_4fe115f40f2176ef23759cda",
+      "category": "CATEGORY_ASSIGNED",
+      "primary_category": "規範變動",
+      "taxonomy": [
+        "供電"
+      ],
+      "taxonomy_state": "TAXONOMY_EVALUATED",
+      "reportability": "REPORTABLE",
+      "country": [
+        "中國大陸",
+        "SOURCE_STATED"
+      ],
+      "transit_system": [
+        "Hong Kong and Shenzhen",
+        "SOURCE_STATED"
+      ],
+      "validation": "PASS"
+    },
+    "P14": {
+      "evidence": "EVIDENCE_READY",
+      "gate": null,
+      "judge": "valid",
+      "metadata": "partial_metadata",
+      "region": [
+        "SOURCE_STATED",
+        "越南",
+        ""
+      ],
+      "system_name": "Hanoi Metro",
+      "scope": "IN_SCOPE",
+      "scope_detail": "NONE",
+      "date_valid": true,
+      "date": "2026-10-16",
+      "event_id": "evt_d297c697505db6fbaef2a4ea",
+      "category": "CATEGORY_ASSIGNED",
+      "primary_category": "採購事件",
+      "taxonomy": [
+        "號誌"
+      ],
+      "taxonomy_state": "TAXONOMY_EVALUATED",
+      "reportability": "REPORTABLE",
+      "country": [
+        "越南",
+        "SOURCE_STATED"
+      ],
+      "transit_system": [
+        "Hanoi Metro",
+        "SOURCE_STATED"
+      ],
+      "validation": "PASS"
+    }
+  },
+  "technical_gaps": [
+    {
+      "stage": "Scope",
+      "subject_id": "cand_0f1744e5368eade1fb68c3ee7c553472bc8696627bb4dc923557593d51d8dfe1",
+      "kind": "PROPOSAL_CONTRACT_VIOLATION",
+      "failure_class": "ACTION_TARGET_CONTAINMENT",
+      "attempts": 1
+    },
+    {
+      "stage": "Scope",
+      "subject_id": "cand_535cd70492d878a1c14fc70cec12ae6389a782b59e5e050eebcaafe1c3f086f8",
+      "kind": "PROPOSAL_CONTRACT_VIOLATION",
+      "failure_class": "ENDPOINT_LABEL",
+      "attempts": 1
+    },
+    {
+      "stage": "Taxonomy",
+      "subject_id": "evt_1b3d778985588d0683389b85",
+      "kind": "PROPOSAL_CONTRACT_VIOLATION",
+      "failure_class": "PROPOSAL_INVALID",
+      "attempts": 1
+    },
+    {
+      "stage": "Reportability",
+      "subject_id": "evt_b3acded0a0a7f25f700d8fa0",
+      "kind": "PROPOSAL_CONTRACT_VIOLATION",
+      "failure_class": "PROPOSAL_INVALID",
+      "attempts": 1
+    }
+  ],
+  "metadata_exclusions": [],
+  "disclosure": {
+    "technical_gap_count": 4,
+    "metadata_exclusion_count": 0,
+    "validation_failed_count": 0
+  }
+}

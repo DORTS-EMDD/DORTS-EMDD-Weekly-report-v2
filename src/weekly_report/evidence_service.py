@@ -939,8 +939,10 @@ class EvidenceService:
             if observation.field_name == "transit_system_name" and (
                 reference.is_generic_transit_term(observation.value)
                 or reference.is_region_or_city_name(observation.value)
+                or reference.is_non_specific_system_name(observation.value)
             ):
-                # A mode word, city, or country is not a specific system name.
+                # A mode word, city, country, or a list of them is not a
+                # specific system name.
                 unresolved.append("transit_system_name")
                 continue
             values[observation.field_name] = observation.value

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 import json
 from pathlib import Path
+import re
 from typing import Any, Mapping
 
 
@@ -29,6 +30,9 @@ class GeographicMatch:
     kind: GeographicMatchKind
     region_id: str | None = None
     display_name: str | None = None
+
+
+_LIST_SEPARATORS = re.compile(r"\s*(?:,|&|/|、|，|與|和|及|\band\b)\s*", re.IGNORECASE)
 
 
 def _key(value: str) -> str:
@@ -122,6 +126,21 @@ class GeographicReference:
             GeographicMatchKind.REGION,
             GeographicMatchKind.CITY,
         }
+
+    def is_non_specific_system_name(self, value: str) -> bool:
+        """Whether a value only lists places or generic mode words.
+
+        "Hong Kong and Shenzhen" or "Hong Kong, metro" name no specific
+        transit system; every part must be a region/city name or a generic
+        term for the whole value to be non-specific.
+        """
+
+        if not isinstance(value, str) or not value.strip():
+            return False
+        parts = [part for part in _LIST_SEPARATORS.split(value.strip()) if part.strip()]
+        return bool(parts) and all(
+            self.is_generic_transit_term(part) or self.is_region_or_city_name(part) for part in parts
+        )
 
 
 _DEFAULT: GeographicReference | None = None

@@ -381,3 +381,48 @@ PRODUCTION_READY = 否
 - 測試 989 通過（乾淨 worktree）；Golden 29 通過。
 - 尚未進行：新 prompt 的真實 MaiAgent 驗收（需預算核准）。
 - 正式 Search 至報告的完整流程仍有已知阻礙：Google News RSS 連結從未被解析為出版者文章；Phase A 是以 manifest 直接提供出版者網址繞過。
+
+
+## 13. 封存 Evidence 端到端驗收（e2e_archived1，2026-10-21）
+
+**性質：封存 Evidence 的整合驗收，不是正式 Search 到報告的完整生產流程。**
+- Search 以 manifest 重播。
+- Evidence 使用 live3 封存的 HTML（真實網路 HTTP 0 次；22 次為重播計數）。
+- MaiAgent 全部即時呼叫，使用 RC-9／RC-10 新 prompt。
+- 用量：MaiAgent 62/100（含 1 次 Writer 逾時重試）、279 秒、未寄信。
+- 原始紀錄：[runs/e2e_archived1/summary.json](runs/e2e_archived1/summary.json)、[final_report.md](runs/e2e_archived1/final_report.md)
+
+**正式週報：3 篇，全部通過 Validation（0 FAIL、0 Validator 技術缺口）。** 報告揭露 4 則技術缺口。
+- 營運動態：清奈捷運黃線首段營運（P08）。
+- 採購事件：河內簽約興建五條捷運線（P14）。
+- 規範變動：香港北環線支線核准（P13）。
+
+**內容稽核（逐句對照封存原文）：**
+- 事實全部可回溯原文。live3 的錯誤已消失：
+  - 「The Loop」不再被誤譯為「新田科技城」。
+  - 「turnkey」已譯為「統包」。
+- 品質缺陷，已修正但尚未真實驗證：
+  - 日期與數字保留英文寫法（「September 18」「October 11」「mid-2027」「25 474」）。這是 Writer v2 指示「照原文」的副作用；v3 改為照原值、以中文格式書寫。
+  - 香港篇的「運輸系統：Hong Kong and Shenzhen」是城市組合，不是系統名稱。已補一般規則：只由地名或泛稱組成的值不得存為系統名稱。
+- 可商榷（屬既有 owner 判定，未修改）：
+  - 香港篇的國家／地區顯示「中國大陸」，因為原文標示「CHINA:」。
+  - 香港篇的相關系統為「供電」，依據薄弱。
+  - 香港篇的類別為「規範變動」。
+
+**技術缺口 4 則（皆已揭露，未偽裝成新聞不合格）：**
+- Scope：P05「shooting」、P09 韓文動作詞。helper 自行改寫的標籤不在其引用的句子內，屬標籤層級的改寫問題。
+- Reportability：P10 引文抄錯。Reportability 尚未改用句子 ID。
+- Taxonomy：P07 欄位組合錯誤（「已評估」卻附「未解決」理由）。prompt v2 已明列合法組合，尚未真實驗證。
+
+**其他觀察：**
+- 香港電車出軌（P04／C05）判定 IN_SCOPE，但因 Evidence 未取得發布日期而被 Temporal 排除。政府新聞稿的日期只寫在正文，未寫在網頁 metadata；屬日期擷取的缺口。
+- 埃及氫能電車（P03）判為 CATEGORY_UNRESOLVED。
+- 紐約月臺槍擊（P05）本次在 Scope 即成為技術缺口，因此 RC-10 對一般治安事件的效果尚未經真實驗證。
+- 對照組：C03、C05 因日期無效排除；C04 OUT。正式報告未混入任何對照組事件。
+
+```text
+ARCHIVED_EVIDENCE_E2E = PASS（3 篇正式週報，0 Validation FAIL）
+FULL_PRODUCTION_E2E = 未執行（Google News 連結未解析，詳見最終回報）
+TESTS = 992 passed；GOLDEN = 29 passed
+PRODUCTION_READY = 否
+```

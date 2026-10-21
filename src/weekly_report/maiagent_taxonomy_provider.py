@@ -30,7 +30,7 @@ from .contracts import canonical_em_system_ids
 
 
 TASK_IDENTITY = "taxonomy_semantic_proposal"
-PROMPT_VERSION = "taxonomy-principal-body-v1"
+PROMPT_VERSION = "taxonomy-principal-body-v2"
 SCHEMA_VERSION = "taxonomy-semantic-proposal-v1"
 HELPER_VERSION = "maiagent-structured-helper-taxonomy-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-taxonomy"
@@ -56,6 +56,7 @@ TAXONOMY_INSTRUCTIONS = (
     "Maintenance software follows the technical object being monitored, diagnosed, inspected, maintained, or predicted; workflow, AI, analytics, deployment location, or user alone does not establish a system.",
     "TAXONOMY_EVALUATED may contain zero or more systems; evaluated-empty is legal only when the evidence establishes no reasonable canonical mapping.",
     "TAXONOMY_UNRESOLVED is legal when a parent system cannot be reliably determined.",
+    "Field combinations: TAXONOMY_EVALUATED always has taxonomy_resolution_reason null, insufficient_provenance null and no conflict citations, including when systems is empty; TAXONOMY_UNRESOLVED always has systems empty and support empty, with exactly one reason. When the evidence names no specific E&M system (for example a line extension described only by track, stations and construction), return TAXONOMY_EVALUATED with systems [] rather than an unresolved reason.",
     "Use CONFLICTING_SYSTEM_EVIDENCE only for genuinely competing supported hypotheses.",
     "Every assigned system requires system-specific support with an exact quote from the named supplied member.",
     "Exact quotes must be copied from the named substantive_content member; do not paraphrase, normalize, synthesize, or borrow across sources.",

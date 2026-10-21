@@ -2216,7 +2216,8 @@ labels；不得新增、移除、替換、normalize、推測或修復 taxonomy�
 semantic judge 或第二個 Taxonomy owner。
 
 The Taxonomy task contract is independently versioned as
-`taxonomy_semantic_proposal`, prompt `taxonomy-principal-body-v1`, and schema
+`taxonomy_semantic_proposal`, prompt `taxonomy-principal-body-v2` (states the
+valid state/reason field combinations explicitly; 2026-10-21), and schema
 `taxonomy-semantic-proposal-v1`. Its request is exactly
 `TaxonomySemanticRequest.as_payload()` with `event_id` and all lexically ordered
 members (`candidate_id`, complete unmodified `substantive_content`). Its proposal

@@ -141,5 +141,19 @@ class EvidenceServiceRegionTests(unittest.TestCase):
         self.assertEqual(location_spans, [(0, 5), (32, 37)])
 
 
+
+class NonSpecificSystemNameTests(unittest.TestCase):
+    """A list of places or mode words is never a transit-system name."""
+
+    def test_lists_of_places_or_mode_words_are_not_system_names(self):
+        from src.weekly_report.geographic_reference import default_geographic_reference
+
+        reference = default_geographic_reference()
+        for value in ("Hong Kong and Shenzhen", "Hong Kong, metro", "香港與深圳", "metro"):
+            self.assertTrue(reference.is_non_specific_system_name(value), value)
+        for value in ("Hanoi Metro", "Chennai Metro", "Hong Kong Tramways", "MetroLink", "København metro"):
+            self.assertFalse(reference.is_non_specific_system_name(value), value)
+
+
 if __name__ == "__main__":
     unittest.main()

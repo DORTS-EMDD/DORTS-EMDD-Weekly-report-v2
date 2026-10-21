@@ -16,6 +16,17 @@ from src.weekly_report.writer import (
 from test_report_service import _workflow_result
 
 
+class WriterInstructionTests(TestCase):
+    def test_dates_keep_their_values_in_chinese_report_style(self):
+        from src.weekly_report.writer import WRITER_INSTRUCTIONS
+
+        instructions = " ".join(WRITER_INSTRUCTIONS)
+        self.assertIn("write them in Traditional Chinese report style", instructions)
+        self.assertIn("do not add a year, day or time the evidence does not give", instructions)
+        self.assertIn("never guess a translation", instructions)
+        self.assertIn("When the request contains a correction", instructions)
+
+
 class ReportWriterTests(TestCase):
     def test_dotenv_loading_builds_distinct_writer_configuration(self) -> None:
         dotenv_file = NamedTemporaryFile(
