@@ -9,31 +9,90 @@ from typing import Protocol
 from urllib.parse import urlsplit, urlunsplit
 
 from .contracts import (
+    EVENT_TECHNICAL_FAILURES,
     EvidenceState,
     EventGroup,
     EventIdentityBasis,
     EventIdentityDiagnostic,
     EventIdentityFacts,
+    EventIdentityGroupingRecord,
+    EventIdentityGroupingRequest,
     EventIdentityRecord,
     EventIdentityRelation,
     EventIdentityRun,
-    EventIdentitySemanticDecision,
-    EventIdentitySemanticRequest,
-    EventIdentitySupportSpan,
+    ProposalContractViolation,
     ScopeState,
+    TechnicalGap,
     UnresolvedClaim,
 )
+from .evidence_sentences import resolve_sentence_ids, segment_evidence_sentences
 
 
-class EventIdentitySemanticAdvisor(Protocol):
-    """Narrow advisory seam; the owner retains the final grouping decision."""
+# RC-15 bounds (contract section A.9).
+LEAD_SENTENCE_LIMIT = 6
+LEAD_CHARACTER_LIMIT = 900
+BATCH_RECORD_LIMIT = 60
+# Sized so that 60 records of at most 900 lead characters fit: the record
+# limit binds first.
+BATCH_CHARACTER_LIMIT = 66_000
 
-    def __call__(self, request: EventIdentitySemanticRequest) -> object:
-        """Return one structured pair proposal."""
+EVENT_IDENTITY_GROUPING_RESPONSE_SCHEMA: dict[str, object] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "groups": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "members": {
+                        "type": "array",
+                        "minItems": 2,
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "properties": {
+                                "record_id": {"type": "string"},
+                                "subject_sentence_ids": {"type": "array", "items": {"type": "string"}},
+                                "occurrence_sentence_ids": {"type": "array", "items": {"type": "string"}},
+                                "lifecycle_sentence_ids": {"type": "array", "items": {"type": "string"}},
+                            },
+                            "required": [
+                                "record_id",
+                                "subject_sentence_ids",
+                                "occurrence_sentence_ids",
+                                "lifecycle_sentence_ids",
+                            ],
+                        },
+                    },
+                },
+                "required": ["members"],
+            },
+        },
+    },
+    "required": ["groups"],
+}
+_MEMBER_KEYS = frozenset(
+    EVENT_IDENTITY_GROUPING_RESPONSE_SCHEMA["properties"]["groups"]["items"]  # type: ignore[index]
+    ["properties"]["members"]["items"]["required"]
+)
+_CITATION_KEYS = tuple(sorted(_MEMBER_KEYS - {"record_id"}))
 
 
-class InvalidEventIdentitySemanticResponse(ValueError):
-    """The semantic advisor did not return the locked structured response."""
+class EventIdentityGroupingAdvisor(Protocol):
+    """Proposal-only seam (RC-15); the owner retains the grouping decision."""
+
+    def __call__(self, request: EventIdentityGroupingRequest) -> object:
+        """Return one parsed grouping proposal object."""
+
+
+class EventIdentityProposalViolation(ProposalContractViolation):
+    """A parseable grouping proposal (or one group of it) broke its contract."""
+
+    def __init__(self, failure_class: str) -> None:
+        super().__init__(failure_class)
+        self.failure_class = failure_class
 
 
 class EventIdentity:
@@ -58,13 +117,12 @@ class EventIdentity:
         "package",
         "location",
     )
-    _SUPPORT_ROLES = frozenset({"occurrence", "subject", "lifecycle"})
     _FIRST_HAND_ROLES = frozenset(
         {"first_party", "first_hand", "operator_notice", "government_notice"}
     )
 
-    def __init__(self, semantic_advisor: EventIdentitySemanticAdvisor | None = None):
-        self._semantic_advisor = semantic_advisor
+    def __init__(self, grouping_advisor: EventIdentityGroupingAdvisor | None = None):
+        self._grouping_advisor = grouping_advisor
 
     def group(self, records: Sequence[EventIdentityRecord]) -> tuple[EventGroup, ...]:
         """Return deterministic groups; diagnostics are available from evaluate()."""
@@ -89,6 +147,8 @@ class EventIdentity:
                 continue
             eligible.append(record)
 
+        technical_gaps: list[TechnicalGap] = []
+        proposed = self._proposed_relations(eligible, diagnostics, technical_gaps)
         ordered = sorted(eligible, key=_record_sort_key)
         groups: list[list[EventIdentityRecord]] = []
         relation_cache: dict[tuple[str, str], tuple[EventIdentityRelation, str]] = {}
@@ -97,7 +157,7 @@ class EventIdentity:
             compatible: list[int] = []
             for index, members in enumerate(groups):
                 relations = [
-                    self._relation(member, record, relation_cache)
+                    self._relation(member, record, relation_cache, proposed)
                     for member in members
                 ]
                 if all(relation is EventIdentityRelation.SAME_EVENT for relation, _ in relations):
@@ -120,7 +180,7 @@ class EventIdentity:
                     for index in compatible
                     for member in groups[index]
                 ] + [record]
-                if self._group_is_invariant(merged_members, relation_cache):
+                if self._group_is_invariant(merged_members, relation_cache, proposed):
                     first = compatible[0]
                     groups[first] = merged_members
                     for index in reversed(compatible[1:]):
@@ -153,7 +213,7 @@ class EventIdentity:
                 key=lambda group: group.member_candidate_ids,
             )
         )
-        return EventIdentityRun(output, tuple(diagnostics))
+        return EventIdentityRun(output, tuple(diagnostics), tuple(technical_gaps))
 
     @staticmethod
     def _eligible(record: EventIdentityRecord) -> bool:
@@ -168,38 +228,50 @@ class EventIdentity:
         left: EventIdentityRecord,
         right: EventIdentityRecord,
         cache: dict[tuple[str, str], tuple[EventIdentityRelation, str]],
+        proposed: Mapping[tuple[str, str], tuple[EventIdentityRelation, str]],
     ) -> tuple[EventIdentityRelation, str]:
-        key = tuple(sorted((left.candidate.candidate_id, right.candidate.candidate_id)))
+        key = _pair_key(left.candidate.candidate_id, right.candidate.candidate_id)
         if key in cache:
             return cache[key]
 
-        deterministic = self._deterministic_relation(left, right)
-        if deterministic is not None:
-            cache[key] = deterministic
-            return deterministic
-
-        if self._semantic_advisor is None:
-            result = (EventIdentityRelation.UNCERTAIN, "INSUFFICIENT_IDENTITY")
-            cache[key] = result
-            return result
-
-        request = _semantic_request(left, right)
-        try:
-            raw = self._semantic_advisor(request)
-            decision = _validate_semantic_response(raw, request)
-        except Exception:
-            result = (EventIdentityRelation.UNCERTAIN, "SEMANTIC_ADVISOR_INVALID")
-            cache[key] = result
-            return result
-
-        if decision.relation is EventIdentityRelation.SAME_EVENT:
-            result = (EventIdentityRelation.SAME_EVENT, "SEMANTIC_SAME_EVENT")
-        elif decision.relation is EventIdentityRelation.DISTINCT_EVENT:
-            result = (EventIdentityRelation.DISTINCT_EVENT, "SEMANTIC_DISTINCT_EVENT")
-        else:
-            result = (EventIdentityRelation.UNCERTAIN, "INSUFFICIENT_IDENTITY")
+        result = self._deterministic_relation(left, right) or proposed.get(
+            key, (EventIdentityRelation.UNCERTAIN, "INSUFFICIENT_IDENTITY")
+        )
         cache[key] = result
         return result
+
+    def _proposed_relations(
+        self,
+        eligible: Sequence[EventIdentityRecord],
+        diagnostics: list[EventIdentityDiagnostic],
+        technical_gaps: list[TechnicalGap],
+    ) -> dict[tuple[str, str], tuple[EventIdentityRelation, str]]:
+        """Validate the RC-15 grouping proposals into SAME_EVENT pair relations."""
+
+        relations: dict[tuple[str, str], tuple[EventIdentityRelation, str]] = {}
+        if self._grouping_advisor is None:
+            return relations
+        for request in _grouping_requests(eligible):
+            try:
+                proposal = _validate_grouping_proposal(self._grouping_advisor(request), request)
+            except EVENT_TECHNICAL_FAILURES as failure:
+                technical_gaps.append(TechnicalGap.from_failure("EventIdentity", request.batch_id, failure))
+                continue
+            for index, outcome in enumerate(proposal, start=1):
+                if isinstance(outcome, EventIdentityProposalViolation):
+                    technical_gaps.append(
+                        TechnicalGap.from_failure("EventIdentity", f"{request.batch_id}:group-{index}", outcome)
+                    )
+                    continue
+                if len(outcome) == 1:
+                    diagnostics.append(EventIdentityDiagnostic(outcome, "SINGLE_MEMBER_PROPOSAL"))
+                for position, left_id in enumerate(outcome):
+                    for right_id in outcome[position + 1 :]:
+                        relations[_pair_key(left_id, right_id)] = (
+                            EventIdentityRelation.SAME_EVENT,
+                            "SEMANTIC_GROUP_PROPOSAL",
+                        )
+        return relations
 
     def _deterministic_relation(
         self,
@@ -274,9 +346,10 @@ class EventIdentity:
         self,
         members: Sequence[EventIdentityRecord],
         cache: dict[tuple[str, str], tuple[EventIdentityRelation, str]],
+        proposed: Mapping[tuple[str, str], tuple[EventIdentityRelation, str]],
     ) -> bool:
         return all(
-            self._relation(left, right, cache)[0] is EventIdentityRelation.SAME_EVENT
+            self._relation(left, right, cache, proposed)[0] is EventIdentityRelation.SAME_EVENT
             for index, left in enumerate(members)
             for right in members[index + 1 :]
         )
@@ -413,154 +486,104 @@ def _normalise_url(value: str) -> str:
     )
 
 
-def _semantic_request(
-    left: EventIdentityRecord,
-    right: EventIdentityRecord,
-) -> EventIdentitySemanticRequest:
-    return EventIdentitySemanticRequest(
-        left_candidate_id=left.candidate.candidate_id,
-        right_candidate_id=right.candidate.candidate_id,
-        left_headline=str(left.evidence.provenance.get("principal_headline", "")),
-        right_headline=str(right.evidence.provenance.get("principal_headline", "")),
-        left_body=left.evidence.substantive_content,
-        right_body=right.evidence.substantive_content,
-        left_source_url=left.evidence.canonical_source_url,
-        right_source_url=right.evidence.canonical_source_url,
-        left_source_type=left.evidence.source_type,
-        right_source_type=right.evidence.source_type,
-        left_identity_facts=_advisor_identity_facts(left.identity_facts),
-        right_identity_facts=_advisor_identity_facts(right.identity_facts),
-    )
+def _pair_key(left_id: str, right_id: str) -> tuple[str, str]:
+    return tuple(sorted((left_id, right_id)))  # type: ignore[return-value]
 
 
-def _advisor_identity_facts(
-    facts: EventIdentityFacts | None,
-) -> EventIdentityFacts | None:
-    """Project only the pre-extension Event Identity surface for the advisor."""
+def _advisor_identity_facts(facts: EventIdentityFacts | None) -> dict[str, str]:
+    """Identity-only projection (section K): never country, system name or support."""
 
     if facts is None:
+        return {}
+    return {
+        field_name: str(getattr(facts, field_name) or "")
+        for field_name in ("event_key", *EventIdentity._IDENTITY_FIELDS)
+    }
+
+
+def _grouping_record(record: EventIdentityRecord, record_id: str) -> EventIdentityGroupingRecord | None:
+    lead = []
+    characters = 0
+    for sentence in segment_evidence_sentences(record.evidence.substantive_content):
+        if len(lead) >= LEAD_SENTENCE_LIMIT or (lead and characters + len(sentence.text) > LEAD_CHARACTER_LIMIT):
+            break
+        lead.append(sentence)
+        characters += len(sentence.text)
+    if not lead:
         return None
-    return EventIdentityFacts(
-        event_key=facts.event_key,
-        action=facts.action,
-        lifecycle_step=facts.lifecycle_step,
-        subject=facts.subject,
-        asset=facts.asset,
-        project=facts.project,
-        package=facts.package,
-        location=facts.location,
-        occurrence_context=facts.occurrence_context,
-        occurrence_date=facts.occurrence_date,
-        non_identity_claims=facts.non_identity_claims,
-        evidence_references=facts.evidence_references,
+    return EventIdentityGroupingRecord(
+        record_id, record.candidate.candidate_id, tuple(lead), _advisor_identity_facts(record.identity_facts)
     )
 
 
-def _validate_semantic_response(
+def _grouping_requests(eligible: Sequence[EventIdentityRecord]) -> list[EventIdentityGroupingRequest]:
+    """Consecutive bounded batches ordered by discovery publication time."""
+
+    ordered = sorted(
+        eligible,
+        key=lambda record: (record.candidate.published_at or "", record.candidate.candidate_id),
+    )
+    batches: list[list[EventIdentityGroupingRecord]] = [[]]
+    characters = 0
+    for record in ordered:
+        grouping_record = _grouping_record(record, f"R{len(batches[-1]) + 1}")
+        if grouping_record is None:
+            continue
+        size = len(json.dumps(grouping_record.as_payload(), ensure_ascii=False))
+        if batches[-1] and (len(batches[-1]) >= BATCH_RECORD_LIMIT or characters + size > BATCH_CHARACTER_LIMIT):
+            batches.append([])
+            characters = 0
+            grouping_record = _grouping_record(record, "R1")
+        batches[-1].append(grouping_record)
+        characters += size
+    return [
+        EventIdentityGroupingRequest(f"event-identity-batch-{index}", tuple(batch))
+        for index, batch in enumerate((batch for batch in batches if len(batch) >= 2), start=1)
+    ]
+
+
+def _validate_grouping_proposal(
     raw: object,
-    request: EventIdentitySemanticRequest,
-) -> EventIdentitySemanticDecision:
-    if isinstance(raw, EventIdentitySemanticDecision):
-        decision = raw
-    else:
-        if not isinstance(raw, Mapping):
-            raise InvalidEventIdentitySemanticResponse("response must be an object")
-        expected = {"relation", "support_spans", "contradictions", "missing_support"}
-        if set(raw) != expected:
-            raise InvalidEventIdentitySemanticResponse("response fields do not match schema")
-        relation = raw["relation"]
-        try:
-            relation_enum = EventIdentityRelation(relation)
-        except (TypeError, ValueError) as exc:
-            raise InvalidEventIdentitySemanticResponse("invalid relation") from exc
-        spans = _parse_support_spans(raw["support_spans"], request)
-        contradictions = _parse_strings(raw["contradictions"], "contradictions")
-        missing_support = _parse_strings(raw["missing_support"], "missing_support")
-        decision = EventIdentitySemanticDecision(
-            relation_enum,
-            spans,
-            contradictions,
-            missing_support,
-        )
+    request: EventIdentityGroupingRequest,
+) -> list[tuple[str, ...] | EventIdentityProposalViolation]:
+    """Return each proposed group's member IDs, or the violation of that group.
 
-    _validate_decision(decision, request)
-    return decision
+    Raises EventIdentityProposalViolation when the whole response is invalid.
+    """
 
+    if not isinstance(raw, Mapping) or set(raw) != {"groups"} or not isinstance(raw["groups"], list):
+        raise EventIdentityProposalViolation("SCHEMA_INVALID")
+    records = {record.record_id: record for record in request.records}
+    seen: set[str] = set()
+    for group in raw["groups"]:
+        if not isinstance(group, Mapping) or set(group) != {"members"} or not isinstance(group["members"], list):
+            raise EventIdentityProposalViolation("SCHEMA_INVALID")
+        for member in group["members"]:
+            if (
+                not isinstance(member, Mapping)
+                or set(member) != _MEMBER_KEYS
+                or not isinstance(member["record_id"], str)
+                or any(not isinstance(member[key], list) for key in _CITATION_KEYS)
+            ):
+                raise EventIdentityProposalViolation("SCHEMA_INVALID")
+            if member["record_id"] not in records:
+                raise EventIdentityProposalViolation("UNKNOWN_RECORD")
+            if member["record_id"] in seen:
+                raise EventIdentityProposalViolation("DUPLICATE_MEMBERSHIP")
+            seen.add(member["record_id"])
 
-def _validate_decision(
-    decision: EventIdentitySemanticDecision,
-    request: EventIdentitySemanticRequest,
-) -> None:
-    bodies = {
-        request.left_candidate_id: request.left_body,
-        request.right_candidate_id: request.right_body,
-    }
-    for span in decision.support_spans:
-        if span.candidate_id not in bodies or span.role not in EventIdentity._SUPPORT_ROLES:
-            raise InvalidEventIdentitySemanticResponse("support span has an unknown target")
-        if (
-            isinstance(span.start, bool)
-            or not isinstance(span.start, int)
-            or isinstance(span.end, bool)
-            or not isinstance(span.end, int)
-            or span.start < 0
-            or span.start >= span.end
-            or span.end > len(bodies[span.candidate_id])
+    outcomes: list[tuple[str, ...] | EventIdentityProposalViolation] = []
+    for group in raw["groups"]:
+        members = group["members"]
+        if len(members) < 2:
+            # Proposes no merge; nothing to validate or disclose.
+            outcomes.append(tuple(records[member["record_id"]].candidate_id for member in members))
+        elif any(
+            resolve_sentence_ids(records[member["record_id"]].sentences, member[key]) is None
+            for member in members
+            for key in _CITATION_KEYS
         ):
-            raise InvalidEventIdentitySemanticResponse("support span is out of range")
-    if decision.relation is EventIdentityRelation.SAME_EVENT:
-        required = {
-            (candidate_id, role)
-            for candidate_id in (request.left_candidate_id, request.right_candidate_id)
-            for role in EventIdentity._SUPPORT_ROLES
-        }
-        supplied = {(span.candidate_id, span.role) for span in decision.support_spans}
-        if not required.issubset(supplied) or decision.contradictions or decision.missing_support:
-            raise InvalidEventIdentitySemanticResponse("SAME_EVENT is insufficiently grounded")
-    elif decision.relation is EventIdentityRelation.DISTINCT_EVENT:
-        if not decision.support_spans or not decision.contradictions:
-            raise InvalidEventIdentitySemanticResponse(
-                "DISTINCT_EVENT is insufficiently grounded"
-            )
-
-
-def _parse_support_spans(
-    raw: object,
-    request: EventIdentitySemanticRequest,
-) -> tuple[EventIdentitySupportSpan, ...]:
-    if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes, bytearray)):
-        raise InvalidEventIdentitySemanticResponse("support_spans must be an array")
-    bodies = {
-        request.left_candidate_id: request.left_body,
-        request.right_candidate_id: request.right_body,
-    }
-    output = []
-    for value in raw:
-        if not isinstance(value, Mapping) or set(value) != {"candidate_id", "role", "start", "end"}:
-            raise InvalidEventIdentitySemanticResponse("invalid support span")
-        candidate_id = value["candidate_id"]
-        role = value["role"]
-        start = value["start"]
-        end = value["end"]
-        if candidate_id not in bodies or role not in EventIdentity._SUPPORT_ROLES:
-            raise InvalidEventIdentitySemanticResponse("support span has an unknown target")
-        if (
-            isinstance(start, bool)
-            or not isinstance(start, int)
-            or isinstance(end, bool)
-            or not isinstance(end, int)
-            or start < 0
-            or start >= end
-            or end > len(bodies[candidate_id])
-        ):
-            raise InvalidEventIdentitySemanticResponse("support span is out of range")
-        output.append(EventIdentitySupportSpan(candidate_id, role, start, end))
-    return tuple(output)
-
-
-def _parse_strings(raw: object, field_name: str) -> tuple[str, ...]:
-    if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes, bytearray)):
-        raise InvalidEventIdentitySemanticResponse(f"{field_name} must be an array")
-    if not all(isinstance(value, str) for value in raw):
-        raise InvalidEventIdentitySemanticResponse(f"{field_name} must contain strings")
-    return tuple(raw)
+            outcomes.append(EventIdentityProposalViolation("CITATION_INVALID"))
+        else:
+            outcomes.append(tuple(records[member["record_id"]].candidate_id for member in members))
+    return outcomes

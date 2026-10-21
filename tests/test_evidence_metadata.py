@@ -618,31 +618,34 @@ class EvidenceMetadataServiceTests(unittest.TestCase):
 
         def advisor(request):
             captured.append(request)
-            spans = [
-                {"candidate_id": candidate_id, "role": role, "start": 0, "end": len(source_body)}
-                for candidate_id, source_body in ((request.left_candidate_id, request.left_body), (request.right_candidate_id, request.right_body))
-                for role in ("occurrence", "subject", "lifecycle")
+            members = [
+                {
+                    "record_id": record.record_id,
+                    "subject_sentence_ids": ["S1"],
+                    "occurrence_sentence_ids": ["S1"],
+                    "lifecycle_sentence_ids": ["S1"],
+                }
+                for record in request.records
             ]
-            return {"relation": "SAME_EVENT", "support_spans": spans, "contradictions": [], "missing_support": []}
+            return {"groups": [{"members": members}]}
 
         result = EventIdentity(advisor).evaluate(records)
         self.assertEqual(len(result.groups), 1)
-        for projected in (captured[0].left_identity_facts, captured[0].right_identity_facts):
-            self.assertEqual(projected.event_key, "event-1")
-            self.assertEqual(projected.action, "commissioning" if projected is captured[0].left_identity_facts else "entered_service")
-            self.assertEqual(projected.lifecycle_step, "service_entry")
-            self.assertEqual(projected.subject, "line-4")
-            self.assertEqual(projected.asset, "train-set-4")
-            self.assertEqual(projected.project, "metro-modernisation")
-            self.assertEqual(projected.package, "signalling-package")
-            self.assertEqual(projected.location, "Taipei")
-            self.assertEqual(projected.occurrence_context, "approved commissioning")
-            self.assertEqual(projected.occurrence_date, "2026-09-15")
-            self.assertEqual(dict(projected.non_identity_claims), {"duration": "42 minutes"})
-            self.assertEqual(projected.evidence_references, ("body:0-10",))
-            self.assertIsNone(projected.country)
-            self.assertIsNone(projected.transit_system_name)
-            self.assertEqual(projected.metadata_support, ())
+        projected = {record.candidate_id: dict(record.identity_facts) for record in captured[0].records}
+        expected = {
+            "event_key": "event-1",
+            "action": "commissioning",
+            "lifecycle_step": "service_entry",
+            "subject": "line-4",
+            "asset": "train-set-4",
+            "project": "metro-modernisation",
+            "package": "signalling-package",
+            "location": "Taipei",
+            "occurrence_context": "approved commissioning",
+            "occurrence_date": "2026-09-15",
+        }
+        self.assertEqual(projected["L"], expected)
+        self.assertEqual(projected["R"], {**expected, "action": "entered_service"})
         self.assertEqual(records[0].evidence.identity_facts.country, "Taiwan")
         self.assertEqual(records[0].evidence.identity_facts.transit_system_name, "Metro")
         self.assertEqual(records[0].evidence.identity_facts.metadata_support, support)

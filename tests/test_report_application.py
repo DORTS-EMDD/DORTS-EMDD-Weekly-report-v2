@@ -2293,6 +2293,37 @@ class TechnicalGapIsolationTests(TestCase):
         self.assertTrue(all(scope.state is ScopeState.IN_SCOPE for scope in result.scope_results))
         self.assertEqual(result.final_report.disclosure.technical_gap_count, 1)
 
+    def test_event_identity_grouping_gap_keeps_events_and_discloses_duplicates(self):
+        # RC-15: a failed grouping proposal leaves records unmerged, never excluded.
+        def failing_advisor(_request):
+            raise SemanticProviderTechnicalFailure("TIMEOUT", attempts=2, transient=True)
+
+        result = self._app(
+            TwoFormalResultProvider(),
+            evidence_service=FormalEvidenceService(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(default_date=date(2026, 9, 18)),
+            event_identity=EventIdentity(failing_advisor),
+            classifier=RecordingClassifier(),
+            report_workflow=RecordingDownstreamWorkflow(reportable=True),
+            ordering=RecordingOrdering(),
+            report_service=ReportService(),
+            writer=ReportWriter(provider=lambda request: _block(request["writer_request"]["event_id"])),
+            validator=Validator(semantic_provider=_semantic_provider),
+        ).run("selected")
+        self.assertEqual(
+            [(gap.stage, gap.subject_id) for gap in result.technical_gaps],
+            [("EventIdentity", "event-identity-batch-1")],
+        )
+        # The fixture's identical facts still merge deterministically; the gap
+        # removes nothing from the report.
+        self.assertEqual(len(result.event_identity_run.groups), 1)
+        self.assertEqual(result.final_report.event_count, 1)
+        self.assertEqual(result.final_report.disclosure.technical_gap_count, 0)
+        self.assertEqual(result.final_report.disclosure.event_identity_gap_count, 1)
+        self.assertIn("可能含重複報導的事件", result.final_report.content)
+        self.assertNotIn("技術問題未完成處理", result.final_report.content)
+
     def test_writer_technical_failure_isolates_one_event_and_is_disclosed(self):
         calls = []
 

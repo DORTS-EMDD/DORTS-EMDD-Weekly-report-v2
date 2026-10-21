@@ -257,16 +257,24 @@ class ReportDisclosure:
     technical_gap_count: int = 0
     metadata_exclusion_count: int = 0
     validation_failed_count: int = 0
+    # RC-15: grouping proposals that failed; their events are reported
+    # unmerged, so duplicates may remain.
+    event_identity_gap_count: int = 0
 
     def __post_init__(self) -> None:
-        for name in ("technical_gap_count", "metadata_exclusion_count", "validation_failed_count"):
+        for name in (
+            "technical_gap_count",
+            "metadata_exclusion_count",
+            "validation_failed_count",
+            "event_identity_gap_count",
+        ):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int) or value < 0:
                 raise ValueError(f"ReportDisclosure {name} must be a non-negative integer")
 
     @property
     def complete(self) -> bool:
-        return self.technical_gap_count == 0
+        return self.technical_gap_count == 0 and self.event_identity_gap_count == 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -490,6 +498,7 @@ class ReportService:
                 "technical_gap_count": disclosure.technical_gap_count,
                 "metadata_exclusion_count": disclosure.metadata_exclusion_count,
                 "validation_failed_count": disclosure.validation_failed_count,
+                "event_identity_gap_count": disclosure.event_identity_gap_count,
             },
             "events": [
                 {
@@ -543,6 +552,8 @@ class ReportService:
             notes.append(
                 f"本期有 {disclosure.technical_gap_count} 則候選或事件因技術問題未完成處理，未列入本報告。"
             )
+        if disclosure.event_identity_gap_count:
+            notes.append("本期跨來源同事件合併有部分因技術問題未完成，本報告可能含重複報導的事件。")
         if disclosure.metadata_exclusion_count:
             notes.append(
                 f"本期有 {disclosure.metadata_exclusion_count} 則事件因來源記載之國家／地區互相衝突，未列入本報告。"

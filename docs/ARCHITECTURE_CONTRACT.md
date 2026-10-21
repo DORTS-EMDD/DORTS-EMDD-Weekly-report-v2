@@ -78,7 +78,7 @@ source mixing) still abort the formal run and are never disguised as data
 insufficiency. Excluded events are never restored downstream.
 
 **RC-6 — technical failure is not a content decision.** All MaiAgent tasks
-(Writer and the seven Structured Helper tasks) share one transport policy
+(Writer and the eight Structured Helper tasks) share one transport policy
 (`request_maiagent_proposal`): a call that produced no parseable response
 because of timeout, connection failure, HTTP 429/500/502/503/504 or an
 unparseable outer/inner JSON response is retried at most once with the
@@ -300,6 +300,60 @@ MaiAgent call, so no pre-Evidence dedup stage is added.
 
 ```text
 SEARCH_CONFIGURATION_VERSION = search-discovery-v6
+```
+
+### A.9 RC-15 Cross-source event grouping proposal (2026-10-21, user-approved)
+
+The P2 production run formed 59 Events from 59 date-valid records: the
+production EventIdentity had no semantic path, and exact equality of identity
+facts cannot hold across publishers or languages. About 16 records duplicated
+another Event (for example seven reports of one depot relocation), and every
+duplicate repeated the Category, Taxonomy, Reportability, Writer and Validator
+calls.
+
+* EventIdentity remains the single owner of Candidate-to-Candidate Event
+  Equivalence. A proposal-only Structured Helper task,
+  `event_identity_semantic_proposal`, receives in one request the eligible
+  records of the run: a short Python-assigned `record_id` (R1, R2, …; the
+  helper never copies a candidate ID), the leading sentences of the
+  authoritative Evidence (at most 6 sentences and 900 characters, RC-9
+  sentence IDs) and the identity-only projection of `EventIdentityFacts`
+  (§K). Titles, URLs, publishers, country, `transit_system_name` and
+  `metadata_support` are never sent.
+* The helper returns only proposed same-event groups of two or more members.
+  Each member cites sentence IDs for `subject` (the system, asset or project),
+  `occurrence` (what happened) and `lifecycle` (the step reached). Same event
+  means one real-world occurrence at one time; other lifecycle steps,
+  statements, meetings or incidents concerning the same project are different
+  events.
+* Python validates the proposal. The response is invalid when its shape is
+  wrong, a member names no supplied `record_id`, or a record appears more than
+  once. A group is invalid when a member citation does not resolve. A group
+  with fewer than two members proposes no merge and is only recorded as a
+  diagnostic. A valid group contributes SAME_EVENT relations
+  between its members, as the former pairwise advisor's SAME_EVENT did; the
+  existing complete-link grouping then forms the Events, and canonical-member
+  and Event ID rules are unchanged.
+  Pairs not proposed together stay UNCERTAIN (not merged). The helper never
+  proposes DISTINCT_EVENT.
+* One request covers at most 60 records and 66,000 characters of record
+  payload (sized so that the record limit binds first). Larger inputs are split into consecutive batches ordered by
+  discovery publication time and `candidate_id`; pairs across batches stay
+  UNCERTAIN.
+* An invalid response, a transport failure after the shared retry (RC-6) or an
+  invalid group is a disclosed `EventIdentity` TechnicalGap. Its records are
+  not excluded: they continue as unmerged Events, and the report discloses
+  that duplicate events may remain. HTTP 401/403/404 still stops the run.
+* The pairwise semantic-advisor interface (left/right bodies, numeric offset
+  spans) is removed; the deterministic exact-fact and exact-source paths are
+  unchanged and take precedence.
+
+```text
+EVENT_IDENTITY_TASK = event_identity_semantic_proposal
+EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v1
+EVENT_IDENTITY_SCHEMA_VERSION = event-identity-semantic-proposal-v1
+EVENT_IDENTITY_CITATION = SENTENCE_ID
+EVENT_IDENTITY_BATCH_LIMIT = 60 records / 66,000 characters
 ```
 
 ## B. Authoritative Owners
@@ -1740,8 +1794,9 @@ current rules remain unchanged: location alone is insufficient; action,
 lifecycle, occurrence-context, and the existing anchor requirements still
 apply; differing nonempty locations may prevent deterministic SAME_EVENT;
 missing location is not itself a contradiction; and a location mismatch alone
-does not establish DISTINCT_EVENT. Existing exact-source and semantic-advisor
-paths remain available. When EvidenceService newly supplies an authoritative
+does not establish DISTINCT_EVENT. Existing exact-source and exact-fact
+paths remain available; the semantic path is the RC-15 batch grouping proposal
+(§A.9), which replaces the former pairwise semantic advisor. When EvidenceService newly supplies an authoritative
 supported location, actual grouping may change through this pre-existing rule.
 That is expected activation of an existing rule, not a new Event Identity rule.
 
@@ -1750,9 +1805,9 @@ EventIdentity identity fields or anchors, appear as identity-basis fields, or
 influence the semantic advisor's relation. `metadata_support` is provenance
 only and must not influence SAME_EVENT, DISTINCT_EVENT, grouping,
 canonical-member selection, Event ID, Category, Taxonomy, Reportability, or
-Ordering. The semantic advisor may receive the existing location fact under
-its current contract, but before constructing an Event Identity semantic-advisor
-request, EventIdentity must create an ephemeral mechanical identity-only
+Ordering. The semantic proposal may receive the existing location fact under
+its current contract, but before constructing an Event Identity semantic
+proposal request, EventIdentity must create an ephemeral mechanical identity-only
 projection of the authoritative `EventIdentityFacts`. This projection is
 transport/interface data only: it preserves every pre-extension field that the
 existing advisor interface allowed, including `event_key`, `action`,
@@ -1773,7 +1828,7 @@ metadata/provenance uses.
 `_IDENTITY_FIELDS` rule. It must not include `country`, `transit_system_name`,
 or `metadata_support`; none of those formal-only fields is an identity-basis
 fact. No change to the existing Event Identity matching algorithm is
-authorized.
+authorized except the RC-15 semantic proposal path (§A.9).
 
 Country and `transit_system_name` are formal metadata only and cannot alter
 Event Identity grouping or Event ID. `metadata_support` remains provenance only.
@@ -2883,16 +2938,17 @@ MaiAgent Writer 不得：
 * 查外部背景
 
 The MaiAgent platform may separately provide exactly one Generic Stateless
-Structured Helper deployment for seven bounded, non-authoritative tasks:
+Structured Helper deployment for eight bounded, non-authoritative tasks:
 `category_semantic_proposal`, `evidence_metadata_extraction`,
 `evidence_source_candidate_match`, `taxonomy_semantic_proposal`,
-`reportability_semantic_proposal`, `validation_semantic_check`, and
-`scope_semantic_proposal`. It is not a
+`reportability_semantic_proposal`, `validation_semantic_check`,
+`scope_semantic_proposal`, and `event_identity_semantic_proposal` (RC-15,
+§A.9). It is not a
 Domain owner and it does not write or correct the formal report. The
 authoritative owners remain Classifier for Category, EvidenceService for
 factual evidence and semantic matching, Taxonomy for E&M systems, Reportability
-for reportability, ReportWriter for formal prose, and Validator for post-Writer
-validation. Sharing a chatbot identity does not merge these owners.
+for reportability, EventIdentity for Event equivalence, ReportWriter for formal
+prose, and Validator for post-Writer validation. Sharing a chatbot identity does not merge these owners.
 
 The operational deployment therefore has exactly two MaiAgent roles:
 
@@ -2926,7 +2982,7 @@ incremental semantic decision is permitted.
 
 Each request supplies an explicit task identity, complete versioned
 task-specific instructions, the bounded task request, and that task's response
-schema. All seven tasks retain separate request types, prompts, schemas, local
+schema. All eight tasks retain separate request types, prompts, schemas, local
 validators, post-processing boundaries, Domain result types, and failure
 semantics. They may share only the MaiAgent API base, credential, pure mechanical
 HTTP transport, and the single authoritative helper chatbot configuration key:

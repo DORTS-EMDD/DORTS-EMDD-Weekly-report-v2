@@ -60,6 +60,7 @@ TASK_MODULES = {
     "maiagent_semantic_judge_provider": "evidence_semantic_judge",
     "maiagent_evidence_metadata_provider": "evidence_metadata_extraction",
     "maiagent_scope_provider": "scope_semantic_proposal",
+    "maiagent_event_identity_provider": "event_identity_semantic_proposal",
     "category_semantic_provider": "category_semantic_proposal",
     "maiagent_taxonomy_provider": "taxonomy_semantic_proposal",
     "maiagent_reportability_provider": "reportability_semantic_proposal",

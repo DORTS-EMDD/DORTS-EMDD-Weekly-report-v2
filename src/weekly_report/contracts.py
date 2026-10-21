@@ -11,6 +11,8 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import Any, Literal, Mapping, Protocol, runtime_checkable
 
+from .evidence_sentences import EvidenceSentence
+
 
 class EvidenceState(StrEnum):
     """The only terminal states owned by EvidenceService."""
@@ -311,35 +313,55 @@ class EventIdentityRelation(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
-class EventIdentitySupportSpan:
+class EventIdentityGroupingRecord:
+    """One record as sent to the RC-15 grouping proposal (transport data only).
+
+    ``record_id`` is the short Python-assigned reference the helper uses, so
+    it never copies a candidate ID; ``sentences`` are the leading RC-9 Evidence
+    sentences, the only citable material; ``identity_facts`` is the
+    identity-only projection (section K).
+    """
+
+    record_id: str
     candidate_id: str
-    role: str
-    start: int
-    end: int
+    sentences: tuple["EvidenceSentence", ...]
+    identity_facts: Mapping[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if not self.record_id or not self.candidate_id or not self.sentences:
+            raise ValueError("EventIdentityGroupingRecord requires record_id, candidate_id and sentences")
+        object.__setattr__(self, "sentences", tuple(self.sentences))
+        object.__setattr__(
+            self,
+            "identity_facts",
+            MappingProxyType({str(k): str(v) for k, v in dict(self.identity_facts).items() if str(v).strip()}),
+        )
+
+    def as_payload(self) -> dict[str, Any]:
+        return {
+            "record_id": self.record_id,
+            "evidence_sentences": [sentence.as_mapping() for sentence in self.sentences],
+            "identity_facts": dict(self.identity_facts),
+        }
 
 
 @dataclass(frozen=True, slots=True)
-class EventIdentitySemanticRequest:
-    left_candidate_id: str
-    right_candidate_id: str
-    left_headline: str
-    right_headline: str
-    left_body: str
-    right_body: str
-    left_source_url: str
-    right_source_url: str
-    left_source_type: str
-    right_source_type: str
-    left_identity_facts: EventIdentityFacts | None = None
-    right_identity_facts: EventIdentityFacts | None = None
+class EventIdentityGroupingRequest:
+    batch_id: str
+    records: tuple[EventIdentityGroupingRecord, ...]
 
+    def __post_init__(self) -> None:
+        records = tuple(self.records)
+        if not self.batch_id or len(records) < 2:
+            raise ValueError("EventIdentityGroupingRequest requires batch_id and two or more records")
+        if len({record.candidate_id for record in records}) != len(records) or len(
+            {record.record_id for record in records}
+        ) != len(records):
+            raise ValueError("EventIdentityGroupingRequest record and candidate IDs must be unique")
+        object.__setattr__(self, "records", records)
 
-@dataclass(frozen=True, slots=True)
-class EventIdentitySemanticDecision:
-    relation: EventIdentityRelation
-    support_spans: tuple[EventIdentitySupportSpan, ...] = ()
-    contradictions: tuple[str, ...] = ()
-    missing_support: tuple[str, ...] = ()
+    def as_payload(self) -> dict[str, Any]:
+        return {"batch_id": self.batch_id, "records": [record.as_payload() for record in self.records]}
 
 
 @dataclass(frozen=True, slots=True)
@@ -409,6 +431,9 @@ class EventIdentityDiagnostic:
 class EventIdentityRun:
     groups: tuple[EventGroup, ...]
     diagnostics: tuple[EventIdentityDiagnostic, ...] = ()
+    # RC-15: a grouping proposal that failed leaves its records unmerged;
+    # these gaps never exclude a record.
+    technical_gaps: tuple["TechnicalGap", ...] = ()
 
 
 class RejectReason(StrEnum):
@@ -2359,7 +2384,7 @@ class TechnicalGapKind(StrEnum):
 
 
 TECHNICAL_GAP_STAGES = (
-    "Evidence", "Scope", "Category", "Taxonomy", "Reportability", "Writer", "Validator",
+    "Evidence", "Scope", "EventIdentity", "Category", "Taxonomy", "Reportability", "Writer", "Validator",
 )
 CANDIDATE_GAP_STAGES = frozenset({"Evidence", "Scope"})
 
@@ -2369,7 +2394,9 @@ class TechnicalGap:
     """Execution disposition for one subject left unfinished by a technical failure.
 
     It is not an Evidence, Scope, Category, Taxonomy, Reportability, or
-    Validation state.  The subject is excluded from this run and disclosed.
+    Validation state.  The subject is excluded from this run and disclosed;
+    an EventIdentity gap (RC-15) names a proposal batch or group whose records
+    continue unmerged.
     """
 
     stage: str

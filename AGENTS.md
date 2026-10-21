@@ -166,7 +166,7 @@ MaiAgent Writer 只有一個 production responsibility：
 
 MaiAgent Writer 不得搜尋、選題、Fetch、Dedup、補 Evidence、修改 Scope、修改 Temporal、修改 Event Identity、修改 Category、修改 Taxonomy、修改 Reportability、修改 Ordering、猜缺漏 metadata 或自行查外部背景資訊。
 
-MaiAgent 平台另可提供一個 Generic Stateless Structured Helper，作為下列七個
+MaiAgent 平台另可提供一個 Generic Stateless Structured Helper，作為下列八個
 proposal-only task 的執行 transport：
 
 * `category_semantic_proposal`
@@ -176,6 +176,7 @@ proposal-only task 的執行 transport：
 * `reportability_semantic_proposal`
 * `validation_semantic_check`
 * `scope_semantic_proposal`
+* `event_identity_semantic_proposal`
 
 這個 helper 不是 Domain owner、不寫正式週報、不取代任何 Python
 authoritative owner，也不得搜尋、使用外部知識、補充 Evidence 或作
@@ -187,13 +188,13 @@ Structured Helper chatbot 是兩個不同的 deployment identity；Structured
 Helper 每次呼叫都必須以 `conversation = null`、空 attachments、完整
 task-specific prompt 與對應 schema 自足執行。
 
-Taxonomy、Reportability 與 Validator 可以使用 Helper 取得 bounded untrusted
-proposal；Classifier、EvidenceService、Taxonomy、Reportability 與 Validator
-仍各自是唯一 authoritative owner。Helper 不得建立 `TaxonomyResult`、
+Event Identity、Taxonomy、Reportability 與 Validator 可以使用 Helper 取得
+bounded untrusted proposal；Classifier、EvidenceService、Event Identity、
+Taxonomy、Reportability 與 Validator 仍各自是唯一 authoritative owner。Helper 不得建立 `TaxonomyResult`、
 `ReportabilityResult` 或 `ValidationResult`、修改 owner state、略過 local
 validation 或直接決定 workflow continuation。
 
-七個 Structured Helper task 的共用設定鍵固定為：
+八個 Structured Helper task 的共用設定鍵固定為：
 
 ```text
 MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID
@@ -236,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-14 修訂（2026-10-20～21，使用者核准）
+### RC-3～RC-15 修訂（2026-10-20～21，使用者核准）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.8 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.9 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -280,6 +281,10 @@ Transport retry 與 semantic correction 必須分開計算。
   AMP 頁改取同網域 canonical 文章。
 * RC-14（§A.8）：英文搜尋運具詞改為明確詞組（metro line、metro station 等），
   不再用單字 metro／subway；跨語言重複仍由 Event Identity 單一負責合併。
+* RC-15（§A.9）：Event Identity 以每個 run 一次的批次 helper 提案取得跨來源
+  同事件群組（上限 60 筆）；成員以句子 ID 引用 subject／occurrence／lifecycle；
+  Python 驗證後才轉為 SAME_EVENT 關係，交由既有分組規則；未提議者維持不合併；
+  提案無效為已揭露的技術缺口，事件不排除但可能重複；取代原逐對 advisor。
 
 ## 13. Report / Delivery
 
@@ -429,5 +434,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-14 APPLIED (2026-10-21, user-approved)
+CONTRACT_REVISION = RC-3..RC-15 APPLIED (2026-10-21, user-approved)
 ```

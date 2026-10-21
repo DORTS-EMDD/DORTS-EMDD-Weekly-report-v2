@@ -314,6 +314,10 @@ def test_real_production_factory_offline_pairs_scope_and_temporal_without_live_i
 
     assert type(runner.application.scope_classifier) is ScopeClassifier
     assert getattr(runner.application.scope_classifier, "_semantic_helper") is not None
+    # RC-15: production EventIdentity carries the grouping proposal provider.
+    assert type(getattr(runner.application.event_identity, "_grouping_advisor")).__name__ == (
+        "MaiAgentEventIdentityProposalProvider"
+    )
     # Contract section Q: one Validator-directed Writer correction per event.
     correction = getattr(runner.application.validator, "_correction_provider")
     assert correction is not None and getattr(correction, "__name__", "") == "correct"

@@ -153,7 +153,8 @@ class EventDedupGoldenTests(unittest.TestCase):
                 if case["case_id"] == "ED10":
                     self.assertNotIn(("A", "B", "C"), [group.member_candidate_ids for group in result.groups])
                 elif case["case_id"] == "ED13":
-                    self.assertTrue(any(item.reason == "SEMANTIC_ADVISOR_INVALID" for item in result.diagnostics))
+                    # RC-15: an invalid proposal is a disclosed technical gap.
+                    self.assertEqual([gap.stage for gap in result.technical_gaps], ["EventIdentity"])
                 elif case["case_id"] == "ED14":
                     self.assertEqual(result.groups[0].unresolved_claims[0].claim_key, "duration")
                 elif case["case_id"] == "ED15":

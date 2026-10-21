@@ -754,6 +754,7 @@ class ReportApplication:
             event_identity_run = self._event_identity.evaluate(event_identity_records)
             if not isinstance(event_identity_run, EventIdentityRun):
                 raise TypeError("EventIdentity must return an EventIdentityRun")
+            technical_gaps.extend(event_identity_run.technical_gaps)
             observation.observe(event_identity_run, final=True)
 
         category_results = self._classify_event_groups(
@@ -844,7 +845,8 @@ class ReportApplication:
         if self._report_service is None:
             raise ValueError("final pipeline requires ReportService")
         disclosure = ReportDisclosure(
-            technical_gap_count=len(gaps),
+            technical_gap_count=sum(gap.stage != "EventIdentity" for gap in gaps),
+            event_identity_gap_count=sum(gap.stage == "EventIdentity" for gap in gaps),
             metadata_exclusion_count=len(metadata_exclusions),
             validation_failed_count=len(validation_result.failed),
         )

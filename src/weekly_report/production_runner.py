@@ -33,6 +33,7 @@ from .contracts import (
 from .delivery import DeliveryReceipt, DeliveryService
 from .evidence_service import EvidenceService
 from .event_identity import EventIdentity
+from .maiagent_event_identity_provider import build_maiagent_event_identity_provider
 from .gmail_smtp import (
     GmailSmtpConfigurationError,
     build_gmail_smtp_sender,
@@ -632,6 +633,9 @@ class ProductionRunner:
             reportability_proposal_provider=reportability_provider,
         )
         scope_provider = build_maiagent_scope_provider(transport=transport, environ=values)
+        event_identity_provider = build_maiagent_event_identity_provider(transport=transport, environ=values)
+        if event_identity_provider is None:
+            raise ProductionConfigurationError("Event Identity grouping provider configuration is unavailable")
         if scope_provider is None:
             raise ProductionConfigurationError("Scope semantic proposal provider configuration is unavailable")
         writer = ReportWriter.from_environment(environ=values, transport=transport)
@@ -649,7 +653,7 @@ class ProductionRunner:
             evidence_service=evidence_service,
             scope_classifier=ScopeClassifier(scope_provider),
             temporal_rule=TemporalRule(),
-            event_identity=EventIdentity(),
+            event_identity=EventIdentity(event_identity_provider),
             classifier=classifier,
             report_workflow=workflow,
             ordering=Ordering(),

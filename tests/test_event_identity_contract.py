@@ -25,34 +25,36 @@ from src.weekly_report.event_identity import (
 )
 
 
+def _grounded_member(record_id):
+    return {
+        "record_id": record_id,
+        "subject_sentence_ids": ["S1"],
+        "occurrence_sentence_ids": ["S1"],
+        "lifecycle_sentence_ids": ["S1"],
+    }
+
+
 class _SemanticAdvisor:
-    def __init__(self, relation=EventIdentityRelation.SAME_EVENT, *, invalid=False):
-        self.relation = relation
+    """RC-15 batch grouping double: proposes every supplied record as one event."""
+
+    def __init__(self, *, invalid=False):
         self.invalid = invalid
         self.requests = []
+
+    def _groups(self, request):
+        return [[record.candidate_id for record in request.records]]
 
     def __call__(self, request):
         self.requests.append(request)
         if self.invalid:
             return {"relation": "SAME_EVENT"}
-        spans = tuple(
-            {
-                "candidate_id": candidate_id,
-                "role": role,
-                "start": 0,
-                "end": len(body),
-            }
-            for candidate_id, body in (
-                (request.left_candidate_id, request.left_body),
-                (request.right_candidate_id, request.right_body),
-            )
-            for role in ("occurrence", "subject", "lifecycle")
-        )
+        record_ids = {record.candidate_id: record.record_id for record in request.records}
         return {
-            "relation": self.relation.value,
-            "support_spans": spans,
-            "contradictions": [] if self.relation is EventIdentityRelation.SAME_EVENT else ["action"],
-            "missing_support": [],
+            "groups": [
+                {"members": [_grounded_member(record_ids[candidate_id]) for candidate_id in group]}
+                for group in self._groups(request)
+                if len(group) >= 2
+            ]
         }
 
 
@@ -590,10 +592,13 @@ class EventIdentityContractTests(unittest.TestCase):
         advisor = _SemanticAdvisor(invalid=True)
         result = EventIdentity(advisor).evaluate(records)
         self.assertEqual(len(result.groups), 2)
-        self.assertTrue(any(item.reason == "SEMANTIC_ADVISOR_INVALID" for item in result.diagnostics))
+        self.assertEqual(
+            [(gap.stage, gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
+            [("EventIdentity", "event-identity-batch-1", "SCHEMA_INVALID")],
+        )
         self.assertEqual(len(advisor.requests), 1)
 
-    def test_ungrounded_distinct_semantic_response_is_rejected(self):
+    def test_pairwise_distinct_response_is_outside_the_proposal_contract(self):
         def bare_distinct(_request):
             return {
                 "relation": "DISTINCT_EVENT",
@@ -607,7 +612,7 @@ class EventIdentityContractTests(unittest.TestCase):
             _record("B", facts=None, body="B body"),
         ])
         self.assertEqual(len(result.groups), 2)
-        self.assertTrue(any(item.reason == "SEMANTIC_ADVISOR_INVALID" for item in result.diagnostics))
+        self.assertEqual([gap.failure_class for gap in result.technical_gaps], ["SCHEMA_INVALID"])
 
     def test_conflicting_non_identity_claim_remains_unresolved(self):
         records = [
@@ -630,15 +635,22 @@ class EventIdentityContractTests(unittest.TestCase):
 
 
 class _PairAdvisor(_SemanticAdvisor):
+    """Proposes SAME pairs as two-member groups; a record joins at most one group."""
+
     def __init__(self, pairs):
         super().__init__()
         self.pairs = pairs
 
-    def __call__(self, request):
-        key = (request.left_candidate_id, request.right_candidate_id)
-        same = self.pairs.get(key, self.pairs.get((key[1], key[0]), False))
-        self.relation = EventIdentityRelation.SAME_EVENT if same else EventIdentityRelation.UNCERTAIN
-        return super().__call__(request)
+    def _groups(self, request):
+        used = set()
+        groups = []
+        ids = sorted(record.candidate_id for record in request.records)
+        for left, right in itertools.combinations(ids, 2):
+            same = self.pairs.get((left, right), self.pairs.get((right, left), False))
+            if same and left not in used and right not in used:
+                groups.append([left, right])
+                used.update((left, right))
+        return groups
 
 
 if __name__ == "__main__":
