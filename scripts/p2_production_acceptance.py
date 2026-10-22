@@ -156,6 +156,8 @@ def main() -> int:
     parser.add_argument("--prior-spend-note", default="")
     parser.add_argument("--dry-run", action="store_true", help="fake RSS/links/fetch/MaiAgent; no network")
     parser.add_argument("--prepare-only", action="store_true", help="book prior spend and seed, then exit")
+    parser.add_argument("--offline", action="store_true",
+                        help="replay the journal only; an unrecorded (transient) request fails as a timeout")
     args = parser.parse_args()
 
     out = Path(args.out)
@@ -201,6 +203,12 @@ def main() -> int:
             html = "<html><body><article><h1>Metro line opens</h1><p>The metro operator opened a new line.</p></article></body></html>"
             return FetchedSource(url=url, content=html, status_code=200, content_type="text/html", redirect_chain=(url,))
 
+    if args.offline:
+        def _unrecorded(*_args, **_kwargs):
+            raise TimeoutError("offline replay: request was not recorded (transient in the live run)")
+
+        real_rss = real_link = real_fetch = _unrecorded  # noqa: F811
+
     def rss_transport(url: str, timeout: float):
         return journal.call(
             "rss", "http", request_key("rss", url), lambda: real_rss(url, timeout),
@@ -234,7 +242,10 @@ def main() -> int:
     # EvidenceService() with these module-level defaults.
     links_module._default_transport = link_transport  # type: ignore[assignment]
     evidence_module._default_fetcher = fetcher  # type: ignore[assignment]
-    maiagent = JournalMaiAgentTransport(fake_maiagent if args.dry_run else UrllibMaiAgentJsonTransport(), journal)
+    inner_maiagent = fake_maiagent if args.dry_run else UrllibMaiAgentJsonTransport()
+    if args.offline:
+        inner_maiagent = _unrecorded
+    maiagent = JournalMaiAgentTransport(inner_maiagent, journal)
 
     trace_path = out / "trace.jsonl"
     if trace_path.exists() and trace_path.stat().st_size:
@@ -260,7 +271,15 @@ def main() -> int:
 
     class Capture:
         def run(self, *a, **k):
-            captured["result"] = application.run(*a, **k)
+            try:
+                captured["result"] = application.run(*a, **k)
+            except Exception:
+                # The runner reports only the exception class; keep the
+                # traceback so an application failure is explainable.
+                import traceback
+
+                (out / "application_exception.txt").write_text(traceback.format_exc(), encoding="utf-8")
+                raise
             return captured["result"]
 
     runner._application = Capture()  # harness-only proxy; production code unchanged
