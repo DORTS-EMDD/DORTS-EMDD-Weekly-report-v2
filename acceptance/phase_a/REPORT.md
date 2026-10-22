@@ -1073,3 +1073,29 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 2. **Writer 標題格式：** 在 Validator 以確定性規則檢查標題不得含分類標籤或符號前綴，並修正 Writer 指示。
 3. **Event Identity 確認漏列成員：** 大群組（13 篇）確認時，helper 會漏掉成員。
 4. **Reportability 未遵守 RC-20 低價值類別：** 例如墨爾本設計獎。
+
+
+## 28. Validator 引文缺口與標題格式（RC-24，離線，2026-10-22）
+
+**根因（以 journal 離線重播 §27 那次執行的 54 次 Validator 回應）：** 6 則有價值的事件（日比谷線過站、奧斯陸電車相撞、里斯本全站關閉、馬德里電扶梯、巴黎 T10、阪急菲律賓實證）因 `INVALID_CITATION` 遺漏。
+- 5 則：「臺北捷運局啟示」單元被評為 ANALYSIS，卻沒有引用任何 Evidence 句子。
+  - 契約 §N 規定 ANALYSIS 必須引用前提，Python 判為無效是正確的。
+  - 但 helper 指示只寫「需有 Evidence 支持的事實前提」，沒說必須引用。全部 72 個 ANALYSIS 單元中，67 個有引用、5 個沒有。
+- 1 則：helper 抄寫 64 字元的候選 ID 時打錯（前 12 字元相同）。
+
+**修正（RC-24，`0dc6a4d`）：**
+- Validator 請求改以短來源代號（M1…）加句子 ID 引用，與 RC-16 的 Category、Taxonomy、Reportability 一致，helper 不再抄寫候選 ID。
+- Validator 提示詞 v4 明示：SUPPORTED 與 ANALYSIS 單元都必須引用至少一個句子（ANALYSIS 引用其事實前提）；無法引用前提的單元為 UNSUPPORTED。Python 規則不變。
+- 標題格式：
+  - Writer 提示詞 v5：標題為單行純文字，不得加 emoji、符號或分類標籤前綴，也不得提及請求或輸入（如「候選資料」）。
+  - Validator 以確定性規則擋下含 emoji、或以括號／直線標籤開頭的標題，不需 helper 呼叫，並把前綴交給那一次改寫。
+- 契約 §A.18；§N 的回應格式範例同步更新為 `source_ref` 加 `sentence_ids`。
+
+**離線驗證：**
+- 測試 1069 全過，Golden 未修改。
+- 標題規則套用到兩次 live 報告的 75 個不同標題：正好擋下 4 個有前綴的標題，沒有誤判（含 ℃、連字號、拉丁名稱的標題都通過）。
+
+**未驗證（需付費 live）：** helper 在新提示詞下是否確實引用 ANALYSIS 前提，以及 Writer 是否不再加標題前綴。重驗同一週預估：
+- MaiAgent 約 110 次：Writer 44、Validator 44、改寫與重驗約 16，另加重試。
+- HTTP 0，約 10 分鐘。
+- 依使用者指示，本輪不實測。
