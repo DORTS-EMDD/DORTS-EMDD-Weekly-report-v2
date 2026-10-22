@@ -337,8 +337,9 @@ calls.
   and Event ID rules are unchanged.
   Pairs not proposed together stay UNCERTAIN (not merged). The helper never
   proposes DISTINCT_EVENT.
-* One request covers at most 60 records and 66,000 characters of record
-  payload (sized so that the record limit binds first). Larger inputs are split into consecutive batches ordered by
+* (Superseded by RC-18, section A.12: payload is the only bound and leads
+  shrink before a split.) One request covers at most 60 records and 66,000
+  characters of record payload (sized so that the record limit binds first). Larger inputs are split into consecutive batches ordered by
   discovery publication time and `candidate_id`; pairs across batches stay
   UNCERTAIN.
 * An invalid response, a transport failure after the shared retry (RC-6) or an
@@ -420,6 +421,32 @@ both endpoints inside the helper's own resolved event focus.
 
 ```text
 SCOPE_ENDPOINT_CONTEXT = RELATION_ANCHOR + EVENT_FOCUS_RANGE (resolved focus)
+```
+
+### A.12 RC-18 One Event Identity request per run (2026-10-22)
+
+With RC-17, 65 records of one week reached Event Identity. RC-15's
+60-record cap split them into 60 + 5 although their payload (56,175
+characters) was well inside the 66,000-character bound, and duplicates in
+different batches can never be merged: most of the five late records were
+further reports of events in the first batch. The record count was never what
+the helper is sensitive to; the request payload is.
+
+* The record cap is removed. The only bound is the record payload
+  (66,000 characters; the live-tested 59-record request was 86,806 bytes and
+  the 65-record request of the same week is 86,691 bytes).
+* When a run exceeds the bound, every record's lead excerpt is shortened
+  deterministically and uniformly (6 sentences / 900 characters, then 4/600,
+  3/450, 2/300) before any split.
+* Only when even the shortest leads do not fit is the run split into
+  consecutive batches ordered by discovery publication time; the split is
+  recorded as an Event Identity `PROPOSAL_BATCH_SPLIT` diagnostic naming the
+  records outside the first batch.
+* Everything else in RC-15 is unchanged.
+
+```text
+EVENT_IDENTITY_BATCH_LIMIT = 66,000 characters of record payload (no record cap)
+EVENT_IDENTITY_LEAD_TIERS = 6/900, 4/600, 3/450, 2/300
 ```
 
 ## B. Authoritative Owners

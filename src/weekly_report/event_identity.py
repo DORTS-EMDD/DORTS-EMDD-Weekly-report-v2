@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import replace
 from hashlib import sha256
 import json
 from typing import Protocol
@@ -28,12 +29,11 @@ from .contracts import (
 from .evidence_sentences import resolve_sentence_ids, segment_evidence_sentences
 
 
-# RC-15 bounds (contract section A.9).
-LEAD_SENTENCE_LIMIT = 6
-LEAD_CHARACTER_LIMIT = 900
-BATCH_RECORD_LIMIT = 60
-# Sized so that 60 records of at most 900 lead characters fit: the record
-# limit binds first.
+# RC-15/RC-18 bounds (contract sections A.9, A.12). The request payload is
+# the only batch bound; leads shrink before a run is ever split, because
+# duplicates in different batches cannot be merged.
+LEAD_TIERS = ((6, 900), (4, 600), (3, 450), (2, 300))
+LEAD_SENTENCE_LIMIT, LEAD_CHARACTER_LIMIT = LEAD_TIERS[0]
 BATCH_CHARACTER_LIMIT = 66_000
 
 EVENT_IDENTITY_GROUPING_RESPONSE_SCHEMA: dict[str, object] = {
@@ -251,7 +251,17 @@ class EventIdentity:
         relations: dict[tuple[str, str], tuple[EventIdentityRelation, str]] = {}
         if self._grouping_advisor is None:
             return relations
-        for request in _grouping_requests(eligible):
+        requests = _grouping_requests(eligible)
+        if len(requests) > 1:
+            # Pairs in different batches cannot be merged; keep that visible.
+            diagnostics.append(
+                EventIdentityDiagnostic(
+                    tuple(sorted(record.candidate_id for request in requests[1:] for record in request.records)),
+                    "PROPOSAL_BATCH_SPLIT",
+                    f"{len(requests)} batches",
+                )
+            )
+        for request in requests:
             try:
                 proposal = _validate_grouping_proposal(self._grouping_advisor(request), request)
             except EVENT_TECHNICAL_FAILURES as failure:
@@ -501,11 +511,16 @@ def _advisor_identity_facts(facts: EventIdentityFacts | None) -> dict[str, str]:
     }
 
 
-def _grouping_record(record: EventIdentityRecord, record_id: str) -> EventIdentityGroupingRecord | None:
+def _grouping_record(
+    record: EventIdentityRecord,
+    record_id: str,
+    lead_limits: tuple[int, int] = LEAD_TIERS[0],
+) -> EventIdentityGroupingRecord | None:
+    sentence_limit, character_limit = lead_limits
     lead = []
     characters = 0
     for sentence in segment_evidence_sentences(record.evidence.substantive_content):
-        if len(lead) >= LEAD_SENTENCE_LIMIT or (lead and characters + len(sentence.text) > LEAD_CHARACTER_LIMIT):
+        if len(lead) >= sentence_limit or (lead and characters + len(sentence.text) > character_limit):
             break
         lead.append(sentence)
         characters += len(sentence.text)
@@ -516,30 +531,48 @@ def _grouping_record(record: EventIdentityRecord, record_id: str) -> EventIdenti
     )
 
 
+def _payload_size(record: EventIdentityGroupingRecord) -> int:
+    return len(json.dumps(record.as_payload(), ensure_ascii=False))
+
+
 def _grouping_requests(eligible: Sequence[EventIdentityRecord]) -> list[EventIdentityGroupingRequest]:
-    """Consecutive bounded batches ordered by discovery publication time."""
+    """One request for the whole run whenever its payload fits (RC-18).
+
+    The first lead tier whose total payload fits the bound is used for every
+    record. Only when even the shortest leads do not fit is the run split into
+    consecutive batches ordered by discovery publication time.
+    """
 
     ordered = sorted(
         eligible,
         key=lambda record: (record.candidate.published_at or "", record.candidate.candidate_id),
     )
-    batches: list[list[EventIdentityGroupingRecord]] = [[]]
+    for lead_limits in LEAD_TIERS:
+        built = [_grouping_record(record, f"R{index}", lead_limits) for index, record in enumerate(ordered, start=1)]
+        kept = [item for item in built if item is not None]
+        if sum(_payload_size(item) for item in kept) <= BATCH_CHARACTER_LIMIT:
+            records = [replace(item, record_id=f"R{index}") for index, item in enumerate(kept, start=1)]
+            return [EventIdentityGroupingRequest("event-identity-batch-1", tuple(records))] if len(records) >= 2 else []
+
+    batches: list[list[EventIdentityRecord]] = [[]]
     characters = 0
     for record in ordered:
-        grouping_record = _grouping_record(record, f"R{len(batches[-1]) + 1}")
+        grouping_record = _grouping_record(record, "R1", LEAD_TIERS[-1])
         if grouping_record is None:
             continue
-        size = len(json.dumps(grouping_record.as_payload(), ensure_ascii=False))
-        if batches[-1] and (len(batches[-1]) >= BATCH_RECORD_LIMIT or characters + size > BATCH_CHARACTER_LIMIT):
+        size = _payload_size(grouping_record)
+        if batches[-1] and characters + size > BATCH_CHARACTER_LIMIT:
             batches.append([])
             characters = 0
-            grouping_record = _grouping_record(record, "R1")
-        batches[-1].append(grouping_record)
+        batches[-1].append(record)
         characters += size
-    return [
-        EventIdentityGroupingRequest(f"event-identity-batch-{index}", tuple(batch))
-        for index, batch in enumerate((batch for batch in batches if len(batch) >= 2), start=1)
-    ]
+    requests = []
+    for batch in (batch for batch in batches if len(batch) >= 2):
+        records = tuple(
+            _grouping_record(record, f"R{index}", LEAD_TIERS[-1]) for index, record in enumerate(batch, start=1)
+        )
+        requests.append(EventIdentityGroupingRequest(f"event-identity-batch-{len(requests) + 1}", records))
+    return requests
 
 
 def _validate_grouping_proposal(

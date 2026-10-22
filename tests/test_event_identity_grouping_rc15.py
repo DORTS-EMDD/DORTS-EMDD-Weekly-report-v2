@@ -13,9 +13,10 @@ from src.weekly_report.contracts import (
     TechnicalGapKind,
 )
 from src.weekly_report.event_identity import (
-    BATCH_RECORD_LIMIT,
+    BATCH_CHARACTER_LIMIT,
     LEAD_CHARACTER_LIMIT,
     LEAD_SENTENCE_LIMIT,
+    LEAD_TIERS,
     EventIdentity,
 )
 from src.weekly_report.maiagent_event_identity_provider import (
@@ -182,21 +183,43 @@ class GroupingProposalTests(unittest.TestCase):
         self.assertEqual(len(result.groups), 1)
         self.assertEqual(advisor.requests, [])
 
-    def test_batches_are_bounded_and_ordered_by_publication_time(self):
+    def test_a_run_within_the_payload_bound_is_one_request_whatever_its_size(self):
+        # RC-18: record count never splits a run; only the payload bound does.
         records = [
-            _record(f"C{index:03d}", facts=None, published_at=f"2026-09-{10 + index // 30:02d}T{index % 24:02d}:00:00Z")
-            for index in range(BATCH_RECORD_LIMIT + 1)
+            _record(f"C{index:03d}", facts=None, published_at=f"2026-09-{10 + index // 40:02d}T{index % 24:02d}:00:00Z")
+            for index in range(90)
         ]
-        advisor = _Scripted({"groups": []}, {"groups": []})
+        advisor = _Scripted({"groups": []})
         result = EventIdentity(advisor).evaluate(records)
-        self.assertEqual([len(request.records) for request in advisor.requests], [BATCH_RECORD_LIMIT])
-        # The 61st record forms a batch of one, which needs no call.
-        self.assertEqual(len(result.groups), BATCH_RECORD_LIMIT + 1)
-        ordered = sorted(records, key=lambda record: (record.candidate.published_at, record.candidate.candidate_id))
-        self.assertEqual(
-            [record.candidate_id for record in advisor.requests[0].records],
-            [record.candidate.candidate_id for record in ordered[:BATCH_RECORD_LIMIT]],
-        )
+        self.assertEqual([len(request.records) for request in advisor.requests], [90])
+        self.assertEqual([record.record_id for record in advisor.requests[0].records][:3], ["R1", "R2", "R3"])
+        self.assertNotIn("PROPOSAL_BATCH_SPLIT", [item.reason for item in result.diagnostics])
+
+    def test_leads_shrink_before_a_run_is_split(self):
+        long_body = " ".join(f"Sentence {index} reports the tram depot relocation in detail." for index in range(12))
+        records = [_record(f"C{index:03d}", facts=None, body=long_body) for index in range(130)]
+        advisor = _Scripted({"groups": []})
+        EventIdentity(advisor).evaluate(records)
+        self.assertEqual(len(advisor.requests), 1)
+        lead = advisor.requests[0].records[0].sentences
+        self.assertLess(len(lead), LEAD_SENTENCE_LIMIT)
+        self.assertIn(len(lead), [sentences for sentences, _ in LEAD_TIERS])
+        payload = sum(len(json.dumps(record.as_payload(), ensure_ascii=False)) for record in advisor.requests[0].records)
+        self.assertLessEqual(payload, BATCH_CHARACTER_LIMIT)
+
+    def test_a_split_is_the_last_resort_and_is_diagnosed(self):
+        long_body = " ".join(f"Sentence {index} reports the tram depot relocation in great detail today." for index in range(12))
+        records = [
+            _record(f"C{index:03d}", facts=None, body=long_body, published_at=f"2026-09-15T{index % 24:02d}:{index % 60:02d}:00Z")
+            for index in range(400)
+        ]
+        advisor = _Scripted(*({"groups": []} for _ in range(10)))
+        result = EventIdentity(advisor).evaluate(records)
+        self.assertGreater(len(advisor.requests), 1)
+        self.assertTrue(all(len(request.records[0].sentences) <= LEAD_TIERS[-1][0] for request in advisor.requests))
+        split = [item for item in result.diagnostics if item.reason == "PROPOSAL_BATCH_SPLIT"]
+        self.assertEqual(len(split), 1)
+        self.assertEqual(split[0].detail, f"{len(advisor.requests)} batches")
 
 
 class EventIdentityProviderTests(unittest.TestCase):

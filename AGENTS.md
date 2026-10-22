@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-17 修訂（2026-10-20～22）
+### RC-3～RC-18 修訂（2026-10-20～22）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.11 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.12 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -292,6 +292,9 @@ Transport retry 與 semantic correction 必須分開計算。
 * RC-17（§A.11）：Scope 事件焦點已確定時，關係引用句至少含一個端點，所有端點標籤
   須位於事件焦點範圍內；關係引用仍須在焦點內，不得跨事件借用；焦點未確定時沿用
   RC-8 規則；標籤仍須為原文，頁面標題不作 Evidence。
+* RC-18（§A.12）：Event Identity 每個 run 只送一個請求，唯一上限是請求內容大小
+  （66,000 字元），取消 60 筆上限；超過時先統一縮短各筆開頭摘錄，最後才依發布
+  時間分批，並記錄 PROPOSAL_BATCH_SPLIT 診斷。
 
 ## 13. Report / Delivery
 
@@ -441,5 +444,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-17 APPLIED (2026-10-22)
+CONTRACT_REVISION = RC-3..RC-18 APPLIED (2026-10-22)
 ```
