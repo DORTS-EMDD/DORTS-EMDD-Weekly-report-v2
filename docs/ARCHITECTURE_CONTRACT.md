@@ -328,8 +328,9 @@ calls.
   statements, meetings or incidents concerning the same project are different
   events.
 * Python validates the proposal. The response is invalid when its shape is
-  wrong, a member names no supplied `record_id`, or a record appears more than
-  once. A group is invalid when a member citation does not resolve. A group
+  wrong or a member names no supplied `record_id` (RC-21, section A.15: a
+  record may be named in several groups; a record repeated inside one group
+  invalidates that group). A group is invalid when a member citation does not resolve. A group
   with fewer than two members proposes no merge and is only recorded as a
   diagnostic. A valid group contributes SAME_EVENT relations
   between its members, as the former pairwise advisor's SAME_EVENT did; the
@@ -517,6 +518,35 @@ WRITER_PROMPT_VERSION = formal-report-writer-v4
 REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v4
 EVIDENCE_METADATA_PROMPT_VERSION = evidence-metadata-principal-body-v3
 EVENT_IDENTITY_EXCERPT = SCOPE_CANDIDATE_EVENT_FOCUS (document lead without one)
+```
+
+### A.15 RC-21 Overlapping Event Identity groups (2026-10-22)
+
+The first integrated RC-20 run merged nothing: the helper proposed 17 groups
+for 72 records and named three records in two groups each (it split one
+cluster into two groups sharing a member, for example twelve reports of one
+depot relocation plus a thirteenth report linked through one of them). Under
+section A.9 one such overlap invalidated the whole response, discarding the
+other valid groups.
+
+* (Amends section A.9.) A record named in more than one group is not a
+  violation. Each valid group only proposes SAME_EVENT relations between its
+  own members; the existing complete-link grouping merges a record only with
+  records it was proposed together with, so an overlap never merges records
+  that were not proposed together. A record that is linked to members of two
+  groups joins at most one, and the unresolved alternative stays visible as an
+  `INSUFFICIENT_IDENTITY` diagnostic.
+* A record named twice inside one group invalidates that group
+  (`DUPLICATE_MEMBERSHIP`, a disclosed `EventIdentity` TechnicalGap); other
+  groups stand. A wrong shape or an unknown `record_id` still invalidates the
+  whole response.
+* The prompt asks for every record of one event in a single group and states
+  that occurrences in different cities, countries or systems are different
+  events.
+
+```text
+EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v2
+EVENT_IDENTITY_OVERLAP = PAIRWISE_RELATIONS (complete-link decides)
 ```
 
 ## B. Authoritative Owners

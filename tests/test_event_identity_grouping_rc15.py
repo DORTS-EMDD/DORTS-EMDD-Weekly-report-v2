@@ -111,12 +111,6 @@ class GroupingProposalTests(unittest.TestCase):
         cases = {
             "SCHEMA_INVALID": {"groups": [{"members": [_member("EN"), _member("JA")], "reason": "x"}]},
             "UNKNOWN_RECORD": {"groups": [{"members": [_member("EN"), _member("ZZ")]}]},
-            "DUPLICATE_MEMBERSHIP": {
-                "groups": [
-                    {"members": [_member("EN"), _member("JA")]},
-                    {"members": [_member("JA"), _member("OTHER")]},
-                ]
-            },
         }
         for failure_class, response in cases.items():
             with self.subTest(failure_class=failure_class):
@@ -141,6 +135,39 @@ class GroupingProposalTests(unittest.TestCase):
         self.assertEqual(
             [(gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
             [("event-identity-batch-1:group-2", "CITATION_INVALID")],
+        )
+
+    def test_record_in_two_groups_contributes_only_proposed_pairs(self):
+        # RC-21: overlapping groups are pair proposals; complete-link grouping
+        # never merges EN with OTHER, which were not proposed together.
+        response = {
+            "groups": [
+                {"members": [_member("EN"), _member("JA")]},
+                {"members": [_member("JA"), _member("OTHER")]},
+            ]
+        }
+        result = EventIdentity(_Scripted(response)).evaluate(_three_records())
+        self.assertEqual(result.technical_gaps, ())
+        self.assertEqual(len(result.groups), 2)
+        merged = [group.member_candidate_ids for group in result.groups if len(group.member_candidate_ids) == 2]
+        self.assertEqual(len(merged), 1)
+        self.assertIn("JA", merged[0])
+        self.assertNotEqual(set(merged[0]), {"EN", "OTHER"})
+        self.assertTrue(any(item.reason == "INSUFFICIENT_IDENTITY" for item in result.diagnostics))
+
+    def test_record_repeated_inside_one_group_invalidates_that_group(self):
+        records = _three_records() + [_record("SOLO", facts=None, body="Another depot fire.")]
+        response = {
+            "groups": [
+                {"members": [_member("EN"), _member("EN")]},
+                {"members": [_member("OTHER"), _member("SOLO")]},
+            ]
+        }
+        result = EventIdentity(_Scripted(response)).evaluate(records)
+        self.assertIn(("OTHER", "SOLO"), [tuple(sorted(group.member_candidate_ids)) for group in result.groups])
+        self.assertEqual(
+            [(gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
+            [("event-identity-batch-1:group-1", "DUPLICATE_MEMBERSHIP")],
         )
 
     def test_single_member_group_is_a_no_op_and_empty_citation_is_a_violation(self):

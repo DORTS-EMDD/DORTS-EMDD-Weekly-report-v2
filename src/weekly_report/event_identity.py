@@ -585,13 +585,16 @@ def _validate_grouping_proposal(
 ) -> list[tuple[str, ...] | EventIdentityProposalViolation]:
     """Return each proposed group's member IDs, or the violation of that group.
 
-    Raises EventIdentityProposalViolation when the whole response is invalid.
+    Raises EventIdentityProposalViolation when the whole response is invalid
+    (wrong shape or an unknown record). A record may be named in several
+    groups (RC-21): each group only proposes SAME_EVENT pairs, and the
+    complete-link grouping merges a record only with records proposed with it.
+    A record named twice in one group invalidates that group.
     """
 
     if not isinstance(raw, Mapping) or set(raw) != {"groups"} or not isinstance(raw["groups"], list):
         raise EventIdentityProposalViolation("SCHEMA_INVALID")
     records = {record.record_id: record for record in request.records}
-    seen: set[str] = set()
     for group in raw["groups"]:
         if not isinstance(group, Mapping) or set(group) != {"members"} or not isinstance(group["members"], list):
             raise EventIdentityProposalViolation("SCHEMA_INVALID")
@@ -605,14 +608,13 @@ def _validate_grouping_proposal(
                 raise EventIdentityProposalViolation("SCHEMA_INVALID")
             if member["record_id"] not in records:
                 raise EventIdentityProposalViolation("UNKNOWN_RECORD")
-            if member["record_id"] in seen:
-                raise EventIdentityProposalViolation("DUPLICATE_MEMBERSHIP")
-            seen.add(member["record_id"])
 
     outcomes: list[tuple[str, ...] | EventIdentityProposalViolation] = []
     for group in raw["groups"]:
         members = group["members"]
-        if len(members) < 2:
+        if len({member["record_id"] for member in members}) != len(members):
+            outcomes.append(EventIdentityProposalViolation("DUPLICATE_MEMBERSHIP"))
+        elif len(members) < 2:
             # Proposes no merge; nothing to validate or disclose.
             outcomes.append(tuple(records[member["record_id"]].candidate_id for member in members))
         elif any(
