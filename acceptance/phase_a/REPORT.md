@@ -803,3 +803,40 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   3. 「國家／地區：未能確認」偏多，例如東京、名古屋、利馬、慕尼黑、蘇黎世。來源沒有明寫國名，而地名參照表沒有涵蓋這些城市或系統。
   4. 少數價值偏低：墨爾本設計獎、蘇黎世道路車輛擦撞。
   5. Scope 有 34 筆提案違反契約（多為標籤不在引文內），另有 6 筆無法解析，都列為已揭露的技術缺口。
+
+
+## 22. RC-16 上線後以 journal 重驗同一週（2026-10-22）
+
+**修改：** RC-16（`8b3b9c2`）。
+- Category、Taxonomy、Reportability 改用 Python 指定的短來源代號（M1、M2…）與句子 ID 引用，helper 不再抄寫原文或候選 ID。
+- Category 提案違反契約時，改為已揭露的技術缺口，不再當成 `CATEGORY_UNRESOLVED`。
+- 1,037 個測試通過；Golden 預期結果未變。
+
+**重驗方式：** 沿用本輪 journal。
+- Evidence、Scope、Event Identity 與未變的 Writer／Validator 請求全部重播。
+- 只有 Category、Taxonomy、Reportability 與受影響的事件實際呼叫。
+- 用量：7 分鐘、MaiAgent **100 次**（Category 34、Taxonomy 29、Reportability 29、Writer 4、Validator 4）、HTTP 0（另有 3 次先前未記錄的暫時性請求）、未寄信。
+- 本輪累計：MaiAgent 982/1,000、HTTP 2,477/2,700、110/170 分鐘。
+
+**結果：** 正式週報 [runs/p2_round2/final_report.md](runs/p2_round2/final_report.md)，**25 則事件**（前版 22 則：[attempt6_report/](runs/p2_round2/attempt6_report/)）。
+
+| 項目 | RC-16 前 | RC-16 後 |
+|---|---:|---:|
+| Category 無效回應 | 2（未揭露） | **0** |
+| Taxonomy 提案違反 | 1 | **0** |
+| Reportability 提案違反 | 0 | 0 |
+| 通過 Validation 的事件 | 22 | **25** |
+| 揭露的技術缺口 | 42 | 41（Scope 40、Validator 1） |
+
+- **新增四則：**
+  - 蔚山城市鐵道 1 號線車輛基地遷址（12 篇合併）；
+  - 日內瓦電車 17 號線延伸至法國；
+  - 伯恩至奧斯特蒙迪根電車線獲建設許可；
+  - 里昂 T10 電車線銜接工程期間 T4／T2 調整。
+- **刪除一則：** 光州議員質詢。Category 依證據判為 `RECOMMENDATION_WITHOUT_ADOPTED_ACTION`，屬合法領域判定；也消除了先前與市長發言重複的問題。
+
+**剩餘問題：**
+- 光州 2 號線「首列電聯車進場」仍被誤併入市長發言事件。Event Identity 請求未變，所以重播的是同一份提案。
+- Scope 提案違反 34 筆、無法解析 6 筆，是目前最大的技術缺口來源。
+- 「國家／地區：未能確認」仍偏多。
+- PDF 與寄信尚未驗證。

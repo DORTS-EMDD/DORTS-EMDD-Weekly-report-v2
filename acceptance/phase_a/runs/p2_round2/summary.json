@@ -1,6 +1,6 @@
 {
- "attempt_started_utc": "2026-10-22T01:22:00.529906+00:00",
- "git_head": "a8339da31d34db27f4780fbe40bc5115de285869",
+ "attempt_started_utc": "2026-10-22T02:01:39.381910+00:00",
+ "git_head": "8b3b9c29e3c423af0b3293a40a93de0a54bc70d9",
  "dry_run": false,
  "period": [
   "2026-10-14",
@@ -9,14 +9,14 @@
  "abort": null,
  "ledger": {
   "live": {
-   "maiagent": 882,
-   "http": 2474
+   "maiagent": 982,
+   "http": 2477
   },
   "replayed": {
-   "maiagent": 1528,
-   "rss": 468,
-   "link": 2346,
-   "fetch": 1213
+   "maiagent": 2053,
+   "rss": 585,
+   "link": 3130,
+   "fetch": 1620
   },
   "attempts": [
    {
@@ -48,6 +48,11 @@
     "started_utc": "2026-10-22T01:22:00.451618+00:00",
     "pid": 13884,
     "seconds": 336.4
+   },
+   {
+    "started_utc": "2026-10-22T02:01:39.321374+00:00",
+    "pid": 3492,
+    "seconds": 414.3
    }
   ],
   "prior_spend": {
@@ -61,8 +66,8 @@
   "live_by_kind": {
    "rss": 117,
    "link": 784,
-   "fetch": 423,
-   "maiagent": 627
+   "fetch": 426,
+   "maiagent": 727
   }
  },
  "budgets": {
@@ -88,61 +93,56 @@
   "temporal_results": 70,
   "event_identity_records": 54,
   "category_results": 34,
-  "downstream_results": 33,
-  "ordered_results": 25,
-  "formal_metadata": 25,
-  "writer_blocks": 25,
-  "validation_passed": 22,
+  "downstream_results": 34,
+  "ordered_results": 28,
+  "formal_metadata": 28,
+  "writer_blocks": 28,
+  "validation_passed": 25,
   "validation_failed": 2,
-  "final_report_events": 22,
-  "technical_gaps": 42,
+  "final_report_events": 25,
+  "technical_gaps": 41,
   "technical_gaps_scope": 40,
-  "technical_gaps_taxonomy": 1,
   "technical_gaps_validator": 1,
   "metadata_exclusions": 0
  },
  "stage_elapsed_ms": {
-  "Search": 1155,
-  "Acquisition": 15,
-  "Normalization": 47,
-  "Evidence": 56046,
-  "Scope": 137421,
+  "Search": 1250,
+  "Acquisition": 0,
+  "Normalization": 61,
+  "Evidence": 51264,
+  "Scope": 1640,
   "Temporal": 30,
-  "EventIdentity": 10765,
-  "Category": 29155,
-  "Taxonomy": 16219,
-  "Reportability": 20078,
-  "Ordering": 15,
-  "FormalMetadata": 30,
-  "Writer": 24671,
-  "Validator": 35827,
+  "EventIdentity": 125,
+  "Category": 100782,
+  "Taxonomy": 114047,
+  "Reportability": 95671,
+  "Ordering": 14,
+  "FormalMetadata": 15,
+  "Writer": 21905,
+  "Validator": 21030,
   "Assembly": 15
  },
  "maiagent_calls_by_task": {
   "live": {
-   "scope_semantic_proposal": 33,
-   "event_identity_semantic_proposal": 1,
-   "category_semantic_proposal": 8,
-   "taxonomy_semantic_proposal": 5,
-   "reportability_semantic_proposal": 5,
-   "writer": 6,
-   "validation_semantic_check": 6
+   "category_semantic_proposal": 34,
+   "taxonomy_semantic_proposal": 29,
+   "reportability_semantic_proposal": 29,
+   "writer": 4,
+   "validation_semantic_check": 4
   },
   "replay": {
    "evidence_semantic_judge": 173,
    "evidence_metadata_extraction": 142,
-   "scope_semantic_proposal": 115,
-   "category_semantic_proposal": 26,
-   "taxonomy_semantic_proposal": 22,
-   "reportability_semantic_proposal": 21,
-   "writer": 25,
-   "validation_semantic_check": 26
+   "scope_semantic_proposal": 148,
+   "event_identity_semantic_proposal": 1,
+   "writer": 30,
+   "validation_semantic_check": 31
   }
  },
  "maiagent_outcomes": {
-  "HTTP_200": 614
+  "HTTP_200": 625
  },
- "final_report_event_count": 22,
+ "final_report_event_count": 25,
  "evidence_gates": {
   "READY": 142,
   "SOURCE_PROVENANCE": 41,
@@ -201,10 +201,7 @@
    "event_id": "evt_bc76f5b3d7465d7f651506de",
    "category": "CATEGORY_ASSIGNED",
    "primary_category": "事故事件",
-   "taxonomy": [
-    "電聯車",
-    "號誌"
-   ],
+   "taxonomy": [],
    "taxonomy_state": "TAXONOMY_EVALUATED",
    "reportability": "REPORTABLE",
    "country": [
@@ -647,11 +644,20 @@
    "date_valid": true,
    "date": "2026-10-20",
    "event_id": "evt_145370403109cae551560c98",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
    "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    null,
+    "UNRESOLVED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_173a4cf38d2b1e2a91f66f40cc9dc2e12369e6c81f46d6308c954185200b65d1": {
    "evidence": "EVIDENCE_READY",
@@ -1101,11 +1107,24 @@
    "date_valid": true,
    "date": "2026-10-19",
    "event_id": "evt_950796e6dc321b9fa6300ac4",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
-   "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_39985ba392ff9eb5f2d47264fa38de37bc376b3916950d9fbdc4d0bac0ecd599": {
    "evidence": "EVIDENCE_REJECTED",
@@ -1355,10 +1374,7 @@
    "event_id": "evt_bc76f5b3d7465d7f651506de",
    "category": "CATEGORY_ASSIGNED",
    "primary_category": "事故事件",
-   "taxonomy": [
-    "電聯車",
-    "號誌"
-   ],
+   "taxonomy": [],
    "taxonomy_state": "TAXONOMY_EVALUATED",
    "reportability": "REPORTABLE",
    "country": [
@@ -1387,11 +1403,20 @@
    "date_valid": true,
    "date": "2026-10-16",
    "event_id": "evt_a8331b7e9efbc39f34c9d68a",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
    "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    null,
+    "UNRESOLVED"
+   ],
+   "transit_system": [
+    "Bern–Ostermundigen tram line",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
   },
   "cand_4b21749d1735a3044e69e17d6a79b71205ff879573190428b298d4456c58e0ef": {
    "evidence": "EVIDENCE_READY",
@@ -1447,22 +1472,11 @@
    "date_valid": true,
    "date": "2026-10-14",
    "event_id": "evt_3be9ec6fa992bce9556d88d5",
-   "category": "CATEGORY_ASSIGNED",
-   "primary_category": "營運動態",
-   "taxonomy": [
-    "電聯車"
-   ],
-   "taxonomy_state": "TAXONOMY_EVALUATED",
-   "reportability": "REPORTABLE",
-   "country": [
-    "韓國",
-    "REFERENCE_MAPPED"
-   ],
-   "transit_system": [
-    "광주 도시철도 2호선",
-    "SOURCE_STATED"
-   ],
-   "validation": "PASS"
+   "category": "CATEGORY_UNRESOLVED",
+   "primary_category": null,
+   "taxonomy": [],
+   "taxonomy_state": "NOT_EVALUATED",
+   "reportability": "NOT_EVALUATED"
   },
   "cand_4bfb2e65bd7ce69478bc20c4583292ea5ba9281eac3cc03c2dfbf9ee14be1f9b": {
    "evidence": "EVIDENCE_REJECTED",
@@ -1512,11 +1526,24 @@
    "date_valid": true,
    "date": "2026-10-19",
    "event_id": "evt_950796e6dc321b9fa6300ac4",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
-   "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_4fe8f58b29249018f0ece4a09a3fef9d172af554b2838cd833db6e02c12bfda6": {
    "evidence": "EVIDENCE_READY",
@@ -1535,7 +1562,7 @@
    "date": "2026-10-20",
    "event_id": "evt_cfb068765d389e47940826bd",
    "category": "CATEGORY_ASSIGNED",
-   "primary_category": "營運動態",
+   "primary_category": "技術新知",
    "taxonomy": [
     "電聯車",
     "號誌"
@@ -1622,11 +1649,24 @@
    "date_valid": true,
    "date": "2026-10-19",
    "event_id": "evt_950796e6dc321b9fa6300ac4",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
-   "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_5795a8599dd6f2215406161b3ad776607e1f00360fc6348caa8c170b0aef3472": {
    "evidence": "EVIDENCE_READY",
@@ -1683,11 +1723,24 @@
    "date_valid": true,
    "date": "2026-10-19",
    "event_id": "evt_950796e6dc321b9fa6300ac4",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
-   "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_5b1f8f2258cc5e0910083f8460eefbee03a4bfb31d2cc3346eb35a7519bab85f": {
    "evidence": "EVIDENCE_REJECTED",
@@ -1813,11 +1866,24 @@
    "date_valid": true,
    "date": "2026-10-19",
    "event_id": "evt_950796e6dc321b9fa6300ac4",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
-   "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_634e970e00566cd7aee46b26b0d90a3a48f18f076a7940b63048e3f6e23b896e": {
    "evidence": "EVIDENCE_REJECTED",
@@ -1976,11 +2042,24 @@
    "date_valid": true,
    "date": "2026-10-19",
    "event_id": "evt_950796e6dc321b9fa6300ac4",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
-   "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_69953ce0f022e790206ca974b7a52677b4ab6d66a87b5f8c380cddba9448a1e2": {
    "evidence": "EVIDENCE_READY",
@@ -2704,11 +2783,24 @@
    "date_valid": true,
    "date": "2026-10-19",
    "event_id": "evt_950796e6dc321b9fa6300ac4",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
-   "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_939d83a17233b89deb90c51f06c8c34b9a3b856964c1dfc8502d79ddf0c95937": {
    "evidence": "EVIDENCE_READY",
@@ -2850,11 +2942,24 @@
    "date_valid": true,
    "date": "2026-10-19",
    "event_id": "evt_950796e6dc321b9fa6300ac4",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
-   "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_9a759b2588e87e6e07fc6c434d0e863259231f2df187966efb56a9c783faee4a": {
    "evidence": "EVIDENCE_REJECTED",
@@ -3090,7 +3195,7 @@
    "date": "2026-10-14",
    "event_id": "evt_aa531d963f0273babdf7a107",
    "category": "CATEGORY_ASSIGNED",
-   "primary_category": "營運動態",
+   "primary_category": "技術新知",
    "taxonomy": [
     "電聯車",
     "供電"
@@ -3635,11 +3740,24 @@
    "date_valid": true,
    "date": "2026-10-19",
    "event_id": "evt_950796e6dc321b9fa6300ac4",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
-   "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_b9a2edcdfd054b121cbcc334e26704303e4ea05ad01faeb96be0b59fb16fc41b": {
    "evidence": "EVIDENCE_REJECTED",
@@ -3961,11 +4079,24 @@
    "date_valid": true,
    "date": "2026-10-14",
    "event_id": "evt_950796e6dc321b9fa6300ac4",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
-   "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_c793d813869224799c172904564e4c88b4da13c20664d59c9d5faa5fc7682489": {
    "evidence": "EVIDENCE_REJECTED",
@@ -4001,9 +4132,7 @@
    "event_id": "evt_22bc3c028f9b8f7b948d4797",
    "category": "CATEGORY_ASSIGNED",
    "primary_category": "技術新知",
-   "taxonomy": [
-    "電聯車"
-   ],
+   "taxonomy": [],
    "taxonomy_state": "TAXONOMY_EVALUATED",
    "reportability": "REPORTABLE",
    "country": [
@@ -4181,7 +4310,9 @@
    "event_id": "evt_af8ebe54135616277f6abe5b",
    "category": "CATEGORY_ASSIGNED",
    "primary_category": "營運動態",
-   "taxonomy": [],
+   "taxonomy": [
+    "電聯車"
+   ],
    "taxonomy_state": "TAXONOMY_EVALUATED",
    "reportability": "REPORTABLE",
    "country": [
@@ -4656,12 +4787,21 @@
    "event_id": "evt_66ab683dd132b2997728f0e7",
    "category": "CATEGORY_ASSIGNED",
    "primary_category": "營運動態",
-   "technical_gap": [
-    "Taxonomy",
-    "PROPOSAL_CONTRACT_VIOLATION",
-    "PROPOSAL_INVALID",
-    1
-   ]
+   "taxonomy": [
+    "號誌",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    null,
+    "UNRESOLVED"
+   ],
+   "transit_system": [
+    "TCL",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
   },
   "cand_e8e0668602103b14333cd9b6a5d127c160baf5f8119eaa73fe01b3373f685d5e": {
    "evidence": "EVIDENCE_REJECTED",
@@ -4811,22 +4951,11 @@
    "date_valid": true,
    "date": "2026-10-14",
    "event_id": "evt_3be9ec6fa992bce9556d88d5",
-   "category": "CATEGORY_ASSIGNED",
-   "primary_category": "營運動態",
-   "taxonomy": [
-    "電聯車"
-   ],
-   "taxonomy_state": "TAXONOMY_EVALUATED",
-   "reportability": "REPORTABLE",
-   "country": [
-    "韓國",
-    "REFERENCE_MAPPED"
-   ],
-   "transit_system": [
-    "광주 도시철도 2호선",
-    "SOURCE_STATED"
-   ],
-   "validation": "PASS"
+   "category": "CATEGORY_UNRESOLVED",
+   "primary_category": null,
+   "taxonomy": [],
+   "taxonomy_state": "NOT_EVALUATED",
+   "reportability": "NOT_EVALUATED"
   },
   "cand_f180c420e9dabfc5e250ea999c8d91e88a244fe189f3ab394179ee3393cc243a": {
    "evidence": "EVIDENCE_REJECTED",
@@ -4892,11 +5021,24 @@
    "date_valid": true,
    "date": "2026-10-19",
    "event_id": "evt_950796e6dc321b9fa6300ac4",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
-   "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_f4889369b7e06745936b2829eabac28fc785c17781330fd91cde3aab24767dd5": {
    "evidence": "EVIDENCE_REJECTED",
@@ -4956,11 +5098,24 @@
    "date_valid": true,
    "date": "2026-10-19",
    "event_id": "evt_950796e6dc321b9fa6300ac4",
-   "category": "CATEGORY_UNRESOLVED",
-   "primary_category": null,
-   "taxonomy": [],
-   "taxonomy_state": "NOT_EVALUATED",
-   "reportability": "NOT_EVALUATED"
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
   },
   "cand_f74d644ef046edfe07e91ed74ad3da8fc073e188050054ad83f8c4d10e70cd1e": {
    "evidence": "EVIDENCE_REJECTED",
@@ -5423,13 +5578,6 @@
    "attempts": 2
   },
   {
-   "stage": "Taxonomy",
-   "subject_id": "evt_66ab683dd132b2997728f0e7",
-   "kind": "PROPOSAL_CONTRACT_VIOLATION",
-   "failure_class": "PROPOSAL_INVALID",
-   "attempts": 1
-  },
-  {
    "stage": "Validator",
    "subject_id": "evt_af8ebe54135616277f6abe5b",
    "kind": "TRANSIENT_FAILURE_AFTER_RETRY",
@@ -5446,12 +5594,11 @@
   "Scope:CITATION_INVALID": 1,
   "Scope:EVENT_FOCUS_CONTAINMENT": 1,
   "Scope:ENDPOINT_ROLE_DISTINCTNESS": 1,
-  "Taxonomy:PROPOSAL_INVALID": 1,
   "Validator:UNPARSEABLE_RESPONSE": 1
  },
  "metadata_exclusions": [],
  "disclosure": {
-  "technical_gap_count": 42,
+  "technical_gap_count": 41,
   "metadata_exclusion_count": 0,
   "validation_failed_count": 2,
   "event_identity_gap_count": 0
