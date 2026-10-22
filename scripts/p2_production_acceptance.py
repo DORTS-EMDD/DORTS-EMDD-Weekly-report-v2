@@ -237,6 +237,10 @@ def main() -> int:
     maiagent = JournalMaiAgentTransport(fake_maiagent if args.dry_run else UrllibMaiAgentJsonTransport(), journal)
 
     trace_path = out / "trace.jsonl"
+    if trace_path.exists() and trace_path.stat().st_size:
+        # Keep the trace of an interrupted attempt as evidence.
+        stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        trace_path.rename(out / f"trace.interrupted-{stamp}.jsonl")
     trace_path.write_text("", encoding="utf-8")
     stage_ms: dict[str, Any] = {}
 
