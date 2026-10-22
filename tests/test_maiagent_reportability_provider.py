@@ -331,7 +331,7 @@ class ReportabilityCriteriaTests(unittest.TestCase):
         from src.weekly_report.maiagent_reportability_provider import PROMPT_VERSION, REPORTABILITY_INSTRUCTIONS
 
         instructions = " ".join(REPORTABILITY_INSTRUCTIONS)
-        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v4")
+        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v5")
         self.assertIn("Accepted value paths", instructions)
         self.assertIn("substantive technical research, testing, pilots or deployments", instructions)
         self.assertIn("procurement, demonstration or trial activity", instructions)
@@ -349,5 +349,6 @@ def test_instructions_name_the_general_low_value_classes():
 
     text = " ".join(REPORTABILITY_INSTRUCTIONS)
     assert "Awards, rankings, media praise" in text
-    assert "statements by officials are NOT_REPORTABLE unless" in text
+    assert "civic groups or commentators are NOT_REPORTABLE unless" in text
+    assert "without reporting a new occurrence of their own" in text
     assert "minor collision with only a brief local disruption is NOT_REPORTABLE" in text

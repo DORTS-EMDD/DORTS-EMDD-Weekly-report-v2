@@ -349,6 +349,9 @@ class EventIdentityGroupingRecord:
 class EventIdentityGroupingRequest:
     batch_id: str
     records: tuple[EventIdentityGroupingRecord, ...]
+    # RC-25: a confirmation re-checks one proposed group and must place every
+    # supplied record exactly once (a separated record as a one-record group).
+    confirmation: bool = False
 
     def __post_init__(self) -> None:
         records = tuple(self.records)
@@ -358,10 +361,16 @@ class EventIdentityGroupingRequest:
             {record.record_id for record in records}
         ) != len(records):
             raise ValueError("EventIdentityGroupingRequest record and candidate IDs must be unique")
+        if type(self.confirmation) is not bool:
+            raise TypeError("EventIdentityGroupingRequest confirmation must be bool")
         object.__setattr__(self, "records", records)
 
     def as_payload(self) -> dict[str, Any]:
-        return {"batch_id": self.batch_id, "records": [record.as_payload() for record in self.records]}
+        return {
+            "batch_id": self.batch_id,
+            "confirmation": self.confirmation,
+            "records": [record.as_payload() for record in self.records],
+        }
 
 
 @dataclass(frozen=True, slots=True)

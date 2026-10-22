@@ -640,6 +640,50 @@ VALIDATION_CITATION = SOURCE_REF + SENTENCE_ID
 WRITER_PROMPT_VERSION = formal-report-writer-v5
 ```
 
+### A.19 RC-25 Explicit confirmation answers; statements and features (2026-10-22)
+
+After RC-23 the report listed one Ulsan depot relocation three times and three
+Daejeon tram items. The Evidence shows two different causes.
+
+* **Ulsan (Event Identity).** The confirmation of the 13-record group returned
+  11 records together, returned one record (the 14 October report of the
+  city's internal decision and the mayor's instructions, an earlier
+  occurrence) as its own group, and left out one 19 October press-conference
+  report entirely. Under RC-23 the helper is told to leave separated records
+  out, so an omission could not be told apart from a rejection; every correct
+  rejection in that run (Oslo/Zaragoza, Daejeon/Gwangju, Daegu/Nagoya) was an
+  omission.
+* **Daejeon (Reportability, not Event Identity).** The three records are three
+  occurrences: a 15 October report revealing the contract dates, a 19 October
+  civic-group statement and a 20 October background feature. Event Identity
+  correctly keeps them apart.
+
+Rules:
+
+* (Amends section A.17.) A confirmation request carries
+  `confirmation = true`. The helper must return every supplied record exactly
+  once: the records that report the same occurrence together, and every other
+  record as its own single-record group. A single-record group is an explicit
+  separation. A record the confirmation leaves out is undecided: its pairs are
+  not confirmed (no merge), and the confirmation is a disclosed
+  `CONFIRMATION_INCOMPLETE` `EventIdentity` TechnicalGap, so a possible
+  duplicate is never silent. Python never treats an omission as agreement.
+* (Extends section N.) Statements, criticism or demands by politicians, civic
+  groups or commentators join the RC-20 class of statements without a concrete
+  decision, schedule change, test result, approval or safety measure; feature,
+  background, explainer or opinion articles that recount a project's history
+  or controversy without a new occurrence of their own are NOT_REPORTABLE.
+  These are general classes, not event rules.
+* Offline check: with the recorded replies of the same week the new rules give
+  the same 51 Events (no new merge, every confirmed merge kept) and disclose
+  the six confirmations that rejected by omission.
+
+```text
+EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v3
+EVENT_IDENTITY_CONFIRMATION_ANSWER = EVERY_RECORD_PLACED (omission = undecided, disclosed)
+REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v5
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：

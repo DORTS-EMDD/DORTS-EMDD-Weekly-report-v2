@@ -313,6 +313,9 @@ class EventIdentity:
 
         Only pairs that the confirmation proposes together again are confirmed;
         a failed or invalid confirmation confirms nothing and is a disclosed gap.
+        RC-25: the confirmation must place every record (a separated record as
+        a one-record group); an omitted record is undecided, so its pairs stay
+        unconfirmed and the omission is a disclosed gap.
         """
 
         ordered = sorted(
@@ -322,12 +325,20 @@ class EventIdentity:
         records = tuple(
             _grouping_record(record, f"R{index}") for index, record in enumerate(ordered, start=1)
         )
-        request = EventIdentityGroupingRequest(batch_id, records)
+        request = EventIdentityGroupingRequest(batch_id, records, confirmation=True)
         try:
-            proposal = _validate_grouping_proposal(self._grouping_advisor(request), request)
+            raw = self._grouping_advisor(request)
+            proposal = _validate_grouping_proposal(raw, request)
         except EVENT_TECHNICAL_FAILURES as failure:
             technical_gaps.append(TechnicalGap.from_failure("EventIdentity", batch_id, failure))
             return set()
+        named = {member["record_id"] for group in raw["groups"] for member in group["members"]}
+        if any(record.record_id not in named for record in records):
+            technical_gaps.append(
+                TechnicalGap.from_failure(
+                    "EventIdentity", batch_id, EventIdentityProposalViolation("CONFIRMATION_INCOMPLETE")
+                )
+            )
         confirmed: set[tuple[str, str]] = set()
         for index, outcome in enumerate(proposal, start=1):
             if isinstance(outcome, EventIdentityProposalViolation):

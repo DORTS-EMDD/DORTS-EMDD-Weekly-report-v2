@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-24 修訂（2026-10-20～22）
+### RC-3～RC-25 修訂（2026-10-20～22）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.18 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.19 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -318,6 +318,11 @@ Transport retry 與 semantic correction 必須分開計算。
   引用其事實前提），無法引用前提者為 UNSUPPORTED；標題為單行純文字，Writer 不得加
   符號或分類標籤前綴、不得提及請求或輸入（如「候選資料」），Validator 以確定性規則
   擋下含 emoji 或以括號／直線標籤開頭的標題，並把前綴交給那一次改寫。
+* RC-25（§A.19）：Event Identity 確認請求標示 confirmation，helper 須把每筆紀錄恰好
+  列一次（同事件者同群、其他各自單獨成群）；被遺漏的紀錄視為未決定，不合併並揭露為
+  CONFIRMATION_INCOMPLETE 技術缺口，Python 不把遺漏當作同意；Reportability 低價值
+  類別擴及政治人物、民間團體或評論者的聲明與批評，以及無新發生事項的專題、背景或評論
+  文章。
 
 ## 13. Report / Delivery
 
@@ -467,5 +472,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-24 APPLIED (2026-10-22)
+CONTRACT_REVISION = RC-3..RC-25 APPLIED (2026-10-22)
 ```

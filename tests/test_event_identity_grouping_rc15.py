@@ -37,9 +37,11 @@ def _member(candidate_id, **citations):
     return member
 
 
-def _confirm(*candidate_ids):
-    """An RC-23 confirmation response proposing these records as one event."""
-    return {"groups": [{"members": [_member(candidate_id) for candidate_id in candidate_ids]}]}
+def _confirm(*candidate_ids, separate=()):
+    """An RC-23/RC-25 confirmation: these records as one event, ``separate`` each alone."""
+    groups = [[*candidate_ids]] if candidate_ids else []
+    groups += [[candidate_id] for candidate_id in separate]
+    return {"groups": [{"members": [_member(candidate_id) for candidate_id in group]} for group in groups]}
 
 
 class _Scripted:
@@ -188,7 +190,9 @@ class GroupingProposalTests(unittest.TestCase):
             _record("UNSTATED", facts=None, body="A subway drill took place."),
         ]
         response = {"groups": [{"members": [_member(name) for name in ("DAEGU", "NAGOYA1", "NAGOYA2")]}]}
-        result = EventIdentity(_Scripted(response, _confirm("NAGOYA1", "NAGOYA2"))).evaluate(records)
+        result = EventIdentity(
+            _Scripted(response, _confirm("NAGOYA1", "NAGOYA2", separate=("DAEGU",)))
+        ).evaluate(records)
         self.assertEqual(
             sorted(group.member_candidate_ids for group in result.groups),
             [("DAEGU",), ("NAGOYA1", "NAGOYA2"), ("UNSTATED",)],
@@ -202,7 +206,7 @@ class GroupingProposalTests(unittest.TestCase):
     def test_confirmation_keeps_only_pairs_it_proposes_again(self):
         # RC-23: the batch grouped three records; the confirmation keeps two.
         batch = {"groups": [{"members": [_member("EN"), _member("JA"), _member("OTHER")]}]}
-        result = EventIdentity(_Scripted(batch, _confirm("EN", "JA"))).evaluate(_three_records())
+        result = EventIdentity(_Scripted(batch, _confirm("EN", "JA", separate=("OTHER",)))).evaluate(_three_records())
         self.assertEqual(sorted(group.member_candidate_ids for group in result.groups), [("EN", "JA"), ("OTHER",)])
         self.assertEqual(result.technical_gaps, ())
         self.assertEqual(
@@ -223,11 +227,32 @@ class GroupingProposalTests(unittest.TestCase):
             [("event-identity-batch-1:group-1:confirmation", "UNKNOWN_RECORD")],
         )
 
-    def test_confirmation_without_groups_merges_nothing(self):
+    def test_confirmation_separating_every_record_merges_nothing(self):
         batch = {"groups": [{"members": [_member("EN"), _member("JA")]}]}
-        result = EventIdentity(_Scripted(batch, {"groups": []})).evaluate(_three_records())
+        advisor = _Scripted(batch, _confirm(separate=("EN", "JA")))
+        result = EventIdentity(advisor).evaluate(_three_records())
         self.assertEqual(len(result.groups), 3)
         self.assertEqual(result.technical_gaps, ())
+        self.assertTrue(advisor.requests[1].confirmation)
+        self.assertFalse(advisor.requests[0].confirmation)
+        self.assertIs(advisor.requests[1].as_payload()["confirmation"], True)
+
+    def test_record_omitted_by_confirmation_is_undecided_and_disclosed(self):
+        # RC-25: an omission is not a separation. The omitted record's pairs
+        # stay unconfirmed (no merge), the confirmed pair still merges, and the
+        # incomplete confirmation is a disclosed gap, never a silent duplicate.
+        batch = {"groups": [{"members": [_member("EN"), _member("JA"), _member("OTHER")]}]}
+        result = EventIdentity(_Scripted(batch, _confirm("EN", "JA"))).evaluate(_three_records())
+        self.assertEqual(sorted(group.member_candidate_ids for group in result.groups), [("EN", "JA"), ("OTHER",)])
+        self.assertEqual(
+            [(gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
+            [("event-identity-batch-1:group-1:confirmation", "CONFIRMATION_INCOMPLETE")],
+        )
+        empty = EventIdentity(_Scripted(
+            {"groups": [{"members": [_member("EN"), _member("JA")]}]}, {"groups": []}
+        )).evaluate(_three_records())
+        self.assertEqual(len(empty.groups), 3)
+        self.assertEqual([gap.failure_class for gap in empty.technical_gaps], ["CONFIRMATION_INCOMPLETE"])
 
     def test_failed_confirmation_is_a_gap_and_merges_nothing(self):
         def batch():
