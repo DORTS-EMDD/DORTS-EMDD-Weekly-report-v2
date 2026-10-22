@@ -18,6 +18,7 @@ import re
 from typing import Any, Protocol
 from urllib.parse import quote, urlsplit
 
+from .evidence_sentences import event_focus_sentences
 from .maiagent_transport import (
     MaiAgentHttpResponse,
     MaiAgentJsonHttpTransport,
@@ -202,7 +203,9 @@ WRITER_INSTRUCTIONS = (
     "Taipei insight may give professional implications but must not assert unsupplied Taipei Metro facts.",
     "Audience: engineers of an urban rail authority. factual_summary states, in two to five sentences, what happened, to which line, system or equipment, who acted, and the key technical, schedule and quantity facts the evidence gives.",
     "Every statement must be directly supported by the evidence. Keep the values of numbers, units, dates and times exactly as stated, but write them in Traditional Chinese report style (for example 10月11日, 9月18日, 2027年年中, 25,474人次); do not add a year, day or time the evidence does not give.",
+    "The reported event is the one described by event_focus, which quotes the evidence sentences that identify it: write the headline and factual_summary about that event, use the rest of the evidence only for details of the same event, and never report another event the article mentions.",
     "Keep a proper name of a place, line, station, product or organization in its original form unless the evidence gives its Chinese name or it has a widely established Traditional Chinese name; never guess a translation.",
+    "Korean and Japanese names: use the established Traditional Chinese name when one exists (for example 蔚山, 光州, 慶尚南道, 名古屋, 東京地下鐵); otherwise keep the complete original name unchanged. Never mix scripts inside one name or word (not 경남道長 or 울산市議會).",
     "Translate technical terms into Traditional Chinese; do not leave common English words such as turnkey untranslated.",
     "When the request contains a correction, rewrite the previous block so that every listed statement is removed or corrected to match the evidence, keep the supported statements, and add no new facts.",
     "Return JSON only with exactly event_id, headline, factual_summary, taipei_insight.",
@@ -227,12 +230,17 @@ def build_maiagent_writer_model_input(result: ReportWorkflowResult) -> dict[str,
         raise ValueError("Writer requires authoritative substantive content")
     return {
         "task_identity": "formal_report_writer",
-        "prompt_version": "formal-report-writer-v3",
+        "prompt_version": "formal-report-writer-v4",
         "schema_version": "writer-report-block-v1",
         "instructions": list(WRITER_INSTRUCTIONS),
         "writer_request": {
             "event_id": result.event_group.event_id,
             "authoritative_evidence": {"substantive_content": content},
+            # RC-20: the Candidate event Scope identified in this evidence.
+            "event_focus": [
+                sentence.text
+                for sentence in event_focus_sentences(content, dict(records[0].scope.provenance).get("candidate_event_focus"))
+            ],
         },
         "authoritative_response_contract": {"fields": list(WRITER_RESPONSE_FIELDS)},
     }

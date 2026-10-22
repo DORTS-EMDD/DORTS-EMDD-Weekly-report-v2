@@ -121,8 +121,28 @@ def resolve_sentence_ids(
     return tuple(sorted((by_id[value] for value in ids), key=lambda sentence: sentence.start))
 
 
+def event_focus_sentences(content: str, focus_spans: object) -> tuple[EvidenceSentence, ...]:
+    """The Candidate's event-focus sentences recorded by Scope (RC-20), in order.
+
+    ``focus_spans`` is the Scope provenance ``candidate_event_focus`` list of
+    ``{"start", "end"}`` sentence spans. Returns the matching sentences of
+    ``content``; an absent or unusable record yields no sentences.
+    """
+
+    if not isinstance(focus_spans, (list, tuple)):
+        return ()
+    wanted = {
+        (span.get("start"), span.get("end"))
+        for span in focus_spans
+        if isinstance(span, dict)
+    }
+    return tuple(
+        sentence for sentence in segment_evidence_sentences(content) if (sentence.start, sentence.end) in wanted
+    )
+
+
 def cited_text(sentences: tuple[EvidenceSentence, ...]) -> str:
     return " ".join(sentence.text for sentence in sentences)
 
 
-__all__ = ["EvidenceSentence", "segment_evidence_sentences", "resolve_sentence_ids", "cited_text"]
+__all__ = ["EvidenceSentence", "segment_evidence_sentences", "resolve_sentence_ids", "event_focus_sentences", "cited_text"]

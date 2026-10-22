@@ -293,17 +293,18 @@ class ReportServiceTests(TestCase):
         self.assertIsNone(result.transit_system_name)
         self.assertEqual(result.transit_system_basis, FormalMetadataBasis.NOT_STATED)
 
-    def test_transit_system_conflict_is_unresolved_without_canonical_preference(self) -> None:
-        # RC-4: conflicting system names are recorded and none is chosen.
+    def test_transit_system_conflict_shows_the_canonical_members_value(self) -> None:
+        # RC-20: members name the system differently; the canonical member's
+        # supported value matches the cited source, and the conflict stays diagnosed.
         records = (
             _record("C1", transit_system_name="Metro Alpha"),
             _record("C2", transit_system_name="Metro Beta"),
         )
         result = self.service.project_formal_metadata(
-            (_workflow_result(records=records, canonical_candidate_id="C1"),)
+            (_workflow_result(records=records, canonical_candidate_id="C2"),)
         )[0]
-        self.assertIsNone(result.transit_system_name)
-        self.assertEqual(result.transit_system_basis, FormalMetadataBasis.UNRESOLVED)
+        self.assertEqual(result.transit_system_name, "Metro Beta")
+        self.assertEqual(result.transit_system_basis, FormalMetadataBasis.SOURCE_STATED)
         self.assertEqual(
             [(item.field_name, item.reason, item.candidate_ids) for item in result.diagnostics],
             [("transit_system_name", FormalMetadataDiagnosticReason.CONFLICTING_OPTIONAL_TRANSIT_SYSTEM, ("C1", "C2"))],

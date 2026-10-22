@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-19 修訂（2026-10-20～22）
+### RC-3～RC-20 修訂（2026-10-20～22）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.13 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.14 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -297,6 +297,11 @@ Transport retry 與 semantic correction 必須分開計算。
   時間分批，並記錄 PROPOSAL_BATCH_SPLIT 診斷。
 * RC-19（§A.13）：來源值整體查不到時，可依其所含的參照表名稱（皆指向同一地區、
   不含歧義名稱、拉丁字母需整詞相符）解析國家／地區；參照表升為 geo-reference-v2。
+* RC-20（§A.14）：Event Identity 與 Writer 以 Scope 的候選事件焦點句為準（比較的是
+  候選事件、Writer 只寫該事件）；韓日名稱用既有中文名或完整原文，不得混寫，
+  Validator 以確定性規則擋下韓文與漢字黏連的詞；metadata 只擷取主要事件的單一值；
+  合併成員的系統名稱不同時顯示 canonical 成員的值並保留診斷；Reportability 明列
+  獎項／官員視察與發言／輕微路面擦撞等一般低價值類別。
 
 ## 13. Report / Delivery
 
@@ -446,5 +451,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-19 APPLIED (2026-10-22)
+CONTRACT_REVISION = RC-3..RC-20 APPLIED (2026-10-22)
 ```

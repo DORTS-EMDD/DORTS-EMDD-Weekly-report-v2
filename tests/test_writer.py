@@ -146,3 +146,20 @@ def test_writer_block_trims_surrounding_whitespace_only():
 
     block = WriterReportBlock("E1", " 標題 ", "\n摘要 內容\n", "啟示\t")
     assert (block.headline, block.factual_summary, block.taipei_insight) == ("標題", "摘要 內容", "啟示")
+
+
+def test_writer_request_carries_the_canonical_candidate_event_focus():
+    # RC-20: the Writer is told which event in the evidence is the reported one.
+    from dataclasses import replace
+
+    from src.weekly_report.contracts import ScopeResult, ScopeState
+    from src.weekly_report.writer import WRITER_INSTRUCTIONS, build_maiagent_writer_model_input
+    from tests.test_report_service import _record, _workflow_result
+
+    record = _record("C1")
+    body = record.evidence.substantive_content
+    focused = replace(record, scope=ScopeResult("C1", ScopeState.IN_SCOPE, provenance={"candidate_event_focus": [{"start": 0, "end": len(body)}]}))
+    request = build_maiagent_writer_model_input(_workflow_result(records=(focused,)))
+    assert request["writer_request"]["event_focus"] == [body]
+    assert any("event_focus" in line for line in WRITER_INSTRUCTIONS)
+    assert any("Never mix scripts" in line for line in WRITER_INSTRUCTIONS)

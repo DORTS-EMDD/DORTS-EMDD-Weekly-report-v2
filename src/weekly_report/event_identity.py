@@ -26,7 +26,7 @@ from .contracts import (
     TechnicalGap,
     UnresolvedClaim,
 )
-from .evidence_sentences import resolve_sentence_ids, segment_evidence_sentences
+from .evidence_sentences import event_focus_sentences, resolve_sentence_ids, segment_evidence_sentences
 
 
 # RC-15/RC-18 bounds (contract sections A.9, A.12). The request payload is
@@ -519,7 +519,11 @@ def _grouping_record(
     sentence_limit, character_limit = lead_limits
     lead = []
     characters = 0
-    for sentence in segment_evidence_sentences(record.evidence.substantive_content):
+    content = record.evidence.substantive_content
+    # RC-20: compare Candidate events, so the excerpt is the Candidate's own
+    # Scope event focus; without a recorded focus it is the document lead.
+    focus = event_focus_sentences(content, dict(record.scope.provenance).get("candidate_event_focus"))
+    for sentence in focus or segment_evidence_sentences(content):
         if len(lead) >= sentence_limit or (lead and characters + len(sentence.text) > character_limit):
             break
         lead.append(sentence)

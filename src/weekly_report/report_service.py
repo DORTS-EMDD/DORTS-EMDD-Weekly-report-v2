@@ -640,8 +640,7 @@ class ReportService:
         self._validate_upstream_result(result)
         country, country_basis = self._resolve_country(event_id, records)
         transit_system_name, transit_system_basis, system_diagnostics = self._resolve_transit_system(
-            event_id, records
-        )
+            event_id, records, canonical_member.candidate.candidate_id)
         location, diagnostics = self._resolve_location(event_id, records)
         diagnostics = diagnostics + system_diagnostics
 
@@ -726,6 +725,7 @@ class ReportService:
     def _resolve_transit_system(
         event_id: str,
         records: tuple[EventIdentityRecord, ...],
+        canonical_candidate_id: str,
     ) -> tuple[str | None, FormalMetadataBasis, tuple[FormalMetadataDiagnostic, ...]]:
         populated: list[tuple[str, str]] = []
         all_not_stated = True
@@ -740,14 +740,19 @@ class ReportService:
         if len(distinct) == 1:
             return distinct[0], FormalMetadataBasis.SOURCE_STATED, ()
         if len(distinct) > 1:
-            return None, FormalMetadataBasis.UNRESOLVED, (
-                FormalMetadataDiagnostic(
-                    event_id=event_id,
-                    field_name="transit_system_name",
-                    reason=FormalMetadataDiagnosticReason.CONFLICTING_OPTIONAL_TRANSIT_SYSTEM,
-                    candidate_ids=tuple(candidate_id for candidate_id, _ in populated),
-                ),
+            diagnostic = FormalMetadataDiagnostic(
+                event_id=event_id,
+                field_name="transit_system_name",
+                reason=FormalMetadataDiagnosticReason.CONFLICTING_OPTIONAL_TRANSIT_SYSTEM,
+                candidate_ids=tuple(candidate_id for candidate_id, _ in populated),
             )
+            # RC-20: members name the system differently (often in different
+            # languages); the canonical member's own supported value matches
+            # the source the report cites. The disagreement stays diagnosed.
+            canonical = dict(populated).get(canonical_candidate_id)
+            if canonical is not None:
+                return canonical, FormalMetadataBasis.SOURCE_STATED, (diagnostic,)
+            return None, FormalMetadataBasis.UNRESOLVED, (diagnostic,)
         return None, (FormalMetadataBasis.NOT_STATED if all_not_stated else FormalMetadataBasis.UNRESOLVED), ()
 
     @staticmethod

@@ -476,6 +476,49 @@ GEOGRAPHIC_REFERENCE_VERSION = geo-reference-v2
 REGION_LOOKUP = WHOLE_VALUE, then CONTAINED_CURATED_NAMES (single region)
 ```
 
+### A.14 RC-20 Candidate event focus, naming and selection quality (2026-10-22)
+
+The first complete reports merged and wrote the wrong event when one article
+reported two occurrences (Gwangju: a train delivery and the mayor's delay
+warning), mixed Korean letters with Chinese characters (`경남道長`,
+`울산市議會`), left many systems unresolved, and kept a few low-value items.
+
+* **Candidate event focus.** Scope's validated `candidate_event_focus` (the
+  sentences of the Candidate's own event) is the excerpt each record presents
+  to Event Identity, bounded by the RC-18 tiers; a record without a recorded
+  focus presents its document lead. Event Identity therefore compares Candidate
+  events rather than every occurrence an article mentions. The Writer receives
+  the canonical member's focus sentences as `event_focus` and writes about that
+  event only, using the rest of the evidence for details of the same event.
+* **Names and language.** The Writer uses the established Traditional Chinese
+  name of a Korean or Japanese place or organization when one exists and
+  otherwise keeps the complete original name; it never mixes scripts inside a
+  name. The Validator fails, without a helper call, any prose word in which
+  Korean letters and Chinese characters are fused; the one Validator-directed
+  correction receives the offending words.
+* **Metadata.** Evidence metadata extraction reports at most one value per
+  field, for the document's principal reported event, not every system or
+  place it mentions.
+* **System display (amends section K).** When merged members state different
+  supported transit-system names, the formal report shows the canonical
+  member's own supported value, the one matching the cited source, and keeps
+  the disagreement as a `CONFLICTING_OPTIONAL_TRANSIT_SYSTEM` diagnostic.
+  Location conflicts are still omitted. Country is unchanged (RC-4/RC-5).
+* **Reportability classes (extends section N).** Awards, rankings, media
+  praise, anniversaries and marketing collaborations; visits, inspections,
+  interviews, council questions and official statements without a concrete
+  decision, schedule change, test result, approval or safety measure; and minor
+  road-traffic collisions with a tram or light-rail vehicle without injuries,
+  derailment, significant damage, substantial suspension or a rail safety
+  measure are NOT_REPORTABLE. These are general classes, not event rules.
+
+```text
+WRITER_PROMPT_VERSION = formal-report-writer-v4
+REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v4
+EVIDENCE_METADATA_PROMPT_VERSION = evidence-metadata-principal-body-v3
+EVENT_IDENTITY_EXCERPT = SCOPE_CANDIDATE_EVENT_FOCUS (document lead without one)
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -1959,7 +2002,9 @@ projection may collapse only identical supported location values; missing or
 unresolved differing locations are omitted from the optional formal field while
 diagnostics and source provenance remain available. Formal location conflict
 does not regroup the Event, fail the report by itself, choose the canonical
-member's value, use a majority vote, or reconcile aliases.
+member's value, use a majority vote, or reconcile aliases. (RC-20, section
+A.14: for the transit-system name only, the canonical member's own supported
+value is shown and the conflict stays diagnosed.)
 
 This contract clarification authorizes no Event Identity Golden expected
 grouping changes. Later implementation tests must cover supported-location

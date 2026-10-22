@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field as dataclass_field
 from enum import StrEnum
+import re
 from typing import Any, Protocol
 from urllib.parse import urlparse
 
@@ -20,6 +21,16 @@ from .report_service import FormalReportMetadata
 from .report_workflow import ReportWorkflowResult
 from .writer import WriterFailure, WriterReportBlock
 
+
+_HANGUL = "가-힣ᄀ-ᇿ㄰-㆏"
+_HAN = "㐀-鿿豈-﫿"
+_MIXED_WORD = re.compile(rf"[{_HAN}]{{0,4}}[{_HANGUL}]+[{_HAN}]{{1,4}}|[{_HAN}]{{1,4}}[{_HANGUL}]+")
+
+
+def _mixed_script_words(text: str) -> list[str]:
+    """Words in which Korean letters and Chinese characters are fused."""
+
+    return _MIXED_WORD.findall(text)
 
 class ValidationLanguageAssessment(StrEnum):
     TRADITIONAL_CHINESE = "TRADITIONAL_CHINESE"
@@ -646,6 +657,24 @@ class Validator:
         block: WriterReportBlock,
     ) -> tuple[tuple[str, ...], tuple[str, ...]]:
         """Return the failure reasons and unit-level correction feedback."""
+
+        # Traditional Chinese language (RC-20): Korean letters fused with
+        # Chinese characters in one word are never acceptable prose, so this
+        # deterministic check needs no helper call.
+        mixed = [
+            (field_name, word)
+            for field_name in self._FIELD_NAMES
+            for word in _mixed_script_words(getattr(block, field_name.value))
+        ]
+        if mixed:
+            return (
+                tuple(dict.fromkeys(f"language_{field_name.value}_mixed_script" for field_name, _ in mixed)),
+                tuple(
+                    f"{field_name.value}: '{word}' mixes Korean and Chinese characters; use the established "
+                    "Traditional Chinese name or the complete original name"
+                    for field_name, word in mixed
+                ),
+            )
 
         request = self._request_for_event(result, block)
         proposal = self._call_semantic_provider(request)

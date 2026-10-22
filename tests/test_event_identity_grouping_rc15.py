@@ -264,3 +264,20 @@ class EventIdentityDisclosureTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CandidateEventFocusTests(unittest.TestCase):
+    def test_excerpt_is_the_candidates_scope_event_focus(self):
+        # RC-20: Event Identity compares Candidate events, not document leads.
+        from dataclasses import replace
+
+        from src.weekly_report.contracts import ScopeResult, ScopeState
+
+        body = "The council met on Monday. The mayor warned the line may open late. Trains arrived last week."
+        record = _record("C1", facts=None, body=body)
+        focus = [{"start": body.index("The mayor"), "end": body.index(" Trains")}]
+        record = replace(record, scope=ScopeResult("C1", ScopeState.IN_SCOPE, provenance={"candidate_event_focus": focus}))
+        advisor = _Scripted({"groups": []})
+        EventIdentity(advisor).evaluate([record, _record("C2", facts=None, body="Another event happened.")])
+        sentences = advisor.requests[0].records[0].sentences
+        self.assertEqual([(s.sentence_id, s.text) for s in sentences], [("S2", "The mayor warned the line may open late.")])

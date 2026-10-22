@@ -29,7 +29,7 @@ from .maiagent_transport import (
 
 
 TASK_IDENTITY = "reportability_semantic_proposal"
-PROMPT_VERSION = "reportability-principal-body-v3"
+PROMPT_VERSION = "reportability-principal-body-v4"
 SCHEMA_VERSION = "reportability-semantic-proposal-v2"
 HELPER_VERSION = "maiagent-structured-helper-reportability-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-reportability"
@@ -50,6 +50,9 @@ REPORTABILITY_INSTRUCTIONS = (
     "Accepted value paths: substantive technical research, testing, pilots or deployments; concrete system renewal, integration or engineering intervention; a consequential incident concerning the rail system's own safety, equipment, infrastructure or operations, or its corrective investigation; a concrete service, fare, operating-practice, safety-governance or policy change; substantive operational controversy; substantive normative action or formal guidance; procurement, demonstration or trial activity with concrete engineering, system, test, update or operational significance; opening or construction of a line, extension or station.",
     "Incidents qualify when they involve the rail system itself, such as a derailment, collision, fire, power, signal, door or vehicle failure, track intrusion, evacuation, structural damage or a substantial service suspension, or when the operator or authority takes a safety, investigation or corrective measure. An ordinary crime, assault, medical or personal incident that merely happened on a station, platform or train, whose only rail consequence is a brief local service adjustment, is NOT_REPORTABLE unless the source reports a rail safety measure, a rail safety investigation or a lasting operational change.",
     "Ordinary administrative, corporate, financial, promotional, ceremonial, personnel or workflow-only news is NOT_REPORTABLE when the evidence does not establish an accepted path. No path requires novelty, a non-empty E&M taxonomy, a severity threshold or a monetary threshold. Relevance to Taipei alone never makes an event REPORTABLE.",
+    "Awards, rankings, media praise, anniversaries and marketing collaborations are NOT_REPORTABLE unless the evidence also reports a concrete technical, operational, safety or procurement change.",
+    "Site visits, inspections, interviews, council questions or statements by officials are NOT_REPORTABLE unless the evidence records a concrete decision, schedule change, test result, approval or safety measure.",
+    "A road-traffic collision between a tram or light-rail vehicle and a road user is REPORTABLE only when the evidence reports injuries, a derailment, significant damage to the rail vehicle or infrastructure, a substantial service suspension, or a rail safety measure or investigation; a minor collision with only a brief local disruption is NOT_REPORTABLE.",
     "examined_source_refs must list every supplied source_ref exactly once.",
     "REPORTABLE requires at least one positive support citation.",
     "Each support citation names a supplied source_ref and the sentence_ids of that member that support the value path; never copy or retype source text or identifiers.",
