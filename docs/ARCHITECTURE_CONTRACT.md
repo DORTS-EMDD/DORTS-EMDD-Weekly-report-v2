@@ -103,7 +103,7 @@ formal artifact discloses technical gaps, data exclusions and Validation FAILs.
 ```text
 EXACT_TEXT_RESOLUTION = EXACT_TEXT_ALL_OCCURRENCES
 COUNTRY_RESOLUTION_OWNER = EvidenceService
-GEOGRAPHIC_REFERENCE_VERSION = geo-reference-v1
+GEOGRAPHIC_REFERENCE_VERSION = geo-reference-v1 (v2 since RC-19, section A.13)
 FORMAL_METADATA_FAILURE_GRANULARITY = EVENT (data) / RUN (invariant)
 MAIAGENT_MAX_ATTEMPTS = 2 (transient, no parseable response only)
 MAIAGENT_HELPER_TIMEOUT_SECONDS = 30
@@ -447,6 +447,33 @@ the helper is sensitive to; the request payload is.
 ```text
 EVENT_IDENTITY_BATCH_LIMIT = 66,000 characters of record payload (no record cap)
 EVENT_IDENTITY_LEAD_TIERS = 6/900, 4/600, 3/450, 2/300
+```
+
+### A.13 RC-19 Region resolution of compound source names (2026-10-22)
+
+Half of the first report's events showed 「未能確認」 for country/region. The
+source values named a line or operator that contains a curated city or system
+(`名古屋市交通局`, `桃園捷運綠線`, `Línea 2 del Metro de Lima y Callao`,
+`Gwangju Metro Line 2`), and RC-4 looked up only whole values.
+
+* A value with no whole-value match resolves through the curated names it
+  contains when all of them agree on one region (`REFERENCE_MAPPED`, or
+  `SOURCE_STATED` when the contained name is a region name). Ambiguous names
+  never count; Latin-script names match on word boundaries; names of two
+  regions make the value ambiguous. The resolution still records the full
+  source value; Search market, publisher, URL and model knowledge are still
+  never used.
+* `geo-reference-v2` adds curated names: `Swiss`; `TCL`, `SYTRAL`;
+  Japanese and Korean names for Vietnam, the Philippines, Hanoi, Ho Chi Minh
+  City and Manila; Yangsan and Gimpo.
+* On the week's 142 READY records, unrecognized values fall from 57 to 19 and
+  reference-mapped regions rise from 24 to 61 (offline replay). Fields left
+  unresolved by conflicting metadata values (`INVALID_FIELD`, 36) are
+  unchanged.
+
+```text
+GEOGRAPHIC_REFERENCE_VERSION = geo-reference-v2
+REGION_LOOKUP = WHOLE_VALUE, then CONTAINED_CURATED_NAMES (single region)
 ```
 
 ## B. Authoritative Owners

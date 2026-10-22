@@ -115,6 +115,36 @@ class GeographicReference:
             return None
         return self._matches.get(_key(value))
 
+    def lookup_contained(self, value: str) -> GeographicMatch | None:
+        """Resolve a compound source name through the curated names it contains (RC-19).
+
+        Used only when the whole value has no match. Ambiguous names never
+        count; Latin-script names match on word boundaries; contained names
+        that disagree on the region make the value ambiguous.
+        """
+
+        if not isinstance(value, str) or not value.strip():
+            return None
+        key = _key(value)
+        found: list[GeographicMatch] = []
+        for name, match in self._matches.items():
+            if match.kind is GeographicMatchKind.AMBIGUOUS or name == key or len(name) < 2:
+                continue
+            if name.isascii():
+                if not re.search(rf"(?<!\w){re.escape(name)}(?!\w)", key):
+                    continue
+            elif name not in key:
+                continue
+            found.append(match)
+        regions = {match.region_id for match in found}
+        if not regions:
+            return None
+        if len(regions) > 1:
+            return GeographicMatch(GeographicMatchKind.AMBIGUOUS)
+        kinds = {match.kind for match in found}
+        kind = next(kind for kind in (GeographicMatchKind.REGION, GeographicMatchKind.CITY, GeographicMatchKind.SYSTEM) if kind in kinds)
+        return GeographicMatch(kind, found[0].region_id, found[0].display_name)
+
     def is_generic_transit_term(self, value: str) -> bool:
         return isinstance(value, str) and _key(value) in self._generic_terms
 

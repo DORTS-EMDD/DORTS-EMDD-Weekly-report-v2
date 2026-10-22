@@ -52,7 +52,7 @@ def _evaluate(observations, body):
 class GeographicReferenceTests(unittest.TestCase):
     def test_reference_is_versioned_and_matches_whole_values_only(self):
         reference = default_geographic_reference()
-        self.assertEqual(reference.version, "geo-reference-v1")
+        self.assertEqual(reference.version, "geo-reference-v2")
         self.assertEqual(reference.lookup("vietnam").kind, GeographicMatchKind.REGION)
         self.assertEqual(reference.lookup("Hanoi Metro").kind, GeographicMatchKind.SYSTEM)
         self.assertEqual(reference.lookup("Hanoi").kind, GeographicMatchKind.CITY)
@@ -89,7 +89,7 @@ class RegionResolutionTests(unittest.TestCase):
         resolution = _resolve(system="Hanoi Metro")
         self.assertEqual(
             (resolution.basis, resolution.region_id, resolution.source_field, resolution.reference_version),
-            (RegionResolutionBasis.REFERENCE_MAPPED, "VN", "transit_system_name", "geo-reference-v1"),
+            (RegionResolutionBasis.REFERENCE_MAPPED, "VN", "transit_system_name", "geo-reference-v2"),
         )
 
     def test_conflicting_regions_are_unresolved_without_choosing(self):
@@ -157,3 +157,41 @@ class NonSpecificSystemNameTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CompoundSourceNameTests(unittest.TestCase):
+    """RC-19: compound source names resolve through the curated names they contain."""
+
+    def setUp(self):
+        self.reference = GeographicReference.from_file()
+
+    def test_real_compound_names_resolve_to_the_one_region_they_contain(self):
+        cases = {
+            "名古屋市交通局": "JP",
+            "桃園捷運綠線": "TW",
+            "Línea 2 del Metro de Lima y Callao": "PE",
+            "광주 도시철도 2호선": "KR",
+            "Gwangju Metro Line 2": "KR",
+            "Metro di Xiamen": "CN",
+            "Bern–Ostermundigen tram line": "CH",
+        }
+        for value, region in cases.items():
+            with self.subTest(value=value):
+                self.assertIsNone(self.reference.lookup(value))
+                self.assertEqual(self.reference.lookup_contained(value).region_id, region)
+
+    def test_ambiguous_names_never_count_and_latin_names_need_word_boundaries(self):
+        self.assertIsNone(self.reference.lookup_contained("Metro de Santiago"))
+        self.assertIsNone(self.reference.lookup_contained("Bernard Street depot"))
+        self.assertIsNone(self.reference.lookup_contained("Limassol light rail"))
+
+    def test_names_of_two_regions_make_the_value_ambiguous(self):
+        match = self.reference.lookup_contained("Tokyo and Seoul subway exchange")
+        self.assertIs(match.kind, GeographicMatchKind.AMBIGUOUS)
+
+    def test_resolution_uses_contained_names_only_without_a_whole_match(self):
+        resolution = _resolve(system="名古屋市交通局")
+        self.assertIs(resolution.basis, RegionResolutionBasis.REFERENCE_MAPPED)
+        self.assertEqual(resolution.region_id, "JP")
+        self.assertEqual(resolution.source_value, "名古屋市交通局")
+        self.assertIs(_resolve(country="Swiss").basis, RegionResolutionBasis.SOURCE_STATED)

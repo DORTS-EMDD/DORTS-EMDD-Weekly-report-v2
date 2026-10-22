@@ -970,7 +970,7 @@ class EvidenceService:
             if not value:
                 continue
             present = True
-            match = reference.lookup(value)
+            match = reference.lookup(value) or reference.lookup_contained(value)
             if match is None:
                 continue
             if match.kind is GeographicMatchKind.AMBIGUOUS:

@@ -261,7 +261,7 @@ class FormalEvidenceService(RecordingEvidenceService):
                 display_name="臺灣",
                 source_field="country",
                 source_value="Taiwan",
-                reference_version="geo-reference-v1",
+                reference_version="geo-reference-v2",
             ),
         )
         return EvidenceResult(

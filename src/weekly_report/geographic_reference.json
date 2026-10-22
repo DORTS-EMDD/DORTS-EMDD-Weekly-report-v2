@@ -1,5 +1,5 @@
 {
- "reference_version": "geo-reference-v1",
+ "reference_version": "geo-reference-v2",
  "effective_date": "2026-10-20",
  "basis": {
   "region_ids": "ISO 3166-1 alpha-2 codes (HK and MO as their ISO-assigned codes).",
@@ -120,7 +120,9 @@
     "Vietnam",
     "Viet Nam",
     "Việt Nam",
-    "越南"
+    "越南",
+    "ベトナム",
+    "베트남"
    ]
   },
   {
@@ -129,7 +131,9 @@
    "names": [
     "Philippines",
     "菲律賓",
-    "菲律宾"
+    "菲律宾",
+    "フィリピン",
+    "필리핀"
    ]
   },
   {
@@ -287,7 +291,8 @@
     "Schweiz",
     "Suisse",
     "Svizzera",
-    "瑞士"
+    "瑞士",
+    "Swiss"
    ]
   },
   {
@@ -790,7 +795,11 @@
     "대전",
     "광주",
     "울산",
-    "화성"
+    "화성",
+    "Yangsan",
+    "양산",
+    "Gimpo",
+    "김포"
    ],
    "systems": [
     "Seoul Metro",
@@ -846,7 +855,11 @@
     "Phu Quoc",
     "河内",
     "河內",
-    "胡志明市"
+    "胡志明市",
+    "ハノイ",
+    "ホーチミン",
+    "하노이",
+    "호찌민"
    ],
    "systems": [
     "Hanoi Metro",
@@ -860,7 +873,9 @@
     "Manila",
     "Metro Manila",
     "Quezon City",
-    "Cebu"
+    "Cebu",
+    "マニラ",
+    "마닐라"
    ],
    "systems": []
   },
@@ -1024,6 +1039,8 @@
    ],
    "systems": [
     "RATP",
+    "TCL",
+    "SYTRAL",
     "Île-de-France Mobilités",
     "Grand Paris Express",
     "Métro de Paris",
