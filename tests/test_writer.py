@@ -139,3 +139,10 @@ if __name__ == "__main__":
     import unittest
 
     unittest.main()
+
+
+def test_writer_block_trims_surrounding_whitespace_only():
+    from src.weekly_report.writer import WriterReportBlock
+
+    block = WriterReportBlock("E1", " 標題 ", "\n摘要 內容\n", "啟示\t")
+    assert (block.headline, block.factual_summary, block.taipei_insight) == ("標題", "摘要 內容", "啟示")

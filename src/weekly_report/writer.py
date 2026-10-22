@@ -57,6 +57,8 @@ class WriterReportBlock:
             value = getattr(self, field_name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"WriterReportBlock requires nonblank {field_name}")
+            # Surrounding whitespace is layout, never content.
+            object.__setattr__(self, field_name, value.strip())
 
     @classmethod
     def from_mapping(cls, value: Mapping[str, Any]) -> "WriterReportBlock":
