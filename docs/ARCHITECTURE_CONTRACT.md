@@ -549,6 +549,27 @@ EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v2
 EVENT_IDENTITY_OVERLAP = PAIRWISE_RELATIONS (complete-link decides)
 ```
 
+### A.16 RC-22 Proposed pairs across established regions (2026-10-22)
+
+With prompt v2 the helper still grouped occurrences of the same kind in
+different places (a Daegu fire drill with a Nagoya derailment drill; a New
+Taipei power fault with a Ho Chi Minh City outage). Such an Event then failed
+report assembly as `CONFLICTING_COUNTRY` (RC-5) and every member was lost.
+
+* One real-world occurrence happens in one country/region. When
+  EvidenceService established a region for both records of a proposed pair
+  (`SOURCE_STATED` or `REFERENCE_MAPPED`) and the regions differ, EventIdentity
+  does not record that pair as SAME_EVENT; it records a
+  `PROPOSAL_REGION_CONFLICT` diagnostic. Other pairs of the group stand, so
+  complete-link grouping still merges the members that share a region.
+* A pair with an unestablished region on either side is unaffected. The check
+  reads EvidenceService's resolution and never changes it; RC-5 still governs
+  any Event whose members' regions conflict.
+
+```text
+EVENT_IDENTITY_REGION_CHECK = PAIR_LEVEL (established regions only)
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：

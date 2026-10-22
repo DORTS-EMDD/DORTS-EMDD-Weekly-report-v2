@@ -252,6 +252,7 @@ class EventIdentity:
         if self._grouping_advisor is None:
             return relations
         requests = _grouping_requests(eligible)
+        by_id = {record.candidate.candidate_id: record for record in eligible}
         if len(requests) > 1:
             # Pairs in different batches cannot be merged; keep that visible.
             diagnostics.append(
@@ -277,6 +278,14 @@ class EventIdentity:
                     diagnostics.append(EventIdentityDiagnostic(outcome, "SINGLE_MEMBER_PROPOSAL"))
                 for position, left_id in enumerate(outcome):
                     for right_id in outcome[position + 1 :]:
+                        if _different_established_regions(by_id[left_id], by_id[right_id]):
+                            # RC-22: one occurrence happens in one country/region.
+                            diagnostics.append(
+                                EventIdentityDiagnostic(
+                                    tuple(sorted((left_id, right_id))), "PROPOSAL_REGION_CONFLICT"
+                                )
+                            )
+                            continue
                         relations[_pair_key(left_id, right_id)] = (
                             EventIdentityRelation.SAME_EVENT,
                             "SEMANTIC_GROUP_PROPOSAL",
@@ -509,6 +518,18 @@ def _advisor_identity_facts(facts: EventIdentityFacts | None) -> dict[str, str]:
         field_name: str(getattr(facts, field_name) or "")
         for field_name in ("event_key", *EventIdentity._IDENTITY_FIELDS)
     }
+
+
+def _different_established_regions(left: EventIdentityRecord, right: EventIdentityRecord) -> bool:
+    """True when EvidenceService established different regions for the two records."""
+
+    regions = []
+    for record in (left, right):
+        resolution = getattr(record.evidence.identity_facts, "region_resolution", None)
+        if resolution is None or not resolution.established:
+            return False
+        regions.append(resolution.region_id)
+    return regions[0] != regions[1]
 
 
 def _grouping_record(

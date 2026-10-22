@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-21 修訂（2026-10-20～22）
+### RC-3～RC-22 修訂（2026-10-20～22）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.15 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.16 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -306,6 +306,9 @@ Transport retry 與 semantic correction 必須分開計算。
   SAME_EVENT 配對，由既有 complete-link 分組決定，未一起被提議的紀錄不會合併；
   同一群內重複列出的紀錄只使該群無效。提示詞要求同一事件放在單一群組，並說明不同
   城市、國家或系統的事件是不同事件。
+* RC-22（§A.16）：同一事件只發生在一個國家／地區；提案配對兩端的 EvidenceService
+  地區皆已確立且不同時，Event Identity 不採用該配對並記錄
+  PROPOSAL_REGION_CONFLICT 診斷；同群其他配對照常，任一端未確立則不受影響。
 
 ## 13. Report / Delivery
 
@@ -455,5 +458,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-21 APPLIED (2026-10-22)
+CONTRACT_REVISION = RC-3..RC-22 APPLIED (2026-10-22)
 ```

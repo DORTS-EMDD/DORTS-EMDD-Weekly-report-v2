@@ -8,6 +8,8 @@ import unittest
 from src.weekly_report.contracts import (
     EventIdentityFacts,
     IdentityMetadataSupport,
+    RegionResolution,
+    RegionResolutionBasis,
     SemanticProviderConfigurationFailure,
     SemanticProviderTechnicalFailure,
     TechnicalGapKind,
@@ -154,6 +156,39 @@ class GroupingProposalTests(unittest.TestCase):
         self.assertIn("JA", merged[0])
         self.assertNotEqual(set(merged[0]), {"EN", "OTHER"})
         self.assertTrue(any(item.reason == "INSUFFICIENT_IDENTITY" for item in result.diagnostics))
+
+    def test_pair_in_different_established_regions_is_not_merged(self):
+        # RC-22: one occurrence happens in one country/region; a proposed pair
+        # whose members EvidenceService placed in different regions is dropped.
+        def located(candidate_id, region_id, name, text):
+            resolution = RegionResolution(
+                RegionResolutionBasis.SOURCE_STATED, region_id=region_id, display_name=name,
+                source_field="country", source_value=name, reference_version="geo-reference-v2",
+            )
+            facts = EventIdentityFacts(
+                country=name,
+                metadata_support=(IdentityMetadataSupport("country", 0, len(name)),),
+                region_resolution=resolution,
+            )
+            return _record(candidate_id, facts=facts, body=f"{name}: {text}")
+
+        records = [
+            located("DAEGU", "KR", "Korea", "Daegu ran a subway fire drill."),
+            located("NAGOYA1", "JP", "Japan", "Nagoya ran a derailment drill."),
+            located("NAGOYA2", "JP", "Japan", "Nagoya subway staff drilled for a derailment."),
+            _record("UNSTATED", facts=None, body="A subway drill took place."),
+        ]
+        response = {"groups": [{"members": [_member(name) for name in ("DAEGU", "NAGOYA1", "NAGOYA2")]}]}
+        result = EventIdentity(_Scripted(response)).evaluate(records)
+        self.assertEqual(
+            sorted(group.member_candidate_ids for group in result.groups),
+            [("DAEGU",), ("NAGOYA1", "NAGOYA2"), ("UNSTATED",)],
+        )
+        self.assertEqual(result.technical_gaps, ())
+        self.assertEqual(
+            sorted(item.candidate_ids for item in result.diagnostics if item.reason == "PROPOSAL_REGION_CONFLICT"),
+            [("DAEGU", "NAGOYA1"), ("DAEGU", "NAGOYA2")],
+        )
 
     def test_record_repeated_inside_one_group_invalidates_that_group(self):
         records = _three_records() + [_record("SOLO", facts=None, body="Another depot fire.")]
