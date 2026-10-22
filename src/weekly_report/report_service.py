@@ -288,12 +288,24 @@ class FinalReportArtifact:
     sections: tuple[FinalReportSection, ...]
     content: str
     disclosure: ReportDisclosure = ReportDisclosure()
+    # RC-26: the validated reporting period, so readers and Delivery know
+    # which week the artifact covers.
+    period_start: date | None = None
+    period_end: date | None = None
 
     def __post_init__(self) -> None:
         for field_name in ("report_id", "artifact_id", "artifact_version", "content"):
             value = getattr(self, field_name)
             if not isinstance(value, str) or not value.strip():
                 raise ValueError(f"FinalReportArtifact requires {field_name}")
+        if (self.period_start is None) != (self.period_end is None):
+            raise ValueError("FinalReportArtifact period requires both start and end")
+        if self.period_start is not None and (
+            not isinstance(self.period_start, date)
+            or not isinstance(self.period_end, date)
+            or self.period_start > self.period_end
+        ):
+            raise ValueError("FinalReportArtifact period must be an ordered date range")
         events = tuple(self.events)
         sections = tuple(self.sections)
         if any(not isinstance(event, FinalReportBlock) for event in events):
@@ -309,6 +321,12 @@ class FinalReportArtifact:
     @property
     def event_count(self) -> int:
         return len(self.events)
+
+    @property
+    def period_display(self) -> str | None:
+        if self.period_start is None or self.period_end is None:
+            return None
+        return f"{self.period_start.isoformat()}～{self.period_end.isoformat()}"
 
     @property
     def no_event(self) -> bool:
@@ -439,6 +457,7 @@ class ReportService:
         validation_result: Any,
         *,
         disclosure: ReportDisclosure | None = None,
+        period: tuple[date, date] | None = None,
     ) -> FinalReportArtifact:
         """Assemble only Validation-PASS prose with exact projected metadata.
 
@@ -496,8 +515,15 @@ class ReportService:
         disclosure = disclosure if disclosure is not None else ReportDisclosure()
         if not isinstance(disclosure, ReportDisclosure):
             raise TypeError("ReportService disclosure must be a ReportDisclosure")
-        content = self._render_final_content(events, sections, disclosure)
+        if period is not None and (
+            len(period) != 2
+            or not all(isinstance(value, date) for value in period)
+            or period[0] > period[1]
+        ):
+            raise ValueError("ReportService period must be an ordered (start, end) date pair")
+        content = self._render_final_content(events, sections, disclosure, period)
         identity_payload = {
+            "period": None if period is None else [period[0].isoformat(), period[1].isoformat()],
             "disclosure": {
                 "technical_gap_count": disclosure.technical_gap_count,
                 "metadata_exclusion_count": disclosure.metadata_exclusion_count,
@@ -537,6 +563,8 @@ class ReportService:
             sections=sections,
             content=content,
             disclosure=disclosure,
+            period_start=None if period is None else period[0],
+            period_end=None if period is None else period[1],
         )
 
     def assemble(self, validation_result: Any) -> FinalReportArtifact:
@@ -573,13 +601,17 @@ class ReportService:
         events: tuple[FinalReportBlock, ...],
         sections: tuple[FinalReportSection, ...],
         disclosure: ReportDisclosure | None = None,
+        period: tuple[date, date] | None = None,
     ) -> str:
         notes = ReportService._render_disclosure(disclosure or ReportDisclosure())
         if not events:
             if not notes:
                 return "本期無符合正式報導條件之事件。"
             return "\n".join(["本期正式報告無事件。", "", "執行說明：", *notes]) + "\n"
-        lines = ["捷運技術週報", ""]
+        lines = ["捷運技術週報"]
+        if period is not None:
+            lines.append(f"報告期間：{period[0].isoformat()}～{period[1].isoformat()}")
+        lines.append("")
         for section in sections:
             lines.extend((f"【{section.category}】", ""))
             for event in section.events:

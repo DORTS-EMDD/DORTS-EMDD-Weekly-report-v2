@@ -9,9 +9,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import StrEnum
 import hashlib
+import json
 import os
+from pathlib import Path
 
 from .report_service import FinalReportArtifact
 
@@ -74,6 +77,54 @@ class DeliveryFailure(RuntimeError):
     """A delivery attempt failed without modifying the assembled artifact."""
 
 
+def _period_key(artifact: FinalReportArtifact, recipient_target: str) -> str | None:
+    if artifact.period_start is None or artifact.period_end is None:
+        return None
+    raw = "\x1f".join(
+        ("period", artifact.period_start.isoformat(), artifact.period_end.isoformat(), recipient_target)
+    ).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
+class DeliveryLedger:
+    """Durable record of successful sends, shared across process restarts (RC-26).
+
+    Automation reruns start a new process and rebuild a new artifact for the
+    same period, so an in-memory record cannot stop a second email. The ledger
+    stores only hashed keys (never a recipient address): the artifact identity
+    key and a reporting-period-plus-recipient key. A run reads it before
+    sending and records a key only after a successful send.
+    """
+
+    def __init__(self, path: str | os.PathLike[str]) -> None:
+        self._path = Path(path)
+        self._entries: list[dict[str, str]] = []
+        if self._path.exists():
+            data = json.loads(self._path.read_text(encoding="utf-8"))
+            entries = data.get("sent") if isinstance(data, dict) else None
+            if not isinstance(entries, list) or any(not isinstance(item, dict) for item in entries):
+                raise ValueError("delivery ledger is malformed")
+            self._entries = [dict(item) for item in entries]
+
+    def contains(self, key: str) -> bool:
+        return any(key in (entry.get("artifact_key"), entry.get("period_key")) for entry in self._entries)
+
+    def record(self, artifact: FinalReportArtifact, artifact_key: str, period_key: str | None) -> None:
+        self._entries.append(
+            {
+                "artifact_key": artifact_key,
+                "period_key": period_key or "",
+                "report_id": artifact.report_id,
+                "period": artifact.period_display or "",
+                "sent_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            }
+        )
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = self._path.with_suffix(self._path.suffix + ".tmp")
+        temporary.write_text(json.dumps({"sent": self._entries}, ensure_ascii=False, indent=1), encoding="utf-8")
+        temporary.replace(self._path)
+
+
 DeliverySender = Callable[[FinalReportArtifact, str], None]
 
 
@@ -85,6 +136,7 @@ class DeliveryService:
         *,
         sender: DeliverySender | None = None,
         live_email_send: bool | None = None,
+        ledger: DeliveryLedger | None = None,
     ) -> None:
         if live_email_send is None:
             live_email_send = os.environ.get("LIVE_EMAIL_SEND", "0").strip() == "1"
@@ -92,8 +144,11 @@ class DeliveryService:
             raise TypeError("live_email_send must be bool")
         if live_email_send and sender is None:
             raise ValueError("LIVE_EMAIL_SEND requires an explicit safe sender")
+        if ledger is not None and not isinstance(ledger, DeliveryLedger):
+            raise TypeError("ledger must be a DeliveryLedger")
         self._sender = sender
         self._live_email_send = live_email_send
+        self._ledger = ledger
         self._successful_keys: set[str] = set()
         self.attempts: list[DeliveryReceipt] = []
 
@@ -112,7 +167,14 @@ class DeliveryService:
             artifact_version=artifact.artifact_version,
             recipient_target=recipient_target.strip(),
         )
-        if identity.stable_key in self._successful_keys:
+        period_key = _period_key(artifact, identity.recipient_target)
+        if identity.stable_key in self._successful_keys or (
+            self._ledger is not None
+            and (
+                self._ledger.contains(identity.stable_key)
+                or (period_key is not None and self._ledger.contains(period_key))
+            )
+        ):
             receipt = DeliveryReceipt(identity, DeliveryStatus.DUPLICATE, tuple(event.event_id for event in artifact.events))
             self.attempts.append(receipt)
             return receipt
@@ -135,6 +197,8 @@ class DeliveryService:
             self.attempts.append(receipt)
             return receipt
         self._successful_keys.add(identity.stable_key)
+        if self._ledger is not None:
+            self._ledger.record(artifact, identity.stable_key, period_key)
         receipt = DeliveryReceipt(identity, DeliveryStatus.SENT, tuple(event.event_id for event in artifact.events))
         self.attempts.append(receipt)
         return receipt

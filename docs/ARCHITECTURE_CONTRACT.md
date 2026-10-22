@@ -684,6 +684,46 @@ EVENT_IDENTITY_CONFIRMATION_ANSWER = EVERY_RECORD_PLACED (omission = undecided, 
 REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v5
 ```
 
+### A.20 RC-26 Reporting period and automated delivery (2026-10-22)
+
+The assembled report never said which week it covered, the email subject was
+a machine identifier, and the only guard against a second email was an
+in-memory set: an automation run started again for the same week builds a new
+artifact in a new process and would have emailed again. A failed send also
+left the CLI exit code green.
+
+* **Period (amends section R).** Report Service receives the validated
+  reporting period from the application, records it on the
+  `FinalReportArtifact` (`period_start`, `period_end`, part of the artifact
+  identity) and renders `報告期間：YYYY-MM-DD～YYYY-MM-DD` under the title. The
+  zero-event text is unchanged.
+* **Subject.** `捷運技術週報｜<period>｜<n> 則`; the report and artifact
+  identities travel in `X-Weekly-Report-Id` and `X-Weekly-Report-Artifact`
+  headers. The body is the assembled content and the PDF is attached, as
+  before.
+* **Durable delivery record.** When `DELIVERY_LEDGER_PATH` is configured, the
+  sole `DeliveryService` reads a JSON record of earlier successful sends and
+  returns `DUPLICATE` without sending when either the artifact identity key or
+  the reporting-period-plus-recipient key is present. It records both keys,
+  hashed (no recipient address is stored), only after a successful send. A
+  malformed record stops a live composition as a configuration failure.
+* **Exit code.** A `FAILED` delivery makes the CLI exit non-zero.
+* **Automation (GitHub Actions).** A weekly schedule (Mondays 01:00 UTC, the
+  preceding Monday-Sunday) runs only when the repository variable
+  `WEEKLY_REPORT_SCHEDULE` is `enabled`. Email is sent only on an explicit
+  opt-in: the dispatch input `send_email`, or the repository variable
+  `LIVE_EMAIL_SEND=1` for scheduled runs; otherwise `LIVE_EMAIL_SEND=0`. The
+  delivery record persists between runs through the Actions cache, production
+  runs never overlap (`concurrency`), and workflow inputs reach the shell only
+  through environment variables.
+
+```text
+REPORT_PERIOD_ON_ARTIFACT = YES
+DELIVERY_DUPLICATE_GUARD = ARTIFACT_KEY OR PERIOD_PLUS_RECIPIENT_KEY (durable, hashed)
+EMAIL_OPT_IN = DISPATCH send_email OR vars.LIVE_EMAIL_SEND == '1' (schedule)
+SCHEDULE_OPT_IN = vars.WEEKLY_REPORT_SCHEDULE == 'enabled'
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -3784,7 +3824,8 @@ Delivery 必須具 stable delivery identity，至少可追溯：
 * artifact identity / version
 * recipient target
 
-Retry 不得造成同一 artifact 重複成功寄送。
+Retry 不得造成同一 artifact 重複成功寄送。自動化以持久的寄送紀錄（RC-26，§A.20）
+防止同一報告期間對同一收件目標再次成功寄送。
 
 Report Service 不得改寫 Validation 結果；Delivery Service 不得選題、分類、修正 Evidence 或執行其他 domain decision。
 

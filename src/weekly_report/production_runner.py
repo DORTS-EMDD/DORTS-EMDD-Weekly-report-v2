@@ -30,7 +30,7 @@ from .contracts import (
     SearchPlanItem,
     SearchTerminalStatus,
 )
-from .delivery import DeliveryReceipt, DeliveryService
+from .delivery import DeliveryLedger, DeliveryReceipt, DeliveryService
 from .evidence_service import EvidenceService
 from .event_identity import EventIdentity
 from .maiagent_event_identity_provider import build_maiagent_event_identity_provider
@@ -105,7 +105,15 @@ def _delivery_configuration(
             sender = build_gmail_smtp_sender(values)
         except GmailSmtpConfigurationError as exc:
             raise ProductionConfigurationError("Gmail SMTP configuration unavailable") from exc
-        return DeliveryService(sender=sender, live_email_send=True), recipient
+        # RC-26: automation keeps a durable record of successful sends so a
+        # rerun of the same period never emails a second report.
+        raw_ledger = values.get("DELIVERY_LEDGER_PATH")
+        ledger_path = raw_ledger.strip() if isinstance(raw_ledger, str) and raw_ledger.strip() else None
+        try:
+            ledger = DeliveryLedger(ledger_path) if ledger_path else None
+        except (OSError, ValueError) as exc:
+            raise ProductionConfigurationError("delivery ledger unavailable") from exc
+        return DeliveryService(sender=sender, live_email_send=True, ledger=ledger), recipient
 
     # Missing Gmail credentials are intentionally irrelevant while staged.
     return DeliveryService(live_email_send=False), recipient

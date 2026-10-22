@@ -56,6 +56,10 @@ def _main(argv: list[str] | None = None) -> int:
     print(result.summary())
     if args.output_dir is not None and not _write_outputs(args.output_dir, result):
         return 1
+    delivery = getattr(result, "delivery_result", None)
+    if delivery is not None and delivery.status.value == "FAILED":
+        # The report exists but was not delivered; automation must not look green.
+        return 1
     if result.complete:
         return 0
     # Artifact produced with disclosed technical gaps: not a complete success.

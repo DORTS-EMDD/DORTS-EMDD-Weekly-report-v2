@@ -772,7 +772,7 @@ class ReportApplication:
         ordered_results = self._run_ordering(downstream_results)
         formal_metadata, metadata_exclusions = self._run_formal_metadata_projection(ordered_results)
         writer_blocks, validation_result, final_report, delivery_result = self._run_final_pipeline(
-            ordered_results, formal_metadata, metadata_exclusions, technical_gaps
+            ordered_results, formal_metadata, metadata_exclusions, technical_gaps, (window_start, window_end)
         )
 
         return ReportApplicationResult(
@@ -806,6 +806,7 @@ class ReportApplication:
         formal_metadata: tuple[FormalReportMetadata, ...] | None,
         metadata_exclusions: tuple[FormalMetadataExclusion, ...] = (),
         technical_gaps: list[TechnicalGap] | None = None,
+        period: tuple[date, date] | None = None,
     ) -> tuple[
         tuple[WriterReportBlock, ...] | None,
         ValidationResult | None,
@@ -853,7 +854,7 @@ class ReportApplication:
         )
         with observe_stage("Assembly", validation_result.pass_count) as observation:
             final_report = self._report_service.assemble_final_report(
-                validation_result, disclosure=disclosure
+                validation_result, disclosure=disclosure, period=period
             )
             if not isinstance(final_report, FinalReportArtifact):
                 raise TypeError("ReportService must return a FinalReportArtifact")

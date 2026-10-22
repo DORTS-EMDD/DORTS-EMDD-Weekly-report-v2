@@ -113,7 +113,7 @@ def render_report_pdf(artifact: FinalReportArtifact) -> bytes:
             style = "section"
         elif next_line.startswith("日期："):
             style = "headline"
-        elif line.startswith(("日期：", "國家／地區：", "運輸系統：", "地點：", "相關系統：", "來源：", _LINK_LABEL)):
+        elif line.startswith(("報告期間：", "日期：", "國家／地區：", "運輸系統：", "地點：", "相關系統：", "來源：", _LINK_LABEL)):
             style = "meta"
         else:
             style = "body"

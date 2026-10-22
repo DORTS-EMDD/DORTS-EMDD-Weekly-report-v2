@@ -1,15 +1,19 @@
 name: Weekly-report V2 production
 
 on:
+  # Mondays 01:00 UTC (09:00 Taipei) for the preceding Monday-Sunday week.
+  # Inert until the repository variable WEEKLY_REPORT_SCHEDULE is "enabled".
+  schedule:
+    - cron: "0 1 * * 1"
   workflow_dispatch:
     inputs:
       period_start:
-        description: "Report period start (YYYY-MM-DD)"
-        required: true
+        description: "Report period start (YYYY-MM-DD); empty = preceding Monday"
+        required: false
         type: string
       period_end:
-        description: "Report period end (YYYY-MM-DD)"
-        required: true
+        description: "Report period end (YYYY-MM-DD); empty = preceding Sunday"
+        required: false
         type: string
       region_mode:
         description: "Configured Search region mode"
@@ -24,9 +28,20 @@ on:
         required: true
         default: false
         type: boolean
+      send_email:
+        description: "Email the formal report (PDF attached) to DEFAULT_RECIPIENTS"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
+
+# One production run at a time; a second run waits instead of racing the
+# delivery record.
+concurrency:
+  group: weekly-report-production
+  cancel-in-progress: false
 
 jobs:
   offline-regression:
@@ -45,7 +60,7 @@ jobs:
 
   production:
     needs: offline-regression
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_production == true }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run_production == true) || (github.event_name == 'schedule' && vars.WEEKLY_REPORT_SCHEDULE == 'enabled') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,15 +73,25 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y fonts-wqy-zenhei
       - name: Google News RSS six-probe health check
         run: python -m scripts.google_news_health_check
+      - name: Restore the delivery record
+        # Hashed keys of earlier successful sends; a later run for the same
+        # period and recipient is recorded as DUPLICATE instead of emailing.
+        uses: actions/cache/restore@v4
+        with:
+          path: .delivery
+          key: delivery-record-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: delivery-record-
       - name: Run shared production CLI
         id: cli
-        run: >-
-          python main.py
-          --period-start "${{ inputs.period_start }}"
-          --period-end "${{ inputs.period_end }}"
-          --region-mode "${{ inputs.region_mode }}"
-          --output-dir report-output
+        run: |
+          args=(--region-mode "$REGION_MODE" --output-dir report-output)
+          if [ -n "$PERIOD_START" ]; then args+=(--period-start "$PERIOD_START"); fi
+          if [ -n "$PERIOD_END" ]; then args+=(--period-end "$PERIOD_END"); fi
+          python main.py "${args[@]}"
         env:
+          PERIOD_START: ${{ inputs.period_start }}
+          PERIOD_END: ${{ inputs.period_end }}
+          REGION_MODE: ${{ inputs.region_mode || 'selected' }}
           MAIAGENT_API_BASE: ${{ secrets.MAIAGENT_API_BASE }}
           MAIAGENT_API_KEY: ${{ secrets.MAIAGENT_API_KEY }}
           MAIAGENT_CHATBOT_ID: ${{ secrets.MAIAGENT_CHATBOT_ID }}
@@ -74,7 +99,16 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
           DEFAULT_RECIPIENTS: ${{ secrets.DEFAULT_RECIPIENTS }}
-          LIVE_EMAIL_SEND: "0"
+          # Email only on an explicit opt-in: the dispatch input, or the
+          # repository variable LIVE_EMAIL_SEND=1 for scheduled runs.
+          LIVE_EMAIL_SEND: ${{ ((github.event_name == 'workflow_dispatch' && inputs.send_email == true) || (github.event_name == 'schedule' && vars.LIVE_EMAIL_SEND == '1')) && '1' || '0' }}
+          DELIVERY_LEDGER_PATH: .delivery/ledger.json
+      - name: Save the delivery record
+        if: ${{ !cancelled() && steps.cli.outcome != 'skipped' && hashFiles('.delivery/ledger.json') != '' }}
+        uses: actions/cache/save@v4
+        with:
+          path: .delivery
+          key: delivery-record-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Keep the formal report and run summary
         # Only after the CLI actually ran: never after a failed health gate.
         if: ${{ !cancelled() && steps.cli.outcome != 'skipped' }}

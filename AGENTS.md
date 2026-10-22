@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-25 修訂（2026-10-20～22）
+### RC-3～RC-26 修訂（2026-10-20～22）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.19 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.20 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -323,6 +323,10 @@ Transport retry 與 semantic correction 必須分開計算。
   CONFIRMATION_INCOMPLETE 技術缺口，Python 不把遺漏當作同意；Reportability 低價值
   類別擴及政治人物、民間團體或評論者的聲明與批評，以及無新發生事項的專題、背景或評論
   文章。
+* RC-26（§A.20）：正式報告記錄並顯示報告期間；寄件主旨為「捷運技術週報｜期間｜N 則」；
+  Delivery 以持久寄送紀錄（僅存雜湊）擋下同一 artifact 或同一期間與收件目標的再次寄送；
+  寄送失敗使 CLI 非零結束；GitHub Actions 每週排程與實際寄信皆須以 repository
+  variable 或 dispatch 輸入明確啟用。
 
 ## 13. Report / Delivery
 
@@ -472,5 +476,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-25 APPLIED (2026-10-22)
+CONTRACT_REVISION = RC-3..RC-26 APPLIED (2026-10-22)
 ```

@@ -84,7 +84,10 @@ class GmailSmtpTests(TestCase):
         self.assertEqual(smtp.login_calls, [("sender@example.com", "app-secret")])
         self.assertEqual(smtp.sendmail_calls[0][1], ["first@example.com", "second@example.com"])
         message = Parser(policy=policy.default).parsestr(smtp.sendmail_calls[0][2])
-        self.assertEqual(message["Subject"], "Weekly-report V2 | weekly-report-a1b2c3d4e5f60718 | artifact-001 | v1")
+        # RC-26: readable subject; identities travel in headers.
+        self.assertEqual(message["Subject"], "捷運技術週報｜weekly-report-a1b2c3d4e5f60718｜0 則")
+        self.assertEqual(message["X-Weekly-Report-Id"], "weekly-report-a1b2c3d4e5f60718")
+        self.assertEqual(message["X-Weekly-Report-Artifact"], "artifact-001 v1")
         self.assertEqual(message["To"], "first@example.com, second@example.com")
         self.assertEqual(message.get_body(preferencelist=("plain",)).get_content(), self._artifact().content)
         attachments = list(message.iter_attachments())

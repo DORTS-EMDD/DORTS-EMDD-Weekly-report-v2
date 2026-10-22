@@ -28,6 +28,7 @@ _DELIVERY_CONFIG_KEYS: Final = (
     "GMAIL_APP_PASS",
     "DEFAULT_RECIPIENTS",
     "LIVE_EMAIL_SEND",
+    "DELIVERY_LEDGER_PATH",
 )
 
 
@@ -138,14 +139,16 @@ class GmailSmtpConfig:
 
 
 def subject_for_artifact(artifact: FinalReportArtifact) -> str:
-    """Build a stable, mechanically derived subject without changing content."""
+    """Build a readable, mechanically derived subject without changing content.
+
+    The subject names the reporting period and event count; the report and
+    artifact identities travel in X-Weekly-Report-* headers (RC-26).
+    """
 
     if not isinstance(artifact, FinalReportArtifact):
         raise TypeError("Gmail SMTP requires FinalReportArtifact")
-    return (
-        "Weekly-report V2 | "
-        f"{artifact.report_id} | {artifact.artifact_id} | {artifact.artifact_version}"
-    )
+    period = artifact.period_display or artifact.report_id
+    return f"捷運技術週報｜{period}｜{artifact.event_count} 則"
 
 
 @dataclass(frozen=True, slots=True)
@@ -179,6 +182,8 @@ class GmailSmtpSender:
         message["From"] = self.config.user
         message["To"] = ", ".join(recipients)
         message["Subject"] = subject_for_artifact(artifact)
+        message["X-Weekly-Report-Id"] = artifact.report_id
+        message["X-Weekly-Report-Artifact"] = f"{artifact.artifact_id} {artifact.artifact_version}"
         message.set_content(artifact.content, charset="utf-8")
         # The PDF is the same assembled content; a report that cannot be
         # rendered is not sent (the sender raises, Delivery records FAILED).

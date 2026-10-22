@@ -528,7 +528,12 @@ class ShellIntegrationTests(unittest.TestCase):
         self.assertIn("offline-regression:", offline)
         self.assertNotIn("google_news_health_check", offline)
         self.assertIn("needs: offline-regression", production)
-        self.assertIn("if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_production == true }}", production)
+        # RC-26: a dispatch opt-in, or the weekly schedule once enabled by a repository variable.
+        self.assertIn(
+            "if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run_production == true) || "
+            "(github.event_name == 'schedule' && vars.WEEKLY_REPORT_SCHEDULE == 'enabled') }}",
+            production,
+        )
         self.assertEqual(production.count("python -m scripts.google_news_health_check"), 1)
         self.assertEqual(production.count("python main.py"), 1)
         self.assertLess(
@@ -540,6 +545,23 @@ class ShellIntegrationTests(unittest.TestCase):
         self.assertNotIn("rerun", workflow.lower())
         self.assertNotIn("pacing", workflow.lower())
         self.assertNotIn("fallback", workflow.lower())
+
+    def test_email_is_opt_in_and_the_delivery_record_survives_runs(self):
+        workflow = (ROOT / ".github" / "workflows" / "weekly-report.yml").read_text(encoding="utf-8")
+        production = workflow.split("\n  production:\n", 1)[1]
+        self.assertIn('cron: "0 1 * * 1"', workflow)
+        self.assertIn("vars.WEEKLY_REPORT_SCHEDULE == 'enabled'", production)
+        self.assertIn(
+            "LIVE_EMAIL_SEND: ${{ ((github.event_name == 'workflow_dispatch' && inputs.send_email == true) || "
+            "(github.event_name == 'schedule' && vars.LIVE_EMAIL_SEND == '1')) && '1' || '0' }}",
+            production,
+        )
+        self.assertIn("DELIVERY_LEDGER_PATH: .delivery/ledger.json", production)
+        self.assertLess(production.index("actions/cache/restore@v4"), production.index("python main.py"))
+        self.assertLess(production.index("python main.py"), production.index("actions/cache/save@v4"))
+        self.assertIn("cancel-in-progress: false", workflow)
+        # Workflow inputs reach the shell only through environment variables.
+        self.assertNotIn("${{ inputs.period_start }}\"", production)
 
     def test_production_secrets_are_scoped_to_cli_step(self):
         workflow = (ROOT / ".github" / "workflows" / "weekly-report.yml").read_text(encoding="utf-8")
@@ -558,7 +580,9 @@ class ShellIntegrationTests(unittest.TestCase):
         self.assertIn("GMAIL_USER: ${{ secrets.GMAIL_USER }}", cli_step)
         self.assertIn("GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}", cli_step)
         self.assertIn("DEFAULT_RECIPIENTS: ${{ secrets.DEFAULT_RECIPIENTS }}", cli_step)
-        self.assertIn('LIVE_EMAIL_SEND: "0"', cli_step)
+        # RC-26: email stays off unless explicitly opted in (dispatch input or
+        # repository variable); every other case resolves to '0'.
+        self.assertIn("&& '1' || '0' }}", cli_step.split("LIVE_EMAIL_SEND:", 1)[1].split(chr(10), 1)[0])
 
 
 if __name__ == "__main__":
