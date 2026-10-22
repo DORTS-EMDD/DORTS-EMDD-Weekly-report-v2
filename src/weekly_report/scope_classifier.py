@@ -342,6 +342,20 @@ def _coerce_response(value: object) -> ScopeSemanticResponse | None:
     return None
 
 
+def _same_document_metadata(provenance: Mapping[str, Any]) -> dict[str, Any]:
+    """Project the helper's allowed same-document factual metadata.
+
+    The principal document's own headlines are facts of the document.
+    Acquisition diagnostics (timings, redirects, excluded regions, URLs) are
+    not, and a timing value would also make every request unique.
+    """
+
+    headlines = provenance.get("principal_source_headlines")
+    if not isinstance(headlines, (list, tuple)):
+        return {}
+    return {"principal_source_headlines": [str(item) for item in headlines if str(item).strip()]}
+
+
 class ScopeClassifier:
     """The sole authoritative owner of IN_SCOPE / OUT_OF_SCOPE."""
 
@@ -381,7 +395,12 @@ class ScopeClassifier:
             result = self._out_of_scope(evidence.candidate_id, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED, {"decision_basis": "scope_semantic_proposal", "helper": "not_configured"})
             observe(result, "HELPER_NOT_CONFIGURED", "NOT_CALLED")
             return result
-        request = ScopeSemanticRequest(evidence.candidate_id, candidate_title, evidence.substantive_content, dict(evidence.provenance))
+        request = ScopeSemanticRequest(
+            evidence.candidate_id,
+            candidate_title,
+            evidence.substantive_content,
+            _same_document_metadata(evidence.provenance),
+        )
         try:
             response = _coerce_response(self._semantic_helper(request))
         except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure):

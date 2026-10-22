@@ -530,3 +530,32 @@ def test_operator_service_cannot_turn_buses_into_urban_rail():
 def test_private_acceptance_directory_is_ignored_by_git():
     ignore_lines = (Path(__file__).resolve().parents[1] / ".gitignore").read_text(encoding="utf-8").splitlines()
     assert "/.scope-acceptance-*.json" in ignore_lines
+
+
+def test_scope_request_carries_only_document_headlines_and_is_repeatable():
+    # The helper may receive same-document factual metadata only; acquisition
+    # timings would make every request unique and are not document facts.
+    requests = []
+
+    def helper(request):
+        requests.append(request)
+        raise ScopeProposalViolation("PROPOSAL_MISSING")
+
+    for elapsed in (1574, 2210):
+        evidence = EvidenceResult(
+            candidate_id="C1",
+            state=EvidenceState.READY,
+            substantive_content=POSITIVE_SOURCE,
+            provenance={
+                "acquisition_elapsed_ms": elapsed,
+                "resolved_url": "https://publisher.invalid/a",
+                "excluded_region_reasons": ["node-0045:non_content_script"],
+                "principal_source_headlines": ["Platform doors installed"],
+            },
+        )
+        try:
+            ScopeClassifier(helper).classify(evidence, candidate_title="Platform doors")
+        except ScopeProposalViolation:
+            pass
+    assert requests[0].as_payload()["source_metadata"] == {"principal_source_headlines": ["Platform doors installed"]}
+    assert requests[0].as_payload() == requests[1].as_payload()
