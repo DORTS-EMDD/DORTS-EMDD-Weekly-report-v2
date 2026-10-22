@@ -164,11 +164,16 @@ class RunJournal:
         false) is returned or raised but retried live on the next attempt.
         """
         stored = self._load(kind, key)
-        if stored is not None:
+        if stored is not None and "failure" in stored:
             self._count_replay(kind)
-            if "failure" in stored:
-                raise _decode_failure(stored["failure"], factories=self.factories)
-            return decode(stored["response"])
+            raise _decode_failure(stored["failure"], factories=self.factories)
+        if stored is not None:
+            replayed = decode(stored["response"])
+            # A record that is no longer definitive (for example an
+            # unparseable reply kept by an older journal) is retried live.
+            if keep_response(replayed):
+                self._count_replay(kind)
+                return replayed
         self._charge(budget, kind)
         try:
             response = live()

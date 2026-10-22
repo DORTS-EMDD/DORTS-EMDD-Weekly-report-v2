@@ -79,3 +79,14 @@ def test_prior_seconds_count_against_the_wall_clock(tmp_path):
     journal.record_prior_spend({"seconds": 150}, "killed attempt")
     with pytest.raises(BudgetExhausted):
         _call(journal, "late", lambda: "x")
+
+
+def test_stored_record_that_is_not_definitive_is_retried_live(tmp_path):
+    journal = _journal(tmp_path)
+    journal.seed("fetch", "garbled", {"response": {"v": "unparseable"}})
+    calls = []
+    result = _call(journal, "garbled", lambda: calls.append(1) or "parsed", keep_response=lambda r: r != "unparseable")
+    assert result == "parsed"
+    assert calls == [1]
+    assert _call(journal, "garbled", lambda: calls.append(1) or "again", keep_response=lambda r: r != "unparseable") == "parsed"
+    assert calls == [1]

@@ -274,28 +274,41 @@ def _proposal_support(proposal: Mapping[str, Any], request: ScopeSemanticRequest
     if any(value is not None and action_label.casefold() == value.casefold() for value in (target_label, system_label, target_reference)):
         raise _Violation("ENDPOINT_ROLE_DISTINCTNESS")
 
-    # Same-context rule: each endpoint label lies inside the sentences cited
-    # by the relation that establishes it.
-    if action_target_claimed:
-        text = cited_text(cited["action_target"])
-        if not _within(action_label, text) or not _within(target_label, text):
-            raise _Violation("ACTION_TARGET_CONTAINMENT")
-    if target_system_claimed:
-        text = cited_text(cited["target_system"])
-        identity = system_label.casefold() == target_label.casefold()
-        if not _within(target_reference, text) or not (identity or _within(system_label, text)):
-            raise _Violation("TARGET_SYSTEM_CONTAINMENT")
-        # A reference other than the target label is bounded to the Candidate
-        # event: both relations must lie inside a resolved focus.
-        if target_reference.casefold() != target_label.casefold() and statuses["event_focus"] != "RESOLVED":
-            raise _Violation("TARGET_REFERENCE_CONTEXT")
-
+    # Every relation lies inside the resolved Candidate focus: no borrowing
+    # from a separate event in the same document.
     if statuses["event_focus"] == "RESOLVED":
         focus_sentences = cited["event_focus"]
         first, last = focus_sentences[0].start, focus_sentences[-1].end
         for name in ("action_target", "target_system", "noneligible_relation"):
             if name in cited and any(sentence.start < first or sentence.end > last for sentence in cited[name]):
                 raise _Violation("NONELIGIBLE_EVENT_FOCUS" if name == "noneligible_relation" else "EVENT_FOCUS_CONTAINMENT")
+
+    # Same-context rule (RC-8, RC-17): a relation's cited sentences contain at
+    # least one of its endpoints, and every endpoint lies inside the resolved
+    # Candidate event focus range. Without a resolved focus, both endpoints
+    # must lie inside the relation's own sentences.
+    focus_range: tuple[EvidenceSentence, ...] = ()
+    if statuses["event_focus"] == "RESOLVED":
+        focus_first, focus_last = cited["event_focus"][0].start, cited["event_focus"][-1].end
+        focus_range = tuple(sentence for sentence in sentences if focus_first <= sentence.start and sentence.end <= focus_last)
+    focus_text = cited_text(focus_range)
+
+    def anchored(relation: str, endpoints: tuple[str, ...]) -> bool:
+        text = cited_text(cited[relation])
+        if not focus_range:
+            return all(_within(endpoint, text) for endpoint in endpoints)
+        return any(_within(endpoint, text) for endpoint in endpoints) and all(_within(endpoint, focus_text) for endpoint in endpoints)
+
+    if action_target_claimed and not anchored("action_target", (action_label, target_label)):
+        raise _Violation("ACTION_TARGET_CONTAINMENT")
+    if target_system_claimed:
+        identity = system_label.casefold() == target_label.casefold()
+        if not anchored("target_system", (target_reference,) if identity else (target_reference, system_label)):
+            raise _Violation("TARGET_SYSTEM_CONTAINMENT")
+        # A reference other than the target label is bounded to the Candidate
+        # event: both relations must lie inside a resolved focus.
+        if target_reference.casefold() != target_label.casefold() and statuses["event_focus"] != "RESOLVED":
+            raise _Violation("TARGET_REFERENCE_CONTEXT")
 
     if statuses["noneligible_relation"] == "PRESENT":
         # SC-2: the noneligible relation concerns only the focus action's own
@@ -318,11 +331,13 @@ def _proposal_support(proposal: Mapping[str, Any], request: ScopeSemanticRequest
         name: [{"start": sentence.start, "end": sentence.end} for sentence in located]
         for name, located in cited.items()
     }
+    # Endpoint provenance records the label inside its establishing context:
+    # the resolved focus range (RC-17), otherwise the relation's sentences.
     endpoint_contexts = {
-        "action": cited.get("action_target", ()) if action_target_claimed else (),
-        "target": cited.get("action_target", ()) if action_target_claimed else (),
-        "target_reference": cited.get("target_system", ()) if target_system_claimed else (),
-        "system": cited.get("target_system", ()) if target_system_claimed else (),
+        "action": (focus_range or cited.get("action_target", ())) if action_target_claimed else (),
+        "target": (focus_range or cited.get("action_target", ())) if action_target_claimed else (),
+        "target_reference": (focus_range or cited.get("target_system", ())) if target_system_claimed else (),
+        "system": (focus_range or cited.get("target_system", ())) if target_system_claimed else (),
     }
     for role, contexts in endpoint_contexts.items():
         if contexts and labels[role] is not None:

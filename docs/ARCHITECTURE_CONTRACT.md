@@ -397,6 +397,31 @@ REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v3
 CATEGORY_INVALID_PROPOSAL = TECHNICAL_GAP (not CATEGORY_UNRESOLVED)
 ```
 
+### A.11 RC-17 Scope endpoints anchored in the relation, bounded by the event focus (2026-10-22)
+
+In the first complete run, 40 of 142 Scope proposals were disclosed technical
+gaps. Offline replay of the recorded proposals showed one dominant cause: the
+helper identified the right relation but cited a single sentence while its two
+endpoints sit in adjacent sentences of the same Candidate event (the station in
+one sentence, the system in the next). 18 of the 24 containment violations had
+both endpoints inside the helper's own resolved event focus.
+
+* When the event focus is `RESOLVED`, a relation's cited sentences must contain
+  at least one of its endpoints (action or target; target reference or
+  system), and every endpoint label must occur inside the event-focus range
+  (from its first to its last cited sentence). Relation citations must still
+  lie inside that range (`EVENT_FOCUS_CONTAINMENT`, checked first), so no
+  endpoint is borrowed from another event in the same document.
+* Without a resolved focus the RC-8 rule is unchanged: both endpoints lie
+  inside the relation's own cited sentences.
+* Labels remain exact source-surface text; a label absent from the content is
+  still `ENDPOINT_LABEL`. The page headline is not citable Evidence.
+* Endpoint provenance records the label inside the focus range.
+
+```text
+SCOPE_ENDPOINT_CONTEXT = RELATION_ANCHOR + EVENT_FOCUS_RANGE (resolved focus)
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：

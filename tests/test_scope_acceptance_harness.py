@@ -124,11 +124,26 @@ def test_labels_inside_one_cited_sentence_accept_distinguishable_roles():
     assert observations[0].first_rejection_predicate is None
 
 
-def test_endpoint_label_outside_its_relation_sentences_is_a_violation():
+def test_relation_citation_anchors_one_endpoint_and_the_focus_holds_both():
+    # RC-17: a relation that spans two sentences of the Candidate focus is
+    # valid when its citation contains one endpoint and the focus the other.
     source = "The operator installs platform doors. The doors serve the Metro system."
-    proposal = _semantic_proposal(source, action="installs", target="Metro", system="Metro system")
-    proposal["action_target"]["sentence_ids"] = ["S1"]
-    assert _violation(proposal, source) == "ACTION_TARGET_CONTAINMENT"
+    split = _semantic_proposal(source, action="installs", target="Metro", system="Metro system")
+    split["action_target"]["sentence_ids"] = ["S1"]
+    assert _classify(split, source).state is ScopeState.IN_SCOPE
+
+    # A citation that contains neither endpoint establishes nothing.
+    unanchored = _semantic_proposal(source, action="installs", system="Metro system")
+    unanchored["action_target"]["sentence_ids"] = ["S2"]
+    unanchored["target_system"]["sentence_ids"] = ["S2"]
+    assert _violation(unanchored, source) == "ACTION_TARGET_CONTAINMENT"
+
+    # An endpoint outside the resolved focus is never borrowed.
+    outside = _semantic_proposal(source, action="installs", target="Metro", system="Metro system")
+    outside["event_focus"]["sentence_ids"] = ["S1"]
+    outside["action_target"]["sentence_ids"] = ["S1"]
+    outside["target_system"]["sentence_ids"] = ["S1"]
+    assert _violation(outside, source) == "ACTION_TARGET_CONTAINMENT"
 
     invented = _semantic_proposal(source, action="installs", target="platform screens", system="Metro system")
     assert _violation(invented, source) == "ENDPOINT_LABEL"
@@ -170,15 +185,17 @@ def test_invalid_citation_and_identity_are_violations_and_provenance_is_bounded(
     line_metro = source.index("Metro line")
     assert result.provenance["relation_support"]["system"] == [{"start": line_metro, "end": line_metro + len("Metro")}]
 
+    # The system label must lie inside the Candidate focus (RC-17).
     stitched = _semantic_proposal(source, system="Metro operator")
-    stitched["target_system"]["sentence_ids"] = ["S2"]
+    for relation in ("event_focus", "action_target", "target_system"):
+        stitched[relation]["sentence_ids"] = ["S2"]
     assert _violation(stitched, source) == "TARGET_SYSTEM_CONTAINMENT"
 
     assert _violation(_semantic_proposal(POSITIVE_SOURCE, candidate_id="C2"), POSITIVE_SOURCE) == "CANDIDATE_ID"
 
 
 def test_relation_endpoint_mismatch_is_a_violation_and_contradiction_stays_out():
-    source = "The operator installed platform doors. The Metro line commissioned new signalling equipment."
+    source = "The operator installed platform doors. The weather was mild. The Metro line commissioned new signalling."
     mismatch = _semantic_proposal(source)
     mismatch["target_system"]["sentence_ids"] = ["S2"]
     assert _violation(mismatch, source) == "TARGET_SYSTEM_CONTAINMENT"
@@ -505,8 +522,8 @@ def test_reference_must_occur_in_the_citation_and_stay_in_the_event_focus():
     assert _violation(_anaphora_proposal(reference="the new lines"), HANOI) == "ENDPOINT_LABEL"
     # The reference sentence lies outside the Candidate focus: no borrowing.
     assert _violation(_anaphora_proposal(focus=("S1",)), HANOI) == "EVENT_FOCUS_CONTAINMENT"
-    # A distinct system must still be named inside the target-system citation.
-    assert _violation(_anaphora_proposal(system="Hanoi"), HANOI) == "TARGET_SYSTEM_CONTAINMENT"
+    # A system label that occurs nowhere in the focus is a violation.
+    assert _violation(_anaphora_proposal(system="Saigon metro"), HANOI) == "ENDPOINT_LABEL"
 
 
 def test_omitted_target_reference_means_the_target_label():
@@ -514,10 +531,15 @@ def test_omitted_target_reference_means_the_target_label():
     assert "target_reference" not in proposal["target_system"]
     assert _classify(proposal, POSITIVE_SOURCE).state is ScopeState.IN_SCOPE
 
+    # RC-17: the system sentence anchors the relation; the target is named
+    # in the preceding sentence of the same Candidate focus.
     source = "The operator installed platform doors. They are on the Metro line."
-    missing_label = _semantic_proposal(source)
-    missing_label["target_system"]["sentence_ids"] = ["S2"]
-    assert _violation(missing_label, source) == "TARGET_SYSTEM_CONTAINMENT"
+    referring = _semantic_proposal(source)
+    referring["target_system"]["sentence_ids"] = ["S2"]
+    assert _classify(referring, source).state is ScopeState.IN_SCOPE
+    referring["event_focus"]["sentence_ids"] = ["S2"]
+    referring["action_target"]["sentence_ids"] = ["S2"]
+    assert _violation(referring, source) == "ACTION_TARGET_CONTAINMENT"
 
 
 def test_operator_service_cannot_turn_buses_into_urban_rail():

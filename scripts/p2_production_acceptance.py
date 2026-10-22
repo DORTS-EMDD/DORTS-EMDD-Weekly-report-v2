@@ -72,6 +72,16 @@ def _fetch_failure(record: dict[str, Any]) -> BaseException:
     )
 
 
+def _parseable_maiagent(response: MaiAgentHttpResponse) -> bool:
+    if response.status_code != 200:
+        return False
+    try:
+        parse_maiagent_response(response.body)
+    except MaiAgentResponseError:
+        return False
+    return True
+
+
 def _transient_status(status: int | None) -> bool:
     return status is None or status == 429 or status >= 500
 
@@ -126,9 +136,9 @@ class JournalMaiAgentTransport:
                 live,
                 encode=lambda r: {"status_code": r.status_code, "body_b64": _b64(r.body or b"")},
                 decode=lambda d: MaiAgentHttpResponse(int(d["status_code"]), _unb64(d["body_b64"])),
-                # Only a complete 200 response is final; anything else is
-                # retried live on resume, never replayed.
-                keep_response=lambda r: r.status_code == 200,
+                # Only a complete, parseable 200 response is final; anything
+                # else is retried live (RC-6), never replayed.
+                keep_response=_parseable_maiagent,
                 keep_failure=lambda exc: False,
             )
         except Exception as exc:

@@ -308,6 +308,10 @@ RC-8 (ARCHITECTURE_CONTRACT §A.3), schema `scope-semantic-proposal-v4`:
   quotation. Endpoint provenance records only label occurrences inside the
   relation quotation that establishes them, so repeated text elsewhere cannot
   assemble a relation.
+* RC-17 (ARCHITECTURE_CONTRACT §A.11): with a resolved event focus, a relation
+  quotation must contain at least one of its endpoints and every endpoint label
+  must occur inside the event-focus range; endpoint provenance is recorded
+  inside that range. Without a resolved focus the rule above is unchanged.
 * The action label differs from the target and system labels. The target and
   system labels may be identical when the action affects the eligible system
   itself, such as a new line, extension or network.
