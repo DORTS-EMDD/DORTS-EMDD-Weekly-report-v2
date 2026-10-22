@@ -355,6 +355,9 @@ def main() -> int:
     (out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1), encoding="utf-8")
     if run_result is not None and run_result.final_report is not None:
         (out / "final_report.md").write_text(run_result.final_report.content, encoding="utf-8")
+        from weekly_report.pdf_renderer import render_report_pdf
+
+        (out / "final_report.pdf").write_bytes(render_report_pdf(run_result.final_report))
     print(json.dumps({k: summary[k] for k in ("abort", "run_status", "stage_counts", "maiagent_calls_by_task", "final_report_event_count")}, ensure_ascii=False, indent=1))
     print(json.dumps({"live": journal.ledger["live"], "replayed": journal.ledger["replayed"]}, ensure_ascii=False))
     return 0
