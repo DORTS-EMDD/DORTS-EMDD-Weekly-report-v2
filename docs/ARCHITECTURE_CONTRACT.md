@@ -194,7 +194,7 @@ common root cause.
 
 ```text
 EVIDENCE_CITATION = SENTENCE_ID (Scope, Validator)
-SCOPE_PROMPT_VERSION = scope-event-target-system-v8
+SCOPE_PROMPT_VERSION = scope-event-target-system-v8 (v9 since RC-20: exact label copies, endpoint sentences cited)
 SCOPE_SCHEMA_VERSION = scope-semantic-proposal-v4
 VALIDATION_PROMPT_VERSION = validation-evidence-writer-v3
 VALIDATION_SCHEMA_VERSION = validation-semantic-check-proposal-v3

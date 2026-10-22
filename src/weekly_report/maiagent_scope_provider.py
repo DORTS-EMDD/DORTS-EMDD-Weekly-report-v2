@@ -33,7 +33,7 @@ from .scope_classifier import (
 
 
 TASK_IDENTITY = "scope_semantic_proposal"
-PROMPT_VERSION = "scope-event-target-system-v8"
+PROMPT_VERSION = "scope-event-target-system-v9"
 SCHEMA_VERSION = SCOPE_PROPOSAL_SCHEMA_VERSION
 HELPER_VERSION = "maiagent-structured-helper-scope-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-scope"
@@ -54,6 +54,7 @@ SCOPE_SEMANTIC_INSTRUCTIONS = (
     "When the source supports eligibility, use exactly one canonical eligible_mode_family: METRO, MRT, SUBWAY, LIGHT_RAIL, TRAM, URBAN_RAIL, AGT, MONORAIL, or PEOPLE_MOVER. Urban maglev maps to URBAN_RAIL; AGT and People Mover remain distinct. NON_ELIGIBLE and UNKNOWN are valid when their respective noneligible or unresolved status is supported; do not force an eligible family.",
     "Commuter, suburban, regional, S-Bahn, S-tog and RER labels neither include nor exclude a system by name. Use an eligible family for such a service only when the supplied source itself describes the affected system as metro, light rail, tram, or urban rapid transit; a commuter or suburban description alone is UNKNOWN or NON_URBAN_RAIL, never URBAN_RAIL.",
     "Endpoints are labels: action.label, target.label and system.label are short exact source-surface substrings (original language and form; do not translate, paraphrase, normalize, conjugate, or invent). action.label must differ from target.label and system.label. target.label and system.label may be the same text when the action affects the system itself, such as a new line, extension or network.",
+    "Copy each label character for character from one sentence, keeping its inflection, conjugation and particles exactly as written there (if the sentence says 'agredidos', the label is 'agredidos', not 'agresión'; if it says 'trikk', not 'trikken'). Cite in action_target and in target_system every sentence that contains one of that relation's labels, so each relation's citation contains its endpoints.",
     "Citation obligations: event_focus.sentence_ids is required for RESOLVED or CONFLICTING; action_target and target_system sentence_ids are required when ESTABLISHED or CONFLICTING; ambiguity only for CONFLICTING; noneligible_relation only for PRESENT. Otherwise use an empty list.",
     "The sentences cited by action_target must contain both the action label and the target label. The sentences cited by target_system must contain the system label and either the target label or, when the source refers back to the target, the exact referring words in target_system.target_reference (such as 'The five lines', 'This', 'the line', '該線'). Omit target_reference when the target label itself appears there.",
     "event_focus cites the consecutive sentences describing the Candidate event; every sentence cited by a relation must lie within the range from the first to the last event_focus sentence. Do not borrow support from a separate event in the same document.",

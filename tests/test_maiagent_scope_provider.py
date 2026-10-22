@@ -36,7 +36,7 @@ def test_prompt_and_schema_express_conditional_citation_obligations():
     instructions = " ".join(payload["instructions"])
     schema = MAIAGENT_SCOPE_RESPONSE_SCHEMA["properties"]
     # RC-9: citations are Python sentence IDs; no field carries copied text.
-    assert PROMPT_VERSION == "scope-event-target-system-v8"
+    assert PROMPT_VERSION == "scope-event-target-system-v9"
     assert SCOPE_PROPOSAL_SCHEMA_VERSION == "scope-semantic-proposal-v4"
     assert payload["scope_request"]["principal_sentences"][0]["sentence_id"] == "S1"
     assert "principal_content" not in payload["scope_request"]
