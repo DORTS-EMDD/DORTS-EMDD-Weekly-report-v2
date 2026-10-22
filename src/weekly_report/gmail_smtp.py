@@ -17,6 +17,7 @@ import smtplib
 import ssl
 from typing import Final
 
+from .pdf_renderer import pdf_filename, render_report_pdf
 from .report_service import FinalReportArtifact
 
 
@@ -179,13 +180,24 @@ class GmailSmtpSender:
         message["To"] = ", ".join(recipients)
         message["Subject"] = subject_for_artifact(artifact)
         message.set_content(artifact.content, charset="utf-8")
+        # The PDF is the same assembled content; a report that cannot be
+        # rendered is not sent (the sender raises, Delivery records FAILED).
+        message.add_attachment(
+            render_report_pdf(artifact),
+            maintype="application",
+            subtype="pdf",
+            filename=pdf_filename(artifact),
+        )
         return message
 
     def __call__(self, artifact: FinalReportArtifact, recipient_target: str) -> None:
         if not isinstance(artifact, FinalReportArtifact):
             raise TypeError("Gmail SMTP requires FinalReportArtifact")
         recipients = parse_recipient_target(recipient_target)
-        message = self._message(artifact, recipients)
+        try:
+            message = self._message(artifact, recipients)
+        except Exception:
+            raise GmailSmtpError("formal report PDF could not be rendered") from None
         try:
             context = ssl.create_default_context()
             with smtplib.SMTP_SSL(

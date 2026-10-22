@@ -10,6 +10,7 @@ from src.weekly_report.gmail_smtp import (
     GMAIL_SMTP_HOST,
     GMAIL_SMTP_PORT,
     GmailSmtpConfigurationError,
+    GmailSmtpError,
     GmailSmtpConfig,
     GmailSmtpSender,
     parse_recipient_target,
@@ -85,7 +86,21 @@ class GmailSmtpTests(TestCase):
         message = Parser(policy=policy.default).parsestr(smtp.sendmail_calls[0][2])
         self.assertEqual(message["Subject"], "Weekly-report V2 | weekly-report-a1b2c3d4e5f60718 | artifact-001 | v1")
         self.assertEqual(message["To"], "first@example.com, second@example.com")
-        self.assertEqual(message.get_content(), self._artifact().content)
+        self.assertEqual(message.get_body(preferencelist=("plain",)).get_content(), self._artifact().content)
+        attachments = list(message.iter_attachments())
+        self.assertEqual([item.get_filename() for item in attachments], ["weekly-report-a1b2c3d4e5f60718.pdf"])
+        self.assertTrue(attachments[0].get_content().startswith(b"%PDF"))
+
+    def test_a_report_that_cannot_be_rendered_is_not_sent(self):
+        sender = GmailSmtpSender(GmailSmtpConfig("sender@example.com", "app-secret"))
+        with (
+            patch("src.weekly_report.gmail_smtp.render_report_pdf", side_effect=RuntimeError("no font")),
+            patch("src.weekly_report.gmail_smtp.smtplib.SMTP_SSL", _FakeSmtp),
+        ):
+            before = len(_FakeSmtp.instances)
+            with self.assertRaises(GmailSmtpError):
+                sender(self._artifact(), "first@example.com")
+        self.assertEqual(len(_FakeSmtp.instances), before)
 
     def test_recipient_parser_rejects_invalid_targets(self):
         self.assertEqual(parse_recipient_target("Name <a@example.com>, b@example.com"), ("a@example.com", "b@example.com"))

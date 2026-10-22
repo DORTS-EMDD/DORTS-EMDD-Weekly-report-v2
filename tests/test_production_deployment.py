@@ -488,6 +488,30 @@ class ShellIntegrationTests(unittest.TestCase):
         with patch.object(main, "ProductionRunner", FakeRunner):
             self.assertEqual(main.main(["--period-start", "2026-10-01", "--period-end", "2026-10-07"]), 0)
 
+    def test_cli_writes_markdown_pdf_and_summary_to_the_output_dir(self):
+        import tempfile
+
+        import main
+
+        from weekly_report.report_service import FinalReportArtifact as CliArtifact  # main.py import path
+
+        artifact = CliArtifact("weekly-report-0123", "artifact", "v1", (), (), "捷運技術週報" + chr(10) + "本期正式報告。" + chr(10))
+        fake_result = SimpleNamespace(successful=True, complete=True, final_report=artifact, summary=lambda: "status=SUCCESS")
+
+        class FakeRunner:
+            @classmethod
+            def from_environment(cls):
+                return cls()
+
+            def run(self, **kwargs):
+                return fake_result
+
+        with tempfile.TemporaryDirectory() as directory, patch.object(main, "ProductionRunner", FakeRunner):
+            self.assertEqual(main.main(["--output-dir", directory]), 0)
+            written = sorted(path.name for path in Path(directory).iterdir())
+            self.assertEqual(written, ["run_summary.txt", "weekly-report-0123.md", "weekly-report-0123.pdf"])
+            self.assertTrue((Path(directory) / "weekly-report-0123.pdf").read_bytes().startswith(b"%PDF"))
+
     def test_streamlit_and_workflow_are_thin_shared_shells(self):
         source = (ROOT / "streamlit_app.py").read_text(encoding="utf-8")
         workflow = (ROOT / ".github" / "workflows" / "weekly-report.yml").read_text(encoding="utf-8")
