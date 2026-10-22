@@ -173,7 +173,9 @@ class ReportabilityContractTests(TestCase):
         ]
         request = ReportabilitySemanticRequest("E1", members)
         self.assertEqual(request.member_candidate_ids, ("C1", "C2"))
-        self.assertEqual(request.as_payload()["members"][0]["candidate_id"], "C1")
+        self.assertEqual(request.source_refs, {"M1": "C1", "M2": "C2"})
+        self.assertEqual(request.as_payload()["members"][0]["source_ref"], "M1")
+        self.assertNotIn("candidate_id", request.as_payload()["members"][0])
         members.append(ReportabilitySemanticMember("C3", "three"))
         self.assertEqual(len(request.members), 2)
         with self.assertRaises(ValueError):
@@ -185,20 +187,20 @@ class ReportabilityContractTests(TestCase):
         with self.assertRaises(ValueError):
             ReportabilitySemanticRequest("E1", ())
 
-    def test_semantic_citation_validates_without_normalizing_quote(self):
-        citation = ReportabilitySemanticCitation("C1", "  exact quote  ")
-        self.assertEqual(citation.exact_quote, "  exact quote  ")
+    def test_semantic_citation_names_a_source_ref_and_sentence_ids(self):
+        citation = ReportabilitySemanticCitation("M1", ["S1", "S2"])
+        self.assertEqual(citation.sentence_ids, ("S1", "S2"))
         with self.assertRaises(ValueError):
-            ReportabilitySemanticCitation("", "quote")
-        with self.assertRaises(ValueError):
-            ReportabilitySemanticCitation("C1", " ")
+            ReportabilitySemanticCitation("", ("S1",))
+        with self.assertRaises(TypeError):
+            ReportabilitySemanticCitation("M1", "S1")
 
     def test_proposal_reportable_requires_citation_and_has_no_reason_field(self):
-        citation = ReportabilitySemanticCitation("C1", "positive evidence")
+        citation = ReportabilitySemanticCitation("M1", ("S1",))
         proposal = ReportabilitySemanticProposal(
             event_id="E1",
             proposed_state=ReportabilityState.REPORTABLE,
-            examined_candidate_ids=("C1",),
+            examined_source_refs=("M1",),
             support_citations=(citation,),
             rationale="The evidence supports an accepted value path.",
         )
@@ -211,7 +213,7 @@ class ReportabilityContractTests(TestCase):
             ReportabilitySemanticProposal(
                 event_id="E1",
                 proposed_state=ReportabilityState.REPORTABLE,
-                examined_candidate_ids=("C1",),
+                examined_source_refs=("M1",),
                 support_citations=(),
                 rationale="The evidence supports an accepted value path.",
             )
@@ -220,7 +222,7 @@ class ReportabilityContractTests(TestCase):
         proposal = ReportabilitySemanticProposal(
             event_id="E1",
             proposed_state=ReportabilityState.NOT_REPORTABLE,
-            examined_candidate_ids=("C1",),
+            examined_source_refs=("M1",),
             support_citations=(),
             rationale="The evidence does not establish an accepted value path.",
         )
@@ -229,15 +231,15 @@ class ReportabilityContractTests(TestCase):
             ReportabilitySemanticProposal(
                 event_id="E1",
                 proposed_state=ReportabilityState.NOT_REPORTABLE,
-                examined_candidate_ids=("C1",),
-                support_citations=(ReportabilitySemanticCitation("C1", "quote"),),
+                examined_source_refs=("M1",),
+                support_citations=(ReportabilitySemanticCitation("M1", ("S1",)),),
                 rationale="The evidence does not establish an accepted value path.",
             )
         with self.assertRaises(ValueError):
             ReportabilitySemanticProposal(
                 event_id="E1",
                 proposed_state="NOT_EVALUATED",  # type: ignore[arg-type]
-                examined_candidate_ids=("C1",),
+                examined_source_refs=("M1",),
                 support_citations=(),
                 rationale="The stage was not reached.",
             )
@@ -248,7 +250,7 @@ class ReportabilityContractTests(TestCase):
                 return ReportabilitySemanticProposal(
                     event_id=request.event_id,
                     proposed_state=ReportabilityState.NOT_REPORTABLE,
-                    examined_candidate_ids=request.member_candidate_ids,
+                    examined_source_refs=tuple(request.source_refs),
                     support_citations=(),
                     rationale="The supplied evidence is insufficient for an accepted path.",
                 )

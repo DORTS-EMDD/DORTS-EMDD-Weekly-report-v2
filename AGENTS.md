@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-15 修訂（2026-10-20～21，使用者核准）
+### RC-3～RC-16 修訂（2026-10-20～22，使用者核准）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.9 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.10 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -285,6 +285,10 @@ Transport retry 與 semantic correction 必須分開計算。
   同事件群組（上限 60 筆）；成員以句子 ID 引用 subject／occurrence／lifecycle；
   Python 驗證後才轉為 SAME_EVENT 關係，交由既有分組規則；未提議者維持不合併；
   提案無效為已揭露的技術缺口，事件不排除但可能重複；取代原逐對 advisor。
+* RC-16（§A.10）：Category、Taxonomy、Reportability 的 helper 請求以 Python 指定的
+  短來源代號（M1、M2…）與句子 ID 呈現成員；引用改為來源代號＋句子 ID，不再抄寫
+  原文或候選 ID；Category 提案違反契約時為已揭露的技術缺口，不得當成
+  CATEGORY_UNRESOLVED。
 
 ## 13. Report / Delivery
 
@@ -434,5 +438,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-15 APPLIED (2026-10-21, user-approved)
+CONTRACT_REVISION = RC-3..RC-16 APPLIED (2026-10-22, user-approved)
 ```

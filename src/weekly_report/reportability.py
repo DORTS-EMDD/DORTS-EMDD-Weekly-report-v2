@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
-from .exact_text import exact_occurrence_offsets
+from .source_refs import cited_spans
 from .contracts import (
     ProposalContractViolation,
     SemanticProviderConfigurationFailure,
@@ -40,12 +40,12 @@ _PROPOSAL_FIELDS = frozenset(
     {
         "event_id",
         "proposed_state",
-        "examined_candidate_ids",
+        "examined_source_refs",
         "support_citations",
         "rationale",
     }
 )
-_CITATION_FIELDS = frozenset({"candidate_id", "exact_quote"})
+_CITATION_FIELDS = frozenset({"source_ref", "sentence_ids"})
 
 
 def _technical(reason: str, event_id: str = "") -> ReportabilityStageFailure:
@@ -56,12 +56,14 @@ def _technical(reason: str, event_id: str = "") -> ReportabilityStageFailure:
 
 def _citation(value: object) -> ReportabilitySemanticCitation:
     if isinstance(value, ReportabilitySemanticCitation):
-        return ReportabilitySemanticCitation(value.candidate_id, value.exact_quote)
+        return ReportabilitySemanticCitation(value.source_ref, value.sentence_ids)
     if not isinstance(value, Mapping) or frozenset(value) != _CITATION_FIELDS:
         raise _technical("reportability citation fields do not match the proposal contract")
+    if not isinstance(value["sentence_ids"], (list, tuple)):
+        raise _technical("reportability citation sentence_ids must be an array")
     return ReportabilitySemanticCitation(
-        candidate_id=value["candidate_id"],
-        exact_quote=value["exact_quote"],
+        source_ref=value["source_ref"],
+        sentence_ids=tuple(value["sentence_ids"]),
     )
 
 
@@ -84,8 +86,8 @@ def _trusted_str(value: object) -> str:
 
 def _trusted_citation(value: ReportabilitySemanticCitation) -> ReportabilitySemanticCitation:
     return ReportabilitySemanticCitation(
-        candidate_id=_trusted_str(value.candidate_id),
-        exact_quote=_trusted_str(value.exact_quote),
+        source_ref=_trusted_str(value.source_ref),
+        sentence_ids=tuple(_trusted_str(item) for item in value.sentence_ids),
     )
 
 
@@ -97,8 +99,8 @@ def _trusted_proposal(
     return ReportabilitySemanticProposal(
         event_id=_trusted_str(proposal.event_id),
         proposed_state=proposal.proposed_state,
-        examined_candidate_ids=tuple(
-            _trusted_str(candidate_id) for candidate_id in proposal.examined_candidate_ids
+        examined_source_refs=tuple(
+            _trusted_str(ref) for ref in proposal.examined_source_refs
         ),
         support_citations=tuple(
             _trusted_citation(citation) for citation in proposal.support_citations
@@ -115,7 +117,7 @@ def _proposal(value: object, *, event_id: str) -> ReportabilitySemanticProposal:
             proposal = ReportabilitySemanticProposal(
                 event_id=value.event_id,
                 proposed_state=value.proposed_state,
-                examined_candidate_ids=value.examined_candidate_ids,
+                examined_source_refs=value.examined_source_refs,
                 support_citations=_citations(value.support_citations),
                 rationale=value.rationale,
             )
@@ -125,7 +127,7 @@ def _proposal(value: object, *, event_id: str) -> ReportabilitySemanticProposal:
             proposal = ReportabilitySemanticProposal(
                 event_id=value["event_id"],
                 proposed_state=value["proposed_state"],
-                examined_candidate_ids=value["examined_candidate_ids"],
+                examined_source_refs=value["examined_source_refs"],
                 support_citations=_citations(value["support_citations"]),
                 rationale=value["rationale"],
             )
@@ -141,25 +143,19 @@ def _proposal(value: object, *, event_id: str) -> ReportabilitySemanticProposal:
     return trusted_proposal
 
 
-def _quote_spans(
+def _sentence_spans(
     citation: ReportabilitySemanticCitation,
     bodies: Mapping[str, str],
+    refs: Mapping[str, str],
     event_id: str,
 ) -> tuple[ReportabilitySupportSpan, ...]:
-    if citation.candidate_id not in bodies:
-        raise _technical("reportability citation references a non-member candidate", event_id)
-    body = bodies[citation.candidate_id]
-    quote = citation.exact_quote
-    occurrences = exact_occurrence_offsets(body, quote)
-    if not occurrences:
-        raise _technical("reportability citation exact_quote not found", event_id)
-    spans: list[ReportabilitySupportSpan] = []
-    for start in occurrences:
-        end = start + len(quote)
-        if end <= start or end > len(body) or body[start:end] != quote:
-            raise _technical("reportability citation span does not exactly map to source content", event_id)
-        spans.append(ReportabilitySupportSpan(citation.candidate_id, start, end))
-    return tuple(spans)
+    candidate_id = refs.get(citation.source_ref)
+    if candidate_id is None:
+        raise _technical("reportability citation references a non-member source", event_id)
+    resolved = cited_spans(bodies[candidate_id], citation.sentence_ids)
+    if resolved is None:
+        raise _technical("reportability citation sentence_ids do not resolve", event_id)
+    return tuple(ReportabilitySupportSpan(candidate_id, start, end) for start, end in resolved)
 
 
 class Reportability:
@@ -250,10 +246,11 @@ class Reportability:
     ) -> ReportabilityResult:
         event_id = request.event_id
         request_ids = request.member_candidate_ids
-        examined_ids = proposal.examined_candidate_ids
-        if len(examined_ids) != len(request_ids) or len(examined_ids) != len(set(examined_ids)):
+        refs = request.source_refs
+        examined_refs = proposal.examined_source_refs
+        if len(examined_refs) != len(refs) or len(examined_refs) != len(set(examined_refs)):
             raise _technical("reportability proposal examined population mismatch", event_id)
-        if set(examined_ids) != set(request_ids):
+        if set(examined_refs) != set(refs):
             raise _technical("reportability proposal examined population mismatch", event_id)
 
         bodies = {
@@ -264,7 +261,7 @@ class Reportability:
             support_spans = tuple(dict.fromkeys(
                 span
                 for citation in proposal.support_citations
-                for span in _quote_spans(citation, bodies, event_id)
+                for span in _sentence_spans(citation, bodies, refs, event_id)
             ))
             try:
                 provenance = ReportabilityEvidenceProvenance(

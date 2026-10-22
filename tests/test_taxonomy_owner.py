@@ -181,8 +181,8 @@ class TaxonomyOwnerTests(TestCase):
         self.assertEqual(request.as_payload(), {
             "event_id": "E1",
             "members": [
-                {"candidate_id": "A", "substantive_content": "A body"},
-                {"candidate_id": "B", "substantive_content": "B body"},
+                {"source_ref": "M1", "sentences": [{"sentence_id": "S1", "text": "A body"}]},
+                {"source_ref": "M2", "sentences": [{"sentence_id": "S1", "text": "B body"}]},
             ],
         })
         self.assertFalse(hasattr(request, "category_state"))
@@ -216,12 +216,13 @@ class TaxonomyOwnerTests(TestCase):
         provider = _FakeProvider(_proposal(
             group,
             systems=["POWER_SUPPLY"],
-            support=[{"system_id": "POWER_SUPPLY", "candidate_id": "C1", "exact_quote": "Traction substation"}],
+            support=[{"system_id": "POWER_SUPPLY", "source_ref": "M1", "sentence_ids": ["S1"]}],
         ))
         result = Taxonomy(provider).evaluate(group, (_record("C1", body),), _assigned(group))
         self.assertEqual(result.systems[0].value, "POWER_SUPPLY")
         span = result.support_spans[0]
-        self.assertEqual(body[span.start:span.end], "Traction substation")
+        # RC-16: a citation names a sentence; the span is the whole sentence.
+        self.assertEqual(body[span.start:span.end], body)
 
     def test_multi_label_is_canonically_ordered(self):
         group = _group("C1")
@@ -230,8 +231,8 @@ class TaxonomyOwnerTests(TestCase):
             group,
             systems=["POWER_SUPPLY", "SIGNALLING"],
             support=[
-                {"system_id": "POWER_SUPPLY", "candidate_id": "C1", "exact_quote": "traction substation"},
-                {"system_id": "SIGNALLING", "candidate_id": "C1", "exact_quote": "Signalling"},
+                {"system_id": "POWER_SUPPLY", "source_ref": "M1", "sentence_ids": ["S1"]},
+                {"system_id": "SIGNALLING", "source_ref": "M1", "sentence_ids": ["S1"]},
             ],
         ))
         result = Taxonomy(provider).evaluate(group, (_record("C1", body),), _assigned(group))
@@ -265,7 +266,7 @@ class TaxonomyOwnerTests(TestCase):
             state=TaxonomyState.TAXONOMY_UNRESOLVED.value,
             systems=["POWER_SUPPLY"],
             reason=TaxonomyResolutionReason.INSUFFICIENT_SYSTEM_EVIDENCE.value,
-            insufficient={"member_candidate_ids": ["C1"], "diagnostic": "insufficient"},
+            insufficient={"member_source_refs": ["M1"], "diagnostic": "insufficient"},
         ))
         with self.assertRaises(TaxonomyStageFailure):
             Taxonomy(provider).evaluate(group, (_record("C1"),), _assigned(group))
@@ -280,7 +281,7 @@ class TaxonomyOwnerTests(TestCase):
         group = _group("C1")
         provider = _FakeProvider(_proposal(
             group,
-            support=[{"system_id": "POWER_SUPPLY", "candidate_id": "C1", "exact_quote": "Traction"}],
+            support=[{"system_id": "POWER_SUPPLY", "source_ref": "M1", "sentence_ids": ["S1"]}],
         ))
         with self.assertRaises(TaxonomyStageFailure):
             Taxonomy(provider).evaluate(group, (_record("C1"),), _assigned(group))
@@ -290,7 +291,7 @@ class TaxonomyOwnerTests(TestCase):
         provider = _FakeProvider(_proposal(
             group,
             systems=["POWER_SUPPLY"],
-            support=[{"system_id": "POWER_SUPPLY", "candidate_id": "C2", "exact_quote": "Traction"}],
+            support=[{"system_id": "POWER_SUPPLY", "source_ref": "M2", "sentence_ids": ["S1"]}],
         ))
         with self.assertRaises(TaxonomyStageFailure):
             Taxonomy(provider).evaluate(group, (_record("C1"),), _assigned(group))
@@ -300,7 +301,7 @@ class TaxonomyOwnerTests(TestCase):
         provider = _FakeProvider(_proposal(
             group,
             systems=["POWER_SUPPLY"],
-            support=[{"system_id": "POWER_SUPPLY", "candidate_id": "C1", "exact_quote": ""}],
+            support=[{"system_id": "POWER_SUPPLY", "source_ref": "M1", "sentence_ids": []}],
         ))
         with self.assertRaises(TaxonomyStageFailure):
             Taxonomy(provider).evaluate(group, (_record("C1"),), _assigned(group))
@@ -310,28 +311,27 @@ class TaxonomyOwnerTests(TestCase):
         provider = _FakeProvider(_proposal(
             group,
             systems=["POWER_SUPPLY"],
-            support=[{"system_id": "POWER_SUPPLY", "candidate_id": "C1", "exact_quote": "not present"}],
+            support=[{"system_id": "POWER_SUPPLY", "source_ref": "M1", "sentence_ids": ["S9"]}],
         ))
         with self.assertRaises(TaxonomyStageFailure):
             Taxonomy(provider).evaluate(group, (_record("C1"),), _assigned(group))
 
-    def test_repeated_quote_records_every_occurrence(self):
-        # RC-3 (EXACT_TEXT_ALL_OCCURRENCES): a repeated exact quote is valid;
-        # every occurrence is recorded and none is selected.
+    def test_each_cited_sentence_records_one_span(self):
+        # RC-16: Python derives one span per cited sentence.
         group = _group("C1")
         provider = _FakeProvider(_proposal(
             group,
             systems=["POWER_SUPPLY"],
-            support=[{"system_id": "POWER_SUPPLY", "candidate_id": "C1", "exact_quote": "power"}],
+            support=[{"system_id": "POWER_SUPPLY", "source_ref": "M1", "sentence_ids": ["S2", "S1"]}],
         ))
         result = Taxonomy(provider).evaluate(
             group,
-            (_record("C1", "power and power"),),
+            (_record("C1", "Power failed. Power returned."),),
             _assigned(group),
         )
         self.assertEqual(
             [(span.start, span.end) for span in result.support_spans],
-            [(0, 5), (10, 15)],
+            [(0, 13), (14, 29)],
         )
 
     def test_missing_quote_is_an_event_level_proposal_violation(self):
@@ -341,23 +341,21 @@ class TaxonomyOwnerTests(TestCase):
         provider = _FakeProvider(_proposal(
             group,
             systems=["POWER_SUPPLY"],
-            support=[{"system_id": "POWER_SUPPLY", "candidate_id": "C1", "exact_quote": "absent"}],
+            support=[{"system_id": "POWER_SUPPLY", "source_ref": "M1", "sentence_ids": ["S1", "S1"]}],
         ))
         with self.assertRaises(TaxonomyProposalViolation) as raised:
             Taxonomy(provider).evaluate(group, (_record("C1", "power and power"),), _assigned(group))
         self.assertIsInstance(raised.exception, TaxonomyStageFailure)
 
-    def test_unique_exact_quote_maps_to_exact_source_slice(self):
+    def test_candidate_id_in_place_of_source_ref_is_rejected(self):
         group = _group("C1")
-        body = "A unique traction substation was inspected."
         provider = _FakeProvider(_proposal(
             group,
             systems=["POWER_SUPPLY"],
-            support=[{"system_id": "POWER_SUPPLY", "candidate_id": "C1", "exact_quote": "traction substation"}],
+            support=[{"system_id": "POWER_SUPPLY", "source_ref": "C1", "sentence_ids": ["S1"]}],
         ))
-        result = Taxonomy(provider).evaluate(group, (_record("C1", body),), _assigned(group))
-        span = result.support_spans[0]
-        self.assertEqual(body[span.start:span.end], "traction substation")
+        with self.assertRaises(TaxonomyProposalViolation):
+            Taxonomy(provider).evaluate(group, (_record("C1"),), _assigned(group))
 
     def test_insufficient_provenance_requires_exact_member_set_and_diagnostic(self):
         group = _group("C1", "C2")
@@ -365,14 +363,15 @@ class TaxonomyOwnerTests(TestCase):
             group,
             state=TaxonomyState.TAXONOMY_UNRESOLVED.value,
             reason=TaxonomyResolutionReason.INSUFFICIENT_SYSTEM_EVIDENCE.value,
-            insufficient={"member_candidate_ids": ["C1", "C2"], "diagnostic": "No parent is established."},
+            insufficient={"member_source_refs": ["M1", "M2"], "diagnostic": "No parent is established."},
         )
         result = Taxonomy(lambda _: valid).evaluate(
             group, (_record("C2", "body 2"), _record("C1", "body 1")), _assigned(group)
         )
         self.assertEqual(result.taxonomy_resolution_reason, TaxonomyResolutionReason.INSUFFICIENT_SYSTEM_EVIDENCE)
-        for member_ids in (["C1"], ["C1", "C2", "C3"]):
-            invalid = dict(valid, insufficient_provenance={"member_candidate_ids": member_ids, "diagnostic": "why"})
+        self.assertEqual(result.provenance.member_candidate_ids, ("C1", "C2"))
+        for member_ids in (["M1"], ["M1", "M2", "M3"], ["C1", "C2"]):
+            invalid = dict(valid, insufficient_provenance={"member_source_refs": member_ids, "diagnostic": "why"})
             with self.subTest(member_ids=member_ids), self.assertRaises(TaxonomyStageFailure):
                 Taxonomy(lambda _: invalid).evaluate(group, (_record("C1", "body 1"), _record("C2", "body 2")), _assigned(group))
 
@@ -382,7 +381,7 @@ class TaxonomyOwnerTests(TestCase):
             group,
             state=TaxonomyState.TAXONOMY_UNRESOLVED.value,
             reason=TaxonomyResolutionReason.INSUFFICIENT_SYSTEM_EVIDENCE.value,
-            insufficient={"member_candidate_ids": ["C1"], "diagnostic": ""},
+            insufficient={"member_source_refs": ["M1"], "diagnostic": ""},
         )
         with self.assertRaises(TaxonomyStageFailure):
             Taxonomy(lambda _: proposal).evaluate(group, (_record("C1"),), _assigned(group))
@@ -394,8 +393,8 @@ class TaxonomyOwnerTests(TestCase):
             state=TaxonomyState.TAXONOMY_UNRESOLVED.value,
             reason=TaxonomyResolutionReason.CONFLICTING_SYSTEM_EVIDENCE.value,
             conflict=[
-                {"system_id": "SIGNALLING", "candidate_id": "C1", "exact_quote": "signal"},
-                {"system_id": "POWER_SUPPLY", "candidate_id": "C2", "exact_quote": "power"},
+                {"system_id": "SIGNALLING", "source_ref": "M1", "sentence_ids": ["S1"]},
+                {"system_id": "POWER_SUPPLY", "source_ref": "M2", "sentence_ids": ["S1"]},
             ],
         )
         result = Taxonomy(lambda _: proposal).evaluate(
@@ -410,7 +409,7 @@ class TaxonomyOwnerTests(TestCase):
         group = _group("C1")
         for systems, conflict in (
             (["SIGNALLING", "POWER_SUPPLY"], []),
-            ([], [{"system_id": "SIGNALLING", "candidate_id": "C1", "exact_quote": "signal"}]),
+            ([], [{"system_id": "SIGNALLING", "source_ref": "M1", "sentence_ids": ["S1"]}]),
         ):
             proposal = _proposal(
                 group,
@@ -484,7 +483,7 @@ class TaxonomyOwnerTests(TestCase):
             state=TaxonomyState.TAXONOMY_UNRESOLVED.value,
             reason=TaxonomyResolutionReason.INSUFFICIENT_SYSTEM_EVIDENCE.value,
             insufficient={
-                "member_candidate_ids": _SecretSequence(["C1"]),
+                "member_source_refs": _SecretSequence(["M1"]),
                 "diagnostic": "No parent is established.",
             },
         )
@@ -643,8 +642,8 @@ class TaxonomyOwnerTests(TestCase):
                 group,
                 systems=["POWER_SUPPLY", "SIGNALLING"],
                 support=[
-                    {"system_id": "POWER_SUPPLY", "candidate_id": "C2", "exact_quote": "power"},
-                    {"system_id": "SIGNALLING", "candidate_id": "C1", "exact_quote": "signal"},
+                    {"system_id": "POWER_SUPPLY", "source_ref": "M2", "sentence_ids": ["S1"]},
+                    {"system_id": "SIGNALLING", "source_ref": "M1", "sentence_ids": ["S1"]},
                 ],
             )
 
@@ -658,7 +657,7 @@ class TaxonomyOwnerTests(TestCase):
         proposal = _proposal(
             group,
             systems=["POWER_SUPPLY"],
-            support=[{"system_id": "POWER_SUPPLY", "candidate_id": "C2", "exact_quote": "power"}],
+            support=[{"system_id": "POWER_SUPPLY", "source_ref": "M2", "sentence_ids": ["S1"]}],
         )
         with self.assertRaises(TaxonomyStageFailure):
             Taxonomy(lambda _: proposal).evaluate(group, (_record("C1", "signal"),), _assigned(group))
@@ -700,7 +699,7 @@ class TaxonomyOwnerTests(TestCase):
                 proposal = _proposal(
                     group,
                     systems=[system],
-                    support=[{"system_id": system, "candidate_id": "C1", "exact_quote": quote}],
+                    support=[{"system_id": system, "source_ref": "M1", "sentence_ids": ["S1"]}],
                 )
                 result = Taxonomy(lambda _: proposal).evaluate(group, (_record("C1", body),), _assigned(group))
                 self.assertEqual(result.systems[0].value, system)

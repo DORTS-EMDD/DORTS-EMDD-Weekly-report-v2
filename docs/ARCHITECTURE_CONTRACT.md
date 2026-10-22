@@ -178,7 +178,8 @@ common root cause.
   Evidence only by sentence IDs. A citation is valid when its IDs exist and are
   not repeated; Python derives every coordinate. Labels (Scope) must occur in
   the cited sentences. Evidence, metadata, Category, Taxonomy and
-  Reportability keep `EXACT_TEXT_ALL_OCCURRENCES` quotations; they showed no
+  Reportability keep `EXACT_TEXT_ALL_OCCURRENCES` quotations (superseded for
+  Category, Taxonomy and Reportability by RC-16, section A.10); they showed no
   citation failures in Phase A and move only with new evidence.
 * A parseable Scope proposal that violates its contract (shape, citation,
   label containment, focus containment, field consistency) raises
@@ -354,6 +355,46 @@ EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v1
 EVENT_IDENTITY_SCHEMA_VERSION = event-identity-semantic-proposal-v1
 EVENT_IDENTITY_CITATION = SENTENCE_ID
 EVENT_IDENTITY_BATCH_LIMIT = 60 records / 66,000 characters
+```
+
+### A.10 RC-16 Source references and sentence IDs for event-level helpers (2026-10-22, user-approved)
+
+The first complete Search-to-report run lost the week's most reported event
+(twelve merged sources) at Category because the helper re-typed a quotation
+from long Korean text, and another event because it mistyped a 69-character
+candidate ID. These are the root causes RC-9 removed for Scope and Validator
+and RC-15 removed for Event Identity. Category also mapped the invalid
+proposal to the domain state `CATEGORY_UNRESOLVED`, so the loss was not
+disclosed as a technical gap.
+
+* Category, Taxonomy and Reportability requests present each EventGroup
+  member as a Python-assigned `source_ref` (`M1`, `M2`, … in the owner's
+  member order) with its authoritative content segmented into RC-9 sentences.
+  Candidate IDs are not sent; the owner maps references back.
+* Citations are `source_ref` plus `sentence_ids` of that source. A citation is
+  valid when the reference names a supplied member and its IDs exist and are
+  not repeated; Python derives one `[start, end)` span per cited sentence.
+  Population fields use references too: Taxonomy insufficient provenance names
+  `member_source_refs`, Reportability names `examined_source_refs`, and
+  Category unresolved claims are attributed by reference.
+* This supersedes the exact-quote and `candidate_id` citation clauses of
+  sections L, M and N and the RC-9 note that these owners keep quotations.
+  Every other rule of those sections (states, reasons, value paths,
+  population checks, failure semantics) is unchanged.
+* A Category proposal that violates its contract is a
+  `ProposalContractViolation`: the EventGroup becomes a disclosed Category
+  `TechnicalGap` (RC-6), never `CATEGORY_UNRESOLVED`. Domain unresolved
+  reasons proposed with valid citations remain `CATEGORY_UNRESOLVED`.
+
+```text
+EVENT_HELPER_CITATION = SOURCE_REF + SENTENCE_ID (Category, Taxonomy, Reportability)
+CATEGORY_SCHEMA_VERSION = category-proposal-v5
+CATEGORY_PROMPT_VERSION = category-principal-action-v3
+TAXONOMY_SCHEMA_VERSION = taxonomy-semantic-proposal-v2
+TAXONOMY_PROMPT_VERSION = taxonomy-principal-body-v3
+REPORTABILITY_SCHEMA_VERSION = reportability-semantic-proposal-v2
+REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v3
+CATEGORY_INVALID_PROPOSAL = TECHNICAL_GAP (not CATEGORY_UNRESOLVED)
 ```
 
 ## B. Authoritative Owners
@@ -2239,7 +2280,8 @@ priority and Python serializes accepted systems in canonical registry order.
 
 Each support or conflict citation contains a canonical `system_id`, a member
 `candidate_id`, and an exact quote copied from that member's authoritative
-`substantive_content`. The support location model is
+`substantive_content`. (RC-16, section A.10: the member is now named by its
+`source_ref` and the evidence by sentence IDs; Python derives the spans.) The support location model is
 `EXACT_TEXT_ALL_OCCURRENCES` (RC-3): Python resolves a quote to every
 `[start, end)` occurrence in the named candidate content. Missing, fuzzy,
 approximate, rewritten, paraphrased, synthetic, title/snippet, or cross-source
@@ -2656,7 +2698,9 @@ support an accepted path. It must not fabricate a negative citation proving
 absence and must never stand in for provider inability or technical failure.
 
 `REPORTABILITY_EVIDENCE_RESOLUTION` is
-`EXACT_TEXT_ALL_OCCURRENCES` (RC-3). Every provider quote must be non-empty,
+`EXACT_TEXT_ALL_OCCURRENCES` (RC-3), superseded by RC-16 (section A.10):
+citations name a `source_ref` and sentence IDs, and the examined population
+is `examined_source_refs`. Every provider quote must be non-empty,
 unchanged, belong to a named EventGroup member, and occur at least once in
 that member's authoritative substantive content. Python resolves it to every
 canonical `[start, end)` occurrence and verifies candidate membership, bounds

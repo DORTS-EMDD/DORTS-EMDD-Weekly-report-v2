@@ -94,7 +94,7 @@ def _proposal(
     return {
         "event_id": request.event_id,
         "proposed_state": state,
-        "examined_candidate_ids": list(request.member_candidate_ids),
+        "examined_source_refs": list(request.source_refs),
         "support_citations": support or [],
         "rationale": "The supplied authoritative evidence supports this event.",
     }
@@ -218,20 +218,20 @@ class MaiAgentReportabilityProviderTests(unittest.TestCase):
     def test_response_schema_has_only_locked_fields_and_no_offsets(self):
         self.assertEqual(
             set(MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA["properties"]),
-            {"event_id", "proposed_state", "examined_candidate_ids", "support_citations", "rationale"},
+            {"event_id", "proposed_state", "examined_source_refs", "support_citations", "rationale"},
         )
         self.assertEqual(
             MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA["properties"]["proposed_state"]["enum"],
             ["REPORTABLE", "NOT_REPORTABLE"],
         )
         citation = MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA["properties"]["support_citations"]["items"]
-        self.assertEqual(set(citation["properties"]), {"candidate_id", "exact_quote"})
+        self.assertEqual(set(citation["properties"]), {"source_ref", "sentence_ids"})
         self.assertNotIn("start", json.dumps(MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA))
         self.assertNotIn("end", json.dumps(MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA))
 
     def test_actual_envelope_is_stateless_and_preserves_unicode(self):
         request = _request()
-        raw = _proposal(request, support=[{"candidate_id": "A", "exact_quote": "東京 Metro 東京車站完成號誌測試。"}])
+        raw = _proposal(request, support=[{"source_ref": "M1", "sentence_ids": ["S1"]}])
         transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(raw)))
         result = MaiAgentReportabilityProposalProvider(_config(), transport=transport)(request)
         self.assertEqual(result, raw)
@@ -285,14 +285,17 @@ class MaiAgentReportabilityProviderTests(unittest.TestCase):
         )
         raw = _proposal(
             request,
-            support=[{"candidate_id": "A", "exact_quote": "The metro operator commissioned"}],
+            support=[{"source_ref": "M1", "sentence_ids": ["S1"]}],
         )
         transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(raw)))
         result = Reportability(MaiAgentReportabilityProposalProvider(_config(), transport=transport)).evaluate(decision)
         self.assertEqual(result.reportability_state, ReportabilityState.REPORTABLE)
         self.assertIsNone(result.reportability_reason)
-        self.assertEqual(result.provenance.support_spans[0].start, 0)
-        self.assertEqual(result.provenance.support_spans[0].end, len("The metro operator commissioned"))
+        # RC-16: the span is the cited sentence.
+        content = decision.member_records[0].evidence.substantive_content
+        span = result.provenance.support_spans[0]
+        self.assertEqual(span.start, 0)
+        self.assertTrue(content[span.start:span.end].startswith("The metro operator commissioned"))
         self.assertEqual(len(transport.calls), 1)
 
     def test_existing_reportability_owner_accepts_not_reportable_adapter_proposal(self):
@@ -314,7 +317,7 @@ class MaiAgentReportabilityProviderTests(unittest.TestCase):
             "E1",
             (ReportabilitySemanticMember("A", decision.member_records[0].evidence.substantive_content),),
         )
-        invalid = _proposal(request, support=[{"candidate_id": "A", "exact_quote": "not present"}])
+        invalid = _proposal(request, support=[{"source_ref": "M1", "sentence_ids": ["S9"]}])
         transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(invalid)))
         with self.assertRaises(ReportabilityStageFailure):
             Reportability(MaiAgentReportabilityProposalProvider(_config(), transport=transport)).evaluate(decision)
@@ -328,7 +331,7 @@ class ReportabilityCriteriaTests(unittest.TestCase):
         from src.weekly_report.maiagent_reportability_provider import PROMPT_VERSION, REPORTABILITY_INSTRUCTIONS
 
         instructions = " ".join(REPORTABILITY_INSTRUCTIONS)
-        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v2")
+        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v3")
         self.assertIn("Accepted value paths", instructions)
         self.assertIn("substantive technical research, testing, pilots or deployments", instructions)
         self.assertIn("procurement, demonstration or trial activity", instructions)

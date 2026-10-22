@@ -35,12 +35,12 @@ from .maiagent_transport import (
 )
 
 
-CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v2"
-CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v4"
+CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v3"
+CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v5"
 CATEGORY_SEMANTIC_HELPER_VERSION = "responses-adapter-v1"
 MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION = "maiagent-chatbot-adapter-v2"
 MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER = "maiagent-chatbot-completions"
-MAIAGENT_CATEGORY_MESSAGE_VERSION = "category-full-response-contract-v1"
+MAIAGENT_CATEGORY_MESSAGE_VERSION = "category-full-response-contract-v2"
 _ENV_ENDPOINT = "CATEGORY_SEMANTIC_API_URL"
 _ENV_MODEL = "CATEGORY_SEMANTIC_MODEL"
 _ENV_API_KEY = "CATEGORY_SEMANTIC_API_KEY"
@@ -55,7 +55,7 @@ _MAIAGENT_CONFIG_KEYS = (
 
 
 _SYSTEM_PROMPT = """You are a constrained semantic advisor to Classifier, the sole authoritative Category decision owner.
-Use only the supplied JSON input and its guidance. Do not browse, search, retrieve external information, or infer from discovery metadata. Do not prefer a source by order, publisher, canonical status, popularity, or priority. Preserve each source's claims separately. Return citations as candidate_id plus a non-empty exact quote copied from that candidate's substantive source content. Citations support the proposal as a whole; do not label citations as support or conflict and do not calculate offsets.
+Use only the supplied JSON input and its guidance. Do not browse, search, retrieve external information, or infer from discovery metadata. Do not prefer a source by order, publisher, canonical status, popularity, or priority. Preserve each source's claims separately. Return citations as a supplied source_ref plus the sentence_ids of that source that support the proposal; never copy or retype source text or identifiers. Citations support the proposal as a whole; do not label citations as support or conflict and do not calculate offsets.
 Return only the requested structured JSON proposal, with no surrounding prose. Classifier validates the proposal and owns the terminal decision. Do not change Event Groups or decide taxonomy or reportability."""
 
 
@@ -63,10 +63,10 @@ _CITATION_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
-        "candidate_id": {"type": "string", "minLength": 1},
-        "quote": {"type": "string", "minLength": 1},
+        "source_ref": {"type": "string", "minLength": 1},
+        "sentence_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
     },
-    "required": ["candidate_id", "quote"],
+    "required": ["source_ref", "sentence_ids"],
 }
 _CATEGORY_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",

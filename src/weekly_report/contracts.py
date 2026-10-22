@@ -1231,25 +1231,39 @@ class ReportabilitySemanticRequest:
     def member_candidate_ids(self) -> tuple[str, ...]:
         return tuple(member.candidate_id for member in self.members)
 
+    @property
+    def source_refs(self) -> dict[str, str]:
+        """Python-assigned member references ``M1..Mn`` (RC-16)."""
+
+        from .source_refs import source_refs
+
+        return source_refs(self.member_candidate_ids)
+
     def as_payload(self) -> dict[str, Any]:
+        from .source_refs import source_payload
+
         return {
             "event_id": self.event_id,
-            "members": [member.as_mapping() for member in self.members],
+            "members": [
+                source_payload(ref, member.substantive_content)
+                for ref, member in zip(self.source_refs, self.members)
+            ],
         }
 
 
 @dataclass(frozen=True, slots=True)
 class ReportabilitySemanticCitation:
-    """Untrusted exact quote citation returned by a semantic provider."""
+    """Untrusted source reference and sentence IDs returned by a provider (RC-16)."""
 
-    candidate_id: str
-    exact_quote: str
+    source_ref: str
+    sentence_ids: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.candidate_id, str) or not self.candidate_id.strip():
-            raise ValueError("Reportability citation requires candidate_id")
-        if not isinstance(self.exact_quote, str) or not self.exact_quote.strip():
-            raise ValueError("Reportability citation requires exact_quote")
+        if not isinstance(self.source_ref, str) or not self.source_ref.strip():
+            raise ValueError("Reportability citation requires source_ref")
+        if isinstance(self.sentence_ids, (str, bytes, bytearray)):
+            raise TypeError("Reportability citation sentence_ids must be an array")
+        object.__setattr__(self, "sentence_ids", tuple(self.sentence_ids))
 
 
 @dataclass(frozen=True, slots=True)
@@ -1258,7 +1272,7 @@ class ReportabilitySemanticProposal:
 
     event_id: str
     proposed_state: ReportabilityState
-    examined_candidate_ids: tuple[str, ...]
+    examined_source_refs: tuple[str, ...]
     support_citations: tuple[ReportabilitySemanticCitation, ...]
     rationale: str
 
@@ -1271,19 +1285,19 @@ class ReportabilitySemanticProposal:
             raise ValueError("Reportability proposal requires a valid state") from exc
         object.__setattr__(self, "proposed_state", state)
 
-        if isinstance(self.examined_candidate_ids, (str, bytes, bytearray)):
-            raise TypeError("Reportability proposal examined IDs must be an iterable")
+        if isinstance(self.examined_source_refs, (str, bytes, bytearray)):
+            raise TypeError("Reportability proposal examined references must be an iterable")
         try:
-            examined_ids = tuple(self.examined_candidate_ids)
+            examined_refs = tuple(self.examined_source_refs)
         except TypeError as exc:
-            raise TypeError("Reportability proposal examined IDs must be an iterable") from exc
-        if not examined_ids:
-            raise ValueError("Reportability proposal requires examined candidate IDs")
-        if any(not isinstance(candidate_id, str) or not candidate_id.strip() for candidate_id in examined_ids):
-            raise ValueError("Reportability proposal requires non-empty candidate IDs")
-        if len(examined_ids) != len(set(examined_ids)):
-            raise ValueError("Reportability proposal examined candidate IDs must be unique")
-        object.__setattr__(self, "examined_candidate_ids", examined_ids)
+            raise TypeError("Reportability proposal examined references must be an iterable") from exc
+        if not examined_refs:
+            raise ValueError("Reportability proposal requires examined source references")
+        if any(not isinstance(ref, str) or not ref.strip() for ref in examined_refs):
+            raise ValueError("Reportability proposal requires non-empty source references")
+        if len(examined_refs) != len(set(examined_refs)):
+            raise ValueError("Reportability proposal examined source references must be unique")
+        object.__setattr__(self, "examined_source_refs", examined_refs)
 
         if isinstance(self.support_citations, (str, bytes, bytearray)):
             raise TypeError("support_citations must contain ReportabilitySemanticCitation values")

@@ -240,10 +240,10 @@ class MaiAgentTaxonomyProviderTests(unittest.TestCase):
             {"event_id", "members"},
         )
         self.assertEqual(
-            [member["candidate_id"] for member in model_input["taxonomy_request"]["members"]],
-            ["A", "B"],
+            [member["source_ref"] for member in model_input["taxonomy_request"]["members"]],
+            ["M1", "M2"],
         )
-        self.assertIn("東京", model_input["taxonomy_request"]["members"][0]["substantive_content"])
+        self.assertIn("東京", model_input["taxonomy_request"]["members"][0]["sentences"][0]["text"])
         serialized = json.dumps(model_input, ensure_ascii=False)
         for forbidden in ("publisher", "url", "search_snippet", "reportability", "writer", "golden"):
             self.assertNotIn(forbidden, serialized.lower())
@@ -283,11 +283,11 @@ class MaiAgentTaxonomyProviderTests(unittest.TestCase):
     def test_all_legal_raw_proposal_shapes_are_returned_without_semantic_repair(self):
         request = _request()
         proposals = (
-            _proposal(request, systems=["SIGNALLING"], support=[{"system_id": "SIGNALLING", "candidate_id": "A", "exact_quote": "號誌系統完成測試"}]),
+            _proposal(request, systems=["SIGNALLING"], support=[{"system_id": "SIGNALLING", "source_ref": "M1", "sentence_ids": ["S1"]}]),
             _proposal(request, systems=["ROLLING_STOCK", "SIGNALLING"]),
             _proposal(request, systems=[]),
-            _proposal(request, state="TAXONOMY_UNRESOLVED", reason="INSUFFICIENT_SYSTEM_EVIDENCE", insufficient={"member_candidate_ids": ["A", "B"], "diagnostic": "not enough"}),
-            _proposal(request, state="TAXONOMY_UNRESOLVED", reason="CONFLICTING_SYSTEM_EVIDENCE", conflict=[{"system_id": "SIGNALLING", "candidate_id": "A", "exact_quote": "號誌"}, {"system_id": "POWER_SUPPLY", "candidate_id": "B", "exact_quote": "供電"}]),
+            _proposal(request, state="TAXONOMY_UNRESOLVED", reason="INSUFFICIENT_SYSTEM_EVIDENCE", insufficient={"member_source_refs": ["M1", "M2"], "diagnostic": "not enough"}),
+            _proposal(request, state="TAXONOMY_UNRESOLVED", reason="CONFLICTING_SYSTEM_EVIDENCE", conflict=[{"system_id": "SIGNALLING", "source_ref": "M1", "sentence_ids": ["S1"]}, {"system_id": "POWER_SUPPLY", "source_ref": "M2", "sentence_ids": ["S1"]}]),
         )
         for proposal in proposals:
             with self.subTest(proposal=proposal):
@@ -324,7 +324,7 @@ class MaiAgentTaxonomyProviderTests(unittest.TestCase):
         valid = _proposal(
             TaxonomySemanticRequest("E1", (TaxonomySemanticMember("A", record.evidence.substantive_content),)),
             systems=["POWER_SUPPLY"],
-            support=[{"system_id": "POWER_SUPPLY", "candidate_id": "A", "exact_quote": "Traction substation"}],
+            support=[{"system_id": "POWER_SUPPLY", "source_ref": "M1", "sentence_ids": ["S1"]}],
         )
         transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(valid)))
         result = Taxonomy(MaiAgentTaxonomyProposalProvider(_config(), transport=transport)).evaluate(group, (record,), _assigned(group))
@@ -333,7 +333,7 @@ class MaiAgentTaxonomyProviderTests(unittest.TestCase):
         self.assertEqual(len(transport.calls), 1)
 
         invalid = dict(valid)
-        invalid["support_citations"] = [{"system_id": "POWER_SUPPLY", "candidate_id": "A", "exact_quote": "not in source"}]
+        invalid["support_citations"] = [{"system_id": "POWER_SUPPLY", "source_ref": "M1", "sentence_ids": ["S9"]}]
         transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(invalid)))
         with self.assertRaises(TaxonomyStageFailure):
             Taxonomy(MaiAgentTaxonomyProposalProvider(_config(), transport=transport)).evaluate(group, (record,), _assigned(group))
@@ -353,22 +353,22 @@ class MaiAgentTaxonomyProviderTests(unittest.TestCase):
             _proposal(
                 request,
                 systems=["SIGNALLING"],
-                support=[{"system_id": "SIGNALLING", "candidate_id": "A", "exact_quote": "號誌系統完成測試"}],
+                support=[{"system_id": "SIGNALLING", "source_ref": "M1", "sentence_ids": ["S1"]}],
             ),
             _proposal(request, systems=[]),
             _proposal(
                 request,
                 state="TAXONOMY_UNRESOLVED",
                 reason="INSUFFICIENT_SYSTEM_EVIDENCE",
-                insufficient={"member_candidate_ids": ["A", "B"], "diagnostic": "insufficient"},
+                insufficient={"member_source_refs": ["M1", "M2"], "diagnostic": "insufficient"},
             ),
             _proposal(
                 request,
                 state="TAXONOMY_UNRESOLVED",
                 reason="CONFLICTING_SYSTEM_EVIDENCE",
                 conflict=[
-                    {"system_id": "SIGNALLING", "candidate_id": "A", "exact_quote": "號誌"},
-                    {"system_id": "POWER_SUPPLY", "candidate_id": "B", "exact_quote": "供電"},
+                    {"system_id": "SIGNALLING", "source_ref": "M1", "sentence_ids": ["S1"]},
+                    {"system_id": "POWER_SUPPLY", "source_ref": "M2", "sentence_ids": ["S1"]},
                 ],
             ),
         )
@@ -401,7 +401,7 @@ class MaiAgentTaxonomyProviderTests(unittest.TestCase):
             request,
             state="TAXONOMY_UNRESOLVED",
             reason="INSUFFICIENT_SYSTEM_EVIDENCE",
-            insufficient={"member_candidate_ids": ["A"], "diagnostic": "incomplete"},
+            insufficient={"member_source_refs": ["M1"], "diagnostic": "incomplete"},
         )
         transport = _RecordedTransport(MaiAgentHttpResponse(200, _envelope(proposal)))
         with self.assertRaises(TaxonomyStageFailure):
@@ -438,7 +438,7 @@ def test_prompt_states_valid_state_and_reason_combinations():
     from src.weekly_report.maiagent_taxonomy_provider import PROMPT_VERSION, TAXONOMY_INSTRUCTIONS
 
     instructions = " ".join(TAXONOMY_INSTRUCTIONS)
-    assert PROMPT_VERSION == "taxonomy-principal-body-v2"
+    assert PROMPT_VERSION == "taxonomy-principal-body-v3"
     assert "TAXONOMY_EVALUATED always has taxonomy_resolution_reason null" in instructions
     assert "return TAXONOMY_EVALUATED with systems [] rather than an unresolved reason" in instructions
 

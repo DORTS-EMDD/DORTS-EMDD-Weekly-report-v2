@@ -43,13 +43,10 @@ class _GoldenSemanticOracle:
 
     def __call__(self, request: CategorySemanticRequest):
         expected = self.expected
-        sources = request.sources
+        # RC-16: cite each source by its Python-assigned reference.
         citations = [
-            {
-                "candidate_id": source.candidate_id,
-                "quote": source.substantive_content,
-            }
-            for source in sources
+            {"source_ref": ref, "sentence_ids": ["S1"]}
+            for ref in request.source_refs
         ]
         category_state = expected["category_state"]
         if category_state == CategoryState.CATEGORY_ASSIGNED.value:

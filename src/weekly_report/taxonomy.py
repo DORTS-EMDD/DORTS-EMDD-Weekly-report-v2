@@ -12,7 +12,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from .exact_text import EXACT_TEXT_ALL_OCCURRENCES, exact_occurrence_offsets
+from .exact_text import EXACT_TEXT_ALL_OCCURRENCES
+from .source_refs import cited_spans, source_payload, source_refs
 from .contracts import (
     ProposalContractViolation,
     SemanticProviderConfigurationFailure,
@@ -84,20 +85,35 @@ class TaxonomySemanticRequest:
     def member_candidate_ids(self) -> tuple[str, ...]:
         return tuple(member.candidate_id for member in self.members)
 
+    @property
+    def source_refs(self) -> dict[str, str]:
+        return source_refs(self.member_candidate_ids)
+
     def as_payload(self) -> dict[str, Any]:
         return {
             "event_id": self.event_id,
-            "members": [member.as_mapping() for member in self.members],
+            "members": [
+                source_payload(ref, member.substantive_content)
+                for ref, member in zip(self.source_refs, self.members)
+            ],
         }
 
 
 @dataclass(frozen=True, slots=True)
 class TaxonomySemanticCitation:
-    """Untrusted exact quote citation returned by a semantic provider."""
+    """Untrusted source reference and sentence IDs returned by a provider (RC-16)."""
 
     system_id: EMSystemId | str
-    candidate_id: str
-    exact_quote: str
+    source_ref: str
+    sentence_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class TaxonomyInsufficientReferences:
+    """Untrusted insufficient-evidence provenance naming member references."""
+
+    member_source_refs: tuple[str, ...]
+    diagnostic: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,7 +126,7 @@ class TaxonomySemanticProposal:
     taxonomy_resolution_reason: TaxonomyResolutionReason | str | None = None
     support_citations: tuple[TaxonomySemanticCitation, ...] = ()
     conflict_citations: tuple[TaxonomySemanticCitation, ...] = ()
-    insufficient_provenance: TaxonomyInsufficientEvidenceProvenance | Mapping[str, Any] | None = None
+    insufficient_provenance: TaxonomyInsufficientReferences | Mapping[str, Any] | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "systems", tuple(self.systems))
@@ -158,8 +174,8 @@ _PROPOSAL_FIELDS = frozenset(
         "insufficient_provenance",
     }
 )
-_CITATION_FIELDS = frozenset({"system_id", "candidate_id", "exact_quote"})
-_INSUFFICIENT_FIELDS = frozenset({"member_candidate_ids", "diagnostic"})
+_CITATION_FIELDS = frozenset({"system_id", "source_ref", "sentence_ids"})
+_INSUFFICIENT_FIELDS = frozenset({"member_source_refs", "diagnostic"})
 
 
 def _technical(reason: str, event_id: str = "") -> TaxonomyStageFailure:
@@ -171,10 +187,12 @@ def _citation(value: object) -> TaxonomySemanticCitation:
         return value
     if not isinstance(value, Mapping) or frozenset(value) != _CITATION_FIELDS:
         raise _technical("taxonomy citation fields do not match the proposal contract")
+    if not isinstance(value["sentence_ids"], (list, tuple)):
+        raise _technical("taxonomy citation sentence_ids must be an array")
     return TaxonomySemanticCitation(
         system_id=value["system_id"],
-        candidate_id=value["candidate_id"],
-        exact_quote=value["exact_quote"],
+        source_ref=value["source_ref"],
+        sentence_ids=tuple(value["sentence_ids"]),
     )
 
 
@@ -184,21 +202,20 @@ def _citations(value: object, field_name: str) -> tuple[TaxonomySemanticCitation
     return tuple(_citation(item) for item in value)
 
 
-def _insufficient_provenance(value: object) -> TaxonomyInsufficientEvidenceProvenance | None:
+def _insufficient_provenance(value: object) -> TaxonomyInsufficientReferences | None:
     if value is None:
         return None
-    if isinstance(value, TaxonomyInsufficientEvidenceProvenance):
+    if isinstance(value, TaxonomyInsufficientReferences):
         return value
     if not isinstance(value, Mapping) or frozenset(value) != _INSUFFICIENT_FIELDS:
         raise _technical("insufficient provenance fields do not match the proposal contract")
-    member_ids = value["member_candidate_ids"]
+    member_refs = value["member_source_refs"]
     diagnostic = value["diagnostic"]
-    if not isinstance(member_ids, Sequence) or isinstance(member_ids, (str, bytes, bytearray)):
-        raise _technical("insufficient provenance member_candidate_ids must be an array")
-    try:
-        return TaxonomyInsufficientEvidenceProvenance(tuple(member_ids), diagnostic)
-    except (TypeError, ValueError):
-        raise _technical("invalid insufficient taxonomy provenance") from None
+    if not isinstance(member_refs, Sequence) or isinstance(member_refs, (str, bytes, bytearray)):
+        raise _technical("insufficient provenance member_source_refs must be an array")
+    if not isinstance(diagnostic, str):
+        raise _technical("invalid insufficient taxonomy provenance")
+    return TaxonomyInsufficientReferences(tuple(member_refs), diagnostic)
 
 
 def _proposal(value: object, *, event_id: str) -> TaxonomySemanticProposal:
@@ -279,17 +296,15 @@ def _parse_systems(value: object, event_id: str) -> tuple[EMSystemId, ...]:
     return canonical
 
 
-def _quote_spans(
+def _sentence_spans(
     citation: TaxonomySemanticCitation,
     bodies: Mapping[str, str],
+    refs: Mapping[str, str],
     event_id: str,
 ) -> tuple[TaxonomySupportSpan, ...]:
-    if not isinstance(citation.candidate_id, str) or not citation.candidate_id.strip():
-        raise _technical("taxonomy citation requires candidate_id", event_id)
-    if citation.candidate_id not in bodies:
-        raise _technical("taxonomy citation references a non-member candidate", event_id)
-    if not isinstance(citation.exact_quote, str) or not citation.exact_quote:
-        raise _technical("taxonomy citation requires a non-empty exact_quote", event_id)
+    if not isinstance(citation.source_ref, str) or citation.source_ref not in refs:
+        raise _technical("taxonomy citation references a non-member source", event_id)
+    candidate_id = refs[citation.source_ref]
     if not isinstance(citation.system_id, (str, EMSystemId)):
         raise _technical("taxonomy citation has an invalid system ID", event_id)
     try:
@@ -297,17 +312,10 @@ def _quote_spans(
     except (TypeError, ValueError) as exc:
         raise _technical("taxonomy citation has an invalid system ID", event_id) from exc
 
-    body = bodies[citation.candidate_id]
-    occurrences = exact_occurrence_offsets(body, citation.exact_quote)
-    if not occurrences:
-        raise _technical("taxonomy citation exact_quote was not found", event_id)
-    spans: list[TaxonomySupportSpan] = []
-    for start in occurrences:
-        end = start + len(citation.exact_quote)
-        if end <= start or end > len(body) or body[start:end] != citation.exact_quote:
-            raise _technical("taxonomy citation span does not exactly map to source content", event_id)
-        spans.append(TaxonomySupportSpan(system, citation.candidate_id, start, end))
-    return tuple(spans)
+    resolved = cited_spans(bodies[candidate_id], citation.sentence_ids)
+    if resolved is None:
+        raise _technical("taxonomy citation sentence_ids do not resolve", event_id)
+    return tuple(TaxonomySupportSpan(system, candidate_id, start, end) for start, end in resolved)
 
 
 def _canonical_span_order(span: TaxonomySupportSpan) -> tuple[int, str, int, int]:
@@ -369,7 +377,7 @@ class Taxonomy:
             else:
                 try:
                     proposal = _proposal(raw_proposal, event_id=event_group.event_id)
-                    return self._accept_proposal(proposal, event_group, ordered_records)
+                    return self._accept_proposal(proposal, event_group, ordered_records, request.source_refs)
                 except TaxonomyStageFailure as exc:
                     violation = TaxonomyProposalViolation(exc.reason, event_id=event_group.event_id)
                 except Exception:
@@ -433,6 +441,7 @@ class Taxonomy:
         proposal: TaxonomySemanticProposal,
         event_group: EventGroup,
         records: tuple[EventIdentityRecord, ...],
+        refs: Mapping[str, str],
     ) -> TaxonomyResult:
         state = _parse_state(proposal.taxonomy_state, event_group.event_id)
         systems = _parse_systems(proposal.systems, event_group.event_id)
@@ -440,12 +449,12 @@ class Taxonomy:
         support = tuple(dict.fromkeys(
             span
             for citation in proposal.support_citations
-            for span in _quote_spans(citation, bodies, event_group.event_id)
+            for span in _sentence_spans(citation, bodies, refs, event_group.event_id)
         ))
         conflict = tuple(dict.fromkeys(
             span
             for citation in proposal.conflict_citations
-            for span in _quote_spans(citation, bodies, event_group.event_id)
+            for span in _sentence_spans(citation, bodies, refs, event_group.event_id)
         ))
         support = tuple(sorted(support, key=_canonical_span_order))
         conflict = tuple(sorted(conflict, key=_canonical_span_order))
@@ -478,11 +487,18 @@ class Taxonomy:
         if reason is TaxonomyResolutionReason.INSUFFICIENT_SYSTEM_EVIDENCE:
             if conflict or proposal.insufficient_provenance is None:
                 raise _technical("insufficient taxonomy proposal requires insufficient provenance only", event_group.event_id)
-            provenance = proposal.insufficient_provenance
-            if not isinstance(provenance, TaxonomyInsufficientEvidenceProvenance):
+            references = proposal.insufficient_provenance
+            if not isinstance(references, TaxonomyInsufficientReferences):
                 raise _technical("invalid insufficient taxonomy provenance", event_group.event_id)
-            if tuple(provenance.member_candidate_ids) != event_group.member_candidate_ids:
+            named = references.member_source_refs
+            if len(named) != len(set(named)) or set(named) != set(refs):
                 raise _technical("insufficient provenance must identify exactly all EventGroup members", event_group.event_id)
+            try:
+                provenance = TaxonomyInsufficientEvidenceProvenance(
+                    event_group.member_candidate_ids, references.diagnostic
+                )
+            except (TypeError, ValueError):
+                raise _technical("invalid insufficient taxonomy provenance", event_group.event_id) from None
             return TaxonomyResult(
                 taxonomy_state=state,
                 event_id=event_group.event_id,
@@ -509,6 +525,7 @@ __all__ = [
     "EMTaxonomy",
     "Taxonomy",
     "TaxonomyOwner",
+    "TaxonomyInsufficientReferences",
     "TaxonomySemanticCitation",
     "TaxonomySemanticMember",
     "TaxonomySemanticProposal",

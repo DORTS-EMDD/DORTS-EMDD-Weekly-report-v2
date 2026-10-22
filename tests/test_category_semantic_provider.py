@@ -38,7 +38,7 @@ from src.weekly_report.category_semantic_provider import (
     build_category_classifier,
     build_maiagent_category_classifier,
 )
-from src.weekly_report.classifier import CategorySemanticRequest, Classifier
+from src.weekly_report.classifier import CategoryProposalViolation, CategorySemanticRequest, Classifier
 from src.weekly_report.contracts import (
     CanonicalCandidate,
     CategoryId,
@@ -120,22 +120,33 @@ def _group(record):
     )
 
 
+_VIOLATION = "PROPOSAL_VIOLATION"
+
+
+def _classify(classifier, group, records):
+    """Return the CategoryResult, or _VIOLATION for a disclosed gap (RC-16)."""
+
+    try:
+        return classifier.classify(group, records)
+    except CategoryProposalViolation:
+        return _VIOLATION
+
+
 def _proposal(record, *, state=CategoryState.CATEGORY_ASSIGNED, category_id=CategoryId.TECHNICAL_DEVELOPMENT):
-    body = record.evidence.substantive_content
     if state is CategoryState.CATEGORY_ASSIGNED:
         return {
             "category_state": state.value,
             "primary_category_id": category_id.value,
             "subtype": "pilot",
             "category_resolution_reason": None,
-            "citations": [{"candidate_id": record.candidate.candidate_id, "quote": body}],
+            "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
         }
     return {
         "category_state": state.value,
         "primary_category_id": None,
         "subtype": None,
         "category_resolution_reason": CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION.value,
-        "citations": [{"candidate_id": record.candidate.candidate_id, "quote": body}],
+        "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
     }
 
 
@@ -176,7 +187,7 @@ def _top_level_assignment_count(module, name):
 
 class CategorySemanticProviderTests(unittest.TestCase):
     def test_authoritative_v4_schema_and_five_field_contract(self):
-        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v4")
+        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v5")
         Draft202012Validator.check_schema(_CATEGORY_RESPONSE_SCHEMA)
         validator = Draft202012Validator(_CATEGORY_RESPONSE_SCHEMA)
         expected_fields = {
@@ -236,11 +247,12 @@ class CategorySemanticProviderTests(unittest.TestCase):
                 proposal = _proposal(record)
                 proposal["subtype"] = subtype
                 schema_accepts = validator.is_valid(proposal)
-                result = Classifier(lambda _request: proposal).classify(
-                    _group(record), (record,)
+                result = _classify(
+                    Classifier(lambda _request: proposal), _group(record), (record,)
                 )
                 classifier_accepts = (
-                    result.category_state is CategoryState.CATEGORY_ASSIGNED
+                    result is not _VIOLATION
+                    and result.category_state is CategoryState.CATEGORY_ASSIGNED
                 )
 
                 self.assertEqual(schema_accepts, classifier_accepts)
@@ -272,30 +284,31 @@ class CategorySemanticProviderTests(unittest.TestCase):
             ),
             "unresolved-with-subtype": dict(unresolved, subtype="award"),
             "empty-citations": dict(assigned, citations=[]),
-            "empty-candidate": dict(
+            "empty-source-ref": dict(
                 assigned,
-                citations=[{"candidate_id": "", "quote": "The operator began a signalling pilot."}],
+                citations=[{"source_ref": "", "sentence_ids": ["S1"]}],
             ),
-            "empty-quote": dict(
+            "empty-sentence-ids": dict(
                 assigned,
-                citations=[{"candidate_id": record.candidate.candidate_id, "quote": ""}],
+                citations=[{"source_ref": "M1", "sentence_ids": []}],
             ),
             "extra-top-level-field": dict(assigned, unexpected="value"),
         }
         for name, proposal in invalid.items():
             with self.subTest(case=name):
                 self.assertFalse(validator.is_valid(proposal))
-                result = Classifier(
-                    CategorySemanticProvider(
-                        _config(), transport=_RecordedTransport(_envelope(proposal))
-                    )
-                ).classify(_group(record), (record,))
-                self.assertEqual(
-                    result.category_resolution_reason,
-                    CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
+                result = _classify(
+                    Classifier(
+                        CategorySemanticProvider(
+                            _config(), transport=_RecordedTransport(_envelope(proposal))
+                        )
+                    ),
+                    _group(record),
+                    (record,),
                 )
+                self.assertEqual(result, _VIOLATION)
 
-    def test_projection_is_derived_and_contains_quotes_without_offsets(self):
+    def test_projection_is_derived_and_contains_sentence_citations_without_offsets(self):
         full_schema_before = json.loads(json.dumps(_CATEGORY_RESPONSE_SCHEMA))
         projection = build_maiagent_category_schema(_CATEGORY_RESPONSE_SCHEMA)
         projection_validator = Draft202012Validator(projection)
@@ -330,26 +343,27 @@ class CategorySemanticProviderTests(unittest.TestCase):
         self.assertEqual(set(projection["required"]), expected_fields)
         self.assertFalse(projection["additionalProperties"])
         item = projection["properties"]["citations"]["items"]
-        self.assertEqual(set(item["properties"]), {"candidate_id", "quote"})
-        self.assertEqual(set(item["required"]), {"candidate_id", "quote"})
+        self.assertEqual(set(item["properties"]), {"source_ref", "sentence_ids"})
+        self.assertEqual(set(item["required"]), {"source_ref", "sentence_ids"})
         self.assertFalse(item["additionalProperties"])
-        self.assertEqual(item["properties"]["candidate_id"]["type"], "string")
-        self.assertEqual(item["properties"]["quote"]["type"], "string")
+        self.assertEqual(item["properties"]["source_ref"]["type"], "string")
+        self.assertEqual(item["properties"]["sentence_ids"]["type"], "array")
 
         record = _record()
         assigned = _proposal(record)
         self.assertTrue(projection_validator.is_valid(dict(assigned, citations=[])))
         # The capability projection omits minItems; the authoritative Classifier rejects it.
-        result = Classifier(
-            CategorySemanticProvider(
-                _config(),
-                transport=_RecordedTransport(_envelope(dict(assigned, citations=[]))),
-            )
-        ).classify(_group(record), (record,))
-        self.assertEqual(
-            result.category_resolution_reason,
-            CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
+        result = _classify(
+            Classifier(
+                CategorySemanticProvider(
+                    _config(),
+                    transport=_RecordedTransport(_envelope(dict(assigned, citations=[]))),
+                )
+            ),
+            _group(record),
+            (record,),
         )
+        self.assertEqual(result, _VIOLATION)
 
         tree = ast.parse(Path(category_semantic_provider_module.__file__).read_text(encoding="utf-8"))
         assignments = [
@@ -368,9 +382,11 @@ class CategorySemanticProviderTests(unittest.TestCase):
             1,
         )
 
-    def test_guidance_uses_v4_quotes_and_aligns_existing_g54_g68_rules(self):
+    def test_guidance_uses_sentence_citations_and_aligns_existing_g54_g68_rules(self):
         guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
-        self.assertIn("exact quote", guidance)
+        self.assertIn("source_ref", guidance)
+        self.assertIn("sentence_ids", guidance)
+        self.assertNotIn("exact quote", guidance)
         self.assertIn("completed incident investigation", guidance)
         self.assertIn("OPERATIONAL_CHANGE", guidance)
         self.assertIn("ordinary passenger complaint", guidance)
@@ -429,18 +445,17 @@ class CategorySemanticProviderTests(unittest.TestCase):
             with self.subTest(state=state):
                 proposal = _proposal(record, state=state)
                 proposal["citations"] = []
-                result = Classifier(
-                    CategorySemanticProvider(
-                        _config(),
-                        transport=_RecordedTransport(_envelope(proposal)),
-                    )
-                ).classify(_group(record), (record,))
-                self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
-                self.assertEqual(
-                    result.category_resolution_reason,
-                    CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
+                result = _classify(
+                    Classifier(
+                        CategorySemanticProvider(
+                            _config(),
+                            transport=_RecordedTransport(_envelope(proposal)),
+                        )
+                    ),
+                    _group(record),
+                    (record,),
                 )
-                self.assertNotIn("validated_support_spans", result.provenance)
+                self.assertEqual(result, _VIOLATION)
 
     def test_unresolved_proposal_remains_terminal_in_classifier(self):
         record = _record(body="A system name appears without an announced action.")
@@ -505,20 +520,25 @@ class CategorySemanticProviderTests(unittest.TestCase):
         record = _record()
         cases = (
             ("completed", CategoryState.CATEGORY_ASSIGNED, None),
-            ("failed", CategoryState.CATEGORY_UNRESOLVED, CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE),
-            ("incomplete", CategoryState.CATEGORY_UNRESOLVED, CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE),
-            ("cancelled", CategoryState.CATEGORY_UNRESOLVED, CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE),
-            ("queued", CategoryState.CATEGORY_UNRESOLVED, CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE),
-            ("in_progress", CategoryState.CATEGORY_UNRESOLVED, CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE),
-            ("unknown", CategoryState.CATEGORY_UNRESOLVED, CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE),
-            (_MISSING, CategoryState.CATEGORY_UNRESOLVED, CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE),
+            ("failed", _VIOLATION, None),
+            ("incomplete", _VIOLATION, None),
+            ("cancelled", _VIOLATION, None),
+            ("queued", _VIOLATION, None),
+            ("in_progress", _VIOLATION, None),
+            ("unknown", _VIOLATION, None),
+            (_MISSING, _VIOLATION, None),
         )
         for status, expected_state, expected_reason in cases:
             with self.subTest(status="missing" if status is _MISSING else status):
                 envelope = _envelope(_proposal(record), status=status)
-                result = Classifier(
-                    CategorySemanticProvider(_config(), transport=_RecordedTransport(envelope))
-                ).classify(_group(record), (record,))
+                result = _classify(
+                    Classifier(CategorySemanticProvider(_config(), transport=_RecordedTransport(envelope))),
+                    _group(record),
+                    (record,),
+                )
+                if expected_state is _VIOLATION:
+                    self.assertEqual(result, _VIOLATION)
+                    continue
                 self.assertEqual(result.category_state, expected_state)
                 self.assertEqual(result.category_resolution_reason, expected_reason)
 
@@ -533,32 +553,34 @@ class CategorySemanticProviderTests(unittest.TestCase):
         mutations.append(unknown)
         bad_citation = dict(
             valid,
-            citations=[{"candidate_id": "elsewhere", "quote": "exact quote"}],
+            citations=[{"source_ref": "M9", "sentence_ids": ["S1"]}],
         )
         mutations.append(bad_citation)
         for proposal in mutations:
             with self.subTest(proposal=proposal):
-                result = Classifier(CategorySemanticProvider(_config(), transport=_RecordedTransport(_envelope(proposal)))).classify(
-                    _group(record), (record,)
+                result = _classify(
+                    Classifier(CategorySemanticProvider(_config(), transport=_RecordedTransport(_envelope(proposal)))),
+                    _group(record),
+                    (record,),
                 )
-                self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
-                self.assertEqual(
-                    result.category_resolution_reason,
-                    CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-                )
-                self.assertEqual(result.provenance["model_identifier"], "configured-category-model")
+                self.assertEqual(result, _VIOLATION)
 
     def test_provider_failure_and_empty_response_fail_closed(self):
         record = _record()
         cases = (
             (_RecordedTransport(error=RuntimeError("transport down")), CategoryResolutionReason.SEMANTIC_HELPER_FAILURE),
-            (_RecordedTransport(b""), CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE),
+            (_RecordedTransport(b""), _VIOLATION),
         )
         for transport, reason in cases:
             with self.subTest(reason=reason):
-                result = Classifier(CategorySemanticProvider(_config(), transport=transport)).classify(
-                    _group(record), (record,)
+                result = _classify(
+                    Classifier(CategorySemanticProvider(_config(), transport=transport)),
+                    _group(record),
+                    (record,),
                 )
+                if reason is _VIOLATION:
+                    self.assertEqual(result, _VIOLATION)
+                    continue
                 self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
                 self.assertEqual(result.category_resolution_reason, reason)
                 self.assertEqual(result.provenance["model_identifier"], "configured-category-model")
@@ -688,7 +710,7 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
         self.assertEqual(result.primary_category_id, CategoryId.PROCUREMENT)
         self.assertIsNone(result.subtype)
         self.assertEqual(result.provenance["provider_identifier"], MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER)
-        self.assertEqual(result.provenance["schema_version"], "category-proposal-v4")
+        self.assertEqual(result.provenance["schema_version"], "category-proposal-v5")
         self.assertEqual(result.provenance["prompt_version"], MAIAGENT_CATEGORY_MESSAGE_VERSION)
         self.assertEqual(
             result.provenance["helper_version"],
@@ -830,7 +852,7 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
         self.assertEqual(len(transport.calls), 1)
 
     def test_existing_responses_provider_and_schema_projection_remain_separate(self):
-        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v4")
+        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v5")
         self.assertEqual(
             _MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
             build_maiagent_category_schema(_CATEGORY_RESPONSE_SCHEMA),

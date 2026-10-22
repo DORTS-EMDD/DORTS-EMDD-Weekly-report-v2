@@ -33,6 +33,7 @@ from src.weekly_report.category_semantic_provider import (  # noqa: E402
     _MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
 )
 from src.weekly_report.classifier import (  # noqa: E402
+    CategoryProposalViolation,
     CategorySemanticHelperResult,
     CategorySemanticRequest,
     Classifier,
@@ -41,6 +42,8 @@ from src.weekly_report.classifier import (  # noqa: E402
 )
 from src.weekly_report.contracts import (  # noqa: E402
     CanonicalCandidate,
+    CategoryResolutionReason,
+    CategoryResult,
     CategoryState,
     EvidenceResult,
     EvidenceState,
@@ -790,34 +793,52 @@ def assess_final_seal_batch(round_reports: list[Mapping[str, Any]]) -> dict[str,
     return result
 
 
+def _classify_for_evaluation(classifier: Classifier, spec: dict[str, Any]) -> CategoryResult:
+    """Run the owner; report an RC-16 proposal violation as an invalid response."""
+
+    try:
+        return classifier.classify(spec["group"], spec["records"])
+    except CategoryProposalViolation as exc:
+        return CategoryResult(
+            category_state=CategoryState.CATEGORY_UNRESOLVED,
+            event_id=spec["group"].event_id,
+            classification_reason=CategoryState.CATEGORY_UNRESOLVED.value,
+            category_resolution_reason=CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
+            provenance={"decision_basis": "proposal_contract_violation", "validation_error": str(exc)},
+        )
+
+
 def _citation_details(
     actual,
     request: CategorySemanticRequest,
     proposal: object,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     source_text = {source.candidate_id: source.substantive_content for source in request.sources}
+    refs = request.source_refs
     raw_citations = proposal.get("citations", ()) if isinstance(proposal, Mapping) else ()
-    canonical_spans = actual.provenance.get("validated_support_spans", ())
+    canonical_spans = list(actual.provenance.get("validated_support_spans", ()))
     details: list[dict[str, Any]] = []
     if isinstance(raw_citations, list):
-        for index, citation in enumerate(raw_citations):
+        for citation in raw_citations:
             if not isinstance(citation, Mapping):
                 continue
-            candidate_id = citation.get("candidate_id")
-            quote = citation.get("quote")
-            source = source_text.get(candidate_id) if isinstance(candidate_id, str) else None
-            span = canonical_spans[index] if index < len(canonical_spans) else None
-            resolved = (
-                span is not None
-                and span.get("candidate_id") == candidate_id
-                and isinstance(source, str)
-            )
-            start = span["start"] if resolved else None
-            end = span["end"] if resolved else None
+            source_ref = citation.get("source_ref")
+            sentence_ids = citation.get("sentence_ids")
+            candidate_id = refs.get(source_ref) if isinstance(source_ref, str) else None
+            source = source_text.get(candidate_id) if candidate_id is not None else None
+            # RC-16: each cited sentence is one canonical span, in order.
+            count = len(sentence_ids) if isinstance(sentence_ids, list) else 0
+            spans = [span for span in canonical_spans if span.get("candidate_id") == candidate_id][:count]
+            for span in spans:
+                canonical_spans.remove(span)
+            resolved = bool(spans) and isinstance(source, str)
+            start = spans[0]["start"] if resolved else None
+            end = spans[-1]["end"] if resolved else None
             details.append(
                 {
                     "candidate_id": candidate_id,
-                    "quote": quote,
+                    "source_ref": source_ref,
+                    "sentence_ids": sentence_ids,
                     "resolved_start": start,
                     "resolved_end": end,
                     "resolved_substring": source[start:end] if resolved else None,
@@ -889,7 +910,7 @@ def _evaluate_spec(
     transport_observation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     capture.last_proposal = None
-    actual = classifier.classify(spec["group"], spec["records"])
+    actual = _classify_for_evaluation(classifier, spec)
     citations, citation_concerns = _citation_details(
         actual, spec["request"], capture.last_proposal
     )
@@ -1138,7 +1159,7 @@ def run_evaluation(
     for spec in specs:
         key = (spec["case_id"], spec["group"].event_id)
         observation_index = len(rows)
-        actual = classifier.classify(spec["group"], spec["records"])
+        actual = _classify_for_evaluation(classifier, spec)
         observation = (
             recording_transport.observations[observation_index]
             if recording_transport is not None and observation_index < len(recording_transport.observations)

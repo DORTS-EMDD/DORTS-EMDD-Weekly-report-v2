@@ -30,8 +30,8 @@ from .contracts import canonical_em_system_ids
 
 
 TASK_IDENTITY = "taxonomy_semantic_proposal"
-PROMPT_VERSION = "taxonomy-principal-body-v2"
-SCHEMA_VERSION = "taxonomy-semantic-proposal-v1"
+PROMPT_VERSION = "taxonomy-principal-body-v3"
+SCHEMA_VERSION = "taxonomy-semantic-proposal-v2"
 HELPER_VERSION = "maiagent-structured-helper-taxonomy-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-taxonomy"
 
@@ -44,7 +44,7 @@ MAIAGENT_TAXONOMY_PROVIDER_IDENTIFIER = PROVIDER_IDENTIFIER
 
 TAXONOMY_INSTRUCTIONS = (
     "You are a stateless proposal-only semantic helper for the Python Taxonomy owner.",
-    "Inspect every supplied EventGroup member and use only its authoritative substantive_content.",
+    "Inspect every supplied EventGroup member and use only its sentences. Each member has a source_ref (M1, M2, ...) and each sentence a sentence_id, both assigned by Python.",
     "Classify only the existing canonical E&M system IDs in the supplied response schema.",
     "Use the repository's canonical system registry; do not create another registry, primary system, ranking, or eighth system.",
     "Preserve every valid multilabel outcome; system order has no semantic priority.",
@@ -58,9 +58,9 @@ TAXONOMY_INSTRUCTIONS = (
     "TAXONOMY_UNRESOLVED is legal when a parent system cannot be reliably determined.",
     "Field combinations: TAXONOMY_EVALUATED always has taxonomy_resolution_reason null, insufficient_provenance null and no conflict citations, including when systems is empty; TAXONOMY_UNRESOLVED always has systems empty and support empty, with exactly one reason. When the evidence names no specific E&M system (for example a line extension described only by track, stations and construction), return TAXONOMY_EVALUATED with systems [] rather than an unresolved reason.",
     "Use CONFLICTING_SYSTEM_EVIDENCE only for genuinely competing supported hypotheses.",
-    "Every assigned system requires system-specific support with an exact quote from the named supplied member.",
-    "Exact quotes must be copied from the named substantive_content member; do not paraphrase, normalize, synthesize, or borrow across sources.",
-    "INSUFFICIENT_SYSTEM_EVIDENCE provenance must identify all supplied members as required by the owner contract.",
+    "Every assigned system requires system-specific support: a citation naming the system_id, the member's source_ref and the sentence_ids of that member that support it.",
+    "Cite only by source_ref and sentence_ids; never copy or retype source text or identifiers, and do not borrow sentences across members.",
+    "INSUFFICIENT_SYSTEM_EVIDENCE provenance must list every supplied source_ref in member_source_refs.",
     "Do not propose NOT_EVALUATED and do not create a final TaxonomyResult.",
     "Do not use external knowledge, search, RAG, tools, conversation history, or surrounding messages.",
     "Return JSON only, with no Markdown, no prose outside JSON, and no extra fields.",
@@ -76,10 +76,10 @@ def _citation_schema() -> dict[str, Any]:
                 "type": "string",
                 "enum": [system.value for system in canonical_em_system_ids()],
             },
-            "candidate_id": {"type": "string"},
-            "exact_quote": {"type": "string"},
+            "source_ref": {"type": "string"},
+            "sentence_ids": {"type": "array", "items": {"type": "string"}},
         },
-        "required": ["system_id", "candidate_id", "exact_quote"],
+        "required": ["system_id", "source_ref", "sentence_ids"],
     }
 
 
@@ -115,10 +115,10 @@ MAIAGENT_TAXONOMY_RESPONSE_SCHEMA: dict[str, Any] = {
             "type": ["object", "null"],
             "additionalProperties": False,
             "properties": {
-                "member_candidate_ids": {"type": "array", "items": {"type": "string"}},
+                "member_source_refs": {"type": "array", "items": {"type": "string"}},
                 "diagnostic": {"type": "string"},
             },
-            "required": ["member_candidate_ids", "diagnostic"],
+            "required": ["member_source_refs", "diagnostic"],
         },
     },
     "required": [

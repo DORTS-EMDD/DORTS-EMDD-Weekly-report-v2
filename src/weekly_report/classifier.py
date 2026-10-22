@@ -8,8 +8,9 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Protocol
 
-from .exact_text import exact_occurrence_offsets
+from .source_refs import cited_spans, source_payload, source_refs
 from .contracts import (
+    ProposalContractViolation,
     SemanticProviderConfigurationFailure,
     SemanticProviderTechnicalFailure,
     CategoryId,
@@ -28,7 +29,7 @@ _CATEGORY_GUIDANCE = (
     "Classify the evidenced principal current action or lifecycle action of this one Event Group.",
     "Choose exactly one canonical Category when one principal action is supported; otherwise return CATEGORY_UNRESOLVED.",
     "Every semantic proposal, whether CATEGORY_ASSIGNED or CATEGORY_UNRESOLVED, must include at least one citation grounded in supplied evidence.",
-    "Each citation must contain a supplied candidate_id and a non-empty exact quote from that candidate's substantive source content. Citations support the proposal as a whole; do not label them support or conflict citations. Never fabricate or rewrite a quote.",
+    "Each source has a source_ref (M1, M2, ...) and sentences with sentence_ids assigned by Python. Each citation names one supplied source_ref and the sentence_ids of that source that support the proposal. Citations support the proposal as a whole; do not label them support or conflict citations. Never copy or retype source text or identifiers into a citation.",
     "TECHNICAL_DEVELOPMENT covers research results, prototypes, pilots, experiments, applied technical tests, technical deployments, and substantive technical development.",
     "INCIDENT covers an actual urban-rail accident, unexpected failure, safety incident, or cybersecurity incident. An actual passenger, staff, or public safety incident in an in-scope urban-rail context remains INCIDENT even when injury is minor or no train, system, evacuation, service, or project impact occurs.",
     "Severity and report value do not determine Category; they belong to downstream Reportability.",
@@ -82,7 +83,8 @@ class CategorySemanticRequest:
     """Bounded, source-preserving input for the Classifier's semantic helper.
 
     Candidate search metadata and canonical-source preference are deliberately
-    absent. Candidate IDs are opaque citation handles, not rank or priority.
+    absent. Sources are presented as Python-assigned references (RC-16); a
+    reference is a citation handle, not rank or priority.
     """
 
     sources: tuple[CategorySourceEvidence, ...]
@@ -95,17 +97,28 @@ class CategorySemanticRequest:
         if ids != tuple(sorted(ids)):
             raise ValueError("Category request sources must be in stable ID order")
 
+    @property
+    def source_refs(self) -> dict[str, str]:
+        return source_refs(tuple(source.candidate_id for source in self.sources))
+
     def as_payload(self) -> dict[str, Any]:
+        ref_of = {candidate_id: ref for ref, candidate_id in self.source_refs.items()}
         return {
-            "contract_reference": "docs/ARCHITECTURE_CONTRACT.md §L",
+            "contract_reference": "docs/ARCHITECTURE_CONTRACT.md §L, §A.10",
             "guidance": list(_CATEGORY_GUIDANCE),
             "source_order_is_authoritative": False,
-            "sources": [source.as_mapping() for source in self.sources],
+            "sources": [
+                {
+                    **source_payload(ref_of[source.candidate_id], source.substantive_content),
+                    "action_facts": dict(source.action_facts),
+                }
+                for source in self.sources
+            ],
             "unresolved_event_claims": [
                 {
                     "claim_key": claim_key,
-                    "candidate_values": [
-                        {"candidate_id": candidate_id, "value": value}
+                    "source_values": [
+                        {"source_ref": ref_of[candidate_id], "value": value}
                         for candidate_id, value in candidate_values
                     ],
                 }
@@ -125,10 +138,10 @@ class CategoryEvidenceSpan:
 
 @dataclass(frozen=True, slots=True)
 class CategoryCitation:
-    """An untrusted exact source quote supplied in a Category proposal."""
+    """An untrusted source reference and sentence IDs from a Category proposal."""
 
-    candidate_id: str
-    quote: str
+    source_ref: str
+    sentence_ids: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,6 +183,18 @@ class InvalidCategorySemanticResponse(ValueError):
         self.provenance = MappingProxyType(dict(provenance or {}))
 
 
+class CategoryProposalViolation(ProposalContractViolation):
+    """A Category proposal the owner cannot validate (RC-16).
+
+    It isolates the EventGroup as a disclosed technical gap; it is never
+    ``CATEGORY_UNRESOLVED``, which is reserved for domain reasons.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.failure_class = "CITATION_INVALID" if "citation" in message else "PROPOSAL_INVALID"
+
+
 @dataclass(frozen=True, slots=True)
 class _ValidatedCategoryResponse:
     category_state: CategoryState
@@ -188,7 +213,7 @@ _RESPONSE_FIELDS = frozenset(
         "citations",
     }
 )
-_CITATION_FIELDS = frozenset({"candidate_id", "quote"})
+_CITATION_FIELDS = frozenset({"source_ref", "sentence_ids"})
 _DOMAIN_UNRESOLVED_REASONS = frozenset(
     {
         CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
@@ -202,26 +227,17 @@ _DOMAIN_UNRESOLVED_REASONS = frozenset(
 
 def _citation_from_value(value: object) -> CategoryCitation:
     if isinstance(value, CategoryCitation):
-        candidate_id, quote = value.candidate_id, value.quote
+        source_ref, sentence_ids = value.source_ref, value.sentence_ids
     else:
         if not isinstance(value, Mapping) or frozenset(value) != _CITATION_FIELDS:
             raise InvalidCategorySemanticResponse("citation fields do not match schema")
-        candidate_id = value["candidate_id"]
-        quote = value["quote"]
-    if not isinstance(candidate_id, str) or not candidate_id:
-        raise InvalidCategorySemanticResponse("citation candidate_id must be a string")
-    if not isinstance(quote, str) or not quote:
-        raise InvalidCategorySemanticResponse("citation quote must be a non-empty string")
-    return CategoryCitation(candidate_id, quote)
-
-
-def _quote_offsets(source: str, quote: str) -> tuple[int, ...]:
-    """Return every exact quote occurrence (EXACT_TEXT_ALL_OCCURRENCES)."""
-
-    offsets = exact_occurrence_offsets(source, quote)
-    if not offsets:
-        raise InvalidCategorySemanticResponse("citation quote does not occur in source content")
-    return offsets
+        source_ref = value["source_ref"]
+        sentence_ids = value["sentence_ids"]
+    if not isinstance(source_ref, str) or not source_ref:
+        raise InvalidCategorySemanticResponse("citation source_ref must be a string")
+    if not isinstance(sentence_ids, (list, tuple)):
+        raise InvalidCategorySemanticResponse("citation sentence_ids must be an array")
+    return CategoryCitation(source_ref, tuple(sentence_ids))
 
 
 def _parse_citations(
@@ -231,17 +247,18 @@ def _parse_citations(
     if not isinstance(value, Sequence) or isinstance(value, (str, bytes, bytearray)):
         raise InvalidCategorySemanticResponse("citations must be an array")
     source_text = {source.candidate_id: source.substantive_content for source in request.sources}
+    refs = request.source_refs
     spans: list[CategoryEvidenceSpan] = []
     for raw_citation in value:
         citation = _citation_from_value(raw_citation)
-        body = source_text.get(citation.candidate_id)
-        if body is None:
-            raise InvalidCategorySemanticResponse("citation references an unknown candidate")
-        for start in _quote_offsets(body, citation.quote):
-            end = start + len(citation.quote)
-            if body[start:end] != citation.quote:
-                raise InvalidCategorySemanticResponse("citation quote does not exactly match source content")
-            span = CategoryEvidenceSpan(citation.candidate_id, start, end)
+        candidate_id = refs.get(citation.source_ref)
+        if candidate_id is None:
+            raise InvalidCategorySemanticResponse("citation references an unknown source")
+        resolved = cited_spans(source_text[candidate_id], citation.sentence_ids)
+        if resolved is None:
+            raise InvalidCategorySemanticResponse("citation sentence_ids do not resolve in the source")
+        for start, end in resolved:
+            span = CategoryEvidenceSpan(candidate_id, start, end)
             if span not in spans:
                 spans.append(span)
     return tuple(spans)
@@ -417,8 +434,9 @@ class Classifier:
     """Sole authoritative owner of Category for an eligible Event Group.
 
     The injected semantic helper proposes a structured interpretation of the
-    supplied source evidence. This class validates the proposal, owns the
-    terminal state, and fails closed to CATEGORY_UNRESOLVED.
+    supplied source evidence. This class validates the proposal and owns the
+    terminal state. A proposal it cannot validate raises
+    :class:`CategoryProposalViolation`, a disclosed technical gap (RC-16).
     """
 
     def __init__(self, semantic_helper: CategorySemanticHelper | None = None) -> None:
@@ -445,15 +463,7 @@ class Classifier:
             # RC-6: never converted into CATEGORY_UNRESOLVED.
             raise
         except InvalidCategorySemanticResponse as exc:
-            return self._unresolved(
-                event_group,
-                CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-                {
-                    "decision_basis": "semantic_helper_invalid_response",
-                    "validation_error": str(exc),
-                    **_provider_provenance(exc.provenance),
-                },
-            )
+            violation = CategoryProposalViolation(str(exc))
         except Exception as exc:
             return self._unresolved(
                 event_group,
@@ -464,6 +474,11 @@ class Classifier:
                     **_provider_provenance(getattr(exc, "provenance", None)),
                 },
             )
+        else:
+            violation = None
+        if violation is not None:
+            # Raised outside the handler: no provider-controlled context.
+            raise violation
 
         helper_provenance: dict[str, str] = {}
         raw_response = helper_result
@@ -474,15 +489,11 @@ class Classifier:
         try:
             response = _validate_response(raw_response, request)
         except InvalidCategorySemanticResponse as exc:
-            return self._unresolved(
-                event_group,
-                CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-                {
-                    "decision_basis": "semantic_helper_invalid_response",
-                    "validation_error": str(exc),
-                    **helper_provenance,
-                },
-            )
+            violation = CategoryProposalViolation(str(exc))
+        else:
+            violation = None
+        if violation is not None:
+            raise violation
 
         provenance = {
             "decision_basis": "constrained_semantic_helper",
@@ -501,11 +512,7 @@ class Classifier:
 
         category_id = response.primary_category_id
         if category_id is None:
-            return self._unresolved(
-                event_group,
-                CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-                {"decision_basis": "semantic_helper_invalid_response"},
-            )
+            raise CategoryProposalViolation("assigned response requires a Category ID")
         return CategoryResult(
             category_state=CategoryState.CATEGORY_ASSIGNED,
             event_id=event_group.event_id,

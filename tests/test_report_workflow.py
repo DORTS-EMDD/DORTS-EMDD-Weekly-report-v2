@@ -144,19 +144,17 @@ class _ReportabilityProvider:
             raise RuntimeError("provider failure")
         state = self.states.get(request.event_id, ReportabilityState.NOT_REPORTABLE)
         if state is ReportabilityState.REPORTABLE:
-            member = request.members[0]
-            quote = member.substantive_content[:4]
             return {
                 "event_id": request.event_id,
                 "proposed_state": state,
-                "examined_candidate_ids": request.member_candidate_ids,
-                "support_citations": [{"candidate_id": member.candidate_id, "exact_quote": quote}],
+                "examined_source_refs": list(request.source_refs),
+                "support_citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
                 "rationale": "authoritative evidence supports the event",
             }
         return {
             "event_id": request.event_id,
             "proposed_state": state,
-            "examined_candidate_ids": request.member_candidate_ids,
+            "examined_source_refs": list(request.source_refs),
             "support_citations": [],
             "rationale": "authoritative evidence does not support reporting value",
         }

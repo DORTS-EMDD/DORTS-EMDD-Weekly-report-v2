@@ -7,6 +7,7 @@ import unittest
 
 from src.weekly_report.classifier import (
     CategoryCitation,
+    CategoryProposalViolation,
     CategorySemanticRequest,
     CategorySemanticResponse,
     CategorySourceEvidence,
@@ -29,6 +30,8 @@ from src.weekly_report.contracts import (
     ScopeState,
     SourceDateKind,
     TemporalDiagnostic,
+    TechnicalGap,
+    TechnicalGapKind,
     TemporalResult,
     UnresolvedClaim,
 )
@@ -103,12 +106,10 @@ def _group(
     )
 
 
-def _span(source, start: int = 0, end: int | None = None) -> dict[str, object]:
-    content = source.substantive_content
-    return {
-        "candidate_id": source.candidate_id,
-        "quote": content[start:len(content) if end is None else end],
-    }
+def _span(request, index: int = 0, sentence_ids: tuple[str, ...] = ("S1",)) -> dict[str, object]:
+    """RC-16 citation of the index-th source by its Python-assigned reference."""
+
+    return {"source_ref": f"M{index + 1}", "sentence_ids": list(sentence_ids)}
 
 
 def _source_for_test(candidate_id: str, body: str) -> CategorySourceEvidence:
@@ -121,7 +122,7 @@ def _assigned_response(request: CategorySemanticRequest, category_id, subtype="p
         "primary_category_id": str(category_id),
         "subtype": subtype,
         "category_resolution_reason": None,
-        "citations": [_span(request.sources[0])],
+        "citations": [_span(request)],
     }
 
 
@@ -191,18 +192,15 @@ class ClassifierTests(unittest.TestCase):
 
     def test_invalid_non_null_assigned_subtype_fails_closed(self):
         record = _record("C1", "The operator formally awarded a contract.")
-        result = Classifier(
+        classifier = Classifier(
             _Helper(
                 lambda request: _assigned_response(
                     request, CategoryId.PROCUREMENT, "Invalid-Subtype"
                 )
             )
-        ).classify(_group((record,)), (record,))
-        self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
-        self.assertEqual(
-            result.category_resolution_reason,
-            CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
         )
+        with self.assertRaises(CategoryProposalViolation):
+            classifier.classify(_group((record,)), (record,))
 
     def test_unresolved_subtype_must_remain_null(self):
         record = _record("C1", "No category-defining action is established.")
@@ -215,17 +213,11 @@ class ClassifierTests(unittest.TestCase):
                 "category_resolution_reason": (
                     CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION.value
                 ),
-                "citations": [_span(request.sources[0])],
+                "citations": [_span(request)],
             }
 
-        result = Classifier(_Helper(unresolved_with_subtype)).classify(
-            _group((record,)), (record,)
-        )
-        self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
-        self.assertEqual(
-            result.category_resolution_reason,
-            CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-        )
+        with self.assertRaises(CategoryProposalViolation):
+            Classifier(_Helper(unresolved_with_subtype)).classify(_group((record,)), (record,))
 
     def test_not_evaluated_is_an_uninvoked_stage_state(self):
         result = CategoryResult.not_evaluated()
@@ -284,7 +276,9 @@ class ClassifierTests(unittest.TestCase):
         self.assertEqual(seen_payloads[0], seen_payloads[1])
         sources = seen_payloads[0]["sources"]
         self.assertEqual(len(sources), 2)
-        self.assertNotEqual(sources[0]["substantive_content"], sources[1]["substantive_content"])
+        self.assertEqual([source["source_ref"] for source in sources], ["M1", "M2"])
+        self.assertNotEqual(sources[0]["sentences"], sources[1]["sentences"])
+        self.assertNotIn("C1", json.dumps(seen_payloads[0]))
 
     def test_irrelevant_event_identity_claim_conflict_does_not_block_category(self):
         first = _record("C1", "An unexpected traction-power failure stopped service.")
@@ -332,7 +326,7 @@ class ClassifierTests(unittest.TestCase):
                 "primary_category_id": None,
                 "subtype": None,
                 "category_resolution_reason": CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS.value,
-                "citations": [_span(request.sources[0]), _span(request.sources[1])],
+                "citations": [_span(request), _span(request, 1)],
             }
 
         result = Classifier(_Helper(response)).classify(
@@ -359,28 +353,20 @@ class ClassifierTests(unittest.TestCase):
             )
             return proposal
 
-        result = Classifier(_Helper(assigned_with_reason)).classify(
-            _group((record,)), (record,)
-        )
-
-        self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
-        self.assertEqual(
-            result.category_resolution_reason,
-            CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-        )
+        with self.assertRaises(CategoryProposalViolation):
+            Classifier(_Helper(assigned_with_reason)).classify(_group((record,)), (record,))
 
     def test_no_unique_principal_action_accepts_one_quote_for_whole_proposal(self):
         record = _record("C1", "The release starts a signalling pilot and passenger service.")
         group = _group((record,))
 
         def response(request):
-            source = request.sources[0]
             return {
                 "category_state": CategoryState.CATEGORY_UNRESOLVED.value,
                 "primary_category_id": None,
                 "subtype": None,
                 "category_resolution_reason": CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION.value,
-                "citations": [_span(source)],
+                "citations": [_span(request)],
             }
 
         result = Classifier(_Helper(response)).classify(group, (record,))
@@ -396,16 +382,25 @@ class ClassifierTests(unittest.TestCase):
         cases = (
             (None, CategoryResolutionReason.SEMANTIC_HELPER_UNAVAILABLE),
             (_Helper(error=RuntimeError("provider unavailable")), CategoryResolutionReason.SEMANTIC_HELPER_FAILURE),
-            (_Helper({"category_state": "CATEGORY_ASSIGNED"}), CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE),
-            (_Helper(lambda request: _assigned_response(request, "UNKNOWN_CATEGORY")), CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE),
         )
         for helper, reason in cases:
             with self.subTest(reason=reason):
-                classifier = Classifier(helper)
-                result = classifier.classify(group, (record,))
+                result = Classifier(helper).classify(group, (record,))
                 self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
                 self.assertEqual(result.category_resolution_reason, reason)
                 self.assertIsNone(result.primary_category_id)
+        # RC-16: an invalid proposal is a disclosed technical gap.
+        for helper in (
+            _Helper({"category_state": "CATEGORY_ASSIGNED"}),
+            _Helper(lambda request: _assigned_response(request, "UNKNOWN_CATEGORY")),
+        ):
+            with self.subTest(helper=helper.response):
+                with self.assertRaises(CategoryProposalViolation) as raised:
+                    Classifier(helper).classify(group, (record,))
+                self.assertEqual(
+                    TechnicalGap.from_failure("Category", group.event_id, raised.exception).kind,
+                    TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION,
+                )
 
     def test_invalid_citations_and_contradictory_responses_fail_closed(self):
         record = _record("C1", "A metro pilot began testing signalling equipment.")
@@ -419,16 +414,18 @@ class ClassifierTests(unittest.TestCase):
 
         def extra_legacy_conflict_field(request):
             response = _assigned_response(request, CategoryId.TECHNICAL_DEVELOPMENT)
-            response["conflict_spans"] = [_span(request.sources[0])]
+            response["conflict_spans"] = [_span(request)]
             return response
 
-        for callback in (legacy_offsets, extra_legacy_conflict_field):
-            result = Classifier(_Helper(callback)).classify(group, (record,))
-            self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
-            self.assertEqual(
-                result.category_resolution_reason,
-                CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-            )
+        def legacy_quote_citation(request):
+            response = _assigned_response(request, CategoryId.TECHNICAL_DEVELOPMENT)
+            response["citations"] = [{"candidate_id": "C1", "quote": "A metro pilot began"}]
+            return response
+
+        for callback in (legacy_offsets, extra_legacy_conflict_field, legacy_quote_citation):
+            with self.subTest(callback=callback.__name__):
+                with self.assertRaises(CategoryProposalViolation):
+                    Classifier(_Helper(callback)).classify(group, (record,))
 
     def test_assigned_and_unresolved_empty_citations_fail_closed(self):
         record = _record("C1", "A metro pilot began testing signalling equipment.")
@@ -450,120 +447,78 @@ class ClassifierTests(unittest.TestCase):
 
         for state in (CategoryState.CATEGORY_ASSIGNED, CategoryState.CATEGORY_UNRESOLVED):
             with self.subTest(state=state):
-                result = Classifier(
-                    _Helper(lambda request, state=state: response(request, state))
-                ).classify(group, (record,))
-                self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
-                self.assertEqual(
-                    result.category_resolution_reason,
-                    CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-                )
+                with self.assertRaises(CategoryProposalViolation):
+                    Classifier(
+                        _Helper(lambda request, state=state: response(request, state))
+                    ).classify(group, (record,))
 
-    def test_exact_quote_resolution_produces_canonical_ascii_and_unicode_spans(self):
+    def test_sentence_citations_resolve_to_canonical_ascii_and_unicode_spans(self):
         cases = (
-            ("C1", "Prefix: the pilot began. Suffix.", "the pilot began."),
-            ("C1", "前文🙂營運正式啟用。後文", "🙂營運正式啟用。"),
+            ("Prefix sentence. The pilot began. Suffix.", "S2", "The pilot began."),
+            ("前文。🙂營運正式啟用。後文。", "S2", "🙂營運正式啟用。"),
         )
-        for candidate_id, body, quote in cases:
-            with self.subTest(quote=quote):
-                record = _record(candidate_id, body)
-                response = _assigned_response(
-                    CategorySemanticRequest(
-                        sources=(
-                            # The owner constructs the real request in classify;
-                            # this temporary value only helps form the proposal below.
-                            _source_for_test(candidate_id, body),
-                        )
-                    ),
-                    CategoryId.OPERATIONAL_CHANGE,
-                )
-                response["citations"] = [{"candidate_id": candidate_id, "quote": quote}]
+        for body, sentence_id, sentence in cases:
+            with self.subTest(sentence=sentence):
+                record = _record("C1", body)
+                response = {
+                    "category_state": CategoryState.CATEGORY_ASSIGNED.value,
+                    "primary_category_id": CategoryId.OPERATIONAL_CHANGE.value,
+                    "subtype": None,
+                    "category_resolution_reason": None,
+                    "citations": [{"source_ref": "M1", "sentence_ids": [sentence_id]}],
+                }
                 result = Classifier(_Helper(response)).classify(_group((record,)), (record,))
-                start = body.index(quote)
+                start = body.index(sentence)
                 self.assertEqual(
                     result.provenance["validated_support_spans"],
-                    [{"candidate_id": candidate_id, "start": start, "end": start + len(quote)}],
+                    [{"candidate_id": "C1", "start": start, "end": start + len(sentence)}],
                 )
                 self.assertNotIn("validated_conflict_spans", result.provenance)
 
-    def test_quote_resolution_fails_closed_without_repair(self):
+    def test_unresolvable_sentence_citations_are_violations(self):
+        record = _record("C1", "The pilot began. It ran for a week.")
+        other = _record("C2", "Another source.")
+        group = _group((record, other))
         cases = (
-            ("zero occurrences", "The exact phrase is absent.", "not present"),
-            ("empty quote", "some source text", ""),
-            ("trim recovery forbidden", "phrase", " phrase "),
-            ("whitespace normalization forbidden", "line one" + chr(10) + "line two", "line one line two"),
-            ("unicode normalization forbidden", "café", "cafe" + chr(0x301)),
-            ("case folding forbidden", "Pilot", "pilot"),
-            ("fuzzy matching forbidden", "pilot begins", "pilot begen"),
+            ("unknown source", [{"source_ref": "M9", "sentence_ids": ["S1"]}]),
+            ("candidate ID instead of reference", [{"source_ref": "C1", "sentence_ids": ["S1"]}]),
+            ("unknown sentence", [{"source_ref": "M1", "sentence_ids": ["S7"]}]),
+            ("repeated sentence", [{"source_ref": "M1", "sentence_ids": ["S1", "S1"]}]),
+            ("empty sentence list", [{"source_ref": "M1", "sentence_ids": []}]),
+            ("sentence of another source", [{"source_ref": "M2", "sentence_ids": ["S2"]}]),
+            ("one bad citation among good ones", [
+                {"source_ref": "M1", "sentence_ids": ["S1"]},
+                {"source_ref": "M1", "sentence_ids": ["S3"]},
+            ]),
         )
-        for label, body, quote in cases:
+        for label, citations in cases:
             with self.subTest(case=label):
-                record = _record("C1", body)
-                proposal = _assigned_response(
-                    CategorySemanticRequest(sources=(_source_for_test("C1", body),)),
-                    CategoryId.PROCUREMENT,
-                )
-                proposal["citations"] = [{"candidate_id": "C1", "quote": quote}]
-                result = Classifier(_Helper(proposal)).classify(_group((record,)), (record,))
-                self.assertEqual(
-                    result.category_resolution_reason,
-                    CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-                )
-                self.assertNotIn("validated_support_spans", result.provenance)
+                proposal = {
+                    "category_state": CategoryState.CATEGORY_ASSIGNED.value,
+                    "primary_category_id": CategoryId.TECHNICAL_DEVELOPMENT.value,
+                    "subtype": None,
+                    "category_resolution_reason": None,
+                    "citations": citations,
+                }
+                with self.assertRaises(CategoryProposalViolation) as raised:
+                    Classifier(_Helper(proposal)).classify(group, (record, other))
+                self.assertEqual(raised.exception.failure_class, "CITATION_INVALID")
 
-    def test_repeated_exact_quote_records_every_occurrence(self):
-        # RC-3 (EXACT_TEXT_ALL_OCCURRENCES): a repeated identical quotation is
-        # valid; Python records every occurrence and selects none.
-        body = "repeat here; repeat here"
+    def test_each_cited_sentence_becomes_one_span(self):
+        body = "First sentence here. Second sentence here."
         record = _record("C1", body)
-        proposal = _assigned_response(
-            CategorySemanticRequest(sources=(_source_for_test("C1", body),)),
-            CategoryId.PROCUREMENT,
-        )
-        proposal["citations"] = [{"candidate_id": "C1", "quote": "repeat here"}]
-        result = Classifier(_Helper(proposal)).classify(_group((record,)), (record,))
-
-        self.assertEqual(result.category_state, CategoryState.CATEGORY_ASSIGNED)
-        spans = result.provenance["validated_support_spans"]
-        self.assertEqual([(span["start"], span["end"]) for span in spans], [(0, 11), (13, 24)])
-
-    def test_every_citation_must_resolve_and_candidate_membership_is_exact(self):
-        record = _record("C1", "The pilot began on the corridor.")
-        other = _record("C2", "The pilot began on the corridor.")
-        group = _group((record,))
-        cases = (
-            [{"candidate_id": "missing", "quote": "The pilot began"}],
-            [
-                {"candidate_id": "C1", "quote": "The pilot began"},
-                {"candidate_id": "C1", "quote": "not present"},
-            ],
-        )
-        for citations in cases:
-            with self.subTest(citations=citations):
-                proposal = _assigned_response(
-                    CategorySemanticRequest(sources=(_source_for_test("C1", record.evidence.substantive_content),)),
-                    CategoryId.TECHNICAL_DEVELOPMENT,
-                )
-                proposal["citations"] = citations
-                result = Classifier(_Helper(proposal)).classify(group, (record,))
-                self.assertEqual(
-                    result.category_resolution_reason,
-                    CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-                )
-                self.assertNotIn("validated_support_spans", result.provenance)
-        # The same text in a different candidate does not make C1's citation ambiguous.
-        multi_group = _group((record, other))
         proposal = {
             "category_state": CategoryState.CATEGORY_ASSIGNED.value,
-            "primary_category_id": CategoryId.TECHNICAL_DEVELOPMENT.value,
+            "primary_category_id": CategoryId.PROCUREMENT.value,
             "subtype": None,
             "category_resolution_reason": None,
-            "citations": [{"candidate_id": "C1", "quote": "The pilot began"}],
+            "citations": [{"source_ref": "M1", "sentence_ids": ["S2", "S1"]}],
         }
-        accepted = Classifier(_Helper(proposal)).classify(multi_group, (record, other))
-        self.assertEqual(accepted.category_state, CategoryState.CATEGORY_ASSIGNED)
+        result = Classifier(_Helper(proposal)).classify(_group((record,)), (record,))
+        spans = result.provenance["validated_support_spans"]
+        self.assertEqual([(span["start"], span["end"]) for span in spans], [(0, 20), (21, 42)])
 
-    def test_v4_rejects_legacy_v3_shape_and_accepts_one_quote_for_each_unresolved_reason(self):
+    def test_v5_rejects_legacy_shapes_and_accepts_one_citation_for_each_unresolved_reason(self):
         record = _record("C1", "The source provides this substantive evidence.")
         group = _group((record,))
         legacy = {
@@ -574,11 +529,8 @@ class ClassifierTests(unittest.TestCase):
             "support_spans": [{"candidate_id": "C1", "start": 0, "end": 4}],
             "conflict_spans": [],
         }
-        rejected = Classifier(_Helper(legacy)).classify(group, (record,))
-        self.assertEqual(
-            rejected.category_resolution_reason,
-            CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-        )
+        with self.assertRaises(CategoryProposalViolation):
+            Classifier(_Helper(legacy)).classify(group, (record,))
 
         for reason in (
             CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
@@ -592,7 +544,7 @@ class ClassifierTests(unittest.TestCase):
                 "primary_category_id": None,
                 "subtype": None,
                 "category_resolution_reason": reason.value,
-                "citations": [{"candidate_id": "C1", "quote": record.evidence.substantive_content}],
+                "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
             }
             result = Classifier(_Helper(proposal)).classify(group, (record,))
             self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
@@ -606,7 +558,7 @@ class ClassifierTests(unittest.TestCase):
             primary_category_id=CategoryId.PROCUREMENT,
             subtype=None,
             category_resolution_reason=None,
-            citations=(CategoryCitation("C1", "awarded a contract"),),
+            citations=(CategoryCitation("M1", ("S1",)),),
         )
         result = Classifier(_Helper(typed)).classify(_group((record,)), (record,))
         self.assertEqual(result.category_state, CategoryState.CATEGORY_ASSIGNED)

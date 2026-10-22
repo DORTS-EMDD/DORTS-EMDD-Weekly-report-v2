@@ -12,46 +12,19 @@ from src.weekly_report.contracts import CategoryState
 
 
 class _AssignedProcurementStub:
-    def __init__(self, *, cite_inside_ascii_word: bool = False):
+    def __init__(self):
         self.call_count = 0
         self.payloads: list[dict] = []
-        self.cite_inside_ascii_word = cite_inside_ascii_word
 
     def __call__(self, request):
         self.call_count += 1
         self.payloads.append(request.as_payload())
-        source = request.sources[0]
-        content = source.substantive_content
-        start, end = 0, len(content)
-        if self.cite_inside_ascii_word:
-            found = False
-            for candidate_start in range(1, len(content) - 1):
-                if not all(
-                    character.isascii() and character.isalnum()
-                    for character in (content[candidate_start - 1], content[candidate_start])
-                ):
-                    continue
-                for candidate_end in range(len(content) - 1, candidate_start, -1):
-                    if not all(
-                        character.isascii() and character.isalnum()
-                        for character in (content[candidate_end - 1], content[candidate_end])
-                    ):
-                        continue
-                    candidate_quote = content[candidate_start:candidate_end]
-                    first = content.find(candidate_quote)
-                    if first == candidate_start and content.find(candidate_quote, first + 1) < 0:
-                        start, end = candidate_start, candidate_end
-                        found = True
-                        break
-                if found:
-                    break
-        quote = content[start:end]
         return {
             "category_state": CategoryState.CATEGORY_ASSIGNED.value,
             "primary_category_id": "PROCUREMENT",
             "subtype": None,
             "category_resolution_reason": None,
-            "citations": [{"candidate_id": source.candidate_id, "quote": quote}],
+            "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
         }
 
 
@@ -129,7 +102,7 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
             self.assertNotIn(spec["filename"], spec["request_payload"])
 
     def test_offline_stub_uses_one_classifier_proposal_per_group_and_ignores_subtype(self):
-        provider = _AssignedProcurementStub(cite_inside_ascii_word=True)
+        provider = _AssignedProcurementStub()
 
         report = evaluation.run_evaluation(provider=provider)
 
@@ -158,8 +131,11 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
             self.assertTrue(row["matches_golden"])
             self.assertIsNone(row["actual"]["subtype"])
             self.assertEqual(row["semantic_citation_review"], "HUMAN_REVIEW_REQUIRED")
-            self.assertTrue(row["semantic_citation_concerns"])
-            self.assertEqual(row["citations"][0]["quote"], row["citations"][0]["resolved_substring"])
+            # RC-16: sentence citations cannot cut inside a word.
+            self.assertFalse(row["semantic_citation_concerns"])
+            self.assertEqual(row["citations"][0]["source_ref"], "M1")
+            self.assertEqual(row["citations"][0]["sentence_ids"], ["S1"])
+            self.assertTrue(row["citations"][0]["resolved_substring"])
             self.assertIsInstance(row["citations"][0]["resolved_start"], int)
             self.assertIsInstance(row["citations"][0]["resolved_end"], int)
             self.assertEqual(row["earliest_failure_type"], None)

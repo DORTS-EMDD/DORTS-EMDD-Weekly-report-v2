@@ -141,10 +141,11 @@ def _proposal(
     citations: tuple[ReportabilitySemanticCitation, ...] = (),
     rationale: str = "The supplied evidence supports the proposed outcome.",
 ) -> ReportabilitySemanticProposal:
+    refs = tuple(f"M{index}" for index in range(1, len(group.member_candidate_ids) + 1))
     return ReportabilitySemanticProposal(
         event_id=group.event_id,
         proposed_state=state,
-        examined_candidate_ids=examined or group.member_candidate_ids,
+        examined_source_refs=examined or refs,
         support_citations=citations,
         rationale=rationale,
     )
@@ -167,17 +168,17 @@ class ReportabilityOwnerTests(TestCase):
     def test_valid_reportable_single_member_resolves_exact_span(self):
         group = _group("C1")
         body = "The operator completed a substantive engineering pilot."
-        provider = _Provider(_proposal(group, citations=(_citation("C1", "engineering pilot"),)))
+        provider = _Provider(_proposal(group, citations=(_citation("M1"),)))
 
         result = Reportability(provider).evaluate(_decision(group, {"C1": body}))
 
         self.assertEqual(result.reportability_state, ReportabilityState.REPORTABLE)
         self.assertIsNone(result.reportability_reason)
+        # RC-16: the reference maps back to C1 and the span is the cited sentence.
         self.assertEqual(result.provenance.support_spans[0].candidate_id, "C1")
-        self.assertEqual(result.provenance.support_spans[0].start, body.index("engineering pilot"))
         self.assertEqual(
             body[result.provenance.support_spans[0].start : result.provenance.support_spans[0].end],
-            "engineering pilot",
+            body,
         )
 
     def test_valid_reportable_multi_member_preserves_complete_canonical_population(self):
@@ -187,8 +188,8 @@ class ReportabilityOwnerTests(TestCase):
             _proposal(
                 group,
                 citations=(
-                    _citation("C1", "completed a pilot"),
-                    _citation("C2", "completed a deployment"),
+                    _citation("M1"),
+                    _citation("M2"),
                 ),
             )
         )
@@ -224,13 +225,13 @@ class ReportabilityOwnerTests(TestCase):
             {
                 "event_id": "E1",
                 "members": [
-                    {"candidate_id": "C1", "substantive_content": "unchanged C1 content"},
-                    {"candidate_id": "C2", "substantive_content": "unchanged C2 content"},
+                    {"source_ref": "M1", "sentences": [{"sentence_id": "S1", "text": "unchanged C1 content"}]},
+                    {"source_ref": "M2", "sentences": [{"sentence_id": "S1", "text": "unchanged C2 content"}]},
                 ],
             },
         )
         self.assertEqual(set(request.as_payload()), {"event_id", "members"})
-        self.assertEqual(set(request.as_payload()["members"][0]), {"candidate_id", "substantive_content"})
+        self.assertEqual(set(request.as_payload()["members"][0]), {"source_ref", "sentences"})
 
     def test_unreachable_category_and_taxonomy_fail_before_provider(self):
         group = _group("C1")
@@ -255,7 +256,7 @@ class ReportabilityOwnerTests(TestCase):
     def test_empty_taxonomy_is_allowed_and_nonempty_taxonomy_does_not_approve(self):
         empty_group = _group("C1", event_id="EMPTY")
         empty_provider = _Provider(
-            _proposal(empty_group, citations=(_citation("C1", "engineering"),))
+            _proposal(empty_group, citations=(_citation("M1"),))
         )
         empty_result = Reportability(empty_provider).evaluate(
             _decision(empty_group, {"C1": "engineering work"}, systems=())
@@ -279,12 +280,13 @@ class ReportabilityOwnerTests(TestCase):
         group = _group("C1", "C2")
         decision = _decision(group, {"C1": "one", "C2": "two"})
         cases = (
-            _proposal(group, examined=("C1",), state=ReportabilityState.NOT_REPORTABLE),
-            _proposal(group, examined=("C1", "C2", "C3"), state=ReportabilityState.NOT_REPORTABLE),
+            _proposal(group, examined=("M1",), state=ReportabilityState.NOT_REPORTABLE),
+            _proposal(group, examined=("M1", "M2", "M3"), state=ReportabilityState.NOT_REPORTABLE),
+            _proposal(group, examined=("C1", "C2"), state=ReportabilityState.NOT_REPORTABLE),
             {
                 "event_id": group.event_id,
                 "proposed_state": ReportabilityState.NOT_REPORTABLE,
-                "examined_candidate_ids": ("C1", "C1"),
+                "examined_source_refs": ("M1", "M1"),
                 "support_citations": (),
                 "rationale": "The evidence does not establish an accepted path.",
             },
@@ -292,9 +294,9 @@ class ReportabilityOwnerTests(TestCase):
         for proposal in cases:
             provider = _Provider(proposal)
             examined = (
-                proposal.examined_candidate_ids
+                proposal.examined_source_refs
                 if isinstance(proposal, ReportabilitySemanticProposal)
-                else proposal["examined_candidate_ids"]
+                else proposal["examined_source_refs"]
             )
             with self.subTest(examined=examined):
                 with self.assertRaises(ReportabilityStageFailure):
@@ -304,7 +306,7 @@ class ReportabilityOwnerTests(TestCase):
         mismatched = ReportabilitySemanticProposal(
             event_id="OTHER",
             proposed_state=ReportabilityState.NOT_REPORTABLE,
-            examined_candidate_ids=group.member_candidate_ids,
+            examined_source_refs=("M1", "M2"),
             support_citations=(),
             rationale="The evidence does not establish an accepted path.",
         )
@@ -312,41 +314,46 @@ class ReportabilityOwnerTests(TestCase):
             Reportability(_Provider(mismatched)).evaluate(decision)
         self.assertEqual(raised.exception.event_id, group.event_id)
 
-    def test_unknown_candidate_citation_fails(self):
+    def test_unknown_source_citation_fails(self):
         group = _group("C1")
-        proposal = _proposal(group, citations=(_citation("C2", "content"),))
+        proposal = _proposal(group, citations=(_citation("M2"),))
         with self.assertRaises(ReportabilityStageFailure):
             Reportability(_Provider(proposal)).evaluate(_decision(group, {"C1": "content"}))
 
-    def test_exact_quote_absent_fails(self):
+    def test_unresolvable_sentence_ids_fail(self):
         group = _group("C1")
-        provider = _Provider(_proposal(group, citations=(_citation("C1", "missing"),)))
-        with self.assertRaises(ReportabilityStageFailure):
-            Reportability(provider).evaluate(_decision(group, {"C1": "source content"}))
+        for citation in (
+            _citation("M1", "S9"),
+            _citation("M1", "S1", "S1"),
+            ReportabilitySemanticCitation("M1", ()),
+            _citation("C1"),
+        ):
+            with self.subTest(citation=citation):
+                provider = _Provider(_proposal(group, citations=(citation,)))
+                with self.assertRaises(ReportabilityStageFailure):
+                    Reportability(provider).evaluate(_decision(group, {"C1": "source content"}))
 
-    def test_repeated_exact_quote_records_every_occurrence(self):
-        # RC-3 (EXACT_TEXT_ALL_OCCURRENCES): no occurrence is selected.
+    def test_each_cited_sentence_records_one_span(self):
         group = _group("C1")
-        provider = _Provider(_proposal(group, citations=(_citation("C1", "repeat"),)))
-        result = Reportability(provider).evaluate(_decision(group, {"C1": "repeat repeat"}))
+        provider = _Provider(_proposal(group, citations=(_citation("M1", "S2", "S1"),)))
+        result = Reportability(provider).evaluate(_decision(group, {"C1": "First one. Second one."}))
         self.assertEqual(
             [(span.start, span.end) for span in result.provenance.support_spans],
-            [(0, 6), (7, 13)],
+            [(0, 10), (11, 22)],
         )
 
-    def test_exact_quote_resolution_does_not_normalize_or_cross_search(self):
+    def test_sentence_ids_resolve_only_within_the_named_source(self):
         group = _group("C1", "C2")
-        bodies = {"C1": "Exact source text", "C2": "Other source text"}
-        provider = _Provider(_proposal(group, citations=(_citation("C1", "Exact source text"),)))
+        bodies = {"C1": "Exact source text", "C2": "Other source text. Second sentence."}
+        provider = _Provider(_proposal(group, citations=(_citation("M1"),)))
         result = Reportability(provider).evaluate(_decision(group, bodies))
         span = result.provenance.support_spans[0]
+        self.assertEqual(span.candidate_id, "C1")
         self.assertEqual(bodies[span.candidate_id][span.start : span.end], "Exact source text")
 
-        whitespace_provider = _Provider(
-            _proposal(group, citations=(_citation("C1", "Exact  source text"),))
-        )
+        cross_source = _Provider(_proposal(group, citations=(_citation("M1", "S2"),)))
         with self.assertRaises(ReportabilityStageFailure):
-            Reportability(whitespace_provider).evaluate(_decision(group, bodies))
+            Reportability(cross_source).evaluate(_decision(group, bodies))
 
     def test_malformed_proposal_and_provider_exception_are_sanitized_without_retry(self):
         group = _group("C1")
@@ -417,20 +424,20 @@ class ReportabilityOwnerTests(TestCase):
         valid_fields = {
             "event_id": group.event_id,
             "proposed_state": ReportabilityState.NOT_REPORTABLE,
-            "examined_candidate_ids": ("C1",),
+            "examined_source_refs": ("M1",),
             "support_citations": (),
             "rationale": "The supplied evidence does not establish an accepted path.",
         }
         citation_fields = {
             "event_id": group.event_id,
             "proposed_state": ReportabilityState.REPORTABLE,
-            "examined_candidate_ids": ("C1",),
+            "examined_source_refs": ("M1",),
             "support_citations": [_CitationIterationFailure()],
             "rationale": "The supplied evidence supports the proposed outcome.",
         }
         citation_access_fields = {
             **citation_fields,
-            "support_citations": [_CitationFieldAccessFailure(candidate_id="C1", exact_quote="content")],
+            "support_citations": [_CitationFieldAccessFailure(source_ref="M1", sentence_ids=["S1"])],
         }
         equality_failure_fields = {**valid_fields, "event_id": _EqualityFailure(group.event_id)}
         typed = _TypedAttributeFailure(**valid_fields)
@@ -461,12 +468,12 @@ class ReportabilityOwnerTests(TestCase):
                     self.assertEqual(result.reportability_state, ReportabilityState.NOT_REPORTABLE)
                 self.assertEqual(len(provider.calls), 1)
 
-    def test_scalar_examined_candidate_ids_are_rejected_before_population_comparison(self):
+    def test_scalar_examined_source_refs_are_rejected_before_population_comparison(self):
         group = _group("1", "C")
         response = {
             "event_id": group.event_id,
             "proposed_state": ReportabilityState.NOT_REPORTABLE,
-            "examined_candidate_ids": "C1",
+            "examined_source_refs": "M1",
             "support_citations": (),
             "rationale": "The supplied evidence does not establish an accepted path.",
         }
@@ -484,7 +491,7 @@ class ReportabilityOwnerTests(TestCase):
         response = {
             "event_id": group.event_id,
             "proposed_state": ReportabilityState.NOT_REPORTABLE,
-            "examined_candidate_ids": ("C1",),
+            "examined_source_refs": ("M1",),
             "support_citations": "not-an-array",
             "rationale": "The supplied evidence does not establish an accepted path.",
         }
@@ -512,11 +519,11 @@ class ReportabilityOwnerTests(TestCase):
         mapping = {
             "event_id": _HashBomb(group.event_id),
             "proposed_state": ReportabilityState.REPORTABLE,
-            "examined_candidate_ids": ("C1",),
+            "examined_source_refs": ("M1",),
             "support_citations": [
                 {
-                    "candidate_id": _HashBomb("C1"),
-                    "exact_quote": _HashBomb("engineering content"),
+                    "source_ref": _HashBomb("M1"),
+                    "sentence_ids": [_HashBomb("S1")],
                 }
             ],
             "rationale": _HashBomb("The supplied evidence supports the proposed outcome."),
@@ -531,11 +538,11 @@ class ReportabilityOwnerTests(TestCase):
         typed = ReportabilitySemanticProposal(
             event_id=_HashBomb(group.event_id),
             proposed_state=ReportabilityState.REPORTABLE,
-            examined_candidate_ids=("C1",),
+            examined_source_refs=("M1",),
             support_citations=(
                 ReportabilitySemanticCitation(
-                    candidate_id=_HashBomb("C1"),
-                    exact_quote=_HashBomb("engineering content"),
+                    source_ref=_HashBomb("M1"),
+                    sentence_ids=(_HashBomb("S1"),),
                 ),
             ),
             rationale=_HashBomb("The supplied evidence supports the proposed outcome."),
@@ -551,7 +558,7 @@ class ReportabilityOwnerTests(TestCase):
         decision = _decision(group, {"C1": "engineering content"})
         category_before = decision.category_result
         taxonomy_before = decision.taxonomy_result
-        provider = _Provider(_proposal(group, citations=(_citation("C1", "engineering content"),)))
+        provider = _Provider(_proposal(group, citations=(_citation("M1"),)))
 
         result = Reportability(provider).evaluate(decision)
 
@@ -569,8 +576,8 @@ class ReportabilityOwnerTests(TestCase):
         self.assertEqual(len(provider.calls), 0)
 
 
-def _citation(candidate_id: str, exact_quote: str) -> ReportabilitySemanticCitation:
-    return ReportabilitySemanticCitation(candidate_id, exact_quote)
+def _citation(source_ref: str, *sentence_ids: str) -> ReportabilitySemanticCitation:
+    return ReportabilitySemanticCitation(source_ref, sentence_ids or ("S1",))
 
 
 if __name__ == "__main__":

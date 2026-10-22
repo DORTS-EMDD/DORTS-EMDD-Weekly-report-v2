@@ -29,8 +29,8 @@ from .maiagent_transport import (
 
 
 TASK_IDENTITY = "reportability_semantic_proposal"
-PROMPT_VERSION = "reportability-principal-body-v2"
-SCHEMA_VERSION = "reportability-semantic-proposal-v1"
+PROMPT_VERSION = "reportability-principal-body-v3"
+SCHEMA_VERSION = "reportability-semantic-proposal-v2"
 HELPER_VERSION = "maiagent-structured-helper-reportability-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-reportability"
 
@@ -43,17 +43,16 @@ MAIAGENT_REPORTABILITY_PROVIDER_IDENTIFIER = PROVIDER_IDENTIFIER
 
 REPORTABILITY_INSTRUCTIONS = (
     "You are a stateless proposal-only semantic helper for the Python Reportability owner.",
-    "Use only the supplied authoritative substantive_content in the current request.",
+    "Use only the supplied member sentences in the current request. Each member has a source_ref (M1, M2, ...) and each sentence a sentence_id, both assigned by Python.",
     "Inspect every supplied member exactly once before proposing a state.",
     "Return exactly REPORTABLE or NOT_REPORTABLE.",
     "The audience is the electrical and mechanical engineering department of an urban rail authority reading an international urban rail technology weekly. REPORTABLE requires that the supplied evidence positively supports at least one accepted value path for the urban rail system itself.",
     "Accepted value paths: substantive technical research, testing, pilots or deployments; concrete system renewal, integration or engineering intervention; a consequential incident concerning the rail system's own safety, equipment, infrastructure or operations, or its corrective investigation; a concrete service, fare, operating-practice, safety-governance or policy change; substantive operational controversy; substantive normative action or formal guidance; procurement, demonstration or trial activity with concrete engineering, system, test, update or operational significance; opening or construction of a line, extension or station.",
     "Incidents qualify when they involve the rail system itself, such as a derailment, collision, fire, power, signal, door or vehicle failure, track intrusion, evacuation, structural damage or a substantial service suspension, or when the operator or authority takes a safety, investigation or corrective measure. An ordinary crime, assault, medical or personal incident that merely happened on a station, platform or train, whose only rail consequence is a brief local service adjustment, is NOT_REPORTABLE unless the source reports a rail safety measure, a rail safety investigation or a lasting operational change.",
     "Ordinary administrative, corporate, financial, promotional, ceremonial, personnel or workflow-only news is NOT_REPORTABLE when the evidence does not establish an accepted path. No path requires novelty, a non-empty E&M taxonomy, a severity threshold or a monetary threshold. Relevance to Taipei alone never makes an event REPORTABLE.",
-    "examined_candidate_ids must cover every supplied member exactly once.",
-    "REPORTABLE requires at least one exact positive source quote.",
-    "Each support citation must name a supplied candidate_id.",
-    "Copy every exact_quote unchanged from that candidate's supplied substantive_content.",
+    "examined_source_refs must list every supplied source_ref exactly once.",
+    "REPORTABLE requires at least one positive support citation.",
+    "Each support citation names a supplied source_ref and the sentence_ids of that member that support the value path; never copy or retype source text or identifiers.",
     "NOT_REPORTABLE must not fabricate negative evidence or citations.",
     "Do not return numeric offsets, start, end, support_spans, scores, or rankings.",
     "Do not search, browse, use tools, RAG, or outside knowledge.",
@@ -73,7 +72,7 @@ MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA: dict[str, Any] = {
             "type": "string",
             "enum": ["REPORTABLE", "NOT_REPORTABLE"],
         },
-        "examined_candidate_ids": {
+        "examined_source_refs": {
             "type": "array",
             "items": {"type": "string"},
         },
@@ -83,10 +82,10 @@ MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA: dict[str, Any] = {
                 "type": "object",
                 "additionalProperties": False,
                 "properties": {
-                    "candidate_id": {"type": "string"},
-                    "exact_quote": {"type": "string"},
+                    "source_ref": {"type": "string"},
+                    "sentence_ids": {"type": "array", "items": {"type": "string"}},
                 },
-                "required": ["candidate_id", "exact_quote"],
+                "required": ["source_ref", "sentence_ids"],
             },
         },
         "rationale": {"type": "string"},
@@ -94,7 +93,7 @@ MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA: dict[str, Any] = {
     "required": [
         "event_id",
         "proposed_state",
-        "examined_candidate_ids",
+        "examined_source_refs",
         "support_citations",
         "rationale",
     ],

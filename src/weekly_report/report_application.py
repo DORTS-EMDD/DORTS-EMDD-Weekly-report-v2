@@ -16,6 +16,7 @@ from .contracts import (
     CandidateNormalizationResult,
     CategoryResult,
     CategoryState,
+    EVENT_TECHNICAL_FAILURES,
     EvidenceResult,
     EvidenceState,
     EventGroup,
@@ -1027,7 +1028,7 @@ class ReportApplication:
             for event_group, member_records in projections:
                 try:
                     result = self._classifier.classify(event_group, member_records)
-                except SemanticProviderTechnicalFailure as failure:
+                except EVENT_TECHNICAL_FAILURES as failure:
                     if technical_gaps is None:
                         raise
                     technical_gaps.append(TechnicalGap.from_failure("Category", event_group.event_id, failure))

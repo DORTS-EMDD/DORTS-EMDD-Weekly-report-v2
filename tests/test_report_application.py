@@ -2293,6 +2293,37 @@ class TechnicalGapIsolationTests(TestCase):
         self.assertTrue(all(scope.state is ScopeState.IN_SCOPE for scope in result.scope_results))
         self.assertEqual(result.final_report.disclosure.technical_gap_count, 1)
 
+    def test_category_proposal_violation_is_a_disclosed_event_gap(self):
+        # RC-16: an invalid Category proposal isolates only that event as a
+        # disclosed technical gap; it is never CATEGORY_UNRESOLVED.
+        from src.weekly_report.classifier import CategoryProposalViolation
+
+        def first_violates(event_group, records, call):
+            if call == 1:
+                raise CategoryProposalViolation("citation references an unknown source")
+            return _assigned_category(event_group)
+
+        result = self._app(
+            TwoFormalResultProvider(),
+            evidence_service=FormalEvidenceService(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(default_date=date(2026, 9, 18)),
+            event_identity=RecordingEventIdentity(),
+            classifier=RecordingClassifier(result_factory=first_violates),
+            report_workflow=RecordingDownstreamWorkflow(reportable=True),
+            ordering=RecordingOrdering(),
+            report_service=ReportService(),
+            writer=ReportWriter(provider=lambda request: _block(request["writer_request"]["event_id"])),
+            validator=Validator(semantic_provider=_semantic_provider),
+        ).run("selected")
+        self.assertEqual(
+            [(gap.stage, gap.kind, gap.failure_class) for gap in result.technical_gaps],
+            [("Category", TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION, "CITATION_INVALID")],
+        )
+        self.assertEqual(len(result.category_results), 1)
+        self.assertEqual(result.final_report.event_count, 1)
+        self.assertEqual(result.final_report.disclosure.technical_gap_count, 1)
+
     def test_event_identity_grouping_gap_keeps_events_and_discloses_duplicates(self):
         # RC-15: a failed grouping proposal leaves records unmerged, never excluded.
         def failing_advisor(_request):
