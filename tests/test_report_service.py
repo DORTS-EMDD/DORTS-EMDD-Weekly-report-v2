@@ -193,6 +193,30 @@ class ReportServiceTests(TestCase):
         self.assertEqual(artifact.events[0].source_url, metadata[0].source_url)
         self.assertEqual(artifact.events[0].category, metadata[0].category)
 
+    def test_interleaved_categories_assemble_section_by_section(self) -> None:
+        # Ordering interleaves categories in a real week (date first); the
+        # artifact groups them into sections and keeps each section's
+        # Ordering subsequence.
+        from src.weekly_report.validator import ValidatedReportEvent, ValidationResult
+
+        base = self.service.project_formal_metadata((_workflow_result(),))[0]
+        categories = ("採購", "營運", "採購", "營運")
+        passed = []
+        for index, category in enumerate(categories, start=1):
+            event_id = f"E{index}"
+            result = _workflow_result(event_id)
+            metadata = replace(base, event_id=event_id, category=category)
+            block = WriterReportBlock(event_id, f"標題{index}", "事件摘要 Taiwan Metro", "可供臺北捷運評估規劃方向")
+            passed.append(ValidatedReportEvent(result, metadata, block))
+        validation = ValidationResult(
+            tuple(item.result for item in passed),
+            tuple(item.metadata for item in passed),
+            tuple(passed),
+        )
+        artifact = self.service.assemble_final_report(validation)
+        self.assertEqual([section.category for section in artifact.sections], ["採購", "營運"])
+        self.assertEqual([event.event_id for event in artifact.events], ["E1", "E3", "E2", "E4"])
+
     def test_zero_pass_assembles_official_no_event_artifact(self) -> None:
         result = _workflow_result()
         metadata = self.service.project_formal_metadata((result,))

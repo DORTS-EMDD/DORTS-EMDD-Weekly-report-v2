@@ -477,10 +477,9 @@ class ReportService:
                 )
             )
 
-        events = tuple(assembled)
         sections_by_category: dict[str, list[FinalReportBlock]] = {}
         category_order: list[str] = []
-        for event in events:
+        for event in assembled:
             if event.category not in sections_by_category:
                 sections_by_category[event.category] = []
                 category_order.append(event.category)
@@ -489,6 +488,11 @@ class ReportService:
             FinalReportSection(category, tuple(sections_by_category[category]))
             for category in category_order
         )
+        # The report presents events section by section; each section keeps
+        # the stable Ordering subsequence (contract section R), so the
+        # artifact's event order is the sectioned order, not the raw
+        # Ordering order whenever categories interleave.
+        events = tuple(event for section in sections for event in section.events)
         disclosure = disclosure if disclosure is not None else ReportDisclosure()
         if not isinstance(disclosure, ReportDisclosure):
             raise TypeError("ReportService disclosure must be a ReportDisclosure")
