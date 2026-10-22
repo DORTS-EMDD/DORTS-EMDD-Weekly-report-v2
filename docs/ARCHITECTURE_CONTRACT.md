@@ -333,7 +333,8 @@ calls.
   invalidates that group). A group is invalid when a member citation does not resolve. A group
   with fewer than two members proposes no merge and is only recorded as a
   diagnostic. A valid group contributes SAME_EVENT relations
-  between its members, as the former pairwise advisor's SAME_EVENT did; the
+  between its members (RC-22 and RC-23, sections A.16 and A.17: pairs across
+  established regions are dropped and each remaining pair must be confirmed), as the former pairwise advisor's SAME_EVENT did; the
   existing complete-link grouping then forms the Events, and canonical-member
   and Event ID rules are unchanged.
   Pairs not proposed together stay UNCERTAIN (not merged). The helper never
@@ -568,6 +569,36 @@ report assembly as `CONFLICTING_COUNTRY` (RC-5) and every member was lost.
 
 ```text
 EVENT_IDENTITY_REGION_CHECK = PAIR_LEVEL (established regions only)
+```
+
+### A.17 RC-23 Confirmation of each proposed group (2026-10-22, user-approved)
+
+At the scale of one week (72 records in one request) the batch proposal
+grouped occurrences of the same kind rather than the same occurrence: 4 of 15
+proposed groups were wrong (for example an Oslo tram-taxi collision with an
+assault on a Zaragoza tram driver; a Daejeon tram delay with a Gwangju council
+session). RC-22 catches only pairs in different established regions. The user
+chose a confirmation call per proposed group.
+
+* After the batch proposal is validated (RC-21, RC-22), EventIdentity runs the
+  same `event_identity_semantic_proposal` task once more for each proposed
+  group that still has a pair: one request whose records are only that
+  group's members (renumbered R1, R2, …, the same Scope-focus excerpts and
+  identity-only facts), with the same instructions, schema and validator. Its
+  `batch_id` is `<batch>:group-<n>:confirmation`.
+* A pair is SAME_EVENT only when the batch proposed it, it passed the RC-22
+  region check and the confirmation proposes it again. The confirmation can
+  only remove pairs; it never adds one. An unconfirmed pair stays apart with a
+  `PROPOSAL_NOT_CONFIRMED` diagnostic.
+* A confirmation that fails after the shared retry (RC-6) or whose response is
+  invalid confirms nothing and is a disclosed `EventIdentity` TechnicalGap; an
+  invalid group inside it is a gap for that group only. HTTP 401/403/404 still
+  stops the run.
+* Cost: one call per proposed group with a pair (about 15 a week).
+
+```text
+EVENT_IDENTITY_CONFIRMATION = PER_PROPOSED_GROUP (same task, schema, prompt)
+EVENT_IDENTITY_SAME_EVENT = BATCH_PROPOSED AND REGION_COMPATIBLE AND CONFIRMED
 ```
 
 ## B. Authoritative Owners

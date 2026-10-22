@@ -276,6 +276,8 @@ class EventIdentity:
                     continue
                 if len(outcome) == 1:
                     diagnostics.append(EventIdentityDiagnostic(outcome, "SINGLE_MEMBER_PROPOSAL"))
+                    continue
+                pairs = []
                 for position, left_id in enumerate(outcome):
                     for right_id in outcome[position + 1 :]:
                         if _different_established_regions(by_id[left_id], by_id[right_id]):
@@ -286,11 +288,55 @@ class EventIdentity:
                                 )
                             )
                             continue
-                        relations[_pair_key(left_id, right_id)] = (
-                            EventIdentityRelation.SAME_EVENT,
-                            "SEMANTIC_GROUP_PROPOSAL",
-                        )
+                        pairs.append(_pair_key(left_id, right_id))
+                if not pairs:
+                    continue
+                confirmed = self._confirmed_pairs(
+                    [by_id[candidate_id] for candidate_id in outcome],
+                    f"{request.batch_id}:group-{index}:confirmation",
+                    technical_gaps,
+                )
+                for pair in pairs:
+                    if pair not in confirmed:
+                        diagnostics.append(EventIdentityDiagnostic(pair, "PROPOSAL_NOT_CONFIRMED"))
+                        continue
+                    relations[pair] = (EventIdentityRelation.SAME_EVENT, "SEMANTIC_GROUP_PROPOSAL")
         return relations
+
+    def _confirmed_pairs(
+        self,
+        members: Sequence[EventIdentityRecord],
+        batch_id: str,
+        technical_gaps: list[TechnicalGap],
+    ) -> set[tuple[str, str]]:
+        """RC-23: re-run the grouping task on one proposed group's members alone.
+
+        Only pairs that the confirmation proposes together again are confirmed;
+        a failed or invalid confirmation confirms nothing and is a disclosed gap.
+        """
+
+        ordered = sorted(
+            members,
+            key=lambda record: (record.candidate.published_at or "", record.candidate.candidate_id),
+        )
+        records = tuple(
+            _grouping_record(record, f"R{index}") for index, record in enumerate(ordered, start=1)
+        )
+        request = EventIdentityGroupingRequest(batch_id, records)
+        try:
+            proposal = _validate_grouping_proposal(self._grouping_advisor(request), request)
+        except EVENT_TECHNICAL_FAILURES as failure:
+            technical_gaps.append(TechnicalGap.from_failure("EventIdentity", batch_id, failure))
+            return set()
+        confirmed: set[tuple[str, str]] = set()
+        for index, outcome in enumerate(proposal, start=1):
+            if isinstance(outcome, EventIdentityProposalViolation):
+                technical_gaps.append(TechnicalGap.from_failure("EventIdentity", f"{batch_id}:group-{index}", outcome))
+                continue
+            for position, left_id in enumerate(outcome):
+                for right_id in outcome[position + 1 :]:
+                    confirmed.add(_pair_key(left_id, right_id))
+        return confirmed
 
     def _deterministic_relation(
         self,

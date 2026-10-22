@@ -37,6 +37,11 @@ def _member(candidate_id, **citations):
     return member
 
 
+def _confirm(*candidate_ids):
+    """An RC-23 confirmation response proposing these records as one event."""
+    return {"groups": [{"members": [_member(candidate_id) for candidate_id in candidate_ids]}]}
+
+
 class _Scripted:
     def __init__(self, *responses):
         self.responses = list(responses)
@@ -66,11 +71,14 @@ def _three_records():
 
 class GroupingProposalTests(unittest.TestCase):
     def test_validated_group_merges_and_unproposed_record_stays_apart(self):
-        advisor = _Scripted({"groups": [{"members": [_member("EN"), _member("JA")]}]})
+        advisor = _Scripted({"groups": [{"members": [_member("EN"), _member("JA")]}]}, _confirm("EN", "JA"))
         result = EventIdentity(advisor).evaluate(_three_records())
         self.assertEqual([group.member_candidate_ids for group in result.groups], [("EN", "JA"), ("OTHER",)])
         self.assertEqual(result.technical_gaps, ())
-        self.assertEqual(len(advisor.requests), 1)
+        confirmation = advisor.requests[1]
+        self.assertEqual(confirmation.batch_id, "event-identity-batch-1:group-1:confirmation")
+        self.assertEqual({record.candidate_id for record in confirmation.records}, {"EN", "JA"})
+        self.assertEqual(len(advisor.requests), 2)
 
     def test_empty_proposal_keeps_every_record_unmerged_without_gap(self):
         result = EventIdentity(_Scripted({"groups": []})).evaluate(_three_records())
@@ -131,7 +139,7 @@ class GroupingProposalTests(unittest.TestCase):
                 {"members": [_member("OTHER", occurrence_sentence_ids=["S7"]), _member("SOLO")]},
             ]
         }
-        result = EventIdentity(_Scripted(response)).evaluate(records)
+        result = EventIdentity(_Scripted(response, _confirm("EN", "JA"))).evaluate(records)
         self.assertIn(("EN", "JA"), [group.member_candidate_ids for group in result.groups])
         self.assertEqual(len(result.groups), 3)
         self.assertEqual(
@@ -148,7 +156,8 @@ class GroupingProposalTests(unittest.TestCase):
                 {"members": [_member("JA"), _member("OTHER")]},
             ]
         }
-        result = EventIdentity(_Scripted(response)).evaluate(_three_records())
+        advisor = _Scripted(response, _confirm("EN", "JA"), _confirm("JA", "OTHER"))
+        result = EventIdentity(advisor).evaluate(_three_records())
         self.assertEqual(result.technical_gaps, ())
         self.assertEqual(len(result.groups), 2)
         merged = [group.member_candidate_ids for group in result.groups if len(group.member_candidate_ids) == 2]
@@ -179,7 +188,7 @@ class GroupingProposalTests(unittest.TestCase):
             _record("UNSTATED", facts=None, body="A subway drill took place."),
         ]
         response = {"groups": [{"members": [_member(name) for name in ("DAEGU", "NAGOYA1", "NAGOYA2")]}]}
-        result = EventIdentity(_Scripted(response)).evaluate(records)
+        result = EventIdentity(_Scripted(response, _confirm("NAGOYA1", "NAGOYA2"))).evaluate(records)
         self.assertEqual(
             sorted(group.member_candidate_ids for group in result.groups),
             [("DAEGU",), ("NAGOYA1", "NAGOYA2"), ("UNSTATED",)],
@@ -190,6 +199,76 @@ class GroupingProposalTests(unittest.TestCase):
             [("DAEGU", "NAGOYA1"), ("DAEGU", "NAGOYA2")],
         )
 
+    def test_confirmation_keeps_only_pairs_it_proposes_again(self):
+        # RC-23: the batch grouped three records; the confirmation keeps two.
+        batch = {"groups": [{"members": [_member("EN"), _member("JA"), _member("OTHER")]}]}
+        result = EventIdentity(_Scripted(batch, _confirm("EN", "JA"))).evaluate(_three_records())
+        self.assertEqual(sorted(group.member_candidate_ids for group in result.groups), [("EN", "JA"), ("OTHER",)])
+        self.assertEqual(result.technical_gaps, ())
+        self.assertEqual(
+            sorted(item.candidate_ids for item in result.diagnostics if item.reason == "PROPOSAL_NOT_CONFIRMED"),
+            [("EN", "OTHER"), ("JA", "OTHER")],
+        )
+
+    def test_confirmation_never_adds_a_pair_the_batch_did_not_propose(self):
+        batch = {"groups": [{"members": [_member("EN"), _member("JA")]}]}
+        # The confirmation sees only the group's members; naming another
+        # record invalidates it, so nothing merges.
+        advisor = _Scripted(batch, _confirm("EN", "JA", "OTHER"))
+        result = EventIdentity(advisor).evaluate(_three_records())
+        self.assertEqual({record.candidate_id for record in advisor.requests[1].records}, {"EN", "JA"})
+        self.assertEqual(len(result.groups), 3)
+        self.assertEqual(
+            [(gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
+            [("event-identity-batch-1:group-1:confirmation", "UNKNOWN_RECORD")],
+        )
+
+    def test_confirmation_without_groups_merges_nothing(self):
+        batch = {"groups": [{"members": [_member("EN"), _member("JA")]}]}
+        result = EventIdentity(_Scripted(batch, {"groups": []})).evaluate(_three_records())
+        self.assertEqual(len(result.groups), 3)
+        self.assertEqual(result.technical_gaps, ())
+
+    def test_failed_confirmation_is_a_gap_and_merges_nothing(self):
+        def batch():
+            return {"groups": [{"members": [_member("EN"), _member("JA")]}]}
+
+        failure = SemanticProviderTechnicalFailure("TIMEOUT", attempts=2, transient=True)
+        result = EventIdentity(_Scripted(batch(), failure)).evaluate(_three_records())
+        self.assertEqual(len(result.groups), 3)
+        self.assertEqual(
+            [(gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
+            [("event-identity-batch-1:group-1:confirmation", "TIMEOUT")],
+        )
+        invalid = EventIdentity(_Scripted(batch(), {"groups": [], "reason": "x"})).evaluate(_three_records())
+        self.assertEqual(len(invalid.groups), 3)
+        self.assertEqual(
+            [(gap.subject_id, gap.failure_class) for gap in invalid.technical_gaps],
+            [("event-identity-batch-1:group-1:confirmation", "SCHEMA_INVALID")],
+        )
+        with self.assertRaises(SemanticProviderConfigurationFailure):
+            EventIdentity(_Scripted(batch(), SemanticProviderConfigurationFailure("HTTP_401"))).evaluate(
+                _three_records()
+            )
+
+    def test_group_without_a_pair_after_region_check_is_not_confirmed(self):
+        def located(candidate_id, region_id, name):
+            resolution = RegionResolution(
+                RegionResolutionBasis.SOURCE_STATED, region_id=region_id, display_name=name,
+                source_field="country", source_value=name, reference_version="geo-reference-v2",
+            )
+            facts = EventIdentityFacts(
+                country=name,
+                metadata_support=(IdentityMetadataSupport("country", 0, len(name)),),
+                region_resolution=resolution,
+            )
+            return _record(candidate_id, facts=facts, body=f"{name}: a power failure stopped the metro.")
+
+        advisor = _Scripted({"groups": [{"members": [_member("TW"), _member("VN")]}]})
+        result = EventIdentity(advisor).evaluate([located("TW", "TW", "Taiwan"), located("VN", "VN", "Vietnam")])
+        self.assertEqual(len(result.groups), 2)
+        self.assertEqual(len(advisor.requests), 1)
+
     def test_record_repeated_inside_one_group_invalidates_that_group(self):
         records = _three_records() + [_record("SOLO", facts=None, body="Another depot fire.")]
         response = {
@@ -198,7 +277,7 @@ class GroupingProposalTests(unittest.TestCase):
                 {"members": [_member("OTHER"), _member("SOLO")]},
             ]
         }
-        result = EventIdentity(_Scripted(response)).evaluate(records)
+        result = EventIdentity(_Scripted(response, _confirm("OTHER", "SOLO"))).evaluate(records)
         self.assertIn(("OTHER", "SOLO"), [tuple(sorted(group.member_candidate_ids)) for group in result.groups])
         self.assertEqual(
             [(gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
