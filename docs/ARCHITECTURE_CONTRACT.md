@@ -601,6 +601,45 @@ EVENT_IDENTITY_CONFIRMATION = PER_PROPOSED_GROUP (same task, schema, prompt)
 EVENT_IDENTITY_SAME_EVENT = BATCH_PROPOSED AND REGION_COMPATIBLE AND CONFIRMED
 ```
 
+### A.18 RC-24 Validator citations and headline format (2026-10-22)
+
+The RC-23 live run lost six reportable events (a Tokyo Hibiya Line overrun
+affecting 34,000 riders, an Oslo tram collision with six injured, a 24-hour
+closure of every Lisbon metro station and three others) to Validator
+`INVALID_CITATION` technical gaps. Five replies assessed the Taipei-insight
+unit as `ANALYSIS` without citing its premise, which section N requires but the
+helper instruction never stated; one reply mistyped the 64-character
+candidate ID. Four headlines also carried decorations such as
+`🔹 [營運政策]` or `重大事故｜`, which the PDF cannot render and the Validator
+did not check.
+
+* **Source references (extends RC-16 to the Validator).** The
+  `validation_semantic_check` request presents each Evidence source as a
+  Python-assigned `source_ref` (`M1`, `M2`, ... in source order) with its RC-9
+  sentences; a citation is `{source_ref, sentence_ids}`. The helper never
+  copies a candidate ID. An unknown `source_ref` or sentence ID is still an
+  `INVALID_CITATION` technical gap.
+* **Cited premises.** The helper instruction states that every `SUPPORTED` or
+  `ANALYSIS` unit cites at least one Evidence sentence (for `ANALYSIS`, the
+  sentences of its factual premise) and that a unit whose premise cannot be
+  cited is `UNSUPPORTED`. Python's rule is unchanged: a `SUPPORTED` or
+  `ANALYSIS` unit without citations is an invalid proposal.
+* **Headline format (Writer and Validator).** A headline is one plain-text line
+  naming the event; Python assembles the sections. The Writer instruction
+  forbids emoji, symbols and category, section or label prefixes, and forbids
+  mentioning the request or its inputs (for example `候選資料`). The Validator
+  deterministically fails, without a helper call, a headline containing an
+  emoji/pictograph or beginning with a bracketed label (`【…】`, `[…]`) or a
+  bar-separated label (`…｜`); the one Validator-directed correction receives
+  the offending prefix. The Validator never rewrites the text.
+
+```text
+VALIDATION_PROMPT_VERSION = validation-evidence-writer-v4
+VALIDATION_SCHEMA_VERSION = validation-semantic-check-proposal-v4
+VALIDATION_CITATION = SOURCE_REF + SENTENCE_ID
+WRITER_PROMPT_VERSION = formal-report-writer-v5
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -3538,7 +3577,7 @@ no object may contain additional fields:
           "unit_id": "supplied unit_id of this field",
           "assessment": "SUPPORTED | ANALYSIS | UNSUPPORTED | UNCERTAIN",
           "evidence_citations": [
-            {"candidate_id": "string", "exact_quote": "non-empty string"}
+            {"source_ref": "M1", "sentence_ids": ["S1"]}
           ]
         }
       ]
@@ -3563,8 +3602,8 @@ operating conditions, regulations, laws, requirements, projects, incidents, or
 installed capability. `UNSUPPORTED` and `UNCERTAIN` cannot pass. Their citation
 lists may be empty, but any supplied citation must be valid.
 
-Every citation references a supplied `candidate_id` and a non-empty list of
-that source's sentence IDs without repetition (RC-9). Python derives
+Every citation references a supplied `source_ref` (RC-24, section A.18) and a
+non-empty list of that source's sentence IDs without repetition (RC-9). Python derives
 coordinates. Provider numeric
 offsets, fuzzy matching, normalization, translation repair, citation repair,
 and provider-authored offsets are forbidden. Exact citation existence proves

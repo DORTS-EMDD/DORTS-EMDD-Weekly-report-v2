@@ -47,7 +47,7 @@ def _proposal(request, *, assessment_overrides=None, language_overrides=None):
                             unit_id, assessment_overrides.get(name, default)
                         ),
                         "evidence_citations": [
-                            {"candidate_id": source.candidate_id, "sentence_ids": [source.sentences[0].sentence_id]}
+                            {"source_ref": "M1", "sentence_ids": [source.sentences[0].sentence_id]}
                         ],
                     }
                     for unit_id in unit_ids
@@ -134,6 +134,48 @@ class ValidatorTests(TestCase):
             Validator(semantic_provider=provider).validate(
                 (result,), (_metadata(result),), (_block(),)
             )
+        self.assertEqual(context.exception.reason, ValidationStageFailureReason.INVALID_CITATION)
+
+    def test_request_cites_short_source_refs_never_candidate_ids(self) -> None:
+        # RC-24: the helper sees M1.. and never copies a candidate ID.
+        result = _workflow_result("E1")
+        seen = []
+
+        def provider(request):
+            seen.append(request.as_payload())
+            return _proposal(request)
+
+        Validator(semantic_provider=provider).validate((result,), (_metadata(result),), (_block(),))
+        source = seen[0]["evidence_sources"][0]
+        self.assertEqual(source["source_ref"], "M1")
+        self.assertNotIn("candidate_id", source)
+        self.assertNotIn(result.event_group.canonical_candidate_id, str(seen[0]))
+
+    def test_unknown_source_ref_is_technical_failure(self) -> None:
+        result = _workflow_result("E1")
+
+        def provider(request):
+            proposal = _proposal(request)
+            proposal["field_assessments"][0]["unit_assessments"][0]["evidence_citations"][0]["source_ref"] = "M2"
+            return proposal
+
+        with self.assertRaises(ValidationStageFailure) as context:
+            Validator(semantic_provider=provider).validate((result,), (_metadata(result),), (_block(),))
+        self.assertEqual(context.exception.reason, ValidationStageFailureReason.INVALID_CITATION)
+
+    def test_analysis_unit_without_cited_premise_is_technical_failure(self) -> None:
+        # ANALYSIS requires cited Evidence premises (section N); the helper
+        # instruction says so explicitly from prompt v4 (RC-24).
+        result = _workflow_result("E1")
+
+        def provider(request):
+            proposal = _proposal(request)
+            insight = next(f for f in proposal["field_assessments"] if f["field_name"] == "taipei_insight")
+            insight["unit_assessments"][0]["evidence_citations"] = []
+            return proposal
+
+        with self.assertRaises(ValidationStageFailure) as context:
+            Validator(semantic_provider=provider).validate((result,), (_metadata(result),), (_block(),))
         self.assertEqual(context.exception.reason, ValidationStageFailureReason.INVALID_CITATION)
 
     def test_one_semantic_correction_gets_one_fresh_check(self) -> None:

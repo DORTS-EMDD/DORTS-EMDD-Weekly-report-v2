@@ -85,7 +85,7 @@ def _semantic_provider(request):
                 "unit_assessments": [{
                     "unit_id": unit_id,
                     "assessment": "ANALYSIS" if field_name == "taipei_insight" else "SUPPORTED",
-                    "evidence_citations": [{"candidate_id": source.candidate_id, "sentence_ids": [source.sentences[0].sentence_id]}],
+                    "evidence_citations": [{"source_ref": "M1", "sentence_ids": [source.sentences[0].sentence_id]}],
                 } for unit_id in unit_ids],
             }
             for field_name, unit_ids in request.unit_ids_by_field().items()

@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-23 修訂（2026-10-20～22）
+### RC-3～RC-24 修訂（2026-10-20～22）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.17 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.18 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -313,6 +313,11 @@ Transport retry 與 semantic correction 必須分開計算。
   schema 與 prompt，只送該群成員再提案一次作為確認；配對須經批次提議、通過地區
   檢查且再次被提議才是 SAME_EVENT；確認只會移除、不會新增配對；確認失敗或無效
   為已揭露的技術缺口，該群不合併；每週約多 15 次呼叫。
+* RC-24（§A.18）：Validator helper 改以短來源代號（M1…）加句子 ID 引用，不再抄寫
+  候選 ID；提示詞明示 SUPPORTED 與 ANALYSIS 單元都須引用 Evidence 句子（ANALYSIS
+  引用其事實前提），無法引用前提者為 UNSUPPORTED；標題為單行純文字，Writer 不得加
+  符號或分類標籤前綴、不得提及請求或輸入（如「候選資料」），Validator 以確定性規則
+  擋下含 emoji 或以括號／直線標籤開頭的標題，並把前綴交給那一次改寫。
 
 ## 13. Report / Delivery
 
@@ -462,5 +467,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-23 APPLIED (2026-10-22)
+CONTRACT_REVISION = RC-3..RC-24 APPLIED (2026-10-22)
 ```

@@ -198,6 +198,8 @@ WRITER_INSTRUCTIONS = (
     "You are the formal weekly-report Writer. Use only authoritative evidence supplied in this request.",
     "Return Traditional Chinese formal prose grounded in the supplied evidence.",
     "Write only headline, factual_summary, and taipei_insight.",
+    "The headline is one plain-text line naming the event. Do not add emoji, symbols, or a category, section or label prefix such as 【營運政策】, [營運政策] or 重大事故｜; the report assembles its own sections.",
+    "Write about the event, not about this request: never mention the request, its inputs or this task (for example 候選資料, event_focus or 提供的資料).",
     "Do not search, browse, use tools, RAG, outside knowledge, or metadata.",
     "Do not infer or author date, country, transit system, location, category, taxonomy, source, or URL.",
     "Taipei insight may give professional implications but must not assert unsupplied Taipei Metro facts.",
@@ -230,7 +232,7 @@ def build_maiagent_writer_model_input(result: ReportWorkflowResult) -> dict[str,
         raise ValueError("Writer requires authoritative substantive content")
     return {
         "task_identity": "formal_report_writer",
-        "prompt_version": "formal-report-writer-v4",
+        "prompt_version": "formal-report-writer-v5",
         "schema_version": "writer-report-block-v1",
         "instructions": list(WRITER_INSTRUCTIONS),
         "writer_request": {

@@ -24,8 +24,8 @@ from .validator import ValidationSemanticRequest
 
 
 TASK_IDENTITY = "validation_semantic_check"
-PROMPT_VERSION = "validation-evidence-writer-v3"
-SCHEMA_VERSION = "validation-semantic-check-proposal-v3"
+PROMPT_VERSION = "validation-evidence-writer-v4"
+SCHEMA_VERSION = "validation-semantic-check-proposal-v4"
 HELPER_VERSION = "maiagent-structured-helper-validation-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-validation"
 
@@ -47,9 +47,10 @@ VALIDATION_INSTRUCTIONS = (
     "Return exactly one unit assessment for every supplied unit_id of that field, copying the unit_id unchanged.",
     "Assess each unit as a whole: SUPPORTED means supplied Evidence supports every substantive claim in the unit; entity or keyword overlap is not sufficient.",
     "ANALYSIS is allowed only for taipei_insight and requires an Evidence-supported factual premise.",
+    "Every SUPPORTED or ANALYSIS unit must cite at least one Evidence sentence: for SUPPORTED cite the sentences that support its claims, for ANALYSIS cite the sentences of its factual premise. A unit whose premise you cannot cite is UNSUPPORTED.",
     "Do not treat unsupported Taipei Metro facts as ANALYSIS.",
     "Use UNSUPPORTED or UNCERTAIN when support is absent or unclear.",
-    "Cite Evidence only by candidate_id and the sentence_ids of the supporting Evidence sentences; never copy or retype source text and use no offsets.",
+    "Cite Evidence only by the source_ref of the Evidence source (for example M1) and the sentence_ids of the supporting sentences of that source; never copy or retype source text and use no offsets.",
     "Return exactly one JSON object with the exact schema, no extra fields, and no text outside the JSON.",
 )
 
@@ -94,10 +95,10 @@ MAIAGENT_VALIDATION_RESPONSE_SCHEMA: dict[str, Any] = {
                                         "type": "object",
                                         "additionalProperties": False,
                                         "properties": {
-                                            "candidate_id": {"type": "string"},
+                                            "source_ref": {"type": "string"},
                                             "sentence_ids": {"type": "array", "items": {"type": "string"}},
                                         },
-                                        "required": ["candidate_id", "sentence_ids"],
+                                        "required": ["source_ref", "sentence_ids"],
                                     },
                                 },
                             },

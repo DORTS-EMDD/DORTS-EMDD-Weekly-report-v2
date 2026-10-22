@@ -32,6 +32,23 @@ def _mixed_script_words(text: str) -> list[str]:
 
     return _MIXED_WORD.findall(text)
 
+
+# RC-24: a headline is plain text naming the event. Sections are assembled by
+# Python, so a bracketed or bar-separated label prefix (【營運政策】, [營運政策],
+# 重大事故｜) or an emoji/pictograph is never part of a valid headline.
+_HEADLINE_LABEL = re.compile(r"^\s*(?:[【\[［〔][^】\]］〕]{1,12}[】\]］〕]|[^｜|]{1,12}[｜|])")
+_PICTOGRAPH = re.compile("[\U0001F000-\U0001FAFF\u2600-\u27BF\u2B00-\u2BFF\uFE0F]")
+
+
+def _headline_decorations(headline: str) -> list[str]:
+    """Label prefixes and pictographs a headline must not contain."""
+
+    found = _PICTOGRAPH.findall(headline)
+    label = _HEADLINE_LABEL.match(_PICTOGRAPH.sub("", headline))
+    if label:
+        found.append(label.group().strip())
+    return found
+
 class ValidationLanguageAssessment(StrEnum):
     TRADITIONAL_CHINESE = "TRADITIONAL_CHINESE"
     NOT_TRADITIONAL_CHINESE = "NOT_TRADITIONAL_CHINESE"
@@ -112,9 +129,11 @@ class ValidationEvidenceSource:
             raise ValueError("Validation evidence source requires substantive_content")
         object.__setattr__(self, "sentences", segment_evidence_sentences(self.substantive_content))
 
-    def as_mapping(self) -> dict[str, object]:
+    def as_mapping(self, source_ref: str) -> dict[str, object]:
+        # RC-24: the helper sees a short Python-assigned reference, never the
+        # candidate ID, so a citation cannot mis-type it.
         return {
-            "candidate_id": self.candidate_id,
+            "source_ref": source_ref,
             "sentences": [sentence.as_mapping() for sentence in self.sentences],
         }
 
@@ -239,6 +258,11 @@ class ValidationSemanticRequest:
             ),
         )
 
+    def sources_by_ref(self) -> dict[str, ValidationEvidenceSource]:
+        """``M1..Mn`` in source order (RC-24)."""
+
+        return {f"M{index}": source for index, source in enumerate(self.evidence_sources, start=1)}
+
     def unit_ids_by_field(self) -> dict[ValidationFieldName, tuple[str, ...]]:
         return {
             name: tuple(unit.unit_id for unit in self.writer_units if unit.field_name is name)
@@ -248,7 +272,7 @@ class ValidationSemanticRequest:
     def as_payload(self) -> dict[str, object]:
         return {
             "event_id": self.event_id,
-            "evidence_sources": [source.as_mapping() for source in self.evidence_sources],
+            "evidence_sources": [source.as_mapping(ref) for ref, source in self.sources_by_ref().items()],
             "writer_fields": [
                 {
                     "field_name": name.value,
@@ -261,12 +285,12 @@ class ValidationSemanticRequest:
 
 @dataclass(frozen=True, slots=True)
 class ValidationEvidenceCitation:
-    candidate_id: str
+    source_ref: str
     sentence_ids: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        if not isinstance(self.candidate_id, str) or not self.candidate_id.strip():
-            raise ValueError("Validation citation requires candidate_id")
+        if not isinstance(self.source_ref, str) or not self.source_ref.strip():
+            raise ValueError("Validation citation requires source_ref")
         if isinstance(self.sentence_ids, str):
             raise ValueError("Validation citation sentence_ids must be an array")
         ids = tuple(self.sentence_ids)
@@ -359,7 +383,7 @@ class ValidationSemanticProposal:
                 citations: list[ValidationEvidenceCitation] = []
                 for raw_citation in raw_citations:
                     if not isinstance(raw_citation, Mapping) or set(raw_citation) != {
-                        "candidate_id", "sentence_ids"
+                        "source_ref", "sentence_ids"
                     }:
                         raise ValueError("Validation citation fields do not match the exact schema")
                     try:
@@ -367,7 +391,7 @@ class ValidationSemanticProposal:
                             raise ValueError("sentence_ids must be an array")
                         citations.append(
                             ValidationEvidenceCitation(
-                                raw_citation["candidate_id"], tuple(raw_citation["sentence_ids"])
+                                raw_citation["source_ref"], tuple(raw_citation["sentence_ids"])
                             )
                         )
                     except (TypeError, ValueError) as exc:
@@ -666,13 +690,24 @@ class Validator:
             for field_name in self._FIELD_NAMES
             for word in _mixed_script_words(getattr(block, field_name.value))
         ]
-        if mixed:
+        decorations = _headline_decorations(block.headline)
+        if mixed or decorations:
             return (
-                tuple(dict.fromkeys(f"language_{field_name.value}_mixed_script" for field_name, _ in mixed)),
+                tuple(dict.fromkeys(
+                    [f"language_{field_name.value}_mixed_script" for field_name, _ in mixed]
+                    + (["format_headline_label"] if decorations else [])
+                )),
                 tuple(
-                    f"{field_name.value}: '{word}' mixes Korean and Chinese characters; use the established "
-                    "Traditional Chinese name or the complete original name"
-                    for field_name, word in mixed
+                    [
+                        f"{field_name.value}: '{word}' mixes Korean and Chinese characters; use the established "
+                        "Traditional Chinese name or the complete original name"
+                        for field_name, word in mixed
+                    ]
+                    + [
+                        f"headline: remove '{item}'; the headline is plain text naming the event, without "
+                        "symbols or category labels"
+                        for item in decorations
+                    ]
                 ),
             )
 
@@ -752,7 +787,7 @@ class Validator:
                 ValidationStageFailureReason.FIELD_SET_MISMATCH,
                 event_id=request.event_id,
             )
-        sources = {source.candidate_id: source.sentences for source in request.evidence_sources}
+        sources = {ref: source.sentences for ref, source in request.sources_by_ref().items()}
         expected_units = request.unit_ids_by_field()
         for field in proposal.field_assessments:
             # Python owns segmentation; the proposal must assess every
@@ -765,14 +800,14 @@ class Validator:
                 )
             for unit in field.unit_assessments:
                 for citation in unit.evidence_citations:
-                    if citation.candidate_id not in sources:
+                    if citation.source_ref not in sources:
                         raise ValidationStageFailure(
                             ValidationStageFailureReason.INVALID_CITATION,
                             event_id=request.event_id,
                         )
                     # RC-9: a citation names Python-segmented sentences of
                     # the cited source; unknown or repeated IDs are invalid.
-                    if resolve_sentence_ids(sources[citation.candidate_id], citation.sentence_ids) is None:
+                    if resolve_sentence_ids(sources[citation.source_ref], citation.sentence_ids) is None:
                         raise ValidationStageFailure(
                             ValidationStageFailureReason.INVALID_CITATION,
                             event_id=request.event_id,
