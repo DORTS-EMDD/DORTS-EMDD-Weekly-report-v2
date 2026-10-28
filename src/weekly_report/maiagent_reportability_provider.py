@@ -29,8 +29,8 @@ from .maiagent_transport import (
 
 
 TASK_IDENTITY = "reportability_semantic_proposal"
-PROMPT_VERSION = "reportability-principal-body-v5"
-SCHEMA_VERSION = "reportability-semantic-proposal-v2"
+PROMPT_VERSION = "reportability-principal-body-v6"
+SCHEMA_VERSION = "reportability-semantic-proposal-v3"
 HELPER_VERSION = "maiagent-structured-helper-reportability-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-reportability"
 
@@ -54,6 +54,7 @@ REPORTABILITY_INSTRUCTIONS = (
     "Site visits, inspections, interviews, council questions, and statements, criticism or demands by officials, politicians, civic groups or commentators are NOT_REPORTABLE unless the evidence records a concrete decision, schedule change, test result, approval or safety measure.",
     "Feature, background, explainer or opinion articles that recount a project's history or controversy without reporting a new occurrence of their own (a decision, schedule change, test, delivery, incident, approval or contract) are NOT_REPORTABLE.",
     "A road-traffic collision between a tram or light-rail vehicle and a road user is REPORTABLE only when the evidence reports injuries, a derailment, significant damage to the rail vehicle or infrastructure, a substantial service suspension, or a rail safety measure or investigation; a minor collision with only a brief local disruption is NOT_REPORTABLE.",
+    "principal_occurrence names the most substantive occurrence the evidence itself reports: DECISION_OR_APPROVAL, CONTRACT_OR_PROCUREMENT (tender, bid, award, contract), DELIVERY_TEST_OR_COMMISSIONING, OPENING_OR_SERVICE_CHANGE, INCIDENT_OR_FAILURE, CONSTRUCTION_MILESTONE, TECHNOLOGY_DEPLOYMENT_OR_TRIAL, SAFETY_MEASURE_OR_INVESTIGATION, LABOUR_ACTION (strike or industrial action), STATISTICS_OR_REPORT_RELEASE, AWARD_OR_RANKING, VISIT_INSPECTION_OR_STATEMENT (visits, inspections, rides, interviews, council questions, statements, criticism or demands), FEATURE_OR_BACKGROUND (an article recounting history or controversy without a new occurrence of its own), or OTHER. A decision, contract, test, delivery, opening, incident or construction step reported in the evidence outranks a visit, statement, award or feature about it; an award for an earlier product or procurement is AWARD_OR_RANKING.",
     "examined_source_refs must list every supplied source_ref exactly once.",
     "REPORTABLE requires at least one positive support citation.",
     "Each support citation names a supplied source_ref and the sentence_ids of that member that support the value path; never copy or retype source text or identifiers.",
@@ -93,6 +94,25 @@ MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA: dict[str, Any] = {
             },
         },
         "rationale": {"type": "string"},
+        "principal_occurrence": {
+            "type": "string",
+            "enum": [
+                "DECISION_OR_APPROVAL",
+                "CONTRACT_OR_PROCUREMENT",
+                "DELIVERY_TEST_OR_COMMISSIONING",
+                "OPENING_OR_SERVICE_CHANGE",
+                "INCIDENT_OR_FAILURE",
+                "CONSTRUCTION_MILESTONE",
+                "TECHNOLOGY_DEPLOYMENT_OR_TRIAL",
+                "SAFETY_MEASURE_OR_INVESTIGATION",
+                "LABOUR_ACTION",
+                "STATISTICS_OR_REPORT_RELEASE",
+                "AWARD_OR_RANKING",
+                "VISIT_INSPECTION_OR_STATEMENT",
+                "FEATURE_OR_BACKGROUND",
+                "OTHER",
+            ],
+        },
     },
     "required": [
         "event_id",
@@ -100,6 +120,7 @@ MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA: dict[str, Any] = {
         "examined_source_refs",
         "support_citations",
         "rationale",
+        "principal_occurrence",
     ],
 }
 

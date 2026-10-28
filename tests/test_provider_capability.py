@@ -24,6 +24,8 @@ SUPPORTED_ENCODINGS = {
     ("france", "fr"): ("fr", "FR", "FR:fr"),
     ("germany", "de"): ("de", "DE", "DE:de"),
     ("hong_kong", "zh"): ("zh-HK", "HK", "HK:zh-Hant"),
+    # RC-27: domestic Taiwan news is in scope.
+    ("taiwan", "zh"): ("zh-TW", "TW", "TW:zh-Hant"),
     ("italy", "it"): ("it", "IT", "IT:it"),
     ("japan", "ja"): ("ja", "JP", "JP:ja"),
     ("netherlands", "nl"): ("nl", "NL", "NL:nl"),
@@ -94,13 +96,13 @@ class ProviderCapabilityTests(unittest.TestCase):
                 ProviderProfileEligibility.UNSUPPORTED, encoding,
             )
 
-    def test_materialized_population_is_exactly_36_with_20_supported(self) -> None:
+    def test_materialized_population_is_exactly_37_with_21_supported(self) -> None:
         registry = RegionRegistry.from_mapping(self.source)
-        self.assertEqual(registry.configuration_version, "search-discovery-v6")
-        self.assertEqual(len(registry.provider_profile_bindings), 36)
+        self.assertEqual(registry.configuration_version, "search-discovery-v7")
+        self.assertEqual(len(registry.provider_profile_bindings), 37)
         self.assertEqual(
             sum(binding.eligibility is ProviderProfileEligibility.SUPPORTED for binding in registry.provider_profile_bindings),
-            20,
+            21,
         )
         self.assertEqual(
             sum(binding.eligibility is ProviderProfileEligibility.UNSUPPORTED for binding in registry.provider_profile_bindings),

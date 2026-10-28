@@ -10,13 +10,14 @@ other downstream owner.
 
 ## 1. Scope and authority
 
-The authoritative selected-market registry is the 19-market list in the
+The authoritative selected-market registry is the 20-market list in the
 Architecture Contract. `region_mode=selected` uses that registry;
 `region_mode=global` is a separate configured target mode. It is not limited to
 the selected 19 markets and may include additional V2 governed/supported
-markets that satisfy `INTERNATIONAL_EXCLUDING_TAIWAN` project geography. It is
-not unrestricted worldwide exploratory discovery. Global discovery excludes
-Taiwan, and Taiwan must not appear in global Search plan items. SearchPlanner
+markets that satisfy `DOMESTIC_AND_INTERNATIONAL` project geography (RC-27:
+domestic Taiwan plus international urban rail news). It is not unrestricted
+worldwide exploratory discovery. Taiwan is a configured market like the others.
+SearchPlanner
 consumes the RegionRegistry target set; this document does not add targets.
 
 The profile list and mapping were recovered from repository evidence:
@@ -95,6 +96,7 @@ market is implied.
 
 | Selected market | Primary profile(s) | Secondary applicable profile(s) | English supplement |
 | --- | --- | --- | --- |
+| Taiwan | `zh` | — | — |
 | South Korea | `ko` | — | `en` |
 | Hong Kong | `zh` | — | `en` |
 | United Kingdom | `en` | — | — |
@@ -120,7 +122,7 @@ The profile-level market registry is:
 | Profile ID | Display name | Language / script | Primary markets | Secondary applicable markets |
 | --- | --- | --- | --- | --- |
 | `en` | English | English / Latin | United Kingdom, Canada, Singapore, Australia, United States | South Korea, Hong Kong, Germany, Netherlands, Italy, Austria, Norway, Portugal, Japan, France, Spain, Switzerland, Sweden, Denmark |
-| `zh` | Chinese | Traditional and Simplified Chinese / Han | Hong Kong | — |
+| `zh` | Chinese | Traditional and Simplified Chinese / Han | Taiwan, Hong Kong | — |
 | `ja` | Japanese | Japanese / Kanji and Kana | Japan | — |
 | `ko` | Korean | Korean / Hangul | South Korea | — |
 | `de` | German | German / Latin | Germany, Austria, Switzerland | — |

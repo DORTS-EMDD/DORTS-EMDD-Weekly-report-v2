@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-26 修訂（2026-10-20～22）
+### RC-3～RC-27 修訂（2026-10-20～28）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.20 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.21 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -327,6 +327,12 @@ Transport retry 與 semantic correction 必須分開計算。
   Delivery 以持久寄送紀錄（僅存雜湊）擋下同一 artifact 或同一期間與收件目標的再次寄送；
   寄送失敗使 CLI 非零結束；GitHub Actions 每週排程與實際寄信皆須以 repository
   variable 或 dispatch 輸入明確啟用。
+* RC-27（§A.21，使用者指示）：選題範圍為國內＋國際都市軌道新聞，臺灣列為 Search
+  市場（zh-TW），事件仍依一般 Scope／Category／Reportability 規則判定；Reportability
+  helper 須標示主要發生類型，獎項排名、視察與發言、背景專題由 Python 判為不成報；
+  臺北捷運局啟示中只提出建議的單元屬 ANALYSIS（引用事件句子），只有陳述無依據事實者
+  才是 UNSUPPORTED；啟示須具體、不得就臺灣事件聲稱捷運局自身角色或狀態；地理參照表
+  v3 補韓日文國名與德文城市形容詞。
 
 ## 13. Report / Delivery
 
@@ -476,5 +482,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-26 APPLIED (2026-10-22)
+CONTRACT_REVISION = RC-3..RC-27 APPLIED (2026-10-28)
 ```

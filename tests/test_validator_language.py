@@ -85,3 +85,11 @@ def test_writer_instructions_forbid_headline_labels_and_request_references():
     text = " ".join(WRITER_INSTRUCTIONS)
     assert "label prefix" in text and "【營運政策】" in text
     assert "候選資料" in text
+
+
+def test_writer_insight_must_be_specific_and_not_assert_taipei_status():
+    from src.weekly_report.writer import WRITER_INSTRUCTIONS
+
+    text = " ".join(WRITER_INSTRUCTIONS)
+    assert "avoid generic advice that would fit any event" in text
+    assert "rail system in Taiwan" in text

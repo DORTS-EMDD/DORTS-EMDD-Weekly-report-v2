@@ -1088,6 +1088,38 @@ class ReportabilityReason(StrEnum):
     LOW_REPORTABILITY_VALUE = "LOW_REPORTABILITY_VALUE"
 
 
+class ReportabilityOccurrence(StrEnum):
+    """RC-27: the principal occurrence the Evidence reports, named by the helper.
+
+    The helper classifies; Python Reportability applies the policy. The
+    classes in ``LOW_VALUE_OCCURRENCES`` are NOT_REPORTABLE (section N).
+    """
+
+    DECISION_OR_APPROVAL = "DECISION_OR_APPROVAL"
+    CONTRACT_OR_PROCUREMENT = "CONTRACT_OR_PROCUREMENT"
+    DELIVERY_TEST_OR_COMMISSIONING = "DELIVERY_TEST_OR_COMMISSIONING"
+    OPENING_OR_SERVICE_CHANGE = "OPENING_OR_SERVICE_CHANGE"
+    INCIDENT_OR_FAILURE = "INCIDENT_OR_FAILURE"
+    CONSTRUCTION_MILESTONE = "CONSTRUCTION_MILESTONE"
+    TECHNOLOGY_DEPLOYMENT_OR_TRIAL = "TECHNOLOGY_DEPLOYMENT_OR_TRIAL"
+    SAFETY_MEASURE_OR_INVESTIGATION = "SAFETY_MEASURE_OR_INVESTIGATION"
+    LABOUR_ACTION = "LABOUR_ACTION"
+    STATISTICS_OR_REPORT_RELEASE = "STATISTICS_OR_REPORT_RELEASE"
+    AWARD_OR_RANKING = "AWARD_OR_RANKING"
+    VISIT_INSPECTION_OR_STATEMENT = "VISIT_INSPECTION_OR_STATEMENT"
+    FEATURE_OR_BACKGROUND = "FEATURE_OR_BACKGROUND"
+    OTHER = "OTHER"
+
+
+LOW_VALUE_OCCURRENCES = frozenset(
+    {
+        ReportabilityOccurrence.AWARD_OR_RANKING,
+        ReportabilityOccurrence.VISIT_INSPECTION_OR_STATEMENT,
+        ReportabilityOccurrence.FEATURE_OR_BACKGROUND,
+    }
+)
+
+
 @dataclass(frozen=True, slots=True)
 class ReportabilitySupportSpan:
     """Immutable source span resolved by the future Reportability owner."""
@@ -1284,6 +1316,7 @@ class ReportabilitySemanticProposal:
     examined_source_refs: tuple[str, ...]
     support_citations: tuple[ReportabilitySemanticCitation, ...]
     rationale: str
+    principal_occurrence: ReportabilityOccurrence = ReportabilityOccurrence.OTHER
 
     def __post_init__(self) -> None:
         if not isinstance(self.event_id, str) or not self.event_id.strip():
@@ -1293,6 +1326,11 @@ class ReportabilitySemanticProposal:
         except (TypeError, ValueError) as exc:
             raise ValueError("Reportability proposal requires a valid state") from exc
         object.__setattr__(self, "proposed_state", state)
+        try:
+            occurrence = ReportabilityOccurrence(self.principal_occurrence)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Reportability proposal requires a valid principal_occurrence") from exc
+        object.__setattr__(self, "principal_occurrence", occurrence)
 
         if isinstance(self.examined_source_refs, (str, bytes, bytearray)):
             raise TypeError("Reportability proposal examined references must be an iterable")

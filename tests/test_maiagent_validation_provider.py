@@ -95,7 +95,7 @@ class MaiAgentValidationProviderTests(unittest.TestCase):
         self.assertEqual(set(citation["properties"]), {"source_ref", "sentence_ids"})
         self.assertNotIn("exact_quote", json.dumps(MAIAGENT_VALIDATION_RESPONSE_SCHEMA))
         self.assertEqual((PROMPT_VERSION, SCHEMA_VERSION), (
-            "validation-evidence-writer-v4", "validation-semantic-check-proposal-v4"
+            "validation-evidence-writer-v5", "validation-semantic-check-proposal-v4"
         ))
         source = build_maiagent_validation_model_input(_request())["validation_request"]["evidence_sources"][0]
         self.assertEqual(source["sentences"], [{"sentence_id": "S1", "text": "Metro Taipei completed signalling testing."}])
@@ -103,6 +103,9 @@ class MaiAgentValidationProviderTests(unittest.TestCase):
         self.assertEqual(source["source_ref"], "M1")
         instructions = " ".join(build_maiagent_validation_model_input(_request())["instructions"])
         self.assertIn("Every SUPPORTED or ANALYSIS unit must cite at least one Evidence sentence", instructions)
+        # RC-27: a pure recommendation is ANALYSIS citing the event, not UNSUPPORTED.
+        self.assertIn("only recommends, suggests or draws a professional implication", instructions)
+        self.assertNotIn("A unit whose premise you cannot cite is UNSUPPORTED", instructions)
 
     def test_provider_makes_one_stateless_call_with_shared_helper(self):
         request = _request()

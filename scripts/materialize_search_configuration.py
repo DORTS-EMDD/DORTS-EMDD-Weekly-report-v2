@@ -131,10 +131,10 @@ def _validate_governance_documents(registry: RegionRegistry) -> None:
     architecture = _ARCHITECTURE_CONTRACT.read_text(encoding="utf-8")
     language = _LANGUAGE_PROFILE_CONTRACT.read_text(encoding="utf-8")
     for marker in (
-        "目前 selected mode 包含上述 19 個市場",
-        r"GLOBAL_MODE_TAIWAN_BEHAVIOR\s*=\s*EXCLUDE_DISCOVERY",
-        r"TAIWAN_SELECTED_SEARCH_PLAN_ITEMS\s*=\s*FORBIDDEN",
-        r"TAIWAN_GLOBAL_SEARCH_PLAN_ITEMS\s*=\s*FORBIDDEN",
+        "目前 selected mode 包含上述 20 個市場",
+        r"GLOBAL_MODE_TAIWAN_BEHAVIOR\s*=\s*INCLUDE_DISCOVERY",
+        r"TAIWAN_SELECTED_SEARCH_PLAN_ITEMS\s*=\s*ALLOWED",
+        r"TAIWAN_GLOBAL_SEARCH_PLAN_ITEMS\s*=\s*ALLOWED",
         r"PROVIDER_TARGET_CANONICAL_ID\s*=\s*google_news_rss",
         r"DEFAULT_PROVIDER_TARGET\s*=\s*FORBIDDEN",
         r"MAX_PROVIDER_INVOCATIONS_PER_PLAN_ITEM\s*=\s*1",
@@ -142,7 +142,7 @@ def _validate_governance_documents(registry: RegionRegistry) -> None:
         r"REDIRECT_FOLLOW_COUNT\s*=\s*0",
         r"PAGINATION\s*=\s*ONE_PROVIDER_REQUEST_PAGE_ONLY",
         r"EXECUTION_CONCURRENCY\s*=\s*SEQUENTIAL",
-        r"SEARCH_CONFIGURATION_VERSION\s*=\s*search-discovery-v6",
+        r"SEARCH_CONFIGURATION_VERSION\s*=\s*search-discovery-v7",
         r"PROVIDER_PROFILE_ELIGIBILITY_OWNER\s*=\s*RegionRegistry",
     ):
         if re.search(marker, architecture) is None:

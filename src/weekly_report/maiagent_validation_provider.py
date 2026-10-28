@@ -24,7 +24,7 @@ from .validator import ValidationSemanticRequest
 
 
 TASK_IDENTITY = "validation_semantic_check"
-PROMPT_VERSION = "validation-evidence-writer-v4"
+PROMPT_VERSION = "validation-evidence-writer-v5"
 SCHEMA_VERSION = "validation-semantic-check-proposal-v4"
 HELPER_VERSION = "maiagent-structured-helper-validation-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-validation"
@@ -47,7 +47,8 @@ VALIDATION_INSTRUCTIONS = (
     "Return exactly one unit assessment for every supplied unit_id of that field, copying the unit_id unchanged.",
     "Assess each unit as a whole: SUPPORTED means supplied Evidence supports every substantive claim in the unit; entity or keyword overlap is not sufficient.",
     "ANALYSIS is allowed only for taipei_insight and requires an Evidence-supported factual premise.",
-    "Every SUPPORTED or ANALYSIS unit must cite at least one Evidence sentence: for SUPPORTED cite the sentences that support its claims, for ANALYSIS cite the sentences of its factual premise. A unit whose premise you cannot cite is UNSUPPORTED.",
+    "Every SUPPORTED or ANALYSIS unit must cite at least one Evidence sentence: for SUPPORTED cite the sentences that support its claims, for ANALYSIS cite the sentences of its factual premise.",
+    "A taipei_insight unit that only recommends, suggests or draws a professional implication, without stating a new fact, is ANALYSIS: cite the Evidence sentences of the event it draws on, even when the factual premise is stated in another unit. Use UNSUPPORTED in taipei_insight only for a unit that states a fact (about the event, Taipei Metro, equipment, laws, requirements or projects) that the Evidence does not support.",
     "Do not treat unsupported Taipei Metro facts as ANALYSIS.",
     "Use UNSUPPORTED or UNCERTAIN when support is absent or unclear.",
     "Cite Evidence only by the source_ref of the Evidence source (for example M1) and the sentence_ids of the supporting sentences of that source; never copy or retype source text and use no offsets.",

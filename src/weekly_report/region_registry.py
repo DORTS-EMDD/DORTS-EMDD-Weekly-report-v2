@@ -22,7 +22,7 @@ from .contracts import (
 
 
 CONFIGURATION_PATH = Path(__file__).with_name("search_configuration.json")
-CONFIGURATION_VERSION = "search-discovery-v6"
+CONFIGURATION_VERSION = "search-discovery-v7"
 
 
 def _tuple_strings(value: Any, field_name: str) -> tuple[str, ...]:
@@ -35,11 +35,6 @@ def _tuple_strings(value: Any, field_name: str) -> tuple[str, ...]:
     if any(not isinstance(item, str) or not item.strip() for item in values):
         raise ValueError(f"{field_name} must contain non-empty strings")
     return values
-
-
-def _is_taiwan_identifier(value: str) -> bool:
-    normalized = value.strip().casefold().replace("-", "_")
-    return normalized in {"taiwan", "tw"} or normalized.startswith("taiwan_")
 
 
 class RegionRegistry:
@@ -223,8 +218,6 @@ class RegionRegistry:
         market_ids = tuple(market.market_id for market in all_markets)
         if len(market_ids) != len(set(market_ids)):
             raise ValueError("market IDs must be unique across registry configuration")
-        if any(_is_taiwan_identifier(market.market_id) or _is_taiwan_identifier(market.display_name) for market in all_markets):
-            raise ValueError("Taiwan is forbidden in Search target configuration")
         if any(not isinstance(market.enabled, bool) for market in all_markets):
             raise TypeError("market enabled must be bool")
 
@@ -248,8 +241,6 @@ class RegionRegistry:
                 raise ValueError("market profile references must resolve")
         if len(self.global_targets) != len(set(self.global_targets)):
             raise ValueError("global target IDs must be unique")
-        if any(_is_taiwan_identifier(target) for target in self.global_targets):
-            raise ValueError("Taiwan is forbidden in global target configuration")
         known_market_ids = set(market_ids)
         if any(target not in known_market_ids for target in self.global_targets):
             raise ValueError("global targets must resolve to governed market configuration")
@@ -286,8 +277,6 @@ class RegionRegistry:
                 raise ValueError("provider profile binding profile must belong to market")
             if binding.provider_id not in known_provider_ids:
                 raise ValueError("provider profile binding provider must be referenced by a query family")
-            if _is_taiwan_identifier(binding.market_id):
-                raise ValueError("Taiwan is forbidden in provider profile bindings")
 
         evaluation_population = {
             (market.market_id, profile_id, family.provider_target)

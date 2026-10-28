@@ -97,6 +97,7 @@ def _proposal(
         "examined_source_refs": list(request.source_refs),
         "support_citations": support or [],
         "rationale": "The supplied authoritative evidence supports this event.",
+        "principal_occurrence": "OTHER",
     }
 
 
@@ -218,7 +219,7 @@ class MaiAgentReportabilityProviderTests(unittest.TestCase):
     def test_response_schema_has_only_locked_fields_and_no_offsets(self):
         self.assertEqual(
             set(MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA["properties"]),
-            {"event_id", "proposed_state", "examined_source_refs", "support_citations", "rationale"},
+            {"event_id", "proposed_state", "examined_source_refs", "support_citations", "rationale", "principal_occurrence"},
         )
         self.assertEqual(
             MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA["properties"]["proposed_state"]["enum"],
@@ -331,7 +332,7 @@ class ReportabilityCriteriaTests(unittest.TestCase):
         from src.weekly_report.maiagent_reportability_provider import PROMPT_VERSION, REPORTABILITY_INSTRUCTIONS
 
         instructions = " ".join(REPORTABILITY_INSTRUCTIONS)
-        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v5")
+        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v6")
         self.assertIn("Accepted value paths", instructions)
         self.assertIn("substantive technical research, testing, pilots or deployments", instructions)
         self.assertIn("procurement, demonstration or trial activity", instructions)

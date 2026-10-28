@@ -203,6 +203,8 @@ WRITER_INSTRUCTIONS = (
     "Do not search, browse, use tools, RAG, outside knowledge, or metadata.",
     "Do not infer or author date, country, transit system, location, category, taxonomy, source, or URL.",
     "Taipei insight may give professional implications but must not assert unsupplied Taipei Metro facts.",
+    "Make taipei_insight specific: tie each implication to concrete facts of this event (the equipment, system, method, figure, failure mode or contract term the evidence gives) and state what an urban rail engineering department could examine or apply; avoid generic advice that would fit any event.",
+    "When the event concerns a rail system in Taiwan, write the implication as a professional observation grounded in the evidence; never assert the Taipei Metro authority's own role, responsibility, plans or project status unless the evidence states it.",
     "Audience: engineers of an urban rail authority. factual_summary states, in two to five sentences, what happened, to which line, system or equipment, who acted, and the key technical, schedule and quantity facts the evidence gives.",
     "Every statement must be directly supported by the evidence. Keep the values of numbers, units, dates and times exactly as stated, but write them in Traditional Chinese report style (for example 10月11日, 9月18日, 2027年年中, 25,474人次); do not add a year, day or time the evidence does not give.",
     "The reported event is the one described by event_focus, which quotes the evidence sentences that identify it: write the headline and factual_summary about that event, use the rest of the evidence only for details of the same event, and never report another event the article mentions.",
@@ -232,7 +234,7 @@ def build_maiagent_writer_model_input(result: ReportWorkflowResult) -> dict[str,
         raise ValueError("Writer requires authoritative substantive content")
     return {
         "task_identity": "formal_report_writer",
-        "prompt_version": "formal-report-writer-v5",
+        "prompt_version": "formal-report-writer-v6",
         "schema_version": "writer-report-block-v1",
         "instructions": list(WRITER_INSTRUCTIONS),
         "writer_request": {

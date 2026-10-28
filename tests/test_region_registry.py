@@ -21,11 +21,13 @@ class RegionRegistryTests(unittest.TestCase):
             self.source = json.load(handle)
 
     def test_locked_membership_profiles_and_mappings(self) -> None:
-        self.assertEqual(self.registry.selected_market_count, 19)
-        self.assertEqual(self.registry.global_target_count, 19)
+        # RC-27: domestic (Taiwan) plus international markets.
+        self.assertEqual(self.registry.selected_market_count, 20)
+        self.assertEqual(self.registry.global_target_count, 20)
         self.assertEqual(len(self.registry.selected_profile_ids), 13)
-        self.assertNotIn("taiwan", {market.market_id for market in self.registry.selected_markets})
-        self.assertNotIn("taiwan", set(self.registry.global_targets))
+        self.assertIn("taiwan", {market.market_id for market in self.registry.selected_markets})
+        self.assertIn("taiwan", set(self.registry.global_targets))
+        self.assertEqual(self.registry.market("taiwan").primary_profiles, ("zh",))
         self.assertEqual(self.registry.market("hong_kong").primary_profiles, ("zh",))
         self.assertEqual(self.registry.market("switzerland").secondary_profiles, ("fr", "it"))
         self.assertEqual(self.registry.market("south_korea").english_supplement_profiles, ("en",))
@@ -62,10 +64,10 @@ class RegionRegistryTests(unittest.TestCase):
         duplicate["selected_markets"].append(copy.deepcopy(duplicate["selected_markets"][0]))
         with self.assertRaises(ValueError):
             RegionRegistry.from_mapping(duplicate)
-        taiwan = copy.deepcopy(self.source)
-        taiwan["global_targets"][0] = "taiwan"
+        unknown_target = copy.deepcopy(self.source)
+        unknown_target["global_targets"][0] = "atlantis"
         with self.assertRaises(ValueError):
-            RegionRegistry.from_mapping(taiwan)
+            RegionRegistry.from_mapping(unknown_target)
         unresolved_profile = copy.deepcopy(self.source)
         unresolved_profile["selected_markets"][0]["primary_profiles"] = ["xx"]
         with self.assertRaises(ValueError):

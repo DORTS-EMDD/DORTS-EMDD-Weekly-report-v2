@@ -724,6 +724,65 @@ EMAIL_OPT_IN = DISPATCH send_email OR vars.LIVE_EMAIL_SEND == '1' (schedule)
 SCHEDULE_OPT_IN = vars.WEEKLY_REPORT_SCHEDULE == 'enabled'
 ```
 
+### A.21 RC-27 Formal report review: scope, Reportability, insight, places (2026-10-28, user-directed)
+
+The user reviewed the 37-event PDF of 2026-10-14..20. Findings against the
+Evidence and the journal:
+
+* **Domestic news (product requirement, amends sections E and F).** The scope
+  is domestic (Taiwan) plus international urban rail news. Search excluded
+  Taiwan (`INTERNATIONAL_EXCLUDING_TAIWAN`); Scope, Category and Reportability
+  never did. Taiwan is now a configured selected and global market (`zh`
+  profile, Google News `zh-TW`/`TW:zh-Hant`, search-discovery-v7). Taiwan events
+  pass the same Scope, Category and Reportability rules as any other.
+* **Reportability classes are applied by Python (extends section N).** The
+  helper kept a design award ("for the procurement strategy"), an official
+  inspection ride and a background feature although the low-value classes
+  name them. The proposal now carries `principal_occurrence`, the most
+  substantive occurrence the Evidence reports, from a closed list. Python
+  Reportability maps `AWARD_OR_RANKING`, `VISIT_INSPECTION_OR_STATEMENT` and
+  `FEATURE_OR_BACKGROUND` to NOT_REPORTABLE (`LOW_REPORTABILITY_VALUE`)
+  whatever state the helper proposes, and records the class in the
+  provenance rationale. A decision, contract, test, delivery, opening,
+  incident or construction step outranks a visit, statement, award or feature
+  about it.
+* **Taipei insight validation (corrects RC-24).** RC-24's instruction "a unit
+  whose premise you cannot cite is UNSUPPORTED" made the helper reject pure
+  recommendation units whose premise is stated in the previous unit; three
+  valid events failed (Santiago Line 9, Wanda line, Lisbon). A taipei_insight
+  unit that only recommends or draws an implication, adding no fact, is
+  ANALYSIS citing the event's sentences; UNSUPPORTED is only for a unit stating
+  an unsupported fact. Section N is unchanged.
+* **Taipei insight quality (Writer).** Implications must be tied to the
+  event's concrete equipment, method, figures or contract terms, not generic
+  advice; for an event in Taiwan the Writer never asserts the Taipei Metro
+  authority's own role, plans or project status unless the Evidence states it.
+* **Places (geo-reference-v3).** Korean and Japanese country names for all
+  regions and German city adjectives (Zürcher, Münchner, ...) were added; short
+  names that are ordinary words (Korean 인도, 이란; Japanese タイ, チリ) are
+  excluded because CJK names also match inside longer values. On the week's
+  143 READY records, unresolved regions 15 -> 12 and no record changed region.
+* **Duplicates.** The Wirye councillor meeting (two articles) stayed split
+  because the confirmation answered with an empty list against RC-25; the
+  confirmation instruction now states that an empty list is never a valid
+  answer (event-identity-grouping-v4). The two Ulsan items are different
+  occurrences (the 14 October internal decision and mayor's instructions; the
+  19 October press conference) and stay separate.
+* **Reviewed and correct.** E&M labels of the Busan strike (rolling-stock heavy
+  maintenance and platform-screen-door inspection crews) and the Brno tender
+  (electronic ticketing required on the trams) cite the Evidence.
+
+```text
+SEARCH_GEOGRAPHY = DOMESTIC_AND_INTERNATIONAL (search-discovery-v7)
+REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v6
+REPORTABILITY_SCHEMA_VERSION = reportability-semantic-proposal-v3
+REPORTABILITY_LOW_VALUE_OCCURRENCES = AWARD_OR_RANKING, VISIT_INSPECTION_OR_STATEMENT, FEATURE_OR_BACKGROUND
+VALIDATION_PROMPT_VERSION = validation-evidence-writer-v5
+WRITER_PROMPT_VERSION = formal-report-writer-v6
+EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v4
+GEOGRAPHIC_REFERENCE_VERSION = geo-reference-v3
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -891,7 +950,7 @@ HIDDEN_TRANSPORT_RETRY = FORBIDDEN
 REDIRECT_FOLLOW_COUNT = 0
 PAGINATION = ONE_PROVIDER_REQUEST_PAGE_ONLY
 EXECUTION_CONCURRENCY = SEQUENTIAL
-SEARCH_CONFIGURATION_VERSION = search-discovery-v6
+SEARCH_CONFIGURATION_VERSION = search-discovery-v7
 PROVIDER_PROFILE_ELIGIBILITY_OWNER = RegionRegistry
 ```
 
@@ -1062,8 +1121,9 @@ selected
 
 兩種 region mode。
 
-「指定先進國家」預設清單：
+「指定先進國家」預設清單（RC-27 起含國內的臺灣）：
 
+* 臺灣
 * 韓國
 * 香港
 * 英國
@@ -1084,14 +1144,14 @@ selected
 * 瑞典
 * 丹麥
 
-目前 selected mode 包含上述 19 個市場。`global` 是獨立的 configured target
+目前 selected mode 包含上述 20 個市場。`global` 是獨立的 configured target
 mode，不等於 selected 19，也不等於 unrestricted worldwide exploratory
 discovery。Global target set 可以包含 selected 19 以外的額外市場，但每個
-target 必須是 V2 governed/supported、符合 `INTERNATIONAL_EXCLUDING_TAIWAN`
-project geography 且不是 Taiwan。`GLOBAL_MODE_TAIWAN_BEHAVIOR =
-EXCLUDE_DISCOVERY`；Taiwan 不得進入 global discovery target set。SearchPlanner
-只消費 RegionRegistry 的 configured target set，不自行新增 Taiwan 或其他
-未配置 target。RegionRegistry 不判定已 discovered Candidate 的 factual Scope，
+target 必須是 V2 governed/supported，並符合 `DOMESTIC_AND_INTERNATIONAL`
+project geography（國內＋國際都市軌道新聞，RC-27，§A.21）。
+`GLOBAL_MODE_TAIWAN_BEHAVIOR = INCLUDE_DISCOVERY`；Taiwan 與其他市場一樣是
+configured discovery target。SearchPlanner 只消費 RegionRegistry 的 configured
+target set，不自行新增未配置 target。RegionRegistry 不判定已 discovered Candidate 的 factual Scope，
 也不得以 ScopeClassifier 修補 selected 或 global configuration。
 
 Region Registry 為 `selected` 與 `global` 兩種 region mode 的 configured
@@ -1109,11 +1169,12 @@ deterministic discovery planning、language/profile selection、bounded query
 composition，以及消費 query-family configuration。不得按 intent 建立多個
 互相獨立的 Search owner。
 
-Taiwan 不得產生 selected 或 global Search plan items：
+Taiwan（國內）與其他 configured 市場相同，產生 selected 與 global Search plan
+items（RC-27）；事件是否成報仍由 Scope、Category 與 Reportability 依一般規則判定：
 
 ```text
-TAIWAN_SELECTED_SEARCH_PLAN_ITEMS = FORBIDDEN
-TAIWAN_GLOBAL_SEARCH_PLAN_ITEMS = FORBIDDEN
+TAIWAN_SELECTED_SEARCH_PLAN_ITEMS = ALLOWED
+TAIWAN_GLOBAL_SEARCH_PLAN_ITEMS = ALLOWED
 ```
 
 四個 discovery intent 使用一個 canonical typed machine representation：

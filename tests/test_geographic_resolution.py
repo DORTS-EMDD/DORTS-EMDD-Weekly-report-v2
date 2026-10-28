@@ -52,7 +52,7 @@ def _evaluate(observations, body):
 class GeographicReferenceTests(unittest.TestCase):
     def test_reference_is_versioned_and_matches_whole_values_only(self):
         reference = default_geographic_reference()
-        self.assertEqual(reference.version, "geo-reference-v2")
+        self.assertEqual(reference.version, "geo-reference-v3")
         self.assertEqual(reference.lookup("vietnam").kind, GeographicMatchKind.REGION)
         self.assertEqual(reference.lookup("Hanoi Metro").kind, GeographicMatchKind.SYSTEM)
         self.assertEqual(reference.lookup("Hanoi").kind, GeographicMatchKind.CITY)
@@ -89,7 +89,7 @@ class RegionResolutionTests(unittest.TestCase):
         resolution = _resolve(system="Hanoi Metro")
         self.assertEqual(
             (resolution.basis, resolution.region_id, resolution.source_field, resolution.reference_version),
-            (RegionResolutionBasis.REFERENCE_MAPPED, "VN", "transit_system_name", "geo-reference-v2"),
+            (RegionResolutionBasis.REFERENCE_MAPPED, "VN", "transit_system_name", "geo-reference-v3"),
         )
 
     def test_conflicting_regions_are_unresolved_without_choosing(self):
@@ -195,3 +195,20 @@ class CompoundSourceNameTests(unittest.TestCase):
         self.assertEqual(resolution.region_id, "JP")
         self.assertEqual(resolution.source_value, "名古屋市交通局")
         self.assertIs(_resolve(country="Swiss").basis, RegionResolutionBasis.SOURCE_STATED)
+
+
+def test_v3_resolves_korean_japanese_country_names_and_city_adjectives():
+    # RC-27: Korean/Japanese sources state countries in their own script.
+    from src.weekly_report.geographic_reference import default_geographic_reference
+
+    reference = default_geographic_reference()
+    resolved = {
+        value: (reference.lookup(value) or reference.lookup_contained(value))
+        for value in ("폴란드", "ポーランド", "Zürcher Kreis 9", "Berliner S-Bahn", "미국 뉴욕")
+    }
+    assert {value: match.region_id for value, match in resolved.items()} == {
+        "폴란드": "PL", "ポーランド": "PL", "Zürcher Kreis 9": "CH", "Berliner S-Bahn": "DE", "미국 뉴욕": "US",
+    }
+    # Short names that are also ordinary words are not in the reference.
+    for value in ("인도 위 사고", "タイヤ交換", "~이란 무엇"):
+        assert reference.lookup(value) is None and reference.lookup_contained(value) is None

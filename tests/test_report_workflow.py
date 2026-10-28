@@ -150,6 +150,7 @@ class _ReportabilityProvider:
                 "examined_source_refs": list(request.source_refs),
                 "support_citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
                 "rationale": "authoritative evidence supports the event",
+                "principal_occurrence": "OTHER",
             }
         return {
             "event_id": request.event_id,
@@ -157,6 +158,7 @@ class _ReportabilityProvider:
             "examined_source_refs": list(request.source_refs),
             "support_citations": [],
             "rationale": "authoritative evidence does not support reporting value",
+            "principal_occurrence": "OTHER",
         }
 
 

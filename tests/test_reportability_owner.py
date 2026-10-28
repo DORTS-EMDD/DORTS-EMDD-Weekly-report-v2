@@ -527,6 +527,7 @@ class ReportabilityOwnerTests(TestCase):
                 }
             ],
             "rationale": _HashBomb("The supplied evidence supports the proposed outcome."),
+            "principal_occurrence": "OTHER",
         }
         mapping_provider = _Provider(mapping)
         mapping_result = Reportability(mapping_provider).evaluate(decision)

@@ -12,6 +12,7 @@ from collections.abc import Mapping, Sequence
 
 from .source_refs import cited_spans
 from .contracts import (
+    LOW_VALUE_OCCURRENCES,
     ProposalContractViolation,
     SemanticProviderConfigurationFailure,
     SemanticProviderTechnicalFailure,
@@ -43,6 +44,7 @@ _PROPOSAL_FIELDS = frozenset(
         "examined_source_refs",
         "support_citations",
         "rationale",
+        "principal_occurrence",
     }
 )
 _CITATION_FIELDS = frozenset({"source_ref", "sentence_ids"})
@@ -106,6 +108,7 @@ def _trusted_proposal(
             _trusted_citation(citation) for citation in proposal.support_citations
         ),
         rationale=_trusted_str(proposal.rationale),
+        principal_occurrence=proposal.principal_occurrence,
     )
 
 
@@ -120,6 +123,7 @@ def _proposal(value: object, *, event_id: str) -> ReportabilitySemanticProposal:
                 examined_source_refs=value.examined_source_refs,
                 support_citations=_citations(value.support_citations),
                 rationale=value.rationale,
+                principal_occurrence=value.principal_occurrence,
             )
         else:
             if not isinstance(value, Mapping) or frozenset(value) != _PROPOSAL_FIELDS:
@@ -130,6 +134,7 @@ def _proposal(value: object, *, event_id: str) -> ReportabilitySemanticProposal:
                 examined_source_refs=value["examined_source_refs"],
                 support_citations=_citations(value["support_citations"]),
                 rationale=value["rationale"],
+                principal_occurrence=value["principal_occurrence"],
             )
     except Exception:
         raise _technical("malformed reportability proposal", event_id) from None
@@ -257,7 +262,11 @@ class Reportability:
             member_record.candidate.candidate_id: member_record.evidence.substantive_content
             for member_record in records
         }
-        if proposal.proposed_state is ReportabilityState.REPORTABLE:
+        # RC-27: the helper names the principal occurrence; Python applies the
+        # section N low-value classes, whatever state the helper proposed.
+        low_value = proposal.principal_occurrence in LOW_VALUE_OCCURRENCES
+        rationale = f"[{proposal.principal_occurrence.value}] {proposal.rationale}"
+        if proposal.proposed_state is ReportabilityState.REPORTABLE and not low_value:
             support_spans = tuple(dict.fromkeys(
                 span
                 for citation in proposal.support_citations
@@ -267,7 +276,7 @@ class Reportability:
                 provenance = ReportabilityEvidenceProvenance(
                     examined_candidate_ids=request_ids,
                     support_spans=support_spans,
-                    rationale=proposal.rationale,
+                    rationale=rationale,
                 )
                 return ReportabilityResult(
                     event_id=event_id,
@@ -284,7 +293,7 @@ class Reportability:
             provenance = ReportabilityEvidenceProvenance(
                 examined_candidate_ids=request_ids,
                 support_spans=(),
-                rationale=proposal.rationale,
+                rationale=rationale,
             )
             return ReportabilityResult(
                 event_id=event_id,

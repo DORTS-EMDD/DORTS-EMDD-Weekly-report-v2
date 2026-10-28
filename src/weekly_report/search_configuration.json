@@ -1,10 +1,26 @@
 {
-  "configuration_version": "search-discovery-v6",
+  "configuration_version": "search-discovery-v7",
   "region_modes": [
     "selected",
     "global"
   ],
   "selected_markets": [
+    {
+      "market_id": "taiwan",
+      "display_name": "Taiwan",
+      "primary_profiles": [
+        "zh"
+      ],
+      "secondary_profiles": [],
+      "english_supplement_profiles": [],
+      "locale_hints": [
+        "zh-TW"
+      ],
+      "terminology_refs": [
+        "urban_rail_core"
+      ],
+      "enabled": true
+    },
     {
       "market_id": "south_korea",
       "display_name": "South Korea",
@@ -347,6 +363,7 @@
     }
   ],
   "global_targets": [
+    "taiwan",
     "south_korea",
     "hong_kong",
     "united_kingdom",
@@ -2317,6 +2334,7 @@
     {"market_id": "germany", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "hong_kong", "language_profile_id": "zh", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "zh-HK", "gl": "HK", "ceid": "HK:zh-Hant"}},
     {"market_id": "hong_kong", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "taiwan", "language_profile_id": "zh", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "zh-TW", "gl": "TW", "ceid": "TW:zh-Hant"}},
     {"market_id": "italy", "language_profile_id": "it", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "it", "gl": "IT", "ceid": "IT:it"}},
     {"market_id": "italy", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "japan", "language_profile_id": "ja", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "ja", "gl": "JP", "ceid": "JP:ja"}},

@@ -49,13 +49,14 @@ class SearchPlannerTests(unittest.TestCase):
         with self.assertRaises(FrozenInstanceError):
             first.items += (first.items[0],)
 
-    def test_selected_and_global_consume_registry_targets_and_exclude_taiwan(self) -> None:
+    def test_selected_and_global_consume_registry_targets_including_taiwan(self) -> None:
         selected = self.planner.plan("selected")
         global_plan = self.planner.plan("global")
         self.assertEqual({item.market_id for item in selected.items}, {market.market_id for market in self.registry.selected_markets})
         self.assertEqual({item.market_id for item in global_plan.items}, set(self.registry.global_targets))
-        self.assertNotIn("taiwan", {item.market_id for item in selected.items})
-        self.assertNotIn("taiwan", {item.market_id for item in global_plan.items})
+        # RC-27: domestic Taiwan news is discovered like any configured market.
+        self.assertIn("taiwan", {item.market_id for item in selected.items})
+        self.assertIn("taiwan", {item.market_id for item in global_plan.items})
 
     def test_primary_and_preplanned_english_supplement_are_in_frozen_plan(self) -> None:
         plan = self.planner.plan("selected", intents=(DiscoveryIntent.TECHNOLOGY,))
@@ -92,7 +93,7 @@ class SearchPlannerTests(unittest.TestCase):
             SearchCoverageGapReason.KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY,
         )
         self.assertEqual(sum(item.market_id == "denmark" for item in plan.items), 0)
-        self.assertEqual(len({item.market_id for item in plan.items}), 18)
+        self.assertEqual(len({item.market_id for item in plan.items}), 19)
 
     def test_production_global_planning_exposes_denmark_coverage_gap(self) -> None:
         plan = SearchPlanner(self.production_registry).plan("global")
