@@ -2,10 +2,15 @@
 
 Reads the quantities a text states (number, magnitude word, measurement unit or
 currency) so the Validator can compare Writer prose with the authoritative
-Evidence. It decides nothing; ``Validator`` owns the check. Evidence numbers
-are read with every plausible separator convention (``16,4`` and ``1.640`` are
-ambiguous across languages), so the check never rejects a correct value
-because of a separator; a magnitude, unit or currency error is still caught.
+Evidence. It decides nothing; ``Validator`` owns the check.
+
+Evidence numbers are read in the source's own notation. ``5,000`` is a
+thousand-grouped 5000 in English and a decimal 5 in German, so a token with
+one separator followed by three digits is resolved only by notation the text
+itself establishes: CJK notation next to it, the decimal mark its unambiguous
+numbers use, or a tail ending in 0 (a decimal fraction is not written with
+trailing zeros). An unresolved token grounds nothing; it is never read both
+ways.
 """
 
 from __future__ import annotations
@@ -30,10 +35,14 @@ _WORD_MAGNITUDES = (
     (r"thousands?|tsd\.?|mil", 10**3),
 )
 _WORD_RE = re.compile(r"\s*(" + "|".join(pattern for pattern, _ in _WORD_MAGNITUDES) + r")(?![a-zà-ÿ])", re.IGNORECASE)
+# Magnitude words only English uses, always with a dot decimal mark ("91.766 billion").
+# "million(s)" is left out: French writes "1,5 million".
+_ENGLISH_MAGNITUDE_RE = re.compile(r"lakh\s+crores?|crores?|cr\.?|lakhs?|lacs?|trillions?|tn|billions?|bn|bln|mn|mln", re.IGNORECASE)
 # Directly after a currency-signed number, "m", "b" and "k" are magnitudes ("$5m", "€1.2b").
 _SIGN_MAGNITUDE_RE = re.compile(r"(m|b|k)(?![A-Za-z])")
 _SIGN_MAGNITUDES = {"m": 10**6, "b": 10**9, "k": 10**3}
-_NUMBER = r"\d+(?:[.,   ]\d+)*"
+# A space joins digits only as thousands grouping ("20 000"), never two numbers ("20 2026").
+_NUMBER = r"\d+(?:[.,]\d+|[   ]\d{3}(?!\d))*"
 _NUMBER_RE = re.compile(_NUMBER)
 _RANGE_SEPARATOR = re.compile(r"\s*(?:-|–|—|~|～|〜|至|到)\s*|\s+(?:to|bis|à|a|al|e|y|und|and|et)\s+", re.IGNORECASE)
 
@@ -41,7 +50,8 @@ _RANGE_SEPARATOR = re.compile(r"\s*(?:-|–|—|~|～|〜|至|到)\s*|\s+(?:to|b
 # currencies match when their sets intersect, so "$" grounds 美元 or 澳元 but
 # 日圓 never grounds 美元.
 _DOLLARS = frozenset({"USD", "AUD", "CAD", "NZD", "SGD", "HKD", "TWD"})
-_YUAN = frozenset({"CNY", "TWD", "HKD", "SGD"})
+# 元 alone names no currency: every yuan- or dollar-named one (美元, 澳元, 新臺幣元 ...).
+_YUAN = _DOLLARS | {"CNY"}
 _RUPEES = frozenset({"INR", "PKR", "LKR", "NPR"})
 _KRONOR = frozenset({"SEK", "NOK", "DKK"})
 _ISO_CODES = ("USD", "EUR", "GBP", "JPY", "KRW", "CNY", "TWD", "HKD", "SGD", "AUD", "CAD", "NZD", "INR", "CHF", "SEK", "NOK", "DKK", "THB", "VND")
@@ -148,33 +158,89 @@ class _Reading:
     measure_factor: float = 1.0
 
 
-def _readings(token: str, strict: bool = False) -> set[float]:
-    """Every plausible numeric value of a digit token across separator conventions.
+# Notation of a token: _STRICT is Traditional Chinese report style (Writer
+# prose); "." or "," is the decimal mark the source establishes; None is unknown.
+_STRICT = "strict"
+_CJK_CHARACTER = re.compile(r"[\u3040-\u30ff\u3300-\u33ff\u3400-\u9fff\uac00-\ud7af]")
 
-    ``strict`` reads Traditional Chinese report style only: commas group
-    thousands and a dot is the decimal mark.
-    """
 
-    token = token.replace(" ", " ").replace(" ", " ")
-    if strict:
+def _grouped(groups: list[str], mark: str) -> bool:
+    """Valid thousands grouping, or Indian lakh grouping (1,25,000) with commas."""
+
+    if groups and 1 <= len(groups[0]) <= 3 and all(len(group) == 3 for group in groups[1:]):
+        return True
+    return mark == "," and len(groups) > 2 and 1 <= len(groups[0]) <= 2 and len(groups[-1]) == 3 and all(
+        len(group) == 2 for group in groups[1:-1]
+    )
+
+
+def _decimal_mark_of(token: str) -> str | None:
+    """The decimal mark a token establishes by itself, if any."""
+
+    marks = re.findall(r"[.,]", token)
+    if len(set(marks)) == 2:
+        return marks[-1]
+    if len(marks) >= 2:
+        # A repeated mark groups thousands, so the other one is the decimal mark.
+        return {".": ",", ",": "."}[marks[0]] if _grouped(re.split(r"[.,\s]", token), marks[0]) else None
+    if len(marks) == 1:
+        before, after = re.sub(r"\s", "", token).split(marks[0])
+        if len(after) != 3 or before == "0" or len(before) > 3:
+            return marks[0]
+    return None
+
+
+def _readings(token: str, notation: str | None = _STRICT) -> set[float]:
+    """The numeric value of a digit token in the given notation (empty when unresolved)."""
+
+    token = token.replace("\u00a0", " ").replace("\u202f", " ")
+    if notation == _STRICT:
         try:
             return {float(token.replace(",", "").replace(" ", ""))}
         except ValueError:
             return {float(re.split(r"[.,\s]", token)[0])}
-    parts = re.split(r"([.,\s])", token)
-    digits = parts[0::2]
-    separators = parts[1::2]
-    if not separators:
-        return {float(token)}
-    values: set[float] = set()
-    whole = "".join(digits)
-    # All separators group thousands.
-    if all(len(group) == 3 for group in digits[1:]):
-        values.add(float(whole))
-    # The last separator is a decimal mark; the earlier ones group thousands.
-    if separators[-1] in ".," and all(len(group) == 3 for group in digits[1:-1]):
-        values.add(float("".join(digits[:-1]) + "." + digits[-1]))
-    return values or {float(digits[0])}
+    marks = re.findall(r"[.,]", token)
+    if not marks:
+        groups = token.split()
+        return {float("".join(groups))} if len(groups) == 1 or _grouped(groups, " ") else set()
+    decimal = _decimal_mark_of(token)
+    if decimal is None and len(marks) == 1:
+        # One separator before three digits: only the source's notation decides.
+        if notation in {".", ","}:
+            decimal = notation
+        elif token.endswith("0"):
+            decimal = "," if marks[0] == "." else "."
+        else:
+            return set()
+    if decimal is None:
+        return set()
+    whole, _, fraction = token.rpartition(decimal) if decimal in marks else (token, "", "")
+    groups = re.split(r"[.,\s]", whole)
+    if len(groups) > 1 and not _grouped(groups, "." if decimal == "," else ","):
+        return set()
+    return {float("".join(groups) + ("." + fraction if fraction else ""))}
+
+
+def _cjk_adjacent(text: str, start: int, end: int) -> bool:
+    """CJK notation (comma groups, dot is decimal) holds for a number written next to CJK text."""
+
+    return bool(
+        (start and _CJK_CHARACTER.match(text, start - 1))
+        or _CJK_CHARACTER.match(text, end)
+        or (end < len(text) and text[end] == " " and _CJK_CHARACTER.match(text, end + 1))
+    )
+
+
+def _document_decimal_mark(text: str) -> str | None:
+    """The one decimal mark the text's unambiguous numbers use; None if none or conflicting."""
+
+    marks = set()
+    for number in _NUMBER_RE.finditer(text):
+        if not _cjk_adjacent(text, number.start(), number.end()):
+            mark = _decimal_mark_of(number.group().replace("\u00a0", " ").replace("\u202f", " "))
+            if mark is not None:
+                marks.add(mark)
+    return marks.pop() if len(marks) == 1 else None
 
 
 def _place(token: str) -> float:
@@ -184,7 +250,7 @@ def _place(token: str) -> float:
     return 10.0 ** -len(decimals) if decimals.isdigit() else 1.0
 
 
-def _cjk_value(text: str, start: int, strict: bool) -> tuple[set[float], int, float, float] | None:
+def _cjk_value(text: str, start: int, notation: str | None) -> tuple[set[float], int, float, float] | None:
     """Read a composed CJK amount such as ``1兆9000億``, ``1조 9000억`` or ``5,000億``.
 
     Returns the values, the end, the place of the last digit and the magnitude
@@ -206,7 +272,8 @@ def _cjk_value(text: str, start: int, strict: bool) -> tuple[set[float], int, fl
         while after < len(text) and text[after] == " ":
             after += 1
         unit = text[after] if after < len(text) else ""
-        readings = _readings(number.group(), strict)
+        # A number written with a CJK magnitude is in CJK notation.
+        readings = _readings(number.group(), notation if notation == _STRICT else ".")
         if unit not in _CJK_MAGNITUDES:
             if leading is None:
                 return None
@@ -225,17 +292,21 @@ def _matched(table, match: re.Match[str]):
     return table[match.lastindex - 1] if match.lastindex else None
 
 
-def _read(text: str, number: re.Match[str], strict: bool) -> _Reading:
+def _read(text: str, number: re.Match[str], notation: str | None) -> _Reading:
     start = number.start()
     prefix = _PREFIX_RE.search(text, max(0, start - 12), start)
     currency = frozenset(_matched(_PREFIX_CURRENCIES, prefix)[1]) if prefix else frozenset()
-    cjk = _cjk_value(text, start, strict)
+    cjk = _cjk_value(text, start, notation)
     if cjk is not None:
         values, end, place, magnitude = cjk
         reading = _Reading(start, end, values, place, magnitude, currency)
     else:
-        reading = _Reading(start, number.end(), _readings(number.group(), strict), _place(number.group()), None, currency)
-        word = _WORD_RE.match(text, reading.end)
+        word = _WORD_RE.match(text, number.end())
+        if notation != _STRICT and _cjk_adjacent(text, start, number.end()):
+            notation = "."
+        elif notation is None and word and _ENGLISH_MAGNITUDE_RE.fullmatch(word.group(1)):
+            notation = "."
+        reading = _Reading(start, number.end(), _readings(number.group(), notation), _place(number.group()), None, currency)
         sign = _SIGN_MAGNITUDE_RE.match(text, reading.end) if currency else None
         if word:
             factor = next(value for pattern, value in _WORD_MAGNITUDES if re.fullmatch(pattern, word.group(1), re.IGNORECASE))
@@ -286,13 +357,14 @@ def _share_upper_bound(lower: _Reading, upper: _Reading) -> None:
 def stated_quantities(text: str, *, strict: bool = False) -> tuple[StatedQuantity, ...]:
     """Quantities stated in ``text``: magnitudes, ranges, measures and amounts."""
 
+    notation = _STRICT if strict else _document_decimal_mark(text)
     readings: list[_Reading] = []
     position = 0
     while True:
         number = _NUMBER_RE.search(text, position)
         if not number:
             break
-        readings.append(_read(text, number, strict))
+        readings.append(_read(text, number, notation))
         position = readings[-1].end
     for lower, upper in zip(readings, readings[1:]):
         if _RANGE_GAP.fullmatch(text, lower.end, upper.start):
@@ -314,20 +386,22 @@ def checked_quantities(text: str) -> tuple[StatedQuantity, ...]:
     return tuple(
         quantity
         for quantity in stated_quantities(text, strict=True)
-        if quantity.unit or max(quantity.values) >= 10_000
+        if quantity.unit or max(quantity.values, default=0) >= 10_000
     )
 
 
 def is_grounded(quantity: StatedQuantity, evidence: tuple[StatedQuantity, ...]) -> bool:
     """True when an Evidence quantity in a compatible unit rounds to the written value.
 
-    A written unit or currency needs the same one in the Evidence; a written
-    number stands for the values that round to it at its last written digit.
+    A written unit needs the same unit in the Evidence, and a written currency
+    one the Evidence names at least as specifically (``5億元`` does not ground
+    ``新臺幣5億元``, ``$`` does not ground 美元); a written number stands for
+    the values that round to it at its last written digit.
     """
 
     tolerance = quantity.place / 2
     for stated in evidence:
-        if quantity.unit and not quantity.unit & stated.unit:
+        if quantity.unit and not (stated.unit and stated.unit <= quantity.unit):
             continue
         for written in quantity.values:
             for value in stated.values:

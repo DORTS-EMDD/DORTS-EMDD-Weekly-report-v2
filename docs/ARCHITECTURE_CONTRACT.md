@@ -880,8 +880,10 @@ carries the same risk.
   exact factors (thousand = 千, million = 百萬, billion = 十億, trillion = 兆,
   lakh = 十萬, crore = 千萬, 만/万 = 萬, 억 = 億, 조 = 兆). When unsure, the
   source's own number and unit are kept. The Writer never adds a conversion,
-  unit conversion or total the source does not state
-  (formal-report-writer-v7).
+  unit conversion or total the source does not state, and names a currency
+  only as specifically as the source names it: a sign or word shared by
+  several currencies ($, ¥, Rs, 元, dollars, kroner) stays as written
+  (formal-report-writer-v8).
 * **Validator (owner of the check, deterministic).** Before the helper call,
   every Writer quantity in `headline`, `factual_summary` and `taipei_insight`
   that states a unit or currency, or is at least 10,000 (including magnitude
@@ -889,24 +891,40 @@ carries the same risk.
   sources of the request:
   * **Same unit.** A quantity is read with its unit: a dimension (length,
     area, volume, mass, percent, percentage point, and miles as their own
-    unit) or a currency. When the Writer states a unit or currency, an
-    Evidence quantity of the same dimension, or an intersecting currency,
-    must state the value; equal digits in another unit (42 miles / 42公里,
-    30公里 / 30%, 500億円 / 500億美元, percent / percentage points) never
-    ground it. A sign shared by several currencies reads as all of them
-    (`$` is any dollar, `¥` yen or yuan, 元 any yuan-named currency). Metric
-    units of one dimension convert exactly (500 m = 0.5公里); miles never
-    convert. A Writer number without a unit needs only the value.
+    unit) or a currency. When the Writer states a unit, an Evidence quantity
+    of the same dimension must state the value; when it states a currency,
+    the Evidence must name that currency at least as specifically. Equal
+    digits in another unit (42 miles / 42公里, 30公里 / 30%, 500億円 /
+    500億美元, percent / percentage points) never ground it. A sign or word
+    shared by several currencies stands for all of them (`$` any dollar, `¥`
+    yen or yuan, `Rs` any rupee, 元 any yuan- or dollar-named currency), so it
+    grounds an equally unspecific Writer currency but never a specific one
+    the source does not name (5億元 does not ground 新臺幣5億元; $ does not
+    ground 美元). Metric units of one dimension convert exactly (500 m =
+    0.5公里); miles never convert. A Writer number without a unit needs only
+    the value.
   * **Same value at the written precision.** The Writer value must equal an
     Evidence value rounded to the Writer's last written digit (20% grounds
     20.4%; 1,000億 does not ground 1,040億; 31.5公里 does not ground 31 km).
     A relative tolerance is not used, because it accepts different values.
   * **Reading.** Writer text is read in report style (comma groups thousands,
-    dot is the decimal mark). Evidence text is read with every plausible
-    separator convention and with the magnitude words, units and currency
-    names of the configured languages; a range states its magnitude and unit
-    once, on the upper bound. Exact magnitude conversions (crore = 千萬,
-    억 = 億, million = 百萬, ...) remain grounded.
+    dot is the decimal mark). Evidence text is read in the source's own
+    notation, with the magnitude words, units and currency names of the
+    configured languages; a range states its magnitude and unit once, on the
+    upper bound. Exact magnitude conversions (crore = 千萬, 억 = 億,
+    million = 百萬, ...) remain grounded.
+  * **One reading per Evidence number.** A token is unambiguous when it has
+    two different marks (the last is decimal), a repeated mark (grouping,
+    including Indian lakh grouping 1,25,000), or one mark not followed by
+    exactly three digits (decimal). One mark followed by exactly three digits
+    (`5,000`, `1.234`) is resolved, in this order, by: CJK notation of a
+    number written next to CJK text or with a CJK magnitude; the single
+    decimal mark the source's own unambiguous numbers use; a magnitude word
+    only English uses (billion, crore, lakh, bn ...), which is written with a
+    dot decimal; a three-digit tail ending in 0 (a decimal fraction is not
+    written with trailing zeros, so it groups thousands). Otherwise the
+    token is unresolved and grounds nothing; it is never read both ways. A
+    space joins digits only as thousands grouping, never two numbers.
 
   An ungrounded quantity is
   `factual_<field>_quantity_ungrounded`; it uses the event's one semantic
@@ -923,7 +941,8 @@ carries the same risk.
 ```text
 NUMERIC_GROUNDING_OWNER = Validator (deterministic, before the helper)
 NUMERIC_GROUNDING_SCOPE = quantities with a unit or currency | >= 10000 | CJK magnitude
-NUMERIC_GROUNDING_UNIT = same dimension or intersecting currency (exact metric conversion only)
+NUMERIC_GROUNDING_UNIT = same dimension | Evidence currency set within the Writer's (exact metric conversion only)
+NUMERIC_GROUNDING_READING = one notation per Evidence token; unresolved grounds nothing
 NUMERIC_GROUNDING_PRECISION = Evidence value rounded to the Writer's last written digit
 UNGROUNDED_QUANTITY = SEMANTIC_CORRECTION (shared single correction) -> EVENT FAIL
 ```

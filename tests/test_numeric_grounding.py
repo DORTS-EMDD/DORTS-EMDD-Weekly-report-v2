@@ -29,16 +29,45 @@ def _grounded(evidence_text, writer_text):
 
 
 def test_magnitude_words_ranges_and_composed_cjk_amounts_are_read():
-    assert _values("₹5,000 crore to ₹10,000 crore") == [[5e7, 5e10], [1e8, 1e11]]
+    assert _values("₹5,000 crore to ₹10,000 crore") == [[5e10], [1e11]]
     assert _values("1조 9000억 원") == [[1.9e12]]
     assert _values("3万4000人") == [[34000.0]]
     assert _values("16,4 millones de euros") == [[pytest.approx(16.4e6)]]
     assert _values("$1.93 billion") == [[1.93e9]]
     assert _values("€800 millions") == [[8e8]]
     # A range states its magnitude and unit once, on the upper bound.
-    assert _values("5,000～10,000億円") == [[5e8, 5e11], [1e9, 1e12]]
+    assert _values("5,000～10,000億円") == [[5e11], [1e12]]
     # Writer prose is read strictly: comma groups thousands.
     assert _values("5,000億至1兆", strict=True) == [[5e11], [1e12]]
+
+
+@pytest.mark.parametrize(
+    ("text", "values"),
+    [
+        # The source's own unambiguous numbers establish its decimal mark.
+        ("The line is 1,234 km long and costs $1.5 billion.", [[1.234e6], [1.5e9]]),
+        ("Die Strecke ist 1,234 km lang und kostet 1,5 Mrd. Euro.", [[1234.0], [1.5e9]]),
+        ("Le projet de 1.234 km coûtera 2,5 milliards d'euros.", [[1.234e6], [2.5e9]]),
+        # Unresolved: one separator before three digits, nothing else to go by.
+        ("The line is 1,234 km long.", [[]]),
+        # A magnitude word only English uses fixes the dot decimal mark.
+        ("A contract of 91.766 billion KRW", [[9.1766e10]]),
+        ("Kosten von 1.250 Millionen Euro", [[1.25e9]]),
+        ("Kosten von 1.234 Millionen Euro", [[]]),
+        # A decimal fraction is not written with trailing zeros.
+        ("Orders of ₹2,500 crore", [[2.5e10]]),
+        # Notation fixed by the token itself (km are read in metres) or by CJK text next to it.
+        ("₹1,25,000 crore", [[1.25e12]]),
+        ("1.234.567 passengers", [[1234567.0]]),
+        ("1,234,567.5 passengers", [[1234567.5]]),
+        ("1.234.567,5 passengers", [[1234567.5]]),
+        ("0,500 km", [[500.0]]),
+        ("16,4 km", [[16400.0]]),
+        ("運賃は1,234円", [[1234.0]]),
+    ],
+)
+def test_a_separator_is_read_in_the_notation_the_source_establishes(text, values):
+    assert _values(text) == values
 
 
 def test_units_and_currencies_are_read_with_the_number():
@@ -71,6 +100,15 @@ def test_a_tenfold_magnitude_error_is_not_grounded_and_the_exact_conversion_is()
         ("A 4,000 m² depot", "長4,000公尺"),
         ("The contract is worth €800 million.", "合約金額8億英鎊"),
         ("The contract is worth $500 million.", "合約金額5億歐元"),
+        # An ambiguous Evidence number never grounds its other reading.
+        ("Orders of ₹5,000 crore", "訂單5,000萬印度盧比"),
+        ("The line is 1,234 km long.", "全長1,234公里"),
+        ("The line is 1,234 km long.", "全長1.234公里"),
+        # A currency the Evidence does not name is not grounded by a shared sign or word.
+        ("總經費5億元", "總經費新臺幣5億元"),
+        ("The order is worth $1.93 billion.", "訂單金額19.3億美元"),
+        ("¥500 billion", "5,000億日圓"),
+        ("Rs 5,000 crore", "500億印度盧比"),
         # A different value that a relative tolerance would have accepted.
         ("事業費は1,040億円", "經費1,000億日圓"),
         ("Ridership grew 20%.", "運量增加21%"),
@@ -84,16 +122,23 @@ def test_a_number_is_not_grounded_by_the_same_digits_in_another_unit_or_value(ev
 @pytest.mark.parametrize(
     ("evidence", "writer"),
     [
-        ("The order is worth $1.93 billion.", "訂單金額19.3億美元"),
+        ("The order is worth $1.93 billion.", "訂單金額19.3億元"),
+        ("The order is worth $1.93 billion.", "訂單金額$19.3億"),
         ("A$2.5bn upgrade", "25億澳元的升級"),
         ("A €16.4m contract", "1,640萬歐元合約"),
+        ("The order is worth US$1.93 billion.", "訂單金額19.3億美元"),
         ("16,4 millones de euros", "1,640萬歐元"),
         ("총사업비 1조 9000억 원", "總經費1兆9,000億韓元"),
         ("사업비 300억 원", "經費300億韓元"),
-        ("¥500 billion", "5,000億日圓"),
+        ("¥500 billion", "¥5,000億"),
         ("事業費は5,000～10,000億円", "經費5,000億至1兆日圓"),
         ("NT$5億元", "新臺幣5億元"),
-        ("總經費5億元", "總經費新臺幣5億元"),
+        ("總經費5億元", "總經費5億元"),
+        ("新台幣5億元", "新臺幣5億元"),
+        ("Rs 5,000 crore", "500億盧比"),
+        ("Orders of ₹2,500 crore", "訂單250億印度盧比"),
+        ("Die Strecke ist 1,234 km lang und kostet 1,5 Mrd. Euro.", "全長1.234公里"),
+        ("The line is 1,234 km long and costs $1.5 billion.", "全長1,234公里"),
         ("a 31-km line", "全長31公里"),
         ("全長31.5キロ", "全長31.5公里"),
         ("a 500 metres viaduct", "0.5公里高架"),

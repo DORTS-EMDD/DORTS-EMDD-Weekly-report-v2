@@ -727,8 +727,9 @@ class Validator:
                     ]
                     + [
                         f"{field_name.value}: '{text}' is not an amount or measurement the evidence states; give it "
-                        "exactly as the evidence states it (same number and magnitude word, or an exact conversion), "
-                        "and do not add converted values the evidence does not state"
+                        "exactly as the evidence states it (same number, magnitude word and unit, or an exact "
+                        "conversion), name a currency only as specifically as the evidence names it, and do not add "
+                        "converted values the evidence does not state"
                         for field_name, text in ungrounded
                     ]
                 ),
