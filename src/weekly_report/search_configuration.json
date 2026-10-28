@@ -8,6 +8,7 @@
     {
       "market_id": "taiwan",
       "display_name": "Taiwan",
+      "region_id": "TW",
       "primary_profiles": [
         "zh"
       ],
@@ -24,6 +25,7 @@
     {
       "market_id": "south_korea",
       "display_name": "South Korea",
+      "region_id": "KR",
       "primary_profiles": [
         "ko"
       ],
@@ -42,6 +44,7 @@
     {
       "market_id": "hong_kong",
       "display_name": "Hong Kong",
+      "region_id": "HK",
       "primary_profiles": [
         "zh"
       ],
@@ -60,6 +63,7 @@
     {
       "market_id": "united_kingdom",
       "display_name": "United Kingdom",
+      "region_id": "GB",
       "primary_profiles": [
         "en"
       ],
@@ -76,6 +80,7 @@
     {
       "market_id": "germany",
       "display_name": "Germany",
+      "region_id": "DE",
       "primary_profiles": [
         "de"
       ],
@@ -94,6 +99,7 @@
     {
       "market_id": "canada",
       "display_name": "Canada",
+      "region_id": "CA",
       "primary_profiles": [
         "en"
       ],
@@ -113,6 +119,7 @@
     {
       "market_id": "netherlands",
       "display_name": "Netherlands",
+      "region_id": "NL",
       "primary_profiles": [
         "nl"
       ],
@@ -131,6 +138,7 @@
     {
       "market_id": "italy",
       "display_name": "Italy",
+      "region_id": "IT",
       "primary_profiles": [
         "it"
       ],
@@ -149,6 +157,7 @@
     {
       "market_id": "austria",
       "display_name": "Austria",
+      "region_id": "AT",
       "primary_profiles": [
         "de"
       ],
@@ -167,6 +176,7 @@
     {
       "market_id": "norway",
       "display_name": "Norway",
+      "region_id": "NO",
       "primary_profiles": [
         "no"
       ],
@@ -185,6 +195,7 @@
     {
       "market_id": "portugal",
       "display_name": "Portugal",
+      "region_id": "PT",
       "primary_profiles": [
         "pt"
       ],
@@ -203,6 +214,7 @@
     {
       "market_id": "japan",
       "display_name": "Japan",
+      "region_id": "JP",
       "primary_profiles": [
         "ja"
       ],
@@ -221,6 +233,7 @@
     {
       "market_id": "singapore",
       "display_name": "Singapore",
+      "region_id": "SG",
       "primary_profiles": [
         "en"
       ],
@@ -237,6 +250,7 @@
     {
       "market_id": "australia",
       "display_name": "Australia",
+      "region_id": "AU",
       "primary_profiles": [
         "en"
       ],
@@ -253,6 +267,7 @@
     {
       "market_id": "france",
       "display_name": "France",
+      "region_id": "FR",
       "primary_profiles": [
         "fr"
       ],
@@ -271,6 +286,7 @@
     {
       "market_id": "united_states",
       "display_name": "United States",
+      "region_id": "US",
       "primary_profiles": [
         "en"
       ],
@@ -287,6 +303,7 @@
     {
       "market_id": "spain",
       "display_name": "Spain",
+      "region_id": "ES",
       "primary_profiles": [
         "es"
       ],
@@ -305,6 +322,7 @@
     {
       "market_id": "switzerland",
       "display_name": "Switzerland",
+      "region_id": "CH",
       "primary_profiles": [
         "de"
       ],
@@ -328,6 +346,7 @@
     {
       "market_id": "sweden",
       "display_name": "Sweden",
+      "region_id": "SE",
       "primary_profiles": [
         "sv"
       ],
@@ -346,6 +365,7 @@
     {
       "market_id": "denmark",
       "display_name": "Denmark",
+      "region_id": "DK",
       "primary_profiles": [
         "da"
       ],

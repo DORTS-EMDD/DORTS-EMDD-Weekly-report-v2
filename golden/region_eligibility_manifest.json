@@ -1,0 +1,38 @@
+{
+  "golden_version": "region-eligibility-v1",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "stage": "FORMAL_METADATA_REGION_ELIGIBILITY",
+  "live_search": false,
+  "formal_regions": "RegionRegistry.formal_region_ids (production search configuration)",
+  "case_count": 7,
+  "cases": [
+    {
+      "case_id": "R01",
+      "file": "cases/region_designated_event.json"
+    },
+    {
+      "case_id": "R02",
+      "file": "cases/region_domestic_event.json"
+    },
+    {
+      "case_id": "R03",
+      "file": "cases/region_non_designated_event.json"
+    },
+    {
+      "case_id": "R04",
+      "file": "cases/region_unresolved_event.json"
+    },
+    {
+      "case_id": "R05",
+      "file": "cases/region_not_stated_event.json"
+    },
+    {
+      "case_id": "R06",
+      "file": "cases/region_established_by_one_member.json"
+    },
+    {
+      "case_id": "R07",
+      "file": "cases/region_conflicting_members.json"
+    }
+  ]
+}

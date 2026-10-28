@@ -177,6 +177,7 @@ class RegionRegistry:
             locale_hints=_tuple_strings(value.get("locale_hints", ()), "locale_hints"),
             terminology_refs=_tuple_strings(value.get("terminology_refs", ()), "terminology_refs"),
             enabled=value.get("enabled", True),
+            region_id=value.get("region_id", ""),
         )
 
     @staticmethod
@@ -220,6 +221,11 @@ class RegionRegistry:
             raise ValueError("market IDs must be unique across registry configuration")
         if any(not isinstance(market.enabled, bool) for market in all_markets):
             raise TypeError("market enabled must be bool")
+        if any(not market.region_id for market in all_markets):
+            raise ValueError("every configured market requires region_id")
+        selected_regions = tuple(market.region_id for market in self.selected_markets)
+        if len(selected_regions) != len(set(selected_regions)):
+            raise ValueError("selected market region_id values must be unique")
 
         profile_ids = tuple(profile.profile_id for profile in self.profiles)
         if len(profile_ids) != len(set(profile_ids)):
@@ -332,6 +338,16 @@ class RegionRegistry:
         except KeyError as exc:
             raise ValueError("provider profile capability is not configured") from exc
 
+    @property
+    def formal_region_ids(self) -> frozenset[str]:
+        """RC-28: the only regions a formal report may cover, in every region mode.
+
+        They are the regions of the approved selected markets; Search editions
+        only discover, so an event elsewhere is never formally eligible.
+        """
+
+        return frozenset(market.region_id for market in self.selected_markets)
+
     def profiles_for_market(self, market: MarketConfig) -> tuple[str, ...]:
         profiles = (*market.primary_profiles, *market.secondary_profiles, *market.english_supplement_profiles)
         return profiles
@@ -347,6 +363,7 @@ class RegionRegistry:
                 "locale_hints": list(market.locale_hints),
                 "terminology_refs": list(market.terminology_refs),
                 "enabled": market.enabled,
+                "region_id": market.region_id,
             }
 
         return {

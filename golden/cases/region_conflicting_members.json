@@ -1,0 +1,51 @@
+{
+  "case_id": "R07",
+  "name": "region_conflicting_members",
+  "description": "Members establishing different regions remain a conflicting-country exclusion (RC-5).",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-conflict",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-conflict-a",
+        "members": [
+          {
+            "candidate_id": "candidate-conflict-a",
+            "canonical": true,
+            "country": {
+              "basis": "SOURCE_STATED",
+              "value": "South Korea",
+              "region_id": "KR",
+              "display_name": "韓國"
+            },
+            "temporal": {
+              "date_valid": true,
+              "controlling_calendar_date": "2026-10-23"
+            }
+          },
+          {
+            "candidate_id": "candidate-conflict-b",
+            "canonical": true,
+            "country": {
+              "basis": "SOURCE_STATED",
+              "value": "Ukraine",
+              "region_id": "UA",
+              "display_name": "烏克蘭"
+            },
+            "temporal": {
+              "date_valid": true,
+              "controlling_calendar_date": "2026-10-23"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "included": [],
+    "excluded": {
+      "event-conflict": "CONFLICTING_COUNTRY"
+    }
+  }
+}

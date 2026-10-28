@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-27 修訂（2026-10-20～28）
+### RC-3～RC-28 修訂（2026-10-20～28）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.21 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.22 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -335,6 +335,12 @@ Transport retry 與 semantic correction 必須分開計算。
   v3 補韓日文國名與德文城市形容詞。Live 驗收後補充：Scope 明列各語言運具詞（捷運＝MRT
   等，台鐵／高鐵非都市軌道）；主要發生類型以本文新發生者為準；MaiAgent 回傳同一答案
   重複兩次的 content 時，僅在首尾為相同完整 JSON 物件時採用。
+* RC-28（§A.22，使用者鎖定）：正式週報只收錄位於 Search Configuration 核定之 20 個
+  國家／地區（含臺灣）的事件，selected／global 與所有入口一致；名單唯一來源為
+  RegionRegistry（各市場 region_id）；由 ReportService 正式 metadata 投影依
+  EvidenceService 確立的事件所在地判定，不得用搜尋市場、媒體、網址或模型常識；
+  確立於非指定地區者以 NON_DESIGNATED_REGION 排除，所在地無法確立者以
+  REGION_NOT_ESTABLISHED 排除並於報告揭露。
 
 ## 13. Report / Delivery
 
@@ -484,5 +490,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-27 APPLIED (2026-10-28)
+CONTRACT_REVISION = RC-3..RC-28 APPLIED (2026-10-28)
 ```

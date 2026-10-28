@@ -803,6 +803,52 @@ EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v4
 GEOGRAPHIC_REFERENCE_VERSION = geo-reference-v3
 ```
 
+### A.22 RC-28 Formal region eligibility (2026-10-28, user-locked product rule)
+
+GitHub Actions run 40623936647 (2026-10-21..27) published 32 events, nine of
+them established in regions outside the approved list (Ukraine, mainland
+China, Thailand, India, Bangladesh, Vietnam, Peru). Search queries only the
+approved markets' Google News editions, but an edition reports news from
+anywhere; EvidenceService resolved each event's region (RC-4) for display
+only, and no owner compared it with the approved list.
+
+* **Rule (locked by the user).** A formal report covers only events located
+  in the designated regions: the regions of the approved selected markets of
+  the Search configuration (20, including Taiwan). This is a formal
+  eligibility rule, not a Search priority, and it is the same in `selected`
+  and `global` mode and for every entry point (CLI, GitHub Actions,
+  Streamlit), which share one production composition.
+* **Source of truth.** Every configured market carries its ISO 3166-1 alpha-2
+  `region_id` (the code the geographic reference uses);
+  `RegionRegistry.formal_region_ids` is the set of the selected markets'
+  regions. No other list exists.
+* **Owner and evidence.** ReportService decides it in the formal metadata
+  projection, from the event's region as EvidenceService resolved it for its
+  members (RC-4, section K): agreeing established regions give the event's
+  region; members established in different regions remain
+  `CONFLICTING_COUNTRY` (RC-5). Search market, query, edition, publisher,
+  URL, domain and model knowledge are never used.
+* **Outcomes.** Established and designated: eligible. Established and not
+  designated: excluded as `NON_DESIGNATED_REGION` (out of formal scope;
+  recorded in the run summary and trace, not as a report disclosure). No
+  member establishes a region (`UNRESOLVED` or `NOT_STATED`): excluded as
+  `REGION_NOT_ESTABLISHED` and disclosed in the report, because eligibility
+  cannot be confirmed; the event is never presented as located elsewhere.
+  These are event-level exclusions like RC-5; they never abort the run and
+  never restore an event.
+* **Amends RC-4 and section R.** In a formal report the country/region of
+  every published event is now established; 「未能確認」 and 「來源未載明」 no
+  longer appear for country. The transit-system name stays optional.
+* The projection runs before the Writer, so excluded events cost no Writer or
+  Validator call.
+
+```text
+FORMAL_REGION_ELIGIBILITY = ESTABLISHED_REGION IN RegionRegistry.formal_region_ids
+FORMAL_REGION_OWNER = ReportService (formal metadata projection)
+NON_DESIGNATED_REGION = EVENT_LEVEL_EXCLUSION (not disclosed in prose)
+REGION_NOT_ESTABLISHED = EVENT_LEVEL_EXCLUSION (disclosed)
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -1164,7 +1210,8 @@ selected
 * 瑞典
 * 丹麥
 
-目前 selected mode 包含上述 20 個市場。`global` 是獨立的 configured target
+目前 selected mode 包含上述 20 個市場。正式週報只收錄位於這 20 個國家／地區的事件（RC-28，§A.22），
+此為正式收錄資格，不只是搜尋優先順序。`global` 是獨立的 configured target
 mode，不等於 selected 19，也不等於 unrestricted worldwide exploratory
 discovery。Global target set 可以包含 selected 19 以外的額外市場，但每個
 target 必須是 V2 governed/supported，並符合 `DOMESTIC_AND_INTERNATIONAL`
@@ -3857,7 +3904,8 @@ projection and final report assembly. It projects, without model rewriting:
 * canonical source hostname
 * canonical source URL
 
-Country/region and transit-system name are optional (RC-4). Not-stated values
+Country/region must be established and designated for a formal event
+(RC-28, section A.22); the transit-system name is optional (RC-4). Not-stated values
 display 「來源未載明」 and unresolved values display 「未能確認」; neither is
 stored as an entity, inferred, or backfilled. Members establishing different
 regions exclude only that event as `CONFLICTING_COUNTRY` (RC-5), disclosed in

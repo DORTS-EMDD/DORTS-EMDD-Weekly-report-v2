@@ -1,0 +1,36 @@
+{
+  "case_id": "R04",
+  "name": "region_unresolved_event",
+  "description": "When no member's Evidence establishes the region, the event is excluded, not guessed.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-unresolved",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-unresolved",
+        "members": [
+          {
+            "candidate_id": "candidate-unresolved",
+            "canonical": true,
+            "country": {
+              "basis": "UNRESOLVED",
+              "value": "la place du 4-Septembre",
+              "diagnostic": "UNRECOGNIZED_VALUE"
+            },
+            "temporal": {
+              "date_valid": true,
+              "controlling_calendar_date": "2026-10-23"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "included": [],
+    "excluded": {
+      "event-unresolved": "REGION_NOT_ESTABLISHED"
+    }
+  }
+}

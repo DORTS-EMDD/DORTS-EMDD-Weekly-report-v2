@@ -48,6 +48,7 @@ from .report_workflow import ReportWorkflow, ReportWorkflowResult
 from .report_service import (
     FinalReportArtifact,
     FormalMetadataExclusion,
+    FormalMetadataFailureReason,
     FormalReportMetadata,
     ReportDisclosure,
     ReportService,
@@ -849,7 +850,12 @@ class ReportApplication:
         disclosure = ReportDisclosure(
             technical_gap_count=sum(gap.stage != "EventIdentity" for gap in gaps),
             event_identity_gap_count=sum(gap.stage == "EventIdentity" for gap in gaps),
-            metadata_exclusion_count=len(metadata_exclusions),
+            metadata_exclusion_count=sum(
+                item.reason is FormalMetadataFailureReason.CONFLICTING_COUNTRY for item in metadata_exclusions
+            ),
+            region_not_established_count=sum(
+                item.reason is FormalMetadataFailureReason.REGION_NOT_ESTABLISHED for item in metadata_exclusions
+            ),
             validation_failed_count=len(validation_result.failed),
         )
         with observe_stage("Assembly", validation_result.pass_count) as observation:

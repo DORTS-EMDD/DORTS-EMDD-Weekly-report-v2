@@ -549,6 +549,7 @@ class RecordingOrdering(Ordering):
 
 class RecordingReportService(ReportService):
     def __init__(self, *, failure=None, trace=None):
+        super().__init__()
         self.calls = []
         self.failure = failure
         self.trace = trace

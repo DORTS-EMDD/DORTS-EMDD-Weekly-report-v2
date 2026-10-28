@@ -1720,10 +1720,17 @@ class MarketConfig:
     locale_hints: tuple[str, ...] = ()
     terminology_refs: tuple[str, ...] = ()
     enabled: bool = True
+    # RC-28: the ISO 3166-1 alpha-2 region of the market (the code the
+    # geographic reference uses); it defines formal report eligibility.
+    region_id: str = ""
 
     def __post_init__(self) -> None:
         if not isinstance(self.market_id, str) or not self.market_id.strip():
             raise ValueError("market requires market_id")
+        if not isinstance(self.region_id, str) or (
+            self.region_id and not (len(self.region_id) == 2 and self.region_id.isascii() and self.region_id.isupper())
+        ):
+            raise ValueError("market region_id must be an ISO 3166-1 alpha-2 code")
         if not isinstance(self.display_name, str) or not self.display_name.strip():
             raise ValueError("market requires display_name")
         if not isinstance(self.enabled, bool):

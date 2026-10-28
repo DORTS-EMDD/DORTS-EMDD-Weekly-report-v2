@@ -1,0 +1,37 @@
+{
+  "case_id": "R01",
+  "name": "region_designated_event",
+  "description": "An event established in a designated region is formally eligible.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-korea",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-korea",
+        "members": [
+          {
+            "candidate_id": "candidate-korea",
+            "canonical": true,
+            "country": {
+              "basis": "SOURCE_STATED",
+              "value": "South Korea",
+              "region_id": "KR",
+              "display_name": "韓國"
+            },
+            "temporal": {
+              "date_valid": true,
+              "controlling_calendar_date": "2026-10-23"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "included": [
+      "event-korea"
+    ],
+    "excluded": {}
+  }
+}

@@ -665,7 +665,8 @@ class ProductionRunner:
             classifier=classifier,
             report_workflow=workflow,
             ordering=Ordering(),
-            report_service=ReportService(),
+            # RC-28: one formal region rule for every entry point and mode.
+            report_service=ReportService(formal_region_ids=registry.formal_region_ids),
             writer=writer,
             validator=validator,
             delivery=delivery if recipient else None,

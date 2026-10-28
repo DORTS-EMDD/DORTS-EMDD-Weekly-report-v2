@@ -1,0 +1,59 @@
+{
+  "case_id": "R03",
+  "name": "region_non_designated_event",
+  "description": "An event established outside the designated regions is excluded, whatever edition found it.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-ukraine",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-ukraine",
+        "members": [
+          {
+            "candidate_id": "candidate-ukraine",
+            "canonical": true,
+            "country": {
+              "basis": "SOURCE_STATED",
+              "value": "Ukraine",
+              "region_id": "UA",
+              "display_name": "烏克蘭"
+            },
+            "temporal": {
+              "date_valid": true,
+              "controlling_calendar_date": "2026-10-23"
+            }
+          }
+        ]
+      },
+      {
+        "event_id": "event-vietnam",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-vietnam",
+        "members": [
+          {
+            "candidate_id": "candidate-vietnam",
+            "canonical": true,
+            "country": {
+              "basis": "REFERENCE_MAPPED",
+              "value": "Hanoi",
+              "region_id": "VN",
+              "display_name": "越南"
+            },
+            "temporal": {
+              "date_valid": true,
+              "controlling_calendar_date": "2026-10-23"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "included": [],
+    "excluded": {
+      "event-ukraine": "NON_DESIGNATED_REGION",
+      "event-vietnam": "NON_DESIGNATED_REGION"
+    }
+  }
+}

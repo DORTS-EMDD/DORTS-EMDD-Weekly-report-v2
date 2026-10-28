@@ -1,0 +1,34 @@
+{
+  "case_id": "R05",
+  "name": "region_not_stated_event",
+  "description": "A source that states no place cannot make an event formally eligible.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-not-stated",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-not-stated",
+        "members": [
+          {
+            "candidate_id": "candidate-not-stated",
+            "canonical": true,
+            "country": {
+              "basis": "NOT_STATED"
+            },
+            "temporal": {
+              "date_valid": true,
+              "controlling_calendar_date": "2026-10-23"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "included": [],
+    "excluded": {
+      "event-not-stated": "REGION_NOT_ESTABLISHED"
+    }
+  }
+}

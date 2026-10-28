@@ -20,6 +20,8 @@ from src.weekly_report.contracts import (
     EventIdentityRecord,
     EMSystemId,
     IdentityMetadataSupport,
+    RegionResolution,
+    RegionResolutionBasis,
     ReportabilityEvidenceProvenance,
     ReportabilityReason,
     ReportabilityResult,
@@ -75,6 +77,37 @@ def _materialize_ordering_event(event: dict) -> ReportWorkflowResult:
                         synthetic_body.index(location) + len(location),
                     ),
                 ),
+            )
+        country = member.get("country")
+        if country is not None:
+            # RC-28: the member's Evidence region resolution, as EvidenceService
+            # records it; an established region names its exact source value.
+            basis = RegionResolutionBasis(country["basis"])
+            value = country.get("value")
+            synthetic_body = "Synthetic authoritative region fixture content."
+            if value:
+                synthetic_body = f"{synthetic_body} {value}"
+            support = (
+                (IdentityMetadataSupport("country", synthetic_body.index(value), synthetic_body.index(value) + len(value)),)
+                if value else ()
+            )
+            resolution = (
+                RegionResolution(
+                    basis,
+                    region_id=country["region_id"],
+                    display_name=country["display_name"],
+                    source_field="country",
+                    source_value=value,
+                    reference_version="geo-reference-v3",
+                )
+                if basis in (RegionResolutionBasis.SOURCE_STATED, RegionResolutionBasis.REFERENCE_MAPPED)
+                else RegionResolution(basis, diagnostic=country.get("diagnostic", ""))
+            )
+            identity_facts = EventIdentityFacts(
+                country=value or None,
+                metadata_support=support,
+                region_resolution=resolution,
+                unresolved_metadata_fields=("country",) if basis is RegionResolutionBasis.UNRESOLVED and value else (),
             )
         candidate = CanonicalCandidate(
             candidate_id=candidate_id,

@@ -1,0 +1,37 @@
+{
+  "case_id": "R02",
+  "name": "region_domestic_event",
+  "description": "A domestic (Taiwan) event is eligible like any designated region.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-taiwan",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-taiwan",
+        "members": [
+          {
+            "candidate_id": "candidate-taiwan",
+            "canonical": true,
+            "country": {
+              "basis": "REFERENCE_MAPPED",
+              "value": "Taipei",
+              "region_id": "TW",
+              "display_name": "臺灣"
+            },
+            "temporal": {
+              "date_valid": true,
+              "controlling_calendar_date": "2026-10-23"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "included": [
+      "event-taiwan"
+    ],
+    "excluded": {}
+  }
+}

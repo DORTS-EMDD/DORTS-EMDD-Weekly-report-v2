@@ -1,0 +1,50 @@
+{
+  "case_id": "R06",
+  "name": "region_established_by_one_member",
+  "description": "One member establishing a designated region suffices when no member contradicts it.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "input": {
+    "events": [
+      {
+        "event_id": "event-merged",
+        "reportability_state": "REPORTABLE",
+        "canonical_member_candidate_id": "candidate-merged-a",
+        "members": [
+          {
+            "candidate_id": "candidate-merged-a",
+            "canonical": true,
+            "country": {
+              "basis": "SOURCE_STATED",
+              "value": "South Korea",
+              "region_id": "KR",
+              "display_name": "韓國"
+            },
+            "temporal": {
+              "date_valid": true,
+              "controlling_calendar_date": "2026-10-23"
+            }
+          },
+          {
+            "candidate_id": "candidate-merged-b",
+            "canonical": true,
+            "country": {
+              "basis": "UNRESOLVED",
+              "value": "la place du 4-Septembre",
+              "diagnostic": "UNRECOGNIZED_VALUE"
+            },
+            "temporal": {
+              "date_valid": true,
+              "controlling_calendar_date": "2026-10-23"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "included": [
+      "event-merged"
+    ],
+    "excluded": {}
+  }
+}

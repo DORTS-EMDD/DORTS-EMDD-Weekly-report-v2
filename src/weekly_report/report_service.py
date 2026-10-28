@@ -37,6 +37,10 @@ class FormalMetadataFailureReason(StrEnum):
 
     MISSING_COUNTRY = "MISSING_COUNTRY"
     CONFLICTING_COUNTRY = "CONFLICTING_COUNTRY"
+    # RC-28: formal region eligibility. The event's region is established
+    # outside the designated regions, or no member establishes a region.
+    NON_DESIGNATED_REGION = "NON_DESIGNATED_REGION"
+    REGION_NOT_ESTABLISHED = "REGION_NOT_ESTABLISHED"
     MISSING_TRANSIT_SYSTEM_NAME = "MISSING_TRANSIT_SYSTEM_NAME"
     CONFLICTING_TRANSIT_SYSTEM_NAME = "CONFLICTING_TRANSIT_SYSTEM_NAME"
     INVALID_CANONICAL_MEMBER = "INVALID_CANONICAL_MEMBER"
@@ -61,10 +65,16 @@ class FormalMetadataBasis(StrEnum):
     UNRESOLVED = "UNRESOLVED"
 
 
-# Event-level data insufficiency (RC-5): only that event is excluded and the
-# exclusion is disclosed.  Every other FormalMetadataFailureReason is an
-# invariant breach and still aborts the formal run.
-EVENT_LEVEL_METADATA_REASONS = frozenset({FormalMetadataFailureReason.CONFLICTING_COUNTRY})
+# Event-level exclusions: data insufficiency (RC-5, RC-28) and formal region
+# ineligibility (RC-28) exclude only that event.  Every other
+# FormalMetadataFailureReason is an invariant breach and still aborts the run.
+EVENT_LEVEL_METADATA_REASONS = frozenset(
+    {
+        FormalMetadataFailureReason.CONFLICTING_COUNTRY,
+        FormalMetadataFailureReason.NON_DESIGNATED_REGION,
+        FormalMetadataFailureReason.REGION_NOT_ESTABLISHED,
+    }
+)
 
 _NOT_ESTABLISHED_DISPLAY = {
     FormalMetadataBasis.NOT_STATED: "來源未載明",
@@ -255,11 +265,16 @@ class ReportDisclosure:
     """
 
     technical_gap_count: int = 0
+    # Events excluded because members state conflicting countries (RC-5).
     metadata_exclusion_count: int = 0
     validation_failed_count: int = 0
     # RC-15: grouping proposals that failed; their events are reported
     # unmerged, so duplicates may remain.
     event_identity_gap_count: int = 0
+    # RC-28: events excluded because no member's Evidence establishes the
+    # country, so formal eligibility cannot be confirmed. Events established
+    # outside the designated regions are out of scope and not disclosed here.
+    region_not_established_count: int = 0
 
     def __post_init__(self) -> None:
         for name in (
@@ -267,6 +282,7 @@ class ReportDisclosure:
             "metadata_exclusion_count",
             "validation_failed_count",
             "event_identity_gap_count",
+            "region_not_established_count",
         ):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int) or value < 0:
@@ -388,6 +404,21 @@ class FormalMetadataProjection:
 
 class ReportService:
     """Sole mechanical owner of metadata projection and final assembly."""
+
+    def __init__(self, *, formal_region_ids: frozenset[str] | None = None) -> None:
+        # RC-28: the designated regions (RegionRegistry.formal_region_ids).
+        # Production always supplies them; None leaves region eligibility
+        # unchecked for isolated projection fixtures only.
+        if formal_region_ids is not None:
+            regions = frozenset(formal_region_ids)
+            if not regions or any(not isinstance(region, str) or not region.strip() for region in regions):
+                raise ValueError("formal_region_ids must be non-empty region codes")
+            formal_region_ids = regions
+        self._formal_region_ids = formal_region_ids
+
+    @property
+    def formal_region_ids(self) -> frozenset[str] | None:
+        return self._formal_region_ids
 
     def project_formal_metadata(
         self,
@@ -529,6 +560,7 @@ class ReportService:
                 "metadata_exclusion_count": disclosure.metadata_exclusion_count,
                 "validation_failed_count": disclosure.validation_failed_count,
                 "event_identity_gap_count": disclosure.event_identity_gap_count,
+                "region_not_established_count": disclosure.region_not_established_count,
             },
             "events": [
                 {
@@ -589,6 +621,10 @@ class ReportService:
         if disclosure.metadata_exclusion_count:
             notes.append(
                 f"本期有 {disclosure.metadata_exclusion_count} 則事件因來源記載之國家／地區互相衝突，未列入本報告。"
+            )
+        if disclosure.region_not_established_count:
+            notes.append(
+                f"本期有 {disclosure.region_not_established_count} 則事件因來源未能確認所在國家／地區，未列入本報告。"
             )
         if disclosure.validation_failed_count:
             notes.append(
@@ -670,7 +706,15 @@ class ReportService:
         canonical_member = canonical_members[0]
 
         self._validate_upstream_result(result)
-        country, country_basis = self._resolve_country(event_id, records)
+        country, country_basis, region_id = self._resolve_country(event_id, records)
+        if self._formal_region_ids is not None:
+            # RC-28: a formal event must be established, from its members'
+            # Evidence, to lie in a designated region. Search market,
+            # publisher, URL and model knowledge are never used.
+            if region_id is None:
+                self._fail(FormalMetadataFailureReason.REGION_NOT_ESTABLISHED, event_id, member_ids)
+            if region_id not in self._formal_region_ids:
+                self._fail(FormalMetadataFailureReason.NON_DESIGNATED_REGION, event_id, member_ids)
         transit_system_name, transit_system_basis, system_diagnostics = self._resolve_transit_system(
             event_id, records, canonical_member.candidate.candidate_id)
         location, diagnostics = self._resolve_location(event_id, records)
@@ -720,11 +764,12 @@ class ReportService:
     def _resolve_country(
         event_id: str,
         records: tuple[EventIdentityRecord, ...],
-    ) -> tuple[str | None, FormalMetadataBasis]:
+    ) -> tuple[str | None, FormalMetadataBasis, str | None]:
         """Project EvidenceService's region resolution across event members.
 
         Agreeing established regions are displayed; disagreement is a recorded
-        conflict that excludes the event; nothing is chosen.
+        conflict that excludes the event; nothing is chosen. Returns the
+        display name, its basis and the established region code (or None).
         """
 
         established: list[tuple[str, Any]] = []
@@ -750,8 +795,8 @@ class ReportService:
                 if any(item.basis is RegionResolutionBasis.SOURCE_STATED for _, item in established)
                 else FormalMetadataBasis.REFERENCE_MAPPED
             )
-            return resolution.display_name, basis
-        return None, FormalMetadataBasis.NOT_STATED if all_not_stated else FormalMetadataBasis.UNRESOLVED
+            return resolution.display_name, basis, resolution.region_id
+        return None, FormalMetadataBasis.NOT_STATED if all_not_stated else FormalMetadataBasis.UNRESOLVED, None
 
     @staticmethod
     def _resolve_transit_system(
