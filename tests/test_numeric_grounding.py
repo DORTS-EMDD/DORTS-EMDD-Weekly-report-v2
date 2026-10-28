@@ -23,6 +23,11 @@ def _values(text, **kwargs):
     return [sorted(q.values) for q in stated_quantities(text, **kwargs)]
 
 
+def _grounded(evidence_text, writer_text):
+    evidence = stated_quantities(evidence_text)
+    return [is_grounded(quantity, evidence) for quantity in checked_quantities(writer_text)]
+
+
 def test_magnitude_words_ranges_and_composed_cjk_amounts_are_read():
     assert _values("₹5,000 crore to ₹10,000 crore") == [[5e7, 5e10], [1e8, 1e11]]
     assert _values("1조 9000억 원") == [[1.9e12]]
@@ -30,28 +35,84 @@ def test_magnitude_words_ranges_and_composed_cjk_amounts_are_read():
     assert _values("16,4 millones de euros") == [[pytest.approx(16.4e6)]]
     assert _values("$1.93 billion") == [[1.93e9]]
     assert _values("€800 millions") == [[8e8]]
+    # A range states its magnitude and unit once, on the upper bound.
+    assert _values("5,000～10,000億円") == [[5e8, 5e11], [1e9, 1e12]]
     # Writer prose is read strictly: comma groups thousands.
     assert _values("5,000億至1兆", strict=True) == [[5e11], [1e12]]
 
 
-def test_only_large_amounts_and_measured_numbers_are_checked():
+def test_units_and_currencies_are_read_with_the_number():
+    units = {q.text: sorted(q.unit) for q in stated_quantities("a 31-km line, 42 miles, 2.3 percentage points, up 37%, €16.4m, 300억 원")}
+    assert units == {
+        "31-km": ["length"], "42 miles": ["mile"], "2.3 percentage points": ["percentage_point"],
+        "37%": ["percent"], "16.4m": ["EUR"], "300억 원": ["KRW"],
+    }
+
+
+def test_amounts_measures_and_large_magnitudes_are_checked_but_dates_and_counts_are_not():
     checked = [q.text for q in checked_quantities("2026年10月27日，共19站、全長31公里，增加37%，經費1,640萬歐元，34列")]
-    assert checked == ["31", "37", "1,640萬"]
+    assert checked == ["31公里", "37%", "1,640萬歐元"]
 
 
 def test_a_tenfold_magnitude_error_is_not_grounded_and_the_exact_conversion_is():
-    evidence = stated_quantities(CRORE_EVIDENCE)
-    wrong = checked_quantities("金額級距為5,000億至1兆印度盧比")
-    right = checked_quantities("金額級距為500億至1,000億印度盧比")
-    kept = checked_quantities("金額級距為₹5,000～10,000 crore")
-    assert [is_grounded(q, evidence) for q in wrong] == [False, False]
-    assert [is_grounded(q, evidence) for q in right] == [True, True]
-    assert all(is_grounded(q, evidence) for q in kept)
+    assert _grounded(CRORE_EVIDENCE, "金額級距為5,000億至1兆印度盧比") == [False, False]
+    assert _grounded(CRORE_EVIDENCE, "金額級距為500億至1,000億印度盧比") == [True, True]
+    assert all(_grounded(CRORE_EVIDENCE, "金額級距為₹5,000～10,000 crore"))
+
+
+@pytest.mark.parametrize(
+    ("evidence", "writer"),
+    [
+        # Same number, different unit or currency.
+        ("The upgrade covers 42 miles of track.", "涵蓋42公里軌道"),
+        ("全長30公里", "運量增加30%"),
+        ("事業費は500億円", "經費500億美元"),
+        ("Ridership rose 2.3 percentage points.", "運量增加2.3%"),
+        ("A 4,000 m² depot", "長4,000公尺"),
+        ("The contract is worth €800 million.", "合約金額8億英鎊"),
+        ("The contract is worth $500 million.", "合約金額5億歐元"),
+        # A different value that a relative tolerance would have accepted.
+        ("事業費は1,040億円", "經費1,000億日圓"),
+        ("Ridership grew 20%.", "運量增加21%"),
+        ("A 31 km line", "全長31.5公里"),
+    ],
+)
+def test_a_number_is_not_grounded_by_the_same_digits_in_another_unit_or_value(evidence, writer):
+    assert _grounded(evidence, writer) == [False]
+
+
+@pytest.mark.parametrize(
+    ("evidence", "writer"),
+    [
+        ("The order is worth $1.93 billion.", "訂單金額19.3億美元"),
+        ("A$2.5bn upgrade", "25億澳元的升級"),
+        ("A €16.4m contract", "1,640萬歐元合約"),
+        ("16,4 millones de euros", "1,640萬歐元"),
+        ("총사업비 1조 9000억 원", "總經費1兆9,000億韓元"),
+        ("사업비 300억 원", "經費300億韓元"),
+        ("¥500 billion", "5,000億日圓"),
+        ("事業費は5,000～10,000億円", "經費5,000億至1兆日圓"),
+        ("NT$5億元", "新臺幣5億元"),
+        ("總經費5億元", "總經費新臺幣5億元"),
+        ("a 31-km line", "全長31公里"),
+        ("全長31.5キロ", "全長31.5公里"),
+        ("a 500 metres viaduct", "0.5公里高架"),
+        ("Ridership rose 2.3 percentage points.", "運量增加2.3個百分點"),
+        ("승객이 3.5%p 늘었다", "增加3.5個百分點"),
+        ("Ridership grew 20.4%.", "運量增加20%"),
+        ("1,500 tonnes of steel", "1,500公噸鋼材"),
+        ("연간 1160t이 필요하다", "年用量1,160噸"),
+        # The Writer states no currency: the number alone must match.
+        ("₹10,000 crore", "約1,000億"),
+    ],
+)
+def test_a_grounded_amount_or_measure_in_any_source_language_passes(evidence, writer):
+    grounded = _grounded(evidence, writer)
+    assert grounded and all(grounded)
 
 
 def test_an_added_unit_conversion_is_not_grounded():
-    evidence = stated_quantities("The upgrade covers 42 miles of track.")
-    assert [is_grounded(q, evidence) for q in checked_quantities("涵蓋42英里（約68公里）軌道")] == [True, False]
+    assert _grounded("The upgrade covers 42 miles of track.", "涵蓋42英里（約68公里）軌道") == [True, False]
 
 
 def _crore_result():
@@ -80,7 +141,7 @@ def test_validator_rejects_an_ungrounded_amount_without_a_helper_call_and_correc
     )
     assert len(outcome.passed) == 1
     assert "500億至1,000億" in outcome.passed[0].block.factual_summary
-    assert any("'5,000億'" in item for item in feedback_seen) and any("'1兆'" in item for item in feedback_seen)
+    assert any("'5,000億'" in item for item in feedback_seen) and any("'1兆印度盧比'" in item for item in feedback_seen)
     assert len(calls) == 1  # only the corrected block reached the helper
 
 

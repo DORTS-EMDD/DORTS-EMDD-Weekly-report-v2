@@ -884,14 +884,31 @@ carries the same risk.
   (formal-report-writer-v7).
 * **Validator (owner of the check, deterministic).** Before the helper call,
   every Writer quantity in `headline`, `factual_summary` and `taipei_insight`
-  that is at least 10,000, carries a magnitude word (萬, 億, 兆) or is followed
-  by a measurement unit (公里, 公尺, 英里, 公分, 公釐, 公頃, 平方公尺,
-  立方公尺, 公噸, 噸, %, ％, 百分點) must equal a quantity stated in the
-  Evidence sources of the request, within 5% rounding tolerance. Writer text
-  is read in report style (comma groups thousands, dot is the decimal mark);
-  Evidence text is read with every plausible separator convention and with
-  magnitude words of the configured languages, a range sharing the magnitude
-  word of its upper end. An ungrounded quantity is
+  that states a unit or currency, or is at least 10,000 (including magnitude
+  words 萬, 億, 兆), must be grounded by a quantity stated in the Evidence
+  sources of the request:
+  * **Same unit.** A quantity is read with its unit: a dimension (length,
+    area, volume, mass, percent, percentage point, and miles as their own
+    unit) or a currency. When the Writer states a unit or currency, an
+    Evidence quantity of the same dimension, or an intersecting currency,
+    must state the value; equal digits in another unit (42 miles / 42公里,
+    30公里 / 30%, 500億円 / 500億美元, percent / percentage points) never
+    ground it. A sign shared by several currencies reads as all of them
+    (`$` is any dollar, `¥` yen or yuan, 元 any yuan-named currency). Metric
+    units of one dimension convert exactly (500 m = 0.5公里); miles never
+    convert. A Writer number without a unit needs only the value.
+  * **Same value at the written precision.** The Writer value must equal an
+    Evidence value rounded to the Writer's last written digit (20% grounds
+    20.4%; 1,000億 does not ground 1,040億; 31.5公里 does not ground 31 km).
+    A relative tolerance is not used, because it accepts different values.
+  * **Reading.** Writer text is read in report style (comma groups thousands,
+    dot is the decimal mark). Evidence text is read with every plausible
+    separator convention and with the magnitude words, units and currency
+    names of the configured languages; a range states its magnitude and unit
+    once, on the upper bound. Exact magnitude conversions (crore = 千萬,
+    억 = 億, million = 百萬, ...) remain grounded.
+
+  An ungrounded quantity is
   `factual_<field>_quantity_ungrounded`; it uses the event's one semantic
   correction (the Writer is told the value and to state it as the source does)
   and the corrected block is checked again; if it is still ungrounded, the
@@ -905,8 +922,9 @@ carries the same risk.
 
 ```text
 NUMERIC_GROUNDING_OWNER = Validator (deterministic, before the helper)
-NUMERIC_GROUNDING_SCOPE = quantities >= 10000 | CJK magnitude | measurement unit
-NUMERIC_GROUNDING_TOLERANCE = 5%
+NUMERIC_GROUNDING_SCOPE = quantities with a unit or currency | >= 10000 | CJK magnitude
+NUMERIC_GROUNDING_UNIT = same dimension or intersecting currency (exact metric conversion only)
+NUMERIC_GROUNDING_PRECISION = Evidence value rounded to the Writer's last written digit
 UNGROUNDED_QUANTITY = SEMANTIC_CORRECTION (shared single correction) -> EVENT FAIL
 ```
 
@@ -3824,8 +3842,9 @@ it makes no semantic judgement and no helper may split, merge, or rewrite
 units.
 
 Before the call, the Validator also checks numeric grounding (RC-29, section
-A.23): large, magnitude-word and measured Writer quantities must equal a
-quantity the Evidence sources state.
+A.23): Writer quantities with a unit or currency, and large or magnitude-word
+quantities, must equal a quantity the Evidence sources state in the same unit
+or currency, at the precision the Writer writes.
 
 Each bounded request contains exactly `event_id`, `evidence_sources`, and
 `writer_fields`. Each evidence source contains exactly `candidate_id` and
