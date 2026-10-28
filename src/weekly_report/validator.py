@@ -10,6 +10,7 @@ from typing import Any, Protocol
 from urllib.parse import urlparse
 
 from .evidence_sentences import EvidenceSentence, resolve_sentence_ids, segment_evidence_sentences
+from .quantities import checked_quantities, is_grounded, stated_quantities
 from .contracts import (
     SemanticProviderConfigurationFailure,
     ProposalContractViolation,
@@ -691,11 +692,27 @@ class Validator:
             for word in _mixed_script_words(getattr(block, field_name.value))
         ]
         decorations = _headline_decorations(block.headline)
-        if mixed or decorations:
+        request = self._request_for_event(result, block)
+        # Factual grounding (RC-29): every large amount and every measured
+        # number the Writer states must be a quantity the Evidence states;
+        # a language model's arithmetic is never the authority on magnitude.
+        evidence_quantities = tuple(
+            quantity
+            for source in request.evidence_sources
+            for quantity in stated_quantities(source.substantive_content)
+        )
+        ungrounded = [
+            (field_name, quantity.text)
+            for field_name in self._FIELD_NAMES
+            for quantity in checked_quantities(getattr(block, field_name.value))
+            if not is_grounded(quantity, evidence_quantities)
+        ]
+        if mixed or decorations or ungrounded:
             return (
                 tuple(dict.fromkeys(
                     [f"language_{field_name.value}_mixed_script" for field_name, _ in mixed]
                     + (["format_headline_label"] if decorations else [])
+                    + [f"factual_{field_name.value}_quantity_ungrounded" for field_name, _ in ungrounded]
                 )),
                 tuple(
                     [
@@ -708,10 +725,15 @@ class Validator:
                         "symbols or category labels"
                         for item in decorations
                     ]
+                    + [
+                        f"{field_name.value}: '{text}' is not an amount or measurement the evidence states; give it "
+                        "exactly as the evidence states it (same number and magnitude word, or an exact conversion), "
+                        "and do not add converted values the evidence does not state"
+                        for field_name, text in ungrounded
+                    ]
                 ),
             )
 
-        request = self._request_for_event(result, block)
         proposal = self._call_semantic_provider(request)
         self._validate_proposal_structure(request, proposal)
         reasons: list[str] = []

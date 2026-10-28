@@ -863,6 +863,53 @@ NON_DESIGNATED_REGION = EVENT_LEVEL_EXCLUSION (not disclosed in prose)
 REGION_NOT_ESTABLISHED = EVENT_LEVEL_EXCLUSION (disclosed)
 ```
 
+### A.23 RC-29 Numeric grounding (2026-10-28)
+
+Run 40623936647 published an L&T order for Dhaka Metro Line 1 as
+「5,000億至1兆印度盧比」; the source states "₹5,000 crore to ₹10,000 crore"
+(500億～1,000億), a tenfold error. Earliest cause: the Writer instruction asked
+for numbers "in Traditional Chinese report style" without exact conversion
+factors, so the Writer rescaled the magnitude word (1 crore = 千萬, not 億). The
+Validator passed it because grounding of quantities rested only on the
+semantic helper's judgement of a unit; Python checked citation structure, not
+the number. Any amount, magnitude, percentage, distance, area or weight
+carries the same risk.
+
+* **Writer (instruction only).** Numbers are kept exactly as stated: the number
+  and its magnitude word as the source gives them, or converted only with
+  exact factors (thousand = 千, million = 百萬, billion = 十億, trillion = 兆,
+  lakh = 十萬, crore = 千萬, 만/万 = 萬, 억 = 億, 조 = 兆). When unsure, the
+  source's own number and unit are kept. The Writer never adds a conversion,
+  unit conversion or total the source does not state
+  (formal-report-writer-v7).
+* **Validator (owner of the check, deterministic).** Before the helper call,
+  every Writer quantity in `headline`, `factual_summary` and `taipei_insight`
+  that is at least 10,000, carries a magnitude word (萬, 億, 兆) or is followed
+  by a measurement unit (公里, 公尺, 英里, 公分, 公釐, 公頃, 平方公尺,
+  立方公尺, 公噸, 噸, %, ％, 百分點) must equal a quantity stated in the
+  Evidence sources of the request, within 5% rounding tolerance. Writer text
+  is read in report style (comma groups thousands, dot is the decimal mark);
+  Evidence text is read with every plausible separator convention and with
+  magnitude words of the configured languages, a range sharing the magnitude
+  word of its upper end. An ungrounded quantity is
+  `factual_<field>_quantity_ungrounded`; it uses the event's one semantic
+  correction (the Writer is told the value and to state it as the source does)
+  and the corrected block is checked again; if it is still ungrounded, the
+  Event fails. The check reads text mechanically
+  (`src/weekly_report/quantities.py`); it never infers, computes or supplies a
+  value.
+* **Not checked.** Small bare numbers (dates, counts, line numbers, station
+  counts) are not checked deterministically; they remain under the helper's
+  unit grounding. Lowering the threshold would reject correct dates and counts.
+* Not specific to any currency, language, region or source.
+
+```text
+NUMERIC_GROUNDING_OWNER = Validator (deterministic, before the helper)
+NUMERIC_GROUNDING_SCOPE = quantities >= 10000 | CJK magnitude | measurement unit
+NUMERIC_GROUNDING_TOLERANCE = 5%
+UNGROUNDED_QUANTITY = SEMANTIC_CORRECTION (shared single correction) -> EVENT FAIL
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -3775,6 +3822,10 @@ reproduces the field exactly, including punctuation and whitespace. Unit IDs
 are `<field_name>-<1-based index>`. Segmentation is a pure Validator function;
 it makes no semantic judgement and no helper may split, merge, or rewrite
 units.
+
+Before the call, the Validator also checks numeric grounding (RC-29, section
+A.23): large, magnitude-word and measured Writer quantities must equal a
+quantity the Evidence sources state.
 
 Each bounded request contains exactly `event_id`, `evidence_sources`, and
 `writer_fields`. Each evidence source contains exactly `candidate_id` and

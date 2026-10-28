@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-28 修訂（2026-10-20～28）
+### RC-3～RC-29 修訂（2026-10-20～28）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.22 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.23 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -342,6 +342,11 @@ Transport retry 與 semantic correction 必須分開計算。
   確立於非指定地區者以 NON_DESIGNATED_REGION 排除，所在地無法確立者以
   REGION_NOT_ESTABLISHED 排除並於報告揭露。辨識改善：metadata 地點改擷取來源所寫的城市
   （非街道、廣場、車站）；地理參照表 v4 補指定地區城市的韓日中文名稱與缺漏的都市軌道城市。
+* RC-29（§A.23）：數字必須有來源依據。Writer 照來源原數字與量級詞書寫，或只用精確換算
+  （crore＝千萬、million＝百萬、억＝億等），不得自行加上換算值、單位換算或合計；Validator 在
+  helper 呼叫前以確定性規則檢查標題、摘要、啟示中 ≥10,000、帶萬／億／兆或接長度、面積、
+  重量、百分比單位的數字，須與 Evidence 所載數值相符（容差 5%），不符者使用該事件唯一一次
+  改寫，改寫後仍不符則該事件 FAIL；日期、件數等小數字不在確定性檢查範圍。
 
 ## 13. Report / Delivery
 
@@ -491,5 +496,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-28 APPLIED (2026-10-28)
+CONTRACT_REVISION = RC-3..RC-29 APPLIED (2026-10-28)
 ```
