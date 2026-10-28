@@ -87,7 +87,20 @@ jobs:
           args=(--region-mode "$REGION_MODE" --output-dir report-output)
           if [ -n "$PERIOD_START" ]; then args+=(--period-start "$PERIOD_START"); fi
           if [ -n "$PERIOD_END" ]; then args+=(--period-end "$PERIOD_END"); fi
-          python main.py "${args[@]}"
+          code=0
+          python main.py "${args[@]}" || code=$?
+          if [ -f report-output/run_summary.txt ]; then
+            { echo '```'; cat report-output/run_summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          # Exit 2 = report produced and delivered with disclosed technical gaps
+          # (SUCCESS_WITH_TECHNICAL_GAPS): a warning, not a complete success and
+          # not a failed run. Exit 1 (configuration, application, PDF or
+          # delivery failure) still fails the job.
+          if [ "$code" -eq 2 ]; then
+            echo "::warning title=Weekly report::Produced with disclosed technical gaps (SUCCESS_WITH_TECHNICAL_GAPS); see the step summary"
+            exit 0
+          fi
+          exit "$code"
         env:
           PERIOD_START: ${{ inputs.period_start }}
           PERIOD_END: ${{ inputs.period_end }}

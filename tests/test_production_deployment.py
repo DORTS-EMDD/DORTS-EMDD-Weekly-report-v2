@@ -563,6 +563,17 @@ class ShellIntegrationTests(unittest.TestCase):
         # Workflow inputs reach the shell only through environment variables.
         self.assertNotIn("${{ inputs.period_start }}\"", production)
 
+    def test_gapped_success_is_a_warning_and_failures_still_fail(self):
+        # Every real week has disclosed gaps (exit 2); the job must not look
+        # failed then, while exit 1 still fails it.
+        workflow = (ROOT / ".github" / "workflows" / "weekly-report.yml").read_text(encoding="utf-8")
+        cli = workflow.split("      - name: Run shared production CLI", 1)[1].split("      - name: ", 1)[0]
+        self.assertIn('python main.py "${args[@]}" || code=$?', cli)
+        self.assertIn('if [ "$code" -eq 2 ]; then', cli)
+        self.assertIn("::warning title=Weekly report::", cli)
+        self.assertIn('exit "$code"', cli)
+        self.assertIn("GITHUB_STEP_SUMMARY", cli)
+
     def test_production_secrets_are_scoped_to_cli_step(self):
         workflow = (ROOT / ".github" / "workflows" / "weekly-report.yml").read_text(encoding="utf-8")
         production = workflow.split("\n  production:\n", 1)[1]
