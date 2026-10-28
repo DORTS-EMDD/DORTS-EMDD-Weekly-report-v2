@@ -340,7 +340,8 @@ Transport retry 與 semantic correction 必須分開計算。
   RegionRegistry（各市場 region_id）；由 ReportService 正式 metadata 投影依
   EvidenceService 確立的事件所在地判定，不得用搜尋市場、媒體、網址或模型常識；
   確立於非指定地區者以 NON_DESIGNATED_REGION 排除，所在地無法確立者以
-  REGION_NOT_ESTABLISHED 排除並於報告揭露。
+  REGION_NOT_ESTABLISHED 排除並於報告揭露。辨識改善：metadata 地點改擷取來源所寫的城市
+  （非街道、廣場、車站）；地理參照表 v4 補指定地區城市的韓日中文名稱與缺漏的都市軌道城市。
 
 ## 13. Report / Delivery
 

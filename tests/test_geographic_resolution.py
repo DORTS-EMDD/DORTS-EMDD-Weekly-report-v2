@@ -52,7 +52,7 @@ def _evaluate(observations, body):
 class GeographicReferenceTests(unittest.TestCase):
     def test_reference_is_versioned_and_matches_whole_values_only(self):
         reference = default_geographic_reference()
-        self.assertEqual(reference.version, "geo-reference-v3")
+        self.assertEqual(reference.version, "geo-reference-v4")
         self.assertEqual(reference.lookup("vietnam").kind, GeographicMatchKind.REGION)
         self.assertEqual(reference.lookup("Hanoi Metro").kind, GeographicMatchKind.SYSTEM)
         self.assertEqual(reference.lookup("Hanoi").kind, GeographicMatchKind.CITY)
@@ -89,7 +89,7 @@ class RegionResolutionTests(unittest.TestCase):
         resolution = _resolve(system="Hanoi Metro")
         self.assertEqual(
             (resolution.basis, resolution.region_id, resolution.source_field, resolution.reference_version),
-            (RegionResolutionBasis.REFERENCE_MAPPED, "VN", "transit_system_name", "geo-reference-v3"),
+            (RegionResolutionBasis.REFERENCE_MAPPED, "VN", "transit_system_name", "geo-reference-v4"),
         )
 
     def test_conflicting_regions_are_unresolved_without_choosing(self):
@@ -212,3 +212,49 @@ def test_v3_resolves_korean_japanese_country_names_and_city_adjectives():
     # Short names that are also ordinary words are not in the reference.
     for value in ("인도 위 사고", "タイヤ交換", "~이란 무엇"):
         assert reference.lookup(value) is None and reference.lookup_contained(value) is None
+
+
+def test_v4_resolves_designated_cities_in_other_scripts_and_listed_rail_cities():
+    # RC-28 recognition: the source's own city value, in whatever script it is
+    # written, resolves to its region; nothing is inferred beyond the value.
+    from src.weekly_report.geographic_reference import default_geographic_reference
+
+    reference = default_geographic_reference()
+    expected = {
+        "뉴욕 지하철": "US", "ロサンゼルス": "US", "紐約": "US", "파리": "FR", "マルセイユ": "FR",
+        "Vaulx-en-Velin": "FR", "Bergamo": "IT", "바르셀로나": "ES", "ソウル": "KR", "타이베이": "TW",
+    }
+    for value, region in expected.items():
+        match = reference.lookup(value) or reference.lookup_contained(value)
+        assert match is not None and match.region_id == region, value
+    # Values without a place name, and ordinary words, still resolve nothing.
+    for value in ("la place du 4-Septembre", "メトロDライン", "전국 지하철", "T2", "漢堡", "タイヤ交換"):
+        assert reference.lookup(value) is None and reference.lookup_contained(value) is None, value
+
+
+def test_v4_added_no_name_to_two_regions():
+    import json
+    from collections import defaultdict
+    from pathlib import Path as _Path
+
+    data = json.loads((_Path(__file__).resolve().parents[1] / "src/weekly_report/geographic_reference.json").read_text(encoding="utf-8"))
+    owners = defaultdict(set)
+    for region in data["regions"]:
+        for name in region["names"]:
+            owners[name.casefold()].add(region["region_id"])
+    for place in data["places"]:
+        for name in (*place["cities"], *place["systems"]):
+            owners[name.casefold()].add(place["region_id"])
+    assert {name: ids for name, ids in owners.items() if len(ids) > 1} == {}
+
+
+def test_metadata_location_is_the_city_the_source_states():
+    from src.weekly_report.maiagent_evidence_metadata_provider import (
+        EVIDENCE_METADATA_PROMPT_VERSION,
+        EVIDENCE_METADATA_INSTRUCTIONS,
+    )
+
+    text = " ".join(EVIDENCE_METADATA_INSTRUCTIONS)
+    assert EVIDENCE_METADATA_PROMPT_VERSION == "evidence-metadata-principal-body-v4"
+    assert "city, municipality or metropolitan area where the event happens as the source writes it" in text
+    assert "Do not infer geography, country from a city" in text

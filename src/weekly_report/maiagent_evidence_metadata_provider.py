@@ -21,7 +21,7 @@ from .maiagent_transport import (
 )
 
 
-EVIDENCE_METADATA_PROMPT_VERSION = "evidence-metadata-principal-body-v3"
+EVIDENCE_METADATA_PROMPT_VERSION = "evidence-metadata-principal-body-v4"
 EVIDENCE_METADATA_SCHEMA_VERSION = "evidence-metadata-proposal-v2"
 EVIDENCE_METADATA_HELPER_VERSION = "maiagent-structured-helper-adapter-v2"
 MAIAGENT_EVIDENCE_METADATA_PROVIDER_IDENTIFIER = "maiagent-structured-helper-metadata"
@@ -60,7 +60,7 @@ EVIDENCE_METADATA_INSTRUCTIONS = (
     "Use only the supplied principal_body_segments in the current request.",
     "Return exact nonblank source-surface strings only; do not translate or normalize aliases.",
     "The only governed fields are country, transit_system_name, and location.",
-    "Report at most one value per field, for the document's principal reported event: the country it is stated to happen in, the transit system it concerns, and the place where it happens. Do not report other systems or places that are only mentioned, such as a connecting or transfer line, a comparison, background, or another event; when the principal event itself concerns several systems or places equally, omit that field.",
+    "Report at most one value per field, for the document's principal reported event: the country it is stated to happen in, the transit system it concerns, and the place where it happens. For location report the city, municipality or metropolitan area where the event happens as the source writes it (for example 'Marseille', 'ロサンゼルス' or '뉴욕', not a street, square, station or venue inside it); report a street, square, station or venue only when the source names no city for the event. Do not report other systems or places that are only mentioned, such as a connecting or transfer line, a comparison, background, or another event; when the principal event itself concerns several systems or places equally, omit that field.",
     "Do not infer geography, country from a city, or a transit system from an operator or outside knowledge.",
     "Do not search, browse, use RAG, use tools, retrieve external knowledge, or supplement the supplied source.",
     "For every observation, return the segment_id containing the exact source-surface value.",

@@ -841,6 +841,20 @@ only, and no owner compared it with the approved list.
   longer appear for country. The transit-system name stays optional.
 * The projection runs before the Writer, so excluded events cost no Writer or
   Validator call.
+* **Recognition (EvidenceService and the geographic reference; the rule is
+  unchanged).** Of the seven events of run 40623936647 whose region was not
+  established, six sources state the city in their principal text and one
+  (a Korean government plan) names no country or city, so it stays
+  unconfirmed. Two root causes: (1) the metadata instruction asked for "the
+  place where it happens", so extraction returned a square, station or avenue;
+  it now asks for the city, municipality or metropolitan area as the source
+  writes it, a street or venue only when no city is named
+  (evidence-metadata-principal-body-v4); (2) the reference listed designated
+  cities mostly in their local Latin names; geo-reference-v4 adds their
+  Korean, Japanese and Traditional Chinese names and missing urban-rail cities
+  of designated regions, leaving out names that are ordinary words. Country is
+  still never inferred from a city by the model, a publisher or a Search
+  market; only a stated value that the reference maps establishes it.
 
 ```text
 FORMAL_REGION_ELIGIBILITY = ESTABLISHED_REGION IN RegionRegistry.formal_region_ids
