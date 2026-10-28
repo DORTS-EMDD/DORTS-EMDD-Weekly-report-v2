@@ -1373,4 +1373,4 @@ run_summary 只有 `technical_gaps_eventidentity=1`。三組無關事件同時�
 - **可能不成報。** 10/23 國會質詢一組本質上是政治人物質詢與官員答覆，依 RC-25/27 可能屬不成報類別，需以 Reportability 診斷確認。
 - **RC-28 已排除部分事件。** 「韓國全國 5G Wi-Fi」一則在 RC-28 下已因所在地無法確立而排除；基輔各則因非指定地區而排除。這些只是附帶結果，不是合併問題的修正。
 
-**測試：** 新增 `tests/test_numeric_grounding.py`（9 項）；全套 1108 全過；Golden 29＋R01–R07 全過，未修改。
+**測試：** 新增 `tests/test_numeric_grounding.py`（7 項）；全套 1108 全過；Golden 29＋R01–R07 全過，未修改。
