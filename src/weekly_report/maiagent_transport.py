@@ -122,6 +122,37 @@ class MaiAgentResponseError(ValueError):
     """The proven outer-envelope-to-inner-JSON contract was not met."""
 
 
+def _duplicated_content_object(content: str) -> Any:
+    """Return the answer when the platform repeated one complete JSON object.
+
+    RC-27: MaiAgent sometimes streams ``content`` as the complete answer, a
+    stray fragment such as ``,"status":"complete"}``, then the identical
+    complete answer again. Only that shape is accepted: the content must start
+    with a complete JSON object and end with a complete JSON object equal to
+    it, and non-empty. Different, partial or empty objects stay unparseable
+    (RC-6 retry, then gap).
+    """
+
+    decoder = json.JSONDecoder()
+    text = content.strip()
+    try:
+        first, first_end = decoder.raw_decode(text)
+    except ValueError:
+        return None
+    if not isinstance(first, dict) or not first or first_end >= len(text):
+        return None
+    start = text.find("{", first_end)
+    while start != -1:
+        try:
+            last, last_end = decoder.raw_decode(text, start)
+        except ValueError:
+            last, last_end = None, -1
+        if last_end == len(text):
+            return first if last == first else None
+        start = text.find("{", start + 1)
+    return None
+
+
 def parse_maiagent_response(response_body: bytes) -> dict[str, Any]:
     """Parse only outer JSON → top-level content string → inner JSON object."""
 
@@ -139,7 +170,9 @@ def parse_maiagent_response(response_body: bytes) -> dict[str, Any]:
     try:
         proposal = json.loads(content)
     except (TypeError, ValueError):
-        raise MaiAgentResponseError("MaiAgent content is invalid proposal JSON") from None
+        proposal = _duplicated_content_object(content)
+        if proposal is None:
+            raise MaiAgentResponseError("MaiAgent content is invalid proposal JSON") from None
     if not isinstance(proposal, dict):
         raise MaiAgentResponseError("MaiAgent proposal must be an object")
     return proposal

@@ -332,7 +332,7 @@ class ReportabilityCriteriaTests(unittest.TestCase):
         from src.weekly_report.maiagent_reportability_provider import PROMPT_VERSION, REPORTABILITY_INSTRUCTIONS
 
         instructions = " ".join(REPORTABILITY_INSTRUCTIONS)
-        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v6")
+        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v7")
         self.assertIn("Accepted value paths", instructions)
         self.assertIn("substantive technical research, testing, pilots or deployments", instructions)
         self.assertIn("procurement, demonstration or trial activity", instructions)

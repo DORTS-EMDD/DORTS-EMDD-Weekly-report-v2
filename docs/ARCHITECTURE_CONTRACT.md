@@ -771,10 +771,30 @@ Evidence and the journal:
 * **Reviewed and correct.** E&M labels of the Busan strike (rolling-stock heavy
   maintenance and platform-screen-door inspection crews) and the Brno tender
   (electronic ticketing required on the trams) cite the Evidence.
+* **Live acceptance findings (2026-10-28).**
+  * Scope left every system named 「…捷運」 at `eligible_mode_family =
+    UNKNOWN` (Keelung MRT budget and E&M turnkey award, Taoyuan Green Line
+    stations). The Scope instruction names mode words in other languages
+    (捷運 = MRT; 地鐵/地下鉄/지하철 = METRO or SUBWAY; 도시철도 = URBAN_RAIL;
+    輕軌/경전철 = LIGHT_RAIL; 路面電車/트램 = TRAM) and states that 台鐵, 高鐵 and
+    JR intercity lines are not urban rail (scope-event-target-system-v10).
+  * The principal occurrence is what the evidence reports as new; background
+    facts (an earlier opening, delivery, contract or test) are not it, so an
+    award story stays `AWARD_OR_RANKING` and an official's ride on a test train
+    stays `VISIT_INSPECTION_OR_STATEMENT` (reportability-principal-body-v7).
+  * **Duplicated platform content (amends RC-6 parseability).** MaiAgent
+    sometimes returns `content` as the complete answer, a stray
+    `,"status":"complete"}` fragment and the identical answer again; four
+    events were lost to it in one pass. The transport parser accepts exactly
+    that shape: a non-empty complete JSON object at the start and an equal
+    complete object at the end. Different, partial or empty objects remain
+    unparseable (retry once, then a disclosed gap).
 
 ```text
 SEARCH_GEOGRAPHY = DOMESTIC_AND_INTERNATIONAL (search-discovery-v7)
-REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v6
+SCOPE_PROMPT_VERSION = scope-event-target-system-v10
+REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v7
+MAIAGENT_CONTENT_PARSE = SINGLE_JSON_OBJECT OR IDENTICAL_REPEATED_OBJECT
 REPORTABILITY_SCHEMA_VERSION = reportability-semantic-proposal-v3
 REPORTABILITY_LOW_VALUE_OCCURRENCES = AWARD_OR_RANKING, VISIT_INSPECTION_OR_STATEMENT, FEATURE_OR_BACKGROUND
 VALIDATION_PROMPT_VERSION = validation-evidence-writer-v5

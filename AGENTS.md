@@ -332,7 +332,9 @@ Transport retry 與 semantic correction 必須分開計算。
   helper 須標示主要發生類型，獎項排名、視察與發言、背景專題由 Python 判為不成報；
   臺北捷運局啟示中只提出建議的單元屬 ANALYSIS（引用事件句子），只有陳述無依據事實者
   才是 UNSUPPORTED；啟示須具體、不得就臺灣事件聲稱捷運局自身角色或狀態；地理參照表
-  v3 補韓日文國名與德文城市形容詞。
+  v3 補韓日文國名與德文城市形容詞。Live 驗收後補充：Scope 明列各語言運具詞（捷運＝MRT
+  等，台鐵／高鐵非都市軌道）；主要發生類型以本文新發生者為準；MaiAgent 回傳同一答案
+  重複兩次的 content 時，僅在首尾為相同完整 JSON 物件時採用。
 
 ## 13. Report / Delivery
 

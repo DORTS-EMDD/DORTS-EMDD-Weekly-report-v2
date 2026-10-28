@@ -33,7 +33,7 @@ from .scope_classifier import (
 
 
 TASK_IDENTITY = "scope_semantic_proposal"
-PROMPT_VERSION = "scope-event-target-system-v9"
+PROMPT_VERSION = "scope-event-target-system-v10"
 SCHEMA_VERSION = SCOPE_PROPOSAL_SCHEMA_VERSION
 HELPER_VERSION = "maiagent-structured-helper-scope-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-scope"
@@ -52,6 +52,7 @@ SCOPE_SEMANTIC_INSTRUCTIONS = (
     "The affected target is not automatically the operator, owner, city, publisher, nearby station, route, or whole Metro system. For example, installed platform-door equipment is the target, and irrigation or sculptures installed for a neighbouring park remain park equipment. Do not infer target-system membership from transport vocabulary or proximity.",
     "Use action_target relation AFFECTS when the action acts on the target. Use LOCATED_AT only when the Candidate event itself takes place on or in the target, and the target is a station, platform, train, depot, track or other facility of the transport system (for example a derailment, fire, assault or breakdown on a platform or train). Proximity, nearby or adjacent locations are never LOCATED_AT. Whether such an event is worth reporting is decided elsewhere, not here.",
     "When the source supports eligibility, use exactly one canonical eligible_mode_family: METRO, MRT, SUBWAY, LIGHT_RAIL, TRAM, URBAN_RAIL, AGT, MONORAIL, or PEOPLE_MOVER. Urban maglev maps to URBAN_RAIL; AGT and People Mover remain distinct. NON_ELIGIBLE and UNKNOWN are valid when their respective noneligible or unresolved status is supported; do not force an eligible family.",
+    "Mode words in any language state the family: 捷運 (Taiwan's word for MRT, including 機場捷運) is MRT; 地鐵, 地铁, 地下鉄 and 지하철 are METRO or SUBWAY; 도시철도 (urban railway) is URBAN_RAIL; 輕軌, 轻轨, ライトレール and 경전철 are LIGHT_RAIL; 路面電車, 有軌電車 and 트램 are TRAM. A system named with such a word (for example 基隆捷運, 桃園捷運綠線 or 臺北捷運) is described by the source as that mode. Conventional and high-speed railways such as 台鐵/臺鐵, 高鐵 and JR intercity lines are not urban rail.",
     "Commuter, suburban, regional, S-Bahn, S-tog and RER labels neither include nor exclude a system by name. Use an eligible family for such a service only when the supplied source itself describes the affected system as metro, light rail, tram, or urban rapid transit; a commuter or suburban description alone is UNKNOWN or NON_URBAN_RAIL, never URBAN_RAIL.",
     "Endpoints are labels: action.label, target.label and system.label are short exact source-surface substrings (original language and form; do not translate, paraphrase, normalize, conjugate, or invent). action.label must differ from target.label and system.label. target.label and system.label may be the same text when the action affects the system itself, such as a new line, extension or network.",
     "Copy each label character for character from one sentence, keeping its inflection, conjugation and particles exactly as written there (if the sentence says 'agredidos', the label is 'agredidos', not 'agresión'; if it says 'trikk', not 'trikken'). Cite in action_target and in target_system every sentence that contains one of that relation's labels, so each relation's citation contains its endpoints.",

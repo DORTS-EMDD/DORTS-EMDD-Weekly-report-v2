@@ -156,3 +156,31 @@ class TechnicalGapTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+
+def test_platform_duplicated_content_is_the_repeated_answer():
+    # RC-27: observed live - the answer, a stray status fragment, the answer again.
+    import json as _json
+
+    from src.weekly_report.maiagent_transport import MaiAgentResponseError, parse_maiagent_response
+
+    answer = {"event_id": "E1", "headline": "標題", "factual_summary": "摘要", "taipei_insight": "啟示"}
+    text = _json.dumps(answer, ensure_ascii=False, separators=(",", ":"))
+
+    def body(content):
+        return _json.dumps({"conversationId": "c", "content": content}, ensure_ascii=False).encode("utf-8")
+
+    assert parse_maiagent_response(body(text + ',"status":"complete"} \n\n' + text)) == answer
+    other = _json.dumps({**answer, "headline": "另一個標題"}, ensure_ascii=False)
+    for bad in (
+        text + ',"status":"complete"} \n\n' + other,  # two different answers
+        text + ',"status":"complete"}',  # no repeated answer
+        text[:-5] + "\n\n" + text,  # truncated first copy
+        text + "\n" + text + "\n" + "{",  # trailing junk
+    ):
+        try:
+            parse_maiagent_response(body(bad))
+        except MaiAgentResponseError:
+            continue
+        raise AssertionError(f"accepted: {bad[-40:]!r}")

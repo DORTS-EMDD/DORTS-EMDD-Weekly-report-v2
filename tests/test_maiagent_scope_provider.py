@@ -36,7 +36,7 @@ def test_prompt_and_schema_express_conditional_citation_obligations():
     instructions = " ".join(payload["instructions"])
     schema = MAIAGENT_SCOPE_RESPONSE_SCHEMA["properties"]
     # RC-9: citations are Python sentence IDs; no field carries copied text.
-    assert PROMPT_VERSION == "scope-event-target-system-v9"
+    assert PROMPT_VERSION == "scope-event-target-system-v10"
     assert SCOPE_PROPOSAL_SCHEMA_VERSION == "scope-semantic-proposal-v4"
     assert payload["scope_request"]["principal_sentences"][0]["sentence_id"] == "S1"
     assert "principal_content" not in payload["scope_request"]
@@ -152,3 +152,12 @@ def test_scope_provider_transport_failure_category_is_safe():
         provider(_request())
     assert caught.value.failure_class == "CONNECTION"
     assert "provider supplied details" not in str(caught.value)
+
+
+def test_mode_words_in_other_languages_name_the_family():
+    # RC-27: 捷運 is Taiwan's word for MRT; conventional railways stay out.
+    from src.weekly_report.maiagent_scope_provider import SCOPE_SEMANTIC_INSTRUCTIONS as SCOPE_INSTRUCTIONS
+
+    text = " ".join(SCOPE_INSTRUCTIONS)
+    assert "捷運 (Taiwan's word for MRT" in text
+    assert "台鐵/臺鐵, 高鐵 and JR intercity lines are not urban rail" in text
