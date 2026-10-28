@@ -1,0 +1,5980 @@
+{
+ "attempt_started_utc": "2026-10-28T01:31:45.572246+00:00",
+ "git_head": "cbdb0103174dd963050f89074533db2223b5574f",
+ "dry_run": false,
+ "period": [
+  "2026-10-14",
+  "2026-10-20"
+ ],
+ "abort": null,
+ "ledger": {
+  "live": {
+   "maiagent": 1896,
+   "http": 2537
+  },
+  "replayed": {
+   "maiagent": 4972,
+   "rss": 1293,
+   "link": 7834,
+   "fetch": 4067
+  },
+  "attempts": [
+   {
+    "started_utc": "prior",
+    "pid": null,
+    "seconds": 2040.0
+   },
+   {
+    "started_utc": "2026-10-21T09:00:00.887820+00:00",
+    "pid": 6848,
+    "seconds": 557.9
+   },
+   {
+    "started_utc": "2026-10-22T00:11:39.991461+00:00",
+    "pid": 19124,
+    "seconds": 643.6
+   },
+   {
+    "started_utc": "2026-10-22T00:25:13.656767+00:00",
+    "pid": 18536,
+    "seconds": 1744.9
+   },
+   {
+    "started_utc": "2026-10-22T01:05:44.350281+00:00",
+    "pid": 3652,
+    "seconds": 882.6
+   },
+   {
+    "started_utc": "2026-10-22T01:22:00.451618+00:00",
+    "pid": 13884,
+    "seconds": 336.4
+   },
+   {
+    "started_utc": "2026-10-22T02:01:39.321374+00:00",
+    "pid": 3492,
+    "seconds": 414.3
+   },
+   {
+    "started_utc": "2026-10-22T05:37:43.361591+00:00",
+    "pid": 20488,
+    "seconds": 1319.5
+   },
+   {
+    "started_utc": "2026-10-22T06:10:39.211156+00:00",
+    "pid": 11912,
+    "seconds": 163.2
+   },
+   {
+    "started_utc": "2026-10-22T06:16:55.780253+00:00",
+    "pid": 26100,
+    "seconds": 905.2
+   },
+   {
+    "started_utc": "2026-10-22T06:48:49.053003+00:00",
+    "pid": 19024,
+    "seconds": 354.8
+   },
+   {
+    "started_utc": "2026-10-22T08:05:00.431055+00:00",
+    "pid": 21820,
+    "seconds": 894.3
+   },
+   {
+    "started_utc": "2026-10-28T01:31:06.484221+00:00",
+    "pid": 1632,
+    "seconds": 0.7
+   },
+   {
+    "started_utc": "2026-10-28T01:31:16.945914+00:00",
+    "pid": 7244,
+    "seconds": 2.6
+   },
+   {
+    "started_utc": "2026-10-28T01:31:45.499124+00:00",
+    "pid": 25648,
+    "seconds": 928.4
+   }
+  ],
+  "prior_spend": {
+   "usage": {
+    "maiagent": 255,
+    "http": 1150,
+    "seconds": 2040
+   },
+   "note": "Killed attempt 2026-10-21 15:47-16:21 without a journal: 250 MaiAgent responses recorded (+5 allowance for unrecorded timeouts); HTTP estimated from 137 judge calls (~320 candidates x ~3.1 requests + 117 RSS); ~34 min."
+  },
+  "live_by_kind": {
+   "rss": 122,
+   "link": 812,
+   "fetch": 453,
+   "maiagent": 1641
+  }
+ },
+ "budgets": {
+  "http": 2568,
+  "maiagent": 1992,
+  "seconds": 12956
+ },
+ "maiagent_seeding": {},
+ "run_status": "SUCCESS_WITH_TECHNICAL_GAPS",
+ "run_failure": {
+  "stage": null,
+  "class": null,
+  "diagnostic": null
+ },
+ "stage_counts": {
+  "search_plan": 122,
+  "search_attempts": 122,
+  "search_unattempted": 0,
+  "acquisitions": 537,
+  "normalized_observations": 122,
+  "evidence_results": 406,
+  "scope_results": 131,
+  "temporal_results": 88,
+  "event_identity_records": 74,
+  "category_results": 49,
+  "downstream_results": 49,
+  "ordered_results": 39,
+  "formal_metadata": 39,
+  "writer_blocks": 37,
+  "validation_passed": 35,
+  "validation_failed": 0,
+  "final_report_events": 35,
+  "technical_gaps": 25,
+  "technical_gaps_scope": 18,
+  "technical_gaps_eventidentity": 3,
+  "technical_gaps_writer": 2,
+  "technical_gaps_validator": 2,
+  "metadata_exclusions": 0
+ },
+ "stage_elapsed_ms": {
+  "Search": 1172,
+  "Acquisition": 15,
+  "Normalization": 32,
+  "Evidence": 134719,
+  "Scope": 26875,
+  "Temporal": 47,
+  "EventIdentity": 56344,
+  "Category": 6375,
+  "Taxonomy": 3734,
+  "Reportability": 179422,
+  "Ordering": 16,
+  "FormalMetadata": 46,
+  "Writer": 301313,
+  "Validator": 211280,
+  "Assembly": 15
+ },
+ "maiagent_calls_by_task": {
+  "live": {
+   "evidence_semantic_judge": 6,
+   "evidence_metadata_extraction": 6,
+   "scope_semantic_proposal": 6,
+   "event_identity_semantic_proposal": 14,
+   "category_semantic_proposal": 2,
+   "taxonomy_semantic_proposal": 1,
+   "reportability_semantic_proposal": 43,
+   "writer": 46,
+   "validation_semantic_check": 40
+  },
+  "replay": {
+   "evidence_semantic_judge": 174,
+   "evidence_metadata_extraction": 143,
+   "scope_semantic_proposal": 143,
+   "category_semantic_proposal": 47,
+   "taxonomy_semantic_proposal": 41
+  }
+ },
+ "maiagent_outcomes": {
+  "HTTP_200": 711,
+  "TRANSPORT_ERROR:TimeoutError": 1
+ },
+ "final_report_event_count": 35,
+ "evidence_gates": {
+  "READY": 149,
+  "SOURCE_PROVENANCE": 44,
+  "FETCH_TRANSPORT": 48,
+  "PRINCIPAL_DOCUMENT": 134,
+  "SEMANTIC_MATCH": 31
+ },
+ "candidate_outcomes": {
+  "cand_024846e6b51bfb7757c1b07604c3381d0512fce51f4fd8f0059031c4b5637a5c": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "양산도시철도",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_3e8ad4a476e097ad3fcc8069",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "號誌"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "양산 도시철도",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_025067d613acd65cf61425bf958f0de0916ac3e4384c693535c5dce020b1f958": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "서울 지하철",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_a57dec1557c65fcf6adfd059",
+   "category": "CATEGORY_UNRESOLVED",
+   "primary_category": null,
+   "taxonomy": [],
+   "taxonomy_state": "NOT_EVALUATED",
+   "reportability": "NOT_EVALUATED"
+  },
+  "cand_0316e85435fda18e78a8ac2043bbea569fd197af92971eb69b962751038fe7e3": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": "東京メトロ日比谷線",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_bc76f5b3d7465d7f651506de",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "事故事件",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "日本",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "東京メトロ日比谷線",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_03c442abe10844a3e316b81ae0a7bba9ff8d939ea6655d8323e43c8e5c558178": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_05547412037532f39e4f11bcb854d9d67397449fa024597563881b676cab4165": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_06190afc22a577b01a347e9893a4f439229df581fdf033923ef32187d83ccf49": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "波蘭",
+    ""
+   ],
+   "system_name": "바르샤바 트램",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_7ae11e207f8a86e15fc7df5a",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "採購事件",
+   "taxonomy": [
+    "電聯車"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "波蘭",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "바르샤바 트램",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_0743373b1aafe749b530faa203062846cfe3dd068de1bb2d74c0c5f535621852": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_0749cfec8bcdbb32cb75d33c1a16e2b05494fc07d2dc08c6d46b27a567bfe5ee": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_0814f375082479154e19be57164cf7593d3342635455dea138f7b1a7fec950e1": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_09399ae639a708d55d4b848df622819eb543c9a55f6a36c7e0647770232ba51f": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_097bdf900a0085c302ce207e3870b2b40f3ba66248d24c58bfe59a695f442733": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "양산 도시철도",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_3e8ad4a476e097ad3fcc8069",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "號誌"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "양산 도시철도",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_0a1dd932c7dbc33f3a6c6cb0177d941baf87bc36e6645201a1d6554396c5e280": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_0a975188ad111f099778b8b17979c2e9e33c43feb8186358958dd191122a21b6": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_0be7fbbb6c6bee7af2293e7229e11cd23a8ca872dfeefe5d062b2b164d564634": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_0c2bae2d2428930d9c5a121ca6f8ba11dddbca29185250ae86e00e94ee9b6441": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_0dc1293fb4e94d7267bca3407c929934ff41d4647eca754b61c07d7a5f51fdc1": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "墨西哥",
+    ""
+   ],
+   "system_name": "Metro de la Ciudad de México",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": "2026-10-21"
+  },
+  "cand_0e6e5a022269f42390170839bffc9505a440efe5f0c04ae602dff4bb45b7f01d": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "秘魯",
+    ""
+   ],
+   "system_name": "Línea 2 del Metro de Lima y Callao",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-15",
+   "event_id": "evt_d3ef64a52e6e10d1013e2f5d",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "秘魯",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "Línea 2 del Metro de Lima y Callao",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_0f2b9891e71c3d25124319e80e1db883bb691a8206cd4f3da7429bfad7b72fa0": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_103019a0f923c80593d6dca54aa912256bc5e23c3bc247413072f05ce7d69c97": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "桃園捷運綠線",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_10478e59aefbfb7e7f15fa52f3f0e191e404ba38626527a53eb3804d74624e77": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "UNRECOGNIZED_VALUE"
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": "2026-10-21"
+  },
+  "cand_115b447364ab1d9a028b635a8971a8b108c5e25a3845e506605a13e4eeeba8ec": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_1231383c19c341eb68b1270b3582e80d713af6d791a80cd90a3d028f7ba1f78a": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_12433f99f6f0dd1dca51cfc7fc59db323c7d9b26fa1b9058fc36a05f5179f2fe": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "대전도시철도 2호선(트램)",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_d2261ce6a6b7283ce761e85e",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "대전도시철도 2호선(트램)",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_1326246727e6b32c3471725a75f6ba92027dd2747f74bbd1733b2a6bec053357": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "광주도시철도 2호선",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "ENDPOINT_LABEL",
+    1
+   ]
+  },
+  "cand_1330c79d9218a443c3c95dbce05f57193dfb28b31aede680144bce2efd3c0c13": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_13de064bb72d4cc40309d21683fdbab385459028b5d2e6d3dd3dc4837c50b9dc": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_13fd592d16fb4b4df97d025c3dda94ae66b3c3634630691235faa0cce655cf38": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "양산도시철도",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_3e8ad4a476e097ad3fcc8069",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "號誌"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "양산 도시철도",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_1463016b9762e47c95eff7ba69e0b0b3cfa315315d3d40da47231be94b0018fe": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "울산 도시철도(트램) 1호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_148cee016bd16d4f30c8a9fd317d9448b8004bc6bf8c483d1d1b4b6f3cd01a40": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_14d80e980f205ec29d07313534f2b76127cdbb86e0c886c719d842cdf506567e": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "捷克",
+    ""
+   ],
+   "system_name": "Prague’s Metro Line D",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_da362540325c3effe17453d5",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "技術新知",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "捷克",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "Prague’s Metro Line D",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_151317a1e3c59421f90e3424826922a9d4b9ef85fca74241ea2b7760d72124f1": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_1529287cea662680d24035866a44c23f995c052cd07dd9f2d112b7dc3ff05202": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "양산 도시철도",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_3e8ad4a476e097ad3fcc8069",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "號誌"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "양산 도시철도",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_1577c4e77bf66f18c31c8258f016d1dfc737ef0a5a598dd69c87de57e8153a5d": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_15afe112d05e8cafa5f42fb7987b2cd3faf9986f62c6da8bdae9633180687325": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "義大利",
+    ""
+   ],
+   "system_name": "rete tramviaria di Roma",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-17",
+   "event_id": "evt_c3e5befb1e244793527453dc",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "採購事件",
+   "taxonomy": [
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "義大利",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "rete tramviaria di Roma",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_171b839622909062c48be7584782537b13a95cc353d37c7059b93b881aad20c4": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "CONFLICTING_REGIONS"
+   ],
+   "system_name": "Genève – Annemasse tramway",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_145370403109cae551560c98",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    null,
+    "UNRESOLVED"
+   ],
+   "transit_system": [
+    "Genève – Annemasse tramway",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_173a4cf38d2b1e2a91f66f40cc9dc2e12369e6c81f46d6308c954185200b65d1": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "광주 도시철도 2호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-14",
+   "event_id": "evt_98153cc2976b28811954aefa",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "技術新知",
+   "taxonomy": [
+    "電聯車",
+    "號誌",
+    "供電",
+    "通訊",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "광주도시철도 2호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_17d4287e7066fdab0f488fbb4f3a0e8008a9b5190998e7b4ac0af5beb343bf8b": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_1895ee43e276a03decdfc7839db52d90e9efb99aaf6feea1f33be119b595d895": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_194c4668a4847c6e609dc21b60e01e23e3ab056660b2accb66650315db219780": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_1b3cb776b0de0d05b200f69d1d239b4aca497a0a8c4b8cd20f8cee72fe126272": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "韓國",
+    ""
+   ],
+   "system_name": "광주 도시철도 2호선",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_1bedba4d0857b76386182939b8bfdbeb20183c913ae45edc1d1ca3d75bb5bef4": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_1cc6456997d70420ae11cede83f050568836f0398afebeeb9be0c979864d13ab": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_1ce73f637633e39f26ab03d2019c62d4f6dd5636d0c2124a12cd2761e167f276": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_1d376bda046583b5fb995508abaf2972e0ab6e201bfd0fe3cb0815078286355b": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_1d82fe70fc4bd4c7a9f54f2df84bbc9ced6ba2fa66c01f252e3b3cf5775f847c": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_1da68672078b26e9c08eb0a8ae2abb547790eeada2090e8f8743db86152a4ed3": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_zero_metadata",
+   "region": [
+    "NOT_STATED",
+    null,
+    ""
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_1e1c44f7d58129375d80dd891f611d7cd0dd70261c31c65ef971a28b5f5d10bd": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_1f77f0507cdf417c96e8656cb28f1bd85c7e9afa9f61842086a457d2a21949f9": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_207ea55b22d28251e8dd6e1fdba3ec9f2ebdb648b01d0201e2eb35d3cd767fee": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "UNRECOGNIZED_VALUE"
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_217ee2d76d5ccb23ce0717d7a8f26b62ad551c7cb9a35979f458ffbff21a4124": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_220f8346deeea932e497aa6d86ea30333cf0a5160bc271434f6cdc40c512209d": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_229ff1347654faa93b416118a3919842e458a07de7e2e278c334edf4978a4d41": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "인천도시철도",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_23308bbeb5070a0eeeba8bd4848f66dc00c6f648c07c117c0ac56b59192899da": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_237b6aed61db08c83ebda359465c6d06a9490e102a582bc250065ac67050941b": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_24762a06b4eb7b579fba929bef2ac3b651a630ad7708effa6ffc41e14c779d25": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_2685750ff14cf62a518f3bffe3827dfea162262198d5ebd7712c5433b9e27cc2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_272f34746f1cd9dc551eaaf0f25ff76cbd8c0b23984b9ef236227f581125f0b7": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_27dee6cd2ef2025c33b46739669ef235e0a9e4ca92168773abafc0eb98c15df1": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_298d160a1d3aa68c2d65c7ca9c82683dc3b43163b88a20a20385783377f4a0fb": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_2a09a8450ca3069006f3ec8c0dbe234078d72f9ad04a90872c4e8759079abc8c": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "德國",
+    ""
+   ],
+   "system_name": "Nürnberger U-Bahn",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "ENDPOINT_ROLE_DISTINCTNESS",
+    1
+   ]
+  },
+  "cand_2af424101b8be074a2ba032ce1187a1ada86068965540c35b8c0dc07b68c6282": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_2b87af82ae3e959bff567f76cf28de74ecdc4b92c0e96f811d5e5f50c1828596": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_2fae7e4bc5cebbbdff923a7e4626d1e5509d8c4290c0a2726488bd495faeea25": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "法國",
+    ""
+   ],
+   "system_name": "metrolinje 2",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": "2026-09-18"
+  },
+  "cand_301b2b69f02661de33c0b4b1d12d91a52bd3d391d9ee8ff5735dd9775f834239": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_302dcbc7287f5c0ca03b866963d7d81da783122715022d3897ed7cdf35045dc2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_30b852a573919a4db8f72673b1ac1147cff0ac7a742bc86cd5348b4d52caf6c0": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_30dd5958a41918a4412f2d30f382ea0ad19c503fdb8b2ed8f9a5124392d1c7b6": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_3180e61488ceb42f3766e44fb1ec5cb6a5f4a5527601330e84e11e6af69ca8bb": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "中國大陸",
+    ""
+   ],
+   "system_name": "Metro di Xiamen",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_b0772e691fd9b1934378c567",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "中國大陸",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "Metro di Xiamen",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_31c360b266bb092e2f8741ade9940e11b9ebdf1ffbbcb5c2d2a9579cfa661964": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_3207fd2fcf36bb3bd500e07501824d8c083265737e13be1a1c29f95cfab4b4df": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_zero_metadata",
+   "region": [
+    "NOT_STATED",
+    null,
+    ""
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-16",
+   "event_id": "evt_16e5239b1ee1d1c2dab10d9c",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "採購事件",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "NOT_REPORTABLE"
+  },
+  "cand_32844ed496c5178efc2017c3f1edf509a9f2ca4d11fc2de0c4d2b0c2aabb205b": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_34cbb84e3d87a932a250fb909284e5a8e1bd13114a363179abf92507dc714d3f": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_3657f0ff34d0d48f01f0d960cb29a0724b72ad0e75667a636b27dec196320d71": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_377d1be933deca23466388bfb191caa5fe1c49bcebd59e02f23ab1c1a73acf8a": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_zero_metadata",
+   "region": [
+    "NOT_STATED",
+    null,
+    ""
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_378a350be15bf1cd0a5f2fe1cd1b4376d679425cb8b19e2bf7ba666a8e5e27d3": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_37e753fc5d6146cf1e151b624237c77ee5b912d81357fd0c0128bc3091cfe77f": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_3971c758a9f77bc191e02ec80579d5e6ab5c91ab808a750d4c4c5e645b32d65d": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "韓國",
+    ""
+   ],
+   "system_name": "울산 도시철도 1호선",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "ACTION_TARGET_CONTAINMENT",
+    1
+   ]
+  },
+  "cand_39985ba392ff9eb5f2d47264fa38de37bc376b3916950d9fbdc4d0bac0ecd599": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_3999043318b649dad30e1cb97f3baafa453e82d35eeab2c677d0e94b16de9f77": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_3a1dda8f75172f6889a13ad96c4736e03ed49fb9237c48bffd0faa7654c6aa85": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_3a34ad4c7c5a2bf1c37a7cf420119e87954667e0f576c0d27502aa6efff702b3": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_3af6df379986be7fe8828189e38caefa03b1b74bc0da376d97c81759c7d3524b": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_3c016eb9fffc309cd594d473e4ba211b818b65be88ad7f1e037ae5de5dcf6888": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_3c396ada3ff4fe409cf1ed6f38d2cd2e82c8431cbdc757c7d975e765c0516af2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_3ec3dffe6ca239dd64cab7a3108e9335d65c0704b22770b71b9c708aa690dd4b": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_3f3eb67c9ee26dfbd70700d10fec26969e78281f4eeae75f1bb183c1a6ed41b4": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_40c7f048bbf12f83381067fd2344353698bd69eaf54d31a400da7624655ee963": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_420aea76b50bd6b218ba14fd9bb2f50f878692386afcfa3e6cffaba6f90dcbcc": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_426f11275ffb17eceb9602cc1858212925d40e5f71ef76a21b2b2b786b541523": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_43be31f258ac89086f768a9e8faf1ea48dce11614892fa2ef7328da7a34028f1": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_44b5dbe7ed2854771f007436a50d4561c35007562c8ed9bddc8cb43d2d4f2ab4": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "台北捷運松山新店線",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_44d4d6ce40083aa571b3c63dd67f1c9475eb8c4c8b4654d36e8178c498919fe2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_4574d37cffc3f6a76c92c8ad3093fda3de5fff544fef9a4c7a80641db76e26c1": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "UNRECOGNIZED_VALUE"
+   ],
+   "system_name": null,
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "TARGET_SYSTEM_CONTAINMENT",
+    1
+   ]
+  },
+  "cand_4777b31a6bca96275782cda8f0dc0efee50ded9d28676b53f96cc8cd67d61ec8": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_486c12f8032aaa45e736154bc0405207c15f5c3789e141ee18249f429fe5cae6": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "澳洲",
+    ""
+   ],
+   "system_name": "Melbourne G Class tram",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-14",
+   "event_id": "evt_dae86c5cc80aad27e030ee29",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "澳洲",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "Melbourne G Class tram",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_4928e4c1b2be9d1253fd717e341fb62a984c339f9175448c24914912f147aeea": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_49bc5b7861a3ca44916ab967b83df5711099009dc10020b14c52a5e6eca70e28": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_4a1f9fd3e11b70a33ba263b8894e2ed1847a204d0dec4f5f0d2646db66a72911": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_4adf74b5d1664281bf4e82ff196a81a7fc625ffff38194bf0ce111413216b3e2": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": "東京メトロ日比谷線",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_bc76f5b3d7465d7f651506de",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "事故事件",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "日本",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "東京メトロ日比谷線",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_4ae119a137ea7bbf309522835cc5440109d45ee8cafa02a488d555c8c2ce36be": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "瑞士",
+    ""
+   ],
+   "system_name": "Bern–Ostermundigen tram line",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-16",
+   "event_id": "evt_a8331b7e9efbc39f34c9d68a",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "瑞士",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "Bern–Ostermundigen tram line",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_4b21749d1735a3044e69e17d6a79b71205ff879573190428b298d4456c58e0ef": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "서울 지하철",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_4b742e342efd56e63460d914d8b94c372fb57758e2d4380725222adb10570c6f": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_4b8270f40adf71598433d911892a1f10a2cd2a747d0b31b7b97cb3dc56f5e819": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_4bcdcafeb4054817e56bb645a54d88148afad4f2255948da15c72199f158f9cf": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "광주 도시철도 2호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-14",
+   "event_id": "evt_e79468f52b20c947e5d83f41",
+   "category": "CATEGORY_UNRESOLVED",
+   "primary_category": null,
+   "taxonomy": [],
+   "taxonomy_state": "NOT_EVALUATED",
+   "reportability": "NOT_EVALUATED"
+  },
+  "cand_4bfb2e65bd7ce69478bc20c4583292ea5ba9281eac3cc03c2dfbf9ee14be1f9b": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_4d30e0ee30e32ac4ea9bd58b25ccf8558a178acfef099a6f93450bc1af72cf29": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_4e4b75d73affc38f27c4cb9b94eb8fcd67839d18fdd658a7dbc6b3cee2af61e0": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_4e99a7ec0117a3e6ae1a74eb052758d348e773c2a82878f2ebf9d514fdde52c5": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_4fda15e962b13ac73a2df9fb0f3db472c7222ffeb38fca8082692cfee1a02c8c": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "울산도시철도 1호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_4fe8f58b29249018f0ece4a09a3fef9d172af554b2838cd833db6e02c12bfda6": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "桃園捷運綠線",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_527a7ee4d2eb1f19bbc00c8902063ccd5909476c55e5e6faade3f6ca9f3a4a71": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_549a3578bc3c249201e1e2ac3d1e5b81d4f10a0d3798e17cbbbe341b52ecb087": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_556694e21d110c2136fd54ff507b3fbea3580347d2dbad40715772d2fdd6885f": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_55864342a0830faa3c0ecfccf58670344755baa0de1592fbf85ef5f3e0d9b2b2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_5596aa9f3c5257c3e8ad823cc34841d93d2e34acbbf85c6014e6aca5243f2951": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_5688008df7ed7a7c6acc23f340b56a33309d686cccf4c5f2981a5a5bd9dda916": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "대구 도시철도",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_56a532bc836596ae7f4267222a2980bcba894913da4d880df55e007d1362ba0c": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "울산 도시철도(트램) 1호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_5795a8599dd6f2215406161b3ad776607e1f00360fc6348caa8c170b0aef3472": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "秘魯",
+    ""
+   ],
+   "system_name": "Línea 2 del Metro de Lima y Callao",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-16",
+   "event_id": "evt_d3ef64a52e6e10d1013e2f5d",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "秘魯",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "Línea 2 del Metro de Lima y Callao",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_582451c50e7fec78e48eea84ee979d7bc734d7b6dbb956b0b3f44a53be885758": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_5a064db20f8b7538f61fbbaa4465dc5e1f44d0c674b9cb1b6232e78e61f22fc0": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "도시철도 1호선",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "ACTION_TARGET_CONTAINMENT",
+    1
+   ]
+  },
+  "cand_5b1f8f2258cc5e0910083f8460eefbee03a4bfb31d2cc3346eb35a7519bab85f": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_5c4b8bc17265c46ea9d6593494af27a0d9947619e30e54c3fb6a47191159b7c3": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_5d3f54c5b15942da5e9e798e10244278d4dd90ce7628eedfe8070da0a0331e76": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_5e3480c3dcacad14878a324f170bcb73e663779ee3303749c01bc66cb9605f3a": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_5f5672247f65029b48caf3a87752a40894469fe9eca2e6be2f292c9e9f6ab0d4": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_5f84e7ce8c906074830e99e469cc512950e967bfccadce01d69bdc0110dccab2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_6135333a31edfb52b510ae27120c5a522766e05da5650e353ec00ea59e4c8767": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "부산지하철",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_bf18d8d76f6a44d61aa09b10",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "月臺門"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "부산지하철",
+    "SOURCE_STATED"
+   ],
+   "technical_gap": [
+    "Validator",
+    "TRANSIENT_FAILURE_AFTER_RETRY",
+    "UNPARSEABLE_RESPONSE",
+    2
+   ]
+  },
+  "cand_626a7ba7dac6b7f3850567b148c836b9e40acee66b803f6f2eb82b4057fec88a": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": "長崎電気軌道",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_62ba43be91b89a764888e9e8fe5e95d78dbfcfae7922878b662ced234c9c6cbd": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": "東京メトロ",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_62dc07964cdbcc242565730932f1016f994f4a3a58439cedc262c55a68bf1f00": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_62eb1a6d6761761fd685884fcd0929f5396f33b297178fe0199f23fbd00c964e": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "德國",
+    ""
+   ],
+   "system_name": null,
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "ENDPOINT_LABEL",
+    1
+   ]
+  },
+  "cand_6335bb1b4b8f0f096c1d38e90706544c2ca66f27e9dd92f5f29cc294ec739b55": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "울산도시철도 1호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_634e970e00566cd7aee46b26b0d90a3a48f18f076a7940b63048e3f6e23b896e": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_643559a3fa1ac008a6c31021966d919f831464ee11a934f1da6ecdd4853eba54": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_643960c38f23f1c51fb8267f1c32413622f22ca350681ef099155955aec948bc": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_64d5acd4e98a6c4c874e519cd2f8e98ff974a8e013a8891e4feb5b3906af0b9e": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_64ea21ca1297b7967c480f098880b7c5b2a1f1b59f792a7257ca08462fd3aaad": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_655137c699bba49adfee4b5f06812c466d1746cb202c69e924cb28b1d551ae40": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_65af9288976170a77efc49e5dd49ab6f7481cbbf227fdebe658f292ef391965a": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "智利",
+    ""
+   ],
+   "system_name": "Metro de Santiago",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_19005b42cced2291bcacd024",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "採購事件",
+   "taxonomy": [
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "智利",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "Metro de Santiago",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_661157037b8c76104770eeac366cd527457dec3095167570c93dee6630c4ea6f": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_6656a33529d6f724b64b627267c6868b5188a40cc345d514a02b871f594ba1bc": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_6683b7812a2671375089090edc4b5d902ce846570b64129480b21a282a8549c1": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_66c53f20abd3f0962bda484354335018e7ab51052466e98ecbfd986c5eabec16": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "桃園捷運橘線",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_684d53f3f2227173c93c519b1ad88ec35184400781178152097fad49b7e0a32c": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "越南",
+    ""
+   ],
+   "system_name": "メトロ1号線",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_6ff75f2b7e939bf0e3d51a9d",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "事故事件",
+   "taxonomy": [
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "越南",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "メトロ1号線",
+    "SOURCE_STATED"
+   ],
+   "technical_gap": [
+    "Validator",
+    "TRANSIENT_FAILURE_AFTER_RETRY",
+    "UNPARSEABLE_RESPONSE",
+    2
+   ]
+  },
+  "cand_68a7f282867b59e23a7f3ab2ebfd3ba076c7a419ac53c9db95afa00db06116ac": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": "東京メトロ",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": null
+  },
+  "cand_696a8c70160eca96e9472637c0488a40f58ba7b5f2ce41b49e5698aceef896fd": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "도시철도 1호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_69953ce0f022e790206ca974b7a52677b4ab6d66a87b5f8c380cddba9448a1e2": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "韓國",
+    ""
+   ],
+   "system_name": "광주도시철도 2호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-15",
+   "event_id": "evt_98153cc2976b28811954aefa",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "技術新知",
+   "taxonomy": [
+    "電聯車",
+    "號誌",
+    "供電",
+    "通訊",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "광주도시철도 2호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_6a0e4b1debfd1fb08f5da2d9d36ec5266b4fb5c89006b0c724b146673b783c59": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_6a25da6b0fafb8ba3aee92ee84729a7f487b85cda31694df6db527d3a1ddeca5": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_6bf6d4bf8e7592515de46015305c505fa975c9c6220597612ab8523ce8a0b1c6": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_6c410a17269fa59a0978fa4500b95d716585d3f1f40dfc89a19737f0f270bc4d": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "서울 지하철",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "TARGET_SYSTEM_CONTAINMENT",
+    1
+   ]
+  },
+  "cand_6c52115c47b5d87db35c8d03a5221663ed4a07182c3737ebb36e845f6b7498ad": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "대전 도시철도 2호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_e82642333a13e83546146deb",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "NOT_REPORTABLE"
+  },
+  "cand_6d5520b5b35343baff3fc3dbf355217ef579a733ffed13e4d18559382e773949": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_6d795fe4dc874751eff37ba59c83a4e389f79943a52d3a4bcabfaa10e8357bb9": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_6db6cd447426bb3c15ce46b96040ec40b8252bab8fb712cbb2264a72fe315952": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_6e0318e98075a55f896e149787d46073cb7650692b7ec93df99a78fc091a7cfe": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_6e1727b0e364d0904fabd2ed2b76a240e343ec70df0a5a7e44e3fce292709b70": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_6e184cf574a8f3b28ba43bb2a9def01676926089c57514a1f99d1332e6204f57": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "광주 도시철도 2호선",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_6ea80cfdf34939ecce49912ada522673d027568a0fb884a007a6158e8be21e9b": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_71807fe9d4b6b7fb25a526abf1aaf0454233a0cb2585b8f5283c4e84b3cb7720": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_71eb62daa52db8aeacb54c4ad2618375e39f2b8b1b35cd4ba008a90af5975fb9": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_72af1abb7460b06e17e26bee3bcbf7c3695ede292197570403d47840949229d7": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "울산 도시철도(트램) 1호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_72f290176130ee78be229188d4f0d24fc27e01d463ca9a91b7db5cb4d401fcf5": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "韓國",
+    ""
+   ],
+   "system_name": "양산도시철도",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "EVENT_FOCUS_CONTAINMENT",
+    1
+   ]
+  },
+  "cand_741c29099d77f5ae68f1050dcbc7ab4a16185590afc0b95c77ac3f43a9e4e3bc": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_zero_metadata",
+   "region": [
+    "NOT_STATED",
+    null,
+    ""
+   ],
+   "system_name": null,
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "ENDPOINT_LABEL",
+    1
+   ]
+  },
+  "cand_77428c97f53099765c677ca30de9df3081be88949b4b12fa49e4f1cfa295d2b2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_77f3374af5fd09339b1198e9fb10b42358e0bf2f9dd292d8df2215e4897fc8e3": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "대구 도시철도",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "ENDPOINT_LABEL",
+    1
+   ]
+  },
+  "cand_7887dda40371fdaaa7293de8f5bfc461be45d070ef2dbe64197ceee752306f89": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_7894e3e70b11c54c50b13b71dc0c4bad1157f6449fa00f901188b85969dd25f2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_7aab9e68566100afd38650a6883b5e2602f99806eecb54c3e32ed1ef3aad4b67": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_7c3f45d17b0ff0d8c475f90b15565708ebd151f427f861cb83262a779bd2e82a": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_7cbaeefe2b1af09c4ce4f7fd14c54cfd7fcb62f25adaf073bddb25f6d230a4d8": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "西班牙",
+    ""
+   ],
+   "system_name": "Transports Metropolitans de Barcelona (TMB)",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "ENDPOINT_LABEL",
+    1
+   ]
+  },
+  "cand_7e0ff909d92fd17afdbde6d966c2d8dd9ff6f5811245252cdd4515694ea1c2fb": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "西班牙",
+    ""
+   ],
+   "system_name": "Metro de Madrid",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": "2026-10-21"
+  },
+  "cand_7e15bcef9bdef7a99510575836c7e293ef8c6d63be54e596d71099982450ade8": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_7e88cffc316b637dbeabe9c4fff16be637ba5a71e05799e8185ada5f7995616f": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_7ed72f6b97fb44e1ced7ad024ecf34a2abbba01e339c3f5edf3ee3dbffaff4fd": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_807576e53807e20183ea2be2b7d23f7469c4d92622b5fc460abed404e8e26c63": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_814125713a7ef78b69fdeef3a335fa972838e2804c4f93481828771ef32347d1": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "위례선 트램",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-16",
+   "event_id": "evt_e32fef8b3320e05cc1f77024",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "採購事件",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "위례선 트램",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_818c16133a1dc498aaa0689b49357ff1b92f000e7fd181c70c8d3cde444fbf71": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "丹麥",
+    ""
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_83374cd4392695badcf0918c2bbe677b4fc54022eeb5f14160f1a9e76558622d": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_834f79830317b9a4575aa929bc6636cae6aacce75740aa7ac17d1ba5ddc4b3bb": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_84aafeef7d7adc36d26d77906abc06b3fed98bc65f9dda8697e96f3a6d056942": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_868f0a23b9708cf44f142baa7c19a6a579194fd23f10e4853ed190ede3d870d9": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "桃園捷運綠線",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_86b377e675aa83ff077985348a2c75913422cb0921c9e8ecc3cfb527c3f60f26": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_87232520b5425e635b7aa8b47f2abcc6e3e77da95287f009a58f4e4651654f68": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "UNRECOGNIZED_VALUE"
+   ],
+   "system_name": "捷運綠線",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-14",
+   "event_id": "evt_6d854ca64404768e7941f512",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "技術新知",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "臺灣",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "捷運綠線",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_87a00fc578ab347eb8484bd517c1c7b17f9dd43748ba887edf8705a48cdd3cba": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "挪威",
+    ""
+   ],
+   "system_name": "Trikk",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "ACTION_TARGET_CONTAINMENT",
+    1
+   ]
+  },
+  "cand_88e7d9fc272a9e0518a2ecdce9a966f50e31b99e9796dd13d4c00bbdb4350b48": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_895fd79cbaf0d738bd12819721e3c306eaf933ddd10a46927fc64fd5c951cc97": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_8a0a846f285ca8a075c09530c6dcbba588b20f165e38374b1c9c3ea1ba93a619": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "양산 도시철도",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_70f312a65b1dc4e64487538e",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "號誌"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "양산 도시철도",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_8a7666e77bdbde9ec028d38404689da63c85a94d4acd0b528a15a1ea3f414a68": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "桃園捷運綠線",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_8b474c10b276409c76ec1c0301140f9d8fb95c879052b6f00f8c9f64acd32ffd": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_8ce9441e53d3efab55af762ac96606756fabb69710a72f3c6d122cc9157dfe1e": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "越南",
+    ""
+   ],
+   "system_name": "métro de la capitale vietnamienne",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_c56627c3971c781032419136",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "採購事件",
+   "taxonomy": [
+    "電聯車",
+    "號誌",
+    "供電",
+    "通訊"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "越南",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "métro de la capitale vietnamienne",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_8d2044543ad18ad3d9524f8fd0c7a864394c91c27771b9018d9be1b3fd6c1f85": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_8d6e0d74c0740c42ae4c713125e3dc332f05fc5a53c8d23c0055a1cce2a92fd3": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "양산 도시철도",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_8dcf519a4a08e9fbb13865ff5f4bb3da56925e207d191d3bb8619951c537a5f9": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_2e4ee4067afdf1ca66aedad8",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "日本",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_8ec4c7575bf379d348f89a38535762ca21acd17d73d004335bbd7f32d3b12203": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_8edcbfecfe5de11fa872bac83021476fdfc026e7121eaca18e0fa8912d605b5a": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "西班牙",
+    ""
+   ],
+   "system_name": "Metro Bilbao",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "ENDPOINT_LABEL",
+    1
+   ]
+  },
+  "cand_8effca6e7bf4fa6006ed60fa21ea9ed2d7cb2423231f033a6472e0a69dacdd7e": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "萬大中和線",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-18",
+   "event_id": "evt_67fff4099d6915329f16d54d",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "技術新知",
+   "taxonomy": [
+    "電聯車"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "臺灣",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "萬大中和線",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_8f35584412e670fb4950a863f82d136a2e3c1f9dd8e9bf709f79218cbc7732dc": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_8f3dbdda051909b0812d01a839096c383fc61d7fa55728e1712f6efc59e1da7a": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_8fa794686230964cd0a44f3f8eeda6346cb83d61ff7b72bc735c35f04dedfb39": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_919c6085f8468413c280be25fff0f08e20059f189fb57f7df9c16513ac9c0642": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_91a35c0a79856e52d93a87736334882f2985b7ad5f1de20ec73c865234077b03": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "韓國",
+    ""
+   ],
+   "system_name": "광주 도시철도 2호선",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_93739678bf4a0adc5861dc03ea57c8a596a6875078c36754cc85abd938049d27": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "菲律賓",
+    ""
+   ],
+   "system_name": "LRT1号線",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_b8b76eb2f5d6682bbb74ba80",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "技術新知",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "菲律賓",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "LRT1号線",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_938639e70867a882adbbd959557ab18a8433a6eaa2bb13f0e6168e48713f3cbb": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "트램 1호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_939d83a17233b89deb90c51f06c8c34b9a3b856964c1dfc8502d79ddf0c95937": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "菲律賓",
+    ""
+   ],
+   "system_name": "LRT1号線",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": "2026-10-21"
+  },
+  "cand_942aadbd6f249c364d916ebec49b260a084027261dca71950fab1ca8e0b4a32a": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_947520384ed448472d0dc8311b03d30d8e1cb2885ca41d4ba8d9dfb4636ce241": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "西班牙",
+    ""
+   ],
+   "system_name": "tranvía de Zaragoza",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-15",
+   "event_id": "evt_af45644c1a21f31dbfd5a323",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "事故事件",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "西班牙",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "tranvía de Zaragoza",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_94d6bd54f0f4fed3ee7f161668315b6b812a9a6c79692fa55e7f3d9d364dcef2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_9524df8eaa2569498fe85ea348c5c9bb1e180d260096231d748c8fb59b01c9d9": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "越南",
+    ""
+   ],
+   "system_name": "ハノイ市都市鉄道(メトロ)",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": null
+  },
+  "cand_9539acd89c57ef4b7bbbc244b86bfeb59ec14958b4ee674a5fbee769e11a4435": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "invalid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_96ec6a54fabd5e89a91c49fe11c970290e7b3cc5ae8ac6a25a57ce1d803315fb": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_971a8482f4639c391b96ec34df1bd926aa37556a0f23d73d6a4f2cbf864f154e": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_974a3deb6e5113d72088d125cff1ed33d3589778114fb7560328694db9bb5e9e": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_981ed2fc613704a4e3bda8884ebf0ccd967184d52b9bbfc880420eda296251eb": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_98c2608783bd8b235899b6b64442da76076840ee0644609194c3d59432cc2cca": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "韓國",
+    ""
+   ],
+   "system_name": "광주도시철도 2호선",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "ENDPOINT_LABEL",
+    1
+   ]
+  },
+  "cand_998b8167bf798d0ab294d1c8b817e8cf033523f0c5821e524ad1209c2f37de32": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "울산 도시철도(트램) 1호선",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "EVENT_FOCUS_CONTAINMENT",
+    1
+   ]
+  },
+  "cand_9a759b2588e87e6e07fc6c434d0e863259231f2df187966efb56a9c783faee4a": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_9b076c72d2a8f83e86105ddc4b6ca8488cc715bcbaee2e62f30b69b216cd94e5": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_9ba33fbbabb568165b2435e64b44de4d721139fefd138d16533179e8641c3536": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_9e310f2b1814842cebae1c939e31075b90da89bb4ab9d24af85988946764d183": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "위례선 트램",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-16",
+   "event_id": "evt_e32fef8b3320e05cc1f77024",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "採購事件",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "위례선 트램",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_9f63fb9833c3c7d350506d109a72bdc6207b082dbf857cd891ea901edc5125c5": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_9fb6f1d74c71b5c182b17d9632afa53db871bf05518a70ff132a565c615f0906": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_9fda32079fd63a33feee4588f0615eda1d890d69871a19c873bf7f1a27257a48": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a01ed637b2ccda8786d4c062932b611246294475dbb52697b559d123f9efad7e": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a123bb51e18fa7adbc72c956d9192fb2fa9f73afed94c0294fa6e6a6a0f0a335": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a12b82cf2521092877307111a4beb2886f6d7a792cc2b80bc4674ae2da7f8185": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a17dd22439172fcc78f04c6638d0e060009967453d03bdeb697f07892b490f9f": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a222b8bb786833d4bb577aca17eea111f48713c2c6e1ba276c617cfdf763cdd2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a26ed936d63e7f3f2e27b074c4722b2ec19205b400ee1ace85422ac1efb981dc": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": "西武池袋線",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-17",
+   "event_id": "evt_fce569ddc099b7aa2aa793f4",
+   "category": "CATEGORY_UNRESOLVED",
+   "primary_category": null,
+   "taxonomy": [],
+   "taxonomy_state": "NOT_EVALUATED",
+   "reportability": "NOT_EVALUATED"
+  },
+  "cand_a2756aa57c39044d04bbb3e9a415b816ec302d7f0c869535f912b6fd567effc9": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "서울 지하철 5호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-15",
+   "event_id": "evt_cacb4f6ef37539bc3a465a8a",
+   "category": "CATEGORY_UNRESOLVED",
+   "primary_category": null,
+   "taxonomy": [],
+   "taxonomy_state": "NOT_EVALUATED",
+   "reportability": "NOT_EVALUATED"
+  },
+  "cand_a3271f7259dc800a5814d26654a03a84d30e5fefcff1ee7802d237967931330a": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "도시철도 1호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_a3d95060bd1a3f6365ef8ba192bc198f54ccd2d04d30e4d5b801fcba6d58f9cd": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a4162d3dc04da19130056c2b54be5809e98983dd4e1690ac357ac6112db4cbbc": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a4bebfad4770bea34555ecfd7f6f5fe2e05beeffe6c6297ef4dd850c52894415": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a4caa4cf1e34403496afe7b4ea48e360ef18f20738b8c526ed16b4831f76f615": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a4fab21fe12295d30eb9809e0f09ca4c6147cc527d754603bba4b43552d94f03": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a554dd6fd84f5c94f5a21ef0b87265ea164355f147237e0770338e34603b1885": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a6211a2cb49da1774d02416f5cf568183f7d14a65ac0e8cd20cb244db9ce0baf": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "希臘",
+    ""
+   ],
+   "system_name": "Athens Metro Line 1",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-14",
+   "event_id": "evt_aa531d963f0273babdf7a107",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "技術新知",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "希臘",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "Athens Metro Line 1",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_a88e09b89a70033376de953018d833363ff0004c1edeabb1cd298b6712ad9646": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_a99a4dac1f57319c71cfdda64b7bd265ad559c3b6364b41819b79bdabc13edf0": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-15",
+   "event_id": "evt_d2261ce6a6b7283ce761e85e",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "대전도시철도 2호선(트램)",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_ac54ee894e72e89dab2bd05d2ab1fe277c0e134dc7928ab87ab703c7ca894b6d": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_acf81d09f5483a6c22fd8c8fb1c0508be75a28e8cb285d04faa3cbbf808936de": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_ad1dbe390bc112658ab9b3cc3c6e9e911ccdcc10aa60182717c056c561afe3fc": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "印度",
+    ""
+   ],
+   "system_name": "Mumbai Metro Line 9",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": null
+  },
+  "cand_ad40e42eefbe95334b32b5ae503d2f0e9dcef82cae431e22fc66f28c85741e32": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": "福岡市地下鉄",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": null
+  },
+  "cand_ad5b712db9e4cfadb635923c2da44b256acd7462e60a6ad019267ce748dd9c91": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_ad883a353c895789de0c9a45a02c8458df8ffa4a0675f640acae93eb10c798fe": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_ad8ccbaf4fbc6bd60e716266e93dca663aa41ea394c3047ed065ecc970fe1cb9": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_adb60f3152785493aa758321a66fc12633843e6ee57022db54a3d87823da96c0": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "울산도시철도",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_881f138a7ea4c7a9dbe2d128",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "NOT_REPORTABLE"
+  },
+  "cand_ae6e08f8d4f2dea72e4ad461cafd6d371ea6e618444852ab112f398515c4459a": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "捷克",
+    ""
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_e63c3a95dbfa22bd64d65d48",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "採購事件",
+   "taxonomy": [
+    "電聯車",
+    "自動收費"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "捷克",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    null,
+    "NOT_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_aed6eb924c082176a2d7069979b8ec097d7dd7310aa3af857a6e68f260d5fb0e": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "UNRECOGNIZED_VALUE"
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-14",
+   "event_id": "evt_cf567a51a656d64452afd7d4",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    null,
+    "UNRESOLVED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_aee13347913c59d267dcc4b2a5474f47a8cf245a100b823b70b9f075b6e5626b": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_af4c4f0e83142d3751bc11863e5bf85da871456249d679267ab4a2d419b85755": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "台鐵",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_afce24efe84c95c9baea82acbf7eb7f0a2368c463ce9319752af4636a1bfc0e1": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "UNRECOGNIZED_VALUE"
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_afd7dc2c028dbb95c426e6c08f0c47115cfd1985dd23745609e0ca4980b4206b": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "印度",
+    ""
+   ],
+   "system_name": "Mumbai Metro",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-16",
+   "event_id": "evt_d66b24626e6716dec3eb1098",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "技術新知",
+   "taxonomy": [
+    "電聯車",
+    "號誌",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "印度",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "Line 4",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_b01e244202aabe8de8a1736b0f28fe50cf13812e7958dec7cda7bca0ab8f306e": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_b0213da1059bf4d3cfb0e1e160233523dd0761f45f8a9b0fb598d9ce2227e0e7": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_b0324e9ea852b3454fb7480881ea33bd2ba93793f2a5e943a99081399f1bc8a0": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "秘魯",
+    ""
+   ],
+   "system_name": "Línea 2 del Metro de Lima y Callao",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-15",
+   "event_id": "evt_d3ef64a52e6e10d1013e2f5d",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "秘魯",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "Línea 2 del Metro de Lima y Callao",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_b04528fde6e8c1e6e7db19906e934ddb1e51e73d4cfaa75968e48d1a9b1b41a6": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "匈牙利",
+    ""
+   ],
+   "system_name": "Line 1",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "EVENT_FOCUS_CONTAINMENT",
+    1
+   ]
+  },
+  "cand_b0452d0d12523e50facd124ac91db974bd6ce12a503a021c96d3cde9364062aa": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_zero_metadata",
+   "region": [
+    "NOT_STATED",
+    null,
+    ""
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_b07dd674c73f333664c4593650fffd2bd19d73025ad70d86c3dd1d3ab4df29e2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_b23e4438083d2b22ae77771527a79b1ba7e810da1cd4470043788777fdc11df5": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_b23f4291fb7cd22484a527172284bc0bcec630d3433a6a113f04c00253b8584c": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "서울 지하철",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-18",
+   "event_id": "evt_23ac6d98f5c2fb7408ad5268",
+   "category": "CATEGORY_UNRESOLVED",
+   "primary_category": null,
+   "taxonomy": [],
+   "taxonomy_state": "NOT_EVALUATED",
+   "reportability": "NOT_EVALUATED"
+  },
+  "cand_b2de8c1dc8c3a8057ab670e129de94719f0b265a66b52a72a123959474e1021c": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_b333d0dc905ceaa06c5af34b03e218be53bb4a10676073c31d229e8e08b109fc": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "광주 도시철도 2호선",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_b36b96d9d4ea4f2f8cce897abaeffc5751b5dfe50771e40cfd507a2b3962e637": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_b3e544e0cab62b61406e835f27139ffb4adbe52af96441e49fc6aa93f4a6d15a": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_b538b20e79857ea1cd7acd9fdba72d8e4a9d7c113d61d735cf3f9f4c302a1d44": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_b54c555cbf01e748935e4cc2f6c7284d92fc483ae6fd1656f288eb9938de85d8": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "墨西哥",
+    ""
+   ],
+   "system_name": "Línea 9 del Metro de la Ciudad de México",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_c27b1a2c9553671658095b1b",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "事故事件",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "墨西哥",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "Línea 9 del Metro de la Ciudad de México",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_b57efdf37b2eb59f6e052d2b3db6da927033d0ef1c595f4c81af9b2c51e8baf3": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "臺灣",
+    ""
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": "2026-10-13"
+  },
+  "cand_b5badfa97fe00925d14d4d5db64d53f18957dab9c6dcd15b98b1729536e0b2c3": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "UNRECOGNIZED_VALUE"
+   ],
+   "system_name": "동탄 도시철도",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_b637bb499074b9b8031b987d51a4079061cb50ff2fcb675cbbbc9bed418c802b": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_b7e2c6abf8c6af82ad0408a23d3236e95a15b97d834f772fe43b4df176bf0c83": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_b8aa6aa873cdd82f05e59c97443a005774af3c342965f94280073ee9d19452b1": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "瑞士",
+    ""
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-14",
+   "event_id": "evt_ef2b1b285ca41b3c900bb486",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "事故事件",
+   "taxonomy": [
+    "電聯車"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "瑞士",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "technical_gap": [
+    "Writer",
+    "TRANSIENT_FAILURE_AFTER_RETRY",
+    "UNPARSEABLE_RESPONSE",
+    2
+   ]
+  },
+  "cand_b8d63ae8245dfe734628ed289940d988bb6e180855222aabbad50ec0141d3e92": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_b95fdd78cf256c465e8df32615398801006c08473647a6a237d33eb763445f48": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "韓國",
+    ""
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_b9a2edcdfd054b121cbcc334e26704303e4ea05ad01faeb96be0b59fb16fc41b": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_b9b000d865659f1282d72fd8bf775bdacf2254da08828eb8a64a8eaf7e7c5bfb": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_2e4ee4067afdf1ca66aedad8",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "日本",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_b9f786f1aaef73e63f48d3fc869f2b0a85fec909478c1b71020428d3750e35ee": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_bc09f16ac714e96688fbdc37457d1ed9c6102734210686174cd267c8241aec7e": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_bc28cbf8a9d5fc96f83ffe792c42d863c0a99b98b1e77e71ec2f7e52e98d4a27": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_bc587afe40eb765f49a7e75a55575e0975f1f71e738606c438bd483ae03f66d8": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_bc96878deedd623d03cc72ef8a1e43c9de30cd1fdf748498f614b357aa0edf28": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "捷運綠線",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-14",
+   "event_id": "evt_6d854ca64404768e7941f512",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "技術新知",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "臺灣",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "捷運綠線",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_bcdc70af6193b9a1293a827d2f52bd739e725af133ccf721e78f65b87613569f": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_bd61f38f425f8b8e015cd3dbd5b70c387585ccbfd35aaa32334330178799e50a": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_bd8ebb0c2047681a70b3ad7da17896586f1bc39a821fe07d893864cd0f20acb5": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "烏克蘭",
+    ""
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_be644030953b92273695da4949daf29759d81f9d9c054e7dcf42267e3ef3df16": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_be67ad0acc89996432b181d45d96546e809acdb32a6361f8f4c072324cac0945": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "新北メトロ（MRT）三鶯線",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-15",
+   "event_id": "evt_41adc5693b165528b96491d0",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "事故事件",
+   "taxonomy": [
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "臺灣",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "新北メトロ（MRT）三鶯線",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_bef70b572a37799ae0e1f5f3d345e586cc222fa4b25e589bc7a130f2887a47cc": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_bf6238483acd50136b24814f136cf80e68bdb086ffb80f39adae86a50e6b717e": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_bfb94c5fa60eea848543cf2dd40d246237f6a0d751bd36a79c4baddc8e10ef54": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_bfd24335b856f114af2f932e114bbfa429452995ce91234e7e77d8d91c4839a6": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_bfd69bbaf8d440af9b284ec7b745f1fb76b4522b35d49782448cb3791f17fded": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_c02833382c2502489e6a45c4464d3f936a5f51665af4b3947b7f3e4368efb040": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "英國",
+    ""
+   ],
+   "system_name": "Coventry Very Light Rail",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_c1e0bbe7aa4e26f6d5d689609a31186d224bbe6ce10f8ac0038d9c3b980a149f": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_zero_metadata",
+   "region": [
+    "NOT_STATED",
+    null,
+    ""
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "EXCLUDED_TRANSPORT_MODE"
+  },
+  "cand_c2bdfa5ef87fcde4b64b75cdcd7853fc15115775d9dc7fdd142ee6bed52d9dd6": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_c361402f8ac6795074189353cb268bfd9b9ecd0a461c6f33bb65c6fb4c3c7c05": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "桃園捷運",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_c453aae5cf955e80027a2e8da7a05380acfa89d2698ca7364ce485de4afb4689": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "울산 트램",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": null
+  },
+  "cand_c5799055fe5a7139b40eaa0d1cb381d12d37f95620cdf1114b381a85de6ead94": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_c5a8720c998f6332277e21611f5f617bc490691afce98f847b5a9cf0a4af71a1": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "韓國",
+    ""
+   ],
+   "system_name": "ソウルの地下鉄",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_aab102bd35bae44eca7b7392",
+   "category": "CATEGORY_UNRESOLVED",
+   "primary_category": null,
+   "taxonomy": [],
+   "taxonomy_state": "NOT_EVALUATED",
+   "reportability": "NOT_EVALUATED"
+  },
+  "cand_c5d8311380e4cb3f9a4bc0193387aa7333e7c439d988b99e51565d08aa3f83ca": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_zero_metadata",
+   "region": [
+    "NOT_STATED",
+    null,
+    ""
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "EXCLUDED_TRANSPORT_MODE"
+  },
+  "cand_c693a6656d983b88f06fe0a9622ddc793bac4a124c53ec0327be5d0aae78cd0a": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_c7555a28754fea816e343150efdbefd869b21cb8f69122084a7e7a788a20d213": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "도시철도 1호선(트램)",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-14",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_c793d813869224799c172904564e4c88b4da13c20664d59c9d5faa5fc7682489": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_c86796c76718ba815daf68aaf83a0d812f80f6a1ef11fef81ee5ca33f9838a93": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_c86cb94d35fffdc56dc11a42404e048bb14ddffe7f8c00c9ba825a02e9fa77b6": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "대구 도시철도 1~3호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_22bc3c028f9b8f7b948d4797",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "技術新知",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "대구 도시철도 1~3호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_c94fd9bfdcf9493d4724b8e00c1f6e9996c32b7b078fc5a5a78832fff87a0878": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": "東京メトロ日比谷線・都営大江戸線",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_c9cce7d74d9b94ef2a6a5920524273a1d14309fae08b22aee6eb798ea45a0f85": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": "2026-10-21"
+  },
+  "cand_cb07be824d8c90520b7f416238c7c1a5297753978a751cf3119bf1ad29bbc6a9": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_cb54739cdf67e392b1dfaefbc69ea76088f811865cea7dec8c22d11cd357f99d": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_cba000f7cde4344d0c38b75771ccdfeb9934f1e9b1d50fafe1f162a7b6ab981c": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_cc490906b2fa5b1065a71a1488dc452fbce820eb5146de358aa5a6e38927df78": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_cc71c31de2351854381a71fbe5a2511258b497e7944a3076de52101f2bd87a22": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "도시철도 1호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_cc7c8c11ec02ba105b43478ad5b18378bdc3e12eade2e3203f6778485949e18f": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_cd0b6eac985f15ac1aa38f0a45e27fa1a1025342d655da1b4f1bb75c164a5507": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_cd972463fa8ab63a0a66bfd8e843167eeb7f08a38e2f36915c4ae66f965a1279": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "德國",
+    ""
+   ],
+   "system_name": "Münchner U-Bahn",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-15",
+   "event_id": "evt_1b74b3d9ced5716fd2eb1455",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "德國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "Münchner U-Bahn",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_cd9e19da4e99f1da06951b3bfeb1d6de1f939e351ebcb99c335ea8df74aba0f8": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": "2026-10-10"
+  },
+  "cand_cd9eb61aff99b25d9714adb25df971067fb03dcec455778980be66f309fb594d": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "澳洲",
+    ""
+   ],
+   "system_name": "Sydney’s M1 metro line",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-15",
+   "event_id": "evt_af8ebe54135616277f6abe5b",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "澳洲",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "Sydney’s M1 metro line",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_ce4b8cc2d932d9b50b021301d6e21bf26cf2378080241109f2bdf85b73d53c8f": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_ce70504d9f4956cd4800b0b95dfc53fd179e4a8dc681feaa56ea13b9215ab8b3": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_ce807e6d4aa8b97c22faa27d82766941b6ff420c179e5c41b5f141a8503f85db": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_cf03a062be584ed2de518eb11bb9e5b6e262c5594a2a452b448969f5382ca840": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d02182d94ecd0fb4899bc94c8d746940d7819c35a64a0152e9189d10b933db51": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d0b5479d4310112314a0745251d762edf779da11223a8181ac3f525357c87d0a": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d125c494eb1e65490421abb95ae0872689d7de601762aea7b6bbf368af4192b8": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d1499d8b6c1b6d38a3274434ab39559a26c6c8006f93b5ec9bffe65a24498813": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d1cdd384642c5460e653da3867601076301ddfe2c269f6208beae92276e53c1d": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d1dec494789c6feee7b04fd932c70c738ab91aee52048b91fa25ed1f6635d0b2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d2721e1c97d185613c875a8991c0170c9fb08bd7b5181e2036e9ae0295209164": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d3449e45500ffc80c4df4b6d5ca1e77e3dc35bb0d9b57863bc487f3d8ef7b2cb": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "墨西哥",
+    ""
+   ],
+   "system_name": "Metro de la Ciudad de México",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": false,
+   "date": "2026-10-21"
+  },
+  "cand_d350f67ae29ced2555b6dfa8227fbaa024697331dbecf81c4597def266f3e2ae": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d6dd423c8dd5191329fe20f6d4d503ecf4e9c7e4cb9ea4e17eb329729c64a102": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d743b1814e6f3892c5206bf02ca06a4b6f617e9030d0fbe1b8a977c083d4009a": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "捷運綠線",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_d771b8706242c62ee3f0b0c0b75130db37e70429d5010865c0f1b3284fbc50bb": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d85a2de7bc4ba313c7e2908d32c5940a33854dc46e71944971c44cd5d549ddca": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "양산 도시철도",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_d88f2e93ae9e40bedeeb7a3f9863f8cc384f5621ee01b72b59e734c0808d72b1": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d8efb84134a6dc771c3639ce45631bc734372659d9a0ca88d35b5a2f24995298": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d8fb385fc95266487fc30d813deb7c7697e6693e23b2e28d12a6571b44ddbc0c": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_d955b5dd6134d88752a66be3d1136238e6e89e4562156d1d08e5a5b73ad74494": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_da086f49342450a8b93488e3d00f9c0007db7461b659c3d154e6f216746cc4fb": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_da7715e5116cfb65046e07289a6d6243875659d83761403165092c3ef9a009f6": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_dab16dc301d32072ba59813d3d666d48a5209a810b9027f4a533f79a20fba154": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_dacfac39ac31ef9547b046dc9e1ab028ed9423c1c00643fb34c0d84dccc24861": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_db5d32eddc98644bff476051d4474adac134552a4467bb3bb2ecc2c4633b69e9": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "invalid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_dcd5e3076f6769a30badcdbb3f50ce367e7b63c122e5c6feff82d71288ce477e": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "UNRECOGNIZED_VALUE"
+   ],
+   "system_name": "위례선 트램",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_7abcd36fa19d6bce304c8899",
+   "category": "CATEGORY_UNRESOLVED",
+   "primary_category": null,
+   "taxonomy": [],
+   "taxonomy_state": "NOT_EVALUATED",
+   "reportability": "NOT_EVALUATED"
+  },
+  "cand_dd5e38cc6e975ee2e7f0e14a47a45c62673c39fccec9144203ee806a55521e29": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_ddfd67f2d3ad0e3259273e7fb04f08219ba722f80b986aa4d8aed961e4d7aba6": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_de2a3511c22cf2634d2ae0a6655721fc7f21956af8bfedfe30c48706bfa2df58": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "日本",
+    ""
+   ],
+   "system_name": "都営地下鉄",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_df700203a754c599e85802194ee11d16c34a4d34b34586273fdecb722a2dece5": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e027d0989299c384ec11472dc1f0d97794722ea27a4f46f049ad6d200d0de73b": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "桃園捷運綠線",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_e23cb02e7f5d1ff143e10608efa3a2eee09393f4674f512a7ca6f26ab7624492": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "Gwangju Metro Line 2",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-14",
+   "event_id": "evt_db804976614f29db53f261b3",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "Gwangju Metro Line 2",
+    "SOURCE_STATED"
+   ],
+   "technical_gap": [
+    "Writer",
+    "TRANSIENT_FAILURE_AFTER_RETRY",
+    "UNPARSEABLE_RESPONSE",
+    2
+   ]
+  },
+  "cand_e2ca60ca50c391b1478d2717db1a720895845acbfb89e3085f6e118738190031": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "invalid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e2ef2705c737f10b1092d58006d6eff0615a35c18fb8539a5fd0ca75f34a2a0c": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e38c07bf9bf3c19aa4eaaf1d027bc15aaf1cc97d7297c63c8fedbe04f59727c0": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e395915cbda7459c5edd14de92fa84293b3e3e16d5fbd302d6de0a5a6417b935": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e3c5cf6eb36e22dad1668ae31d7474cb19b56738056b208fd0ece4c319d5a728": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "UNRECOGNIZED_VALUE"
+   ],
+   "system_name": null,
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-16",
+   "event_id": "evt_746ad2adbeba4a288cb481a2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "事故事件",
+   "taxonomy": [
+    "電聯車"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    null,
+    "UNRESOLVED"
+   ],
+   "transit_system": [
+    null,
+    "UNRESOLVED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_e51c8770c83eef2e0bcd8ce26b8ff21b7d6475404119402e4748335ce45284d2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "invalid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e5b3c53d8ddf1cd0faf998cb9adb6d207dd1d78bc5babca718c77ff314e89e2b": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e6d7249752f09dd8ead41fa999415907a86d7f32770d24c4df91670de13b70e4": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e7045e20732734667db91fb9738d1408b5d5a5b733913807717b3ed9069e2743": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e739e44bb2bdb72aabf9c435717ac5009beb18a1cdd7fbaf3024094c72623faf": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "울산 도시철도 1호선",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_e76b0d72b1b293c5c3ac7fe964e3fc1a521617262bd9387d6a87f85bdab2cef2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e776059ba73eeade02af3bc6e89497fc0346b22a757244ed46c39f4991a3bca2": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e83ef6ece17079fb45d725e1096437aca21dab63ed34b4569f77b96c4f902f4c": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "法國",
+    ""
+   ],
+   "system_name": "TCL",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_66ab683dd132b2997728f0e7",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "號誌",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "法國",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "TCL",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_e8e0668602103b14333cd9b6a5d127c160baf5f8119eaa73fe01b3373f685d5e": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e9d3af620e62280a2b81a414b0cbbe31abd58a3c35f85f354bbaef3891e543ea": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_e9d4f5b56d7cf0b0fcec4204bbdc83500f40d14ca131d88e279b9f3d6b4b0c9c": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_ea8fc7d3cae150a79e3f8ffedb4ecec872288e811ad95351acd69df355ba96fe": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_ed6ad4ca6ebb85d402613e5da78778da1760703b405519452fed69c16e7dd5ef": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_ed9d4c7149eb9f02cf407f6f039e4bcafbb84da14f99eb25eda92f0422cef05f": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "대구 도시철도 1호선",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_ee3817761208f5f57264e17c97f3e1fc3dffb6ff54fea342dedea5d6236b24cd": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "印度",
+    ""
+   ],
+   "system_name": "Line 4",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_d66b24626e6716dec3eb1098",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "技術新知",
+   "taxonomy": [
+    "電聯車",
+    "號誌",
+    "供電",
+    "機廠維修設備"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "印度",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "Line 4",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_ee6fa43b5a96be901cf576dafb07045c49ddfe3c51be40cd5d7203d90bc06c03": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "西班牙",
+    ""
+   ],
+   "system_name": "Metro de Madrid",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_2994cae7eb60b415c7626b42",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "採購事件",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "西班牙",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "Metro de Madrid",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_eed3908aba736ded38e220dc5c3ee0b15ff09d25f82a8b5e1ef2bd26cd143bad": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_ef0e1a1345cc2133f6fd85d64eda7f67f811b3caf0535e59ede2c42a3be754e8": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_eff0feba7e373bf5e1d1d3dc04de5df6ba933c8f2cab3081b659ef38f28317df": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_f074173a52939a61ddd414507a3e9ea2c0319296ee959bae94e5f0ea38a1f4a0": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_f083377d2eadcd412d36eda62f0f7346244a1179798ac110137f1f55b363285d": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "광주 도시철도 2호선",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_f180c420e9dabfc5e250ea999c8d91e88a244fe189f3ab394179ee3393cc243a": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_f2fd4f949a08025cb8f54659ceadfd164f8fdd3081c00b456471e5dd693697b4": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "義大利",
+    ""
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_f31d06503281779eee9efa5c2d97c28769b60dc5175eae417eb2b545ebb59bdf": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_f4594e32d359eb90054da5734bbcfdfd4bdbd0b5ba56fb222174e8dc62c67260": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "UNRECOGNIZED_VALUE"
+   ],
+   "system_name": null,
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "NONELIGIBLE_RELATION_ENDPOINT",
+    1
+   ]
+  },
+  "cand_f471424bc2a8dc7a5199d85b82a096e393b20442b0824c0418eee944ff260992": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "울산도시철도 1호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_f4889369b7e06745936b2829eabac28fc785c17781330fd91cde3aab24767dd5": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_f618560c72a8837bc1a8800c890193e4d9e921e06102a82d18e283a4787e80ff": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_f6ad824fec13a03bc812d2fb353e33d50d2d87b1acff90675b872bbcc4dc1017": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "partial_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "UNRECOGNIZED_VALUE"
+   ],
+   "system_name": "Metro de Santiago",
+   "technical_gap": [
+    "Scope",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "TARGET_SYSTEM_CONTAINMENT",
+    1
+   ]
+  },
+  "cand_f6cf0685eeec4d6157b2de295a5c5161bd840f2f3e007e90331b064c8a730e6c": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_f6f7da91cbc9901dc179080ad7b6e47547620648aa44db76aebe7bc4f4c44f41": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_f730c638c3e312e6fbc75b65891e642ab51bd5e381004939c4052d43a901fa96": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "UNRESOLVED",
+    null,
+    "UNRECOGNIZED_VALUE"
+   ],
+   "system_name": "도시철도 1호선",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-19",
+   "event_id": "evt_10679125a50fa8524bdca6c2",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [
+    "電聯車",
+    "供電"
+   ],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "韓國",
+    "SOURCE_STATED"
+   ],
+   "transit_system": [
+    "도시철도 1호선",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_f74d644ef046edfe07e91ed74ad3da8fc073e188050054ad83f8c4d10e70cd1e": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_f84441a9fc02675e7a53fb96a99020a69f6808e51a8f3ccf3ab7518696aa8f44": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_f9c461f0ae491d12c7fffdebe6de970e27e78e9368d9c2cb48847e898de7a557": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_f9d63cf225dff22161b698b311b70acb04ed8280c68ddd9a40e8bd2c596989dc": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_fa3430deb41c1e419335d58806384c2c9479266b6c6cb9b0c98c70d8998f5f47": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "韓國",
+    ""
+   ],
+   "system_name": "서울 지하철",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-20",
+   "event_id": "evt_aab102bd35bae44eca7b7392",
+   "category": "CATEGORY_UNRESOLVED",
+   "primary_category": null,
+   "taxonomy": [],
+   "taxonomy_state": "NOT_EVALUATED",
+   "reportability": "NOT_EVALUATED"
+  },
+  "cand_fa41e8a1f9ae146f513520563ede13866486ca4efe48cfee68cb0f86a8c38456": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "葡萄牙",
+    ""
+   ],
+   "system_name": "Metro de Lisboa",
+   "scope": "IN_SCOPE",
+   "scope_detail": "NONE",
+   "date_valid": true,
+   "date": "2026-10-14",
+   "event_id": "evt_75bd92e7336e3515479b057f",
+   "category": "CATEGORY_ASSIGNED",
+   "primary_category": "營運動態",
+   "taxonomy": [],
+   "taxonomy_state": "TAXONOMY_EVALUATED",
+   "reportability": "REPORTABLE",
+   "country": [
+    "葡萄牙",
+    "REFERENCE_MAPPED"
+   ],
+   "transit_system": [
+    "Metro de Lisboa",
+    "SOURCE_STATED"
+   ],
+   "validation": "PASS"
+  },
+  "cand_fae8a094a7f3cca65cb6876271bd851b8983f93b3f6c18beacbf32bcb00fea25": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_zero_metadata",
+   "region": [
+    "NOT_STATED",
+    null,
+    ""
+   ],
+   "system_name": null,
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "EXCLUDED_TRANSPORT_MODE"
+  },
+  "cand_fb2f80904d65f1ad290f3db96e306db9b011fe57640621c5547731f10132f697": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_fb8d43e8a4a45a2625df50d910c1485f1b66cf9cd08239e50acd2252076c77af": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_fbda3211bf4d629b3405198d7ca21472aecac05556804c6faa46fada655923ab": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_fc0eea7bffbae14df533238c4d6cfdffd052e7206cfd290c42c9eb3bf2b73ee9": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "SOURCE_STATED",
+    "臺灣",
+    ""
+   ],
+   "system_name": "基隆捷運",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_fc9376f799b95443a0808a5d63686596e6a349a884fa019fc15c3895b42fc78b": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_fd87bf756fc4644c20db305625ade3c61b877da01d760528a69191374bbb7072": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SOURCE_PROVENANCE",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_fe7cc9678d8aced112ff5de66a17d7fb36d62b542020a7ad8cc1ea9475f0b13d": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "SEMANTIC_MATCH",
+   "judge": "valid",
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_fe933012f15bdefed064669e5be9731ddf880424e9a4b255df2c0e684a6a3dfd": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_fe98b8ada050aede23e78f3ed0109c63c16020685f5319fa4de81a8dad8712d1": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "FETCH_TRANSPORT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_fed4931c31b9e2f428a3d043ee97f06c471481201ec87a76c27ae939fa07e287": {
+   "evidence": "EVIDENCE_READY",
+   "gate": null,
+   "judge": "valid",
+   "metadata": "valid_metadata",
+   "region": [
+    "REFERENCE_MAPPED",
+    "韓國",
+    ""
+   ],
+   "system_name": "대구 도시철도 1호선",
+   "scope": "OUT_OF_SCOPE",
+   "scope_detail": "SCOPE_NOT_ESTABLISHED"
+  },
+  "cand_ff750a088e8a3b11a9f05d57b95cf5c52a8b4530dc35afda4f14b39f81e2a1a5": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "cand_ffbc13e32843c12c1c122e9426f535b9ab34df37152279f4536bce96d53f2beb": {
+   "evidence": "EVIDENCE_REJECTED",
+   "gate": "PRINCIPAL_DOCUMENT",
+   "judge": null,
+   "metadata": null,
+   "region": null,
+   "system_name": null
+  },
+  "event-identity-batch-1:group-7:confirmation:group-1": {
+   "technical_gap": [
+    "EventIdentity",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "CITATION_INVALID",
+    1
+   ]
+  },
+  "event-identity-batch-1:group-8:confirmation": {
+   "technical_gap": [
+    "EventIdentity",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "CONFIRMATION_INCOMPLETE",
+    1
+   ]
+  },
+  "event-identity-batch-1:group-9:confirmation": {
+   "technical_gap": [
+    "EventIdentity",
+    "PROPOSAL_CONTRACT_VIOLATION",
+    "CONFIRMATION_INCOMPLETE",
+    1
+   ]
+  }
+ },
+ "technical_gaps": [
+  {
+   "stage": "Scope",
+   "subject_id": "cand_1326246727e6b32c3471725a75f6ba92027dd2747f74bbd1733b2a6bec053357",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "ENDPOINT_LABEL",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_2a09a8450ca3069006f3ec8c0dbe234078d72f9ad04a90872c4e8759079abc8c",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "ENDPOINT_ROLE_DISTINCTNESS",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_3971c758a9f77bc191e02ec80579d5e6ab5c91ab808a750d4c4c5e645b32d65d",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "ACTION_TARGET_CONTAINMENT",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_4574d37cffc3f6a76c92c8ad3093fda3de5fff544fef9a4c7a80641db76e26c1",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "TARGET_SYSTEM_CONTAINMENT",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_5a064db20f8b7538f61fbbaa4465dc5e1f44d0c674b9cb1b6232e78e61f22fc0",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "ACTION_TARGET_CONTAINMENT",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_62eb1a6d6761761fd685884fcd0929f5396f33b297178fe0199f23fbd00c964e",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "ENDPOINT_LABEL",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_6c410a17269fa59a0978fa4500b95d716585d3f1f40dfc89a19737f0f270bc4d",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "TARGET_SYSTEM_CONTAINMENT",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_72f290176130ee78be229188d4f0d24fc27e01d463ca9a91b7db5cb4d401fcf5",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "EVENT_FOCUS_CONTAINMENT",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_741c29099d77f5ae68f1050dcbc7ab4a16185590afc0b95c77ac3f43a9e4e3bc",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "ENDPOINT_LABEL",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_77f3374af5fd09339b1198e9fb10b42358e0bf2f9dd292d8df2215e4897fc8e3",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "ENDPOINT_LABEL",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_7cbaeefe2b1af09c4ce4f7fd14c54cfd7fcb62f25adaf073bddb25f6d230a4d8",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "ENDPOINT_LABEL",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_87a00fc578ab347eb8484bd517c1c7b17f9dd43748ba887edf8705a48cdd3cba",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "ACTION_TARGET_CONTAINMENT",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_8edcbfecfe5de11fa872bac83021476fdfc026e7121eaca18e0fa8912d605b5a",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "ENDPOINT_LABEL",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_98c2608783bd8b235899b6b64442da76076840ee0644609194c3d59432cc2cca",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "ENDPOINT_LABEL",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_998b8167bf798d0ab294d1c8b817e8cf033523f0c5821e524ad1209c2f37de32",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "EVENT_FOCUS_CONTAINMENT",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_b04528fde6e8c1e6e7db19906e934ddb1e51e73d4cfaa75968e48d1a9b1b41a6",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "EVENT_FOCUS_CONTAINMENT",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_f4594e32d359eb90054da5734bbcfdfd4bdbd0b5ba56fb222174e8dc62c67260",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "NONELIGIBLE_RELATION_ENDPOINT",
+   "attempts": 1
+  },
+  {
+   "stage": "Scope",
+   "subject_id": "cand_f6ad824fec13a03bc812d2fb353e33d50d2d87b1acff90675b872bbcc4dc1017",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "TARGET_SYSTEM_CONTAINMENT",
+   "attempts": 1
+  },
+  {
+   "stage": "EventIdentity",
+   "subject_id": "event-identity-batch-1:group-7:confirmation:group-1",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "CITATION_INVALID",
+   "attempts": 1
+  },
+  {
+   "stage": "EventIdentity",
+   "subject_id": "event-identity-batch-1:group-8:confirmation",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "CONFIRMATION_INCOMPLETE",
+   "attempts": 1
+  },
+  {
+   "stage": "EventIdentity",
+   "subject_id": "event-identity-batch-1:group-9:confirmation",
+   "kind": "PROPOSAL_CONTRACT_VIOLATION",
+   "failure_class": "CONFIRMATION_INCOMPLETE",
+   "attempts": 1
+  },
+  {
+   "stage": "Writer",
+   "subject_id": "evt_db804976614f29db53f261b3",
+   "kind": "TRANSIENT_FAILURE_AFTER_RETRY",
+   "failure_class": "UNPARSEABLE_RESPONSE",
+   "attempts": 2
+  },
+  {
+   "stage": "Writer",
+   "subject_id": "evt_ef2b1b285ca41b3c900bb486",
+   "kind": "TRANSIENT_FAILURE_AFTER_RETRY",
+   "failure_class": "UNPARSEABLE_RESPONSE",
+   "attempts": 2
+  },
+  {
+   "stage": "Validator",
+   "subject_id": "evt_6ff75f2b7e939bf0e3d51a9d",
+   "kind": "TRANSIENT_FAILURE_AFTER_RETRY",
+   "failure_class": "UNPARSEABLE_RESPONSE",
+   "attempts": 2
+  },
+  {
+   "stage": "Validator",
+   "subject_id": "evt_bf18d8d76f6a44d61aa09b10",
+   "kind": "TRANSIENT_FAILURE_AFTER_RETRY",
+   "failure_class": "UNPARSEABLE_RESPONSE",
+   "attempts": 2
+  }
+ ],
+ "technical_gap_classes": {
+  "Scope:ENDPOINT_LABEL": 7,
+  "Scope:ENDPOINT_ROLE_DISTINCTNESS": 1,
+  "Scope:ACTION_TARGET_CONTAINMENT": 3,
+  "Scope:TARGET_SYSTEM_CONTAINMENT": 3,
+  "Scope:EVENT_FOCUS_CONTAINMENT": 3,
+  "Scope:NONELIGIBLE_RELATION_ENDPOINT": 1,
+  "EventIdentity:CITATION_INVALID": 1,
+  "EventIdentity:CONFIRMATION_INCOMPLETE": 2,
+  "Writer:UNPARSEABLE_RESPONSE": 2,
+  "Validator:UNPARSEABLE_RESPONSE": 2
+ },
+ "metadata_exclusions": [],
+ "disclosure": {
+  "technical_gap_count": 22,
+  "metadata_exclusion_count": 0,
+  "validation_failed_count": 0,
+  "event_identity_gap_count": 3
+ }
+}
