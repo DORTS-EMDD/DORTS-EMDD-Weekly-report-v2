@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-32 修訂（2026-10-20～29）
+### RC-3～RC-35 修訂（2026-10-20～29）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.26 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.27 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -373,6 +373,11 @@ Transport retry 與 semantic correction 必須分開計算。
   分群漏提或確認誤分，原因無法觀測，根因未確認，未修改任何規則、提示詞或 schema。Event
   Identity 另記錄每筆紀錄送出的句子 ID 與摘錄上限，於 selection audit 與 run summary 顯示，
   不含原文、不參與決策。
+* RC-35（§A.27，澄清 §A.19）：RC-33、RC-34 為唯讀審查。確認回答改為「每個發生事項各一群、
+  其餘紀錄各自單獨成群、不同發生事項不得同群」（提示詞 v6）；原寫法只容許一個同事件群組，
+  同一提案群組內的第二個事件無法被確認。Python 驗證與判定邏輯、schema、呼叫次數與
+  SAME_EVENT 規則都不變；確認仍只能移除配對，遺漏仍 fail-closed。Golden ED19 鎖定一個
+  提案群組含兩個多筆事件。仁川、維也納、光州的重複根因仍未確認。
 
 ## 13. Report / Delivery
 
@@ -522,5 +527,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-32 APPLIED (2026-10-29)
+CONTRACT_REVISION = RC-3..RC-35 APPLIED (2026-10-29)
 ```

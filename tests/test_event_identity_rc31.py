@@ -32,7 +32,6 @@ from src.weekly_report.event_identity import (
 from src.weekly_report.evidence_sentences import segment_evidence_sentences
 from src.weekly_report.maiagent_event_identity_provider import (
     CONFIRMATION_SCHEMA_VERSION,
-    PROMPT_VERSION,
     SCHEMA_VERSION,
     build_maiagent_event_identity_model_input,
 )
@@ -96,7 +95,6 @@ def test_a_grouping_request_keeps_its_two_member_schema_and_version():
 
 def test_no_instruction_forbids_one_record_groups_in_a_confirmation():
     payload = build_maiagent_event_identity_model_input(_request(confirmation=True))
-    assert PROMPT_VERSION == "event-identity-grouping-v5"
     forbidding = [line for line in payload["instructions"] if "do not return single-record groups" in line]
     assert forbidding and all(line.startswith("When event_identity_request.confirmation is false") for line in forbidding)
     assert any("single-record group" in line and "confirmation is true" in line for line in payload["instructions"])

@@ -37,9 +37,13 @@ def _member(candidate_id, **citations):
     return member
 
 
-def _confirm(*candidate_ids, separate=()):
-    """An RC-23/RC-25 confirmation: these records as one event, ``separate`` each alone."""
+def _confirm(*candidate_ids, separate=(), also=()):
+    """An RC-23/RC-25 confirmation: these records as one event, ``separate`` each alone.
+
+    RC-35: ``also`` adds further occurrence groups (one group per occurrence).
+    """
     groups = [[*candidate_ids]] if candidate_ids else []
+    groups += [list(group) for group in also]
     groups += [[candidate_id] for candidate_id in separate]
     return {"groups": [{"members": [_member(candidate_id) for candidate_id in group]} for group in groups]}
 

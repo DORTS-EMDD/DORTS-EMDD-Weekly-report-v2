@@ -663,7 +663,8 @@ Rules:
 * (Amends section A.17.) A confirmation request carries
   `confirmation = true`. The helper must return every supplied record exactly
   once: the records that report the same occurrence together, and every other
-  record as its own single-record group. A single-record group is an explicit
+  record as its own single-record group (answer shape clarified by RC-35,
+  section A.27: one group per occurrence). A single-record group is an explicit
   separation. A record the confirmation leaves out is undecided: its pairs are
   not confirmed (no merge), and the confirmation is a disclosed
   `CONFIRMATION_INCOMPLETE` `EventIdentity` TechnicalGap, so a possible
@@ -1126,6 +1127,55 @@ GitHub Actions run 40817530617 (2026-10-21..27, main 08fd50f): 65 records ->
 EVENT_IDENTITY_DUPLICATES_RC32 = UNCONFIRMED (helper miss with sufficient Evidence)
 PRODUCTION_CHANGE_RC32 = NONE
 OBSERVATION = proposal_excerpt_sentence_ids, event_identity_excerpt_limits
+```
+
+### A.27 RC-35 Confirmation answer shape: one group per occurrence (2026-10-29)
+
+RC-33 and RC-34 were read-only reviews of the duplicates left after RC-31/RC-32.
+RC-34 confirmed a contract inconsistency, without proving that it caused any
+specific duplicate:
+
+* A proposed group may contain more than one occurrence: section A.17 was
+  introduced because batch groups mixed occurrences of the same kind, and
+  section A.15 lets groups overlap. The confirmation re-runs the same task on
+  one group's members and can only remove pairs.
+* Section A.19 and the confirmation instruction (prompt v3 to v5) described
+  the answer as "the records that report the same occurrence together in one
+  group, and every other record as its own single-record group": one
+  occurrence group per confirmation. When a group mixed two occurrences of two
+  or more records each, an answer following that wording could confirm only
+  one of them; the records of the other were returned as single-record groups
+  and stayed apart. RC-31 had scoped the line "put all records of one event
+  into a single group" to grouping requests only, so no confirmation sentence
+  spoke of one group per event.
+* The Python owner already accepts one group per occurrence:
+  `EventIdentity._confirmed_pairs` confirms every pair inside every valid
+  group, and the confirmation schema (RC-31) admits several groups and
+  single-record groups.
+
+Rule (clarifies section A.19; no change to SAME_EVENT): a confirmation answer
+returns every supplied record exactly once, as one group for each occurrence
+that holds all the records reporting it, and every record that reports no
+other record's occurrence as its own single-record group. Records of different
+occurrences are never put in one group. Unchanged: a pair is SAME_EVENT only
+when the batch proposed it, it passed the RC-22 region check and the
+confirmation places both records in one valid group; a confirmation never adds
+a pair; an omitted record stays undecided (`CONFIRMATION_INCOMPLETE`); a
+failed or invalid confirmation confirms nothing. The Python validator,
+decision logic, schema and call count are unchanged; prompt
+`event-identity-grouping-v6`. Golden ED19 locks a proposed group holding two
+occurrences of two records each and one separate record.
+
+The Incheon split in run 40817530617 has the shape this wording produced
+(eight records confirmed, the two ministry-event records each alone), but the
+same output also follows from the helper judging the shorter excerpt
+insufficient; the cause there, and the Vienna and Gwangju batch misses, remain
+unconfirmed.
+
+```text
+EVENT_IDENTITY_CONFIRMATION_ANSWER = ONE_GROUP_PER_OCCURRENCE + SINGLE_RECORD_GROUPS
+EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v6
+EVENT_IDENTITY_SAME_EVENT = BATCH_PROPOSED AND REGION_COMPATIBLE AND CONFIRMED (unchanged)
 ```
 
 ## B. Authoritative Owners
