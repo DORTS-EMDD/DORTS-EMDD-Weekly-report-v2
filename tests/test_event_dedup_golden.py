@@ -12,10 +12,27 @@ from src.weekly_report.contracts import (
     ScopeState,
 )
 from src.weekly_report.event_identity import EventIdentity, EventIdentityRelation
-from tests.test_event_identity_contract import _PairAdvisor, _SemanticAdvisor, _record
+from tests.test_event_identity_contract import _PairAdvisor, _SemanticAdvisor, _grounded_member, _record
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class _ScriptedGroups:
+    """Answers a batch with ``proposal`` and every confirmation with ``confirmation``."""
+
+    def __init__(self, proposal, confirmation):
+        self.proposal, self.confirmation = proposal, confirmation
+
+    def __call__(self, request):
+        record_ids = {record.candidate_id: record.record_id for record in request.records}
+        groups = self.confirmation if request.confirmation else self.proposal
+        return {
+            "groups": [
+                {"members": [_grounded_member(record_ids[candidate_id]) for candidate_id in group]}
+                for group in groups
+            ]
+        }
 
 
 class EventDedupGoldenTests(unittest.TestCase):
@@ -24,7 +41,7 @@ class EventDedupGoldenTests(unittest.TestCase):
             (ROOT / "golden" / "event_dedup_cases.json").read_text(encoding="utf-8")
         )
         cases = manifest["cases"]
-        self.assertEqual(len(cases), 15)
+        self.assertEqual(len(cases), 18)
         self.assertEqual(
             {case["case_class"] for case in cases},
             {
@@ -43,6 +60,9 @@ class EventDedupGoldenTests(unittest.TestCase):
                 "invalid_semantic_response",
                 "unresolved_non_identity_claim",
                 "ineligible_upstream_excluded",
+                "confirmation_complete_partition",
+                "confirmation_omission_fail_closed",
+                "syndicated_reprint",
             },
         )
         for case in cases:
@@ -61,6 +81,9 @@ class EventDedupGoldenTests(unittest.TestCase):
 
     @staticmethod
     def _advisor_for_case(case):
+        if "proposal_groups" in case:
+            # RC-31: the batch proposal, then each group's confirmation answer.
+            return _ScriptedGroups(case["proposal_groups"], case["confirmation_groups"])
         if case.get("semantic_relation") == "INVALID":
             return _SemanticAdvisor(invalid=True)
         if case.get("semantic_relation") == EventIdentityRelation.SAME_EVENT.value:
@@ -133,7 +156,7 @@ class EventDedupGoldenTests(unittest.TestCase):
         self.assertIs(by_id["OUT_OF_SCOPE"].scope.state, ScopeState.OUT_OF_SCOPE)
         self.assertFalse(by_id["DATE_INVALID"].temporal.date_valid)
 
-    def test_all_ed01_to_ed15_execute_through_event_identity(self):
+    def test_all_ed01_to_ed18_execute_through_event_identity(self):
         for case in self._load_event_dedup_cases():
             with self.subTest(case_id=case["case_id"]):
                 owner = EventIdentity(self._advisor_for_case(case))
@@ -159,6 +182,10 @@ class EventDedupGoldenTests(unittest.TestCase):
                     self.assertEqual(result.groups[0].unresolved_claims[0].claim_key, "duration")
                 elif case["case_id"] == "ED15":
                     self.assertEqual(all_members, ["READY"])
+                if "expected_technical_gaps" in case:
+                    self.assertEqual(
+                        [gap.failure_class for gap in result.technical_gaps], case["expected_technical_gaps"]
+                    )
 
     def test_ed11_golden_case_is_order_invariant(self):
         case = next(item for item in self._load_event_dedup_cases() if item["case_id"] == "ED11")

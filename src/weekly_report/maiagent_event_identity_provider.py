@@ -16,7 +16,7 @@ from typing import Any
 from urllib.parse import quote, urlsplit
 
 from .contracts import EventIdentityGroupingRequest
-from .event_identity import EVENT_IDENTITY_GROUPING_RESPONSE_SCHEMA
+from .event_identity import grouping_response_schema
 from .maiagent_transport import (
     MaiAgentJsonHttpTransport,
     UrllibMaiAgentJsonTransport,
@@ -26,8 +26,10 @@ from .maiagent_transport import (
 
 
 TASK_IDENTITY = "event_identity_semantic_proposal"
-PROMPT_VERSION = "event-identity-grouping-v4"
+PROMPT_VERSION = "event-identity-grouping-v5"
 SCHEMA_VERSION = "event-identity-semantic-proposal-v1"
+# RC-31: a confirmation answer admits one-record groups (section A.25).
+CONFIRMATION_SCHEMA_VERSION = "event-identity-semantic-confirmation-v1"
 HELPER_VERSION = "maiagent-structured-helper-event-identity-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-event-identity"
 # One request carries a whole batch of records, so it is allowed longer than
@@ -39,8 +41,8 @@ EVENT_IDENTITY_INSTRUCTIONS = (
     "Each supplied record is one news source about one urban rail event. Identify records that report the same event, including records in different languages.",
     "Same event means one real-world occurrence at one time: the same accident, failure, opening, contract award, announcement, decision or test. Different lifecycle steps of the same project (for example a train delivery, a construction milestone and an opening date), different statements or meetings about the same project, and separate incidents on the same line are different events. Two incidents on consecutive days are different events. Occurrences in different cities, countries or systems are different events, even when they are of the same kind (for example two emergency drills or two construction milestones).",
     "Use only the supplied evidence_sentences and identity_facts. Each record has a record_id and each sentence a sentence_id, both assigned by Python; a sentence_id is valid only within its own record. Refer to records only by record_id.",
-    "Return only groups of two or more records that report the same event. Leave every other record out; do not return single-record groups. Put all records of one event into a single group; never split one event across two groups.",
-    "When event_identity_request.confirmation is true, the records are one group proposed earlier and you re-check it. Then return every supplied record exactly once: the records that report the same occurrence together in one group, and every other record as its own single-record group. Do not leave any record out; an empty groups list is never a valid confirmation answer.",
+    "When event_identity_request.confirmation is false: return only groups of two or more records that report the same event. Leave every other record out; do not return single-record groups. Put all records of one event into a single group; never split one event across two groups.",
+    "When event_identity_request.confirmation is true, the records are one group proposed earlier and you re-check it. Then return every supplied record exactly once: the records that report the same occurrence together in one group, and every other record as its own single-record group (a group whose members list holds that one record). The response schema for a confirmation allows single-record groups. Do not leave any record out; an empty groups list is never a valid confirmation answer.",
     "For every member cite sentence_ids of that record: subject_sentence_ids for the system, line, asset or project concerned; occurrence_sentence_ids for what happened; lifecycle_sentence_ids for the step reached (for example ordered, delivered, tested, opened, suspended, investigated). The same sentence may serve several roles. Never copy or translate source text into a citation.",
     "When the evidence does not establish that two records report the same occurrence, leave them apart. Similar topics, the same city, the same system or the same project are not sufficient.",
     "Do not search, browse, use tools, retrieve external knowledge, or infer from publishers, URLs or titles; none are supplied.",
@@ -90,14 +92,18 @@ class MaiAgentEventIdentityProviderConfig:
 def build_maiagent_event_identity_model_input(request: EventIdentityGroupingRequest) -> dict[str, Any]:
     if not isinstance(request, EventIdentityGroupingRequest):
         raise TypeError("MaiAgent Event Identity input requires EventIdentityGroupingRequest")
+    schema_version = CONFIRMATION_SCHEMA_VERSION if request.confirmation else SCHEMA_VERSION
     return {
         "task_identity": TASK_IDENTITY,
         "prompt_version": PROMPT_VERSION,
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": schema_version,
         "helper_version": HELPER_VERSION,
         "instructions": list(EVENT_IDENTITY_INSTRUCTIONS),
         "event_identity_request": request.as_payload(),
-        "authoritative_response_contract": {"schema_version": SCHEMA_VERSION, "json_schema": EVENT_IDENTITY_GROUPING_RESPONSE_SCHEMA},
+        "authoritative_response_contract": {
+            "schema_version": schema_version,
+            "json_schema": grouping_response_schema(request),
+        },
     }
 
 
@@ -135,5 +141,5 @@ def build_maiagent_event_identity_provider(config: MaiAgentEventIdentityProvider
 
 
 __all__ = [
-    "EVENT_IDENTITY_INSTRUCTIONS", "EVENT_IDENTITY_TIMEOUT_SECONDS", "HELPER_VERSION", "MaiAgentEventIdentityProposalProvider", "MaiAgentEventIdentityProviderConfig", "PROMPT_VERSION", "PROVIDER_IDENTIFIER", "SCHEMA_VERSION", "TASK_IDENTITY", "build_maiagent_event_identity_model_input", "build_maiagent_event_identity_provider",
+    "CONFIRMATION_SCHEMA_VERSION", "EVENT_IDENTITY_INSTRUCTIONS", "EVENT_IDENTITY_TIMEOUT_SECONDS", "HELPER_VERSION", "MaiAgentEventIdentityProposalProvider", "MaiAgentEventIdentityProviderConfig", "PROMPT_VERSION", "PROVIDER_IDENTIFIER", "SCHEMA_VERSION", "TASK_IDENTITY", "build_maiagent_event_identity_model_input", "build_maiagent_event_identity_provider",
 ]

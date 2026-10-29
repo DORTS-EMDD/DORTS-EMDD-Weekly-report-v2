@@ -73,6 +73,23 @@ EVENT_IDENTITY_GROUPING_RESPONSE_SCHEMA: dict[str, object] = {
     },
     "required": ["groups"],
 }
+# RC-31: a confirmation places a separated record as its own one-record group
+# (RC-25), so its declared schema admits one-member groups. Before RC-31 the
+# confirmation was sent the grouping schema above, whose ``minItems: 2``
+# forbade the very answer the instruction required; the helper resolved the
+# contradiction by leaving separated records out (CONFIRMATION_INCOMPLETE).
+EVENT_IDENTITY_CONFIRMATION_RESPONSE_SCHEMA: dict[str, object] = json.loads(
+    json.dumps(EVENT_IDENTITY_GROUPING_RESPONSE_SCHEMA)
+)
+EVENT_IDENTITY_CONFIRMATION_RESPONSE_SCHEMA["properties"]["groups"]["items"]["properties"]["members"]["minItems"] = 1  # type: ignore[index]
+
+
+def grouping_response_schema(request: EventIdentityGroupingRequest) -> dict[str, object]:
+    """The response schema the helper is held to for this request."""
+
+    return EVENT_IDENTITY_CONFIRMATION_RESPONSE_SCHEMA if request.confirmation else EVENT_IDENTITY_GROUPING_RESPONSE_SCHEMA
+
+
 _MEMBER_KEYS = frozenset(
     EVENT_IDENTITY_GROUPING_RESPONSE_SCHEMA["properties"]["groups"]["items"]  # type: ignore[index]
     ["properties"]["members"]["items"]["required"]
@@ -277,6 +294,7 @@ class EventIdentity:
                 if len(outcome) == 1:
                     diagnostics.append(EventIdentityDiagnostic(outcome, "SINGLE_MEMBER_PROPOSAL"))
                     continue
+                group_subject = f"{request.batch_id}:group-{index}"
                 pairs = []
                 for position, left_id in enumerate(outcome):
                     for right_id in outcome[position + 1 :]:
@@ -284,21 +302,30 @@ class EventIdentity:
                             # RC-22: one occurrence happens in one country/region.
                             diagnostics.append(
                                 EventIdentityDiagnostic(
-                                    tuple(sorted((left_id, right_id))), "PROPOSAL_REGION_CONFLICT"
+                                    tuple(sorted((left_id, right_id))),
+                                    "PROPOSAL_REGION_CONFLICT",
+                                    f"{group_subject}|size={len(outcome)}",
                                 )
                             )
                             continue
                         pairs.append(_pair_key(left_id, right_id))
                 if not pairs:
                     continue
-                confirmed = self._confirmed_pairs(
+                confirmed, placement = self._confirmed_pairs(
                     [by_id[candidate_id] for candidate_id in outcome],
-                    f"{request.batch_id}:group-{index}:confirmation",
+                    f"{group_subject}:confirmation",
                     technical_gaps,
                 )
                 for pair in pairs:
                     if pair not in confirmed:
-                        diagnostics.append(EventIdentityDiagnostic(pair, "PROPOSAL_NOT_CONFIRMED"))
+                        # Observation only (RC-31): why the pair stayed apart.
+                        diagnostics.append(
+                            EventIdentityDiagnostic(
+                                pair,
+                                "PROPOSAL_NOT_CONFIRMED",
+                                f"{group_subject}|size={len(outcome)}|{_unconfirmed_outcome(pair, placement)}",
+                            )
+                        )
                         continue
                     relations[pair] = (EventIdentityRelation.SAME_EVENT, "SEMANTIC_GROUP_PROPOSAL")
         return relations
@@ -308,7 +335,7 @@ class EventIdentity:
         members: Sequence[EventIdentityRecord],
         batch_id: str,
         technical_gaps: list[TechnicalGap],
-    ) -> set[tuple[str, str]]:
+    ) -> tuple[set[tuple[str, str]], dict[str, str] | None]:
         """RC-23: re-run the grouping task on one proposed group's members alone.
 
         Only pairs that the confirmation proposes together again are confirmed;
@@ -316,6 +343,10 @@ class EventIdentity:
         RC-25: the confirmation must place every record (a separated record as
         a one-record group); an omitted record is undecided, so its pairs stay
         unconfirmed and the omission is a disclosed gap.
+
+        Also returns where the confirmation placed each candidate (``PLACED``,
+        ``OMITTED`` or ``GROUP_INVALID``), or None when the confirmation failed
+        as a whole; this only explains unconfirmed pairs and decides nothing.
         """
 
         ordered = sorted(
@@ -331,7 +362,7 @@ class EventIdentity:
             proposal = _validate_grouping_proposal(raw, request)
         except EVENT_TECHNICAL_FAILURES as failure:
             technical_gaps.append(TechnicalGap.from_failure("EventIdentity", batch_id, failure))
-            return set()
+            return set(), None
         named = {member["record_id"] for group in raw["groups"] for member in group["members"]}
         if any(record.record_id not in named for record in records):
             technical_gaps.append(
@@ -339,15 +370,19 @@ class EventIdentity:
                     "EventIdentity", batch_id, EventIdentityProposalViolation("CONFIRMATION_INCOMPLETE")
                 )
             )
+        placement = {
+            record.candidate_id: "GROUP_INVALID" if record.record_id in named else "OMITTED" for record in records
+        }
         confirmed: set[tuple[str, str]] = set()
         for index, outcome in enumerate(proposal, start=1):
             if isinstance(outcome, EventIdentityProposalViolation):
                 technical_gaps.append(TechnicalGap.from_failure("EventIdentity", f"{batch_id}:group-{index}", outcome))
                 continue
+            placement.update(dict.fromkeys(outcome, "PLACED"))
             for position, left_id in enumerate(outcome):
                 for right_id in outcome[position + 1 :]:
                     confirmed.add(_pair_key(left_id, right_id))
-        return confirmed
+        return confirmed, placement
 
     def _deterministic_relation(
         self,
@@ -560,6 +595,18 @@ def _normalise_url(value: str) -> str:
             "",
         )
     )
+
+
+def _unconfirmed_outcome(pair: tuple[str, str], placement: Mapping[str, str] | None) -> str:
+    """Why a proposed pair was not confirmed, for its diagnostic only."""
+
+    if placement is None:
+        return "CONFIRMATION_FAILED"
+    states = {placement[candidate_id] for candidate_id in pair}
+    for state in ("OMITTED", "GROUP_INVALID"):
+        if state in states:
+            return state
+    return "SEPARATED"
 
 
 def _pair_key(left_id: str, right_id: str) -> tuple[str, str]:
