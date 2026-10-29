@@ -118,3 +118,20 @@ def test_publication_dates_are_not_identity_and_existing_date_golden_is_unchange
     # ED06: separate occurrences of one kind on different dates -> apart.
     assert cases["ED06"]["expected_group_sizes"] == [1, 1]
     assert cases["ED20"]["expected_group_sizes"] == [1, 1] and cases["ED21"]["expected_group_sizes"] == [2]
+
+
+def test_ed21_is_a_domain_case_whose_evidence_identifies_one_occurrence():
+    # Merge gate: ED21's expected outcome must rest on its Evidence, not only on
+    # the scripted helper answer; ED20 carries the same facts without such Evidence.
+    from pathlib import Path
+
+    golden = json.loads((Path(__file__).resolve().parents[1] / "golden" / "event_dedup_cases.json").read_text(encoding="utf-8"))
+    cases = {case["case_id"]: case for case in golden["cases"]}
+    ed20, ed21 = cases["ED20"], cases["ED21"]
+    assert [record["facts"] for record in ed21["records"]] == [record["facts"] for record in ed20["records"]]
+    assert all("body" not in record for record in ed20["records"])
+    bodies = [record["body"] for record in ed21["records"]]
+    for anchor in ("city audit committee", "comprehensive audit of the Line 2 construction office", "24 violations",
+                   "overpaid indirect construction costs", "depot overhead line"):
+        assert all(anchor in body for body in bodies), anchor
+    assert "25 October" in bodies[0] and "26 October" in bodies[1]

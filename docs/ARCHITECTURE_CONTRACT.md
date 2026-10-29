@@ -1219,9 +1219,13 @@ Rules (Event Identity, helper path and exact-fact path):
 
 Owner: EventIdentity (helper instruction `event-identity-grouping-v7` and the
 existing exact-fact path). No Python, schema or call change. Golden ED20 locks
-that a date mismatch alone leaves records undecided and apart; ED21 locks that
-a confirmed proposal is not overridden by a date mismatch; ED09 keeps locking
-that publication dates are not identity.
+that a date mismatch with no other identifying Evidence leaves records apart.
+Golden ED21 locks the positive side: two reports state different dates, but
+their Evidence names the same actor's same specific act with the same
+distinguishing details, so they are one occurrence. ED09 keeps locking that
+publication dates are not identity. That Python accepts a confirmed proposal
+when the exact-fact path is undecided is an owner mechanism, tested by the
+RC-38 unit tests rather than locked as a Golden domain outcome.
 
 Open and separate (RC-37 finding, not part of RC-38): section K says a
 conflicting claim that cannot be resolved is not written, but production does
