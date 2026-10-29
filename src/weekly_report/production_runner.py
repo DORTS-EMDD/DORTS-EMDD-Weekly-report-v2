@@ -20,6 +20,7 @@ from typing import Any, Protocol
 from .google_news_links import GoogleNewsLinkResolver
 from .category_semantic_provider import build_maiagent_category_classifier
 from .debug_service import event_identity_projection, evidence_projection, execution_trace, technical_gap_signature
+from .selection_audit import SELECTION_AUDIT_VERSION, build_selection_audit
 from .classifier import Classifier
 from .contracts import (
     SemanticProviderConfigurationFailure,
@@ -258,7 +259,19 @@ def _gap_projection(result: ReportApplicationResult) -> dict[str, Any]:
         "event_identity_diagnostic_distribution": (
             event_identity_projection(run)["event_identity_diagnostic_distribution"] if run is not None else {}
         ),
+        "event_identity_unconfirmed_distribution": (
+            event_identity_projection(run)["event_identity_unconfirmed_distribution"] if run is not None else {}
+        ),
     }
+
+
+def _selection_audit(result: ReportApplicationResult, start: date, end: date) -> dict[str, Any]:
+    """The observer-only selection audit; a failure to project it never affects the run."""
+
+    try:
+        return build_selection_audit(result, period_start=start, period_end=end)
+    except Exception as exc:  # noqa: BLE001 - observation must not change the outcome
+        return {"audit_version": SELECTION_AUDIT_VERSION, "unavailable": type(exc).__name__}
 
 
 @dataclass(frozen=True, slots=True)
@@ -311,6 +324,10 @@ class ProductionRunResult:
     evidence_source_provenance_mismatch_distribution: Mapping[str, int] = field(default_factory=dict)
     technical_gap_signature_distribution: Mapping[str, int] = field(default_factory=dict)
     event_identity_diagnostic_distribution: Mapping[str, int] = field(default_factory=dict)
+    event_identity_unconfirmed_distribution: Mapping[str, int] = field(default_factory=dict)
+    # RC-31: per-candidate selection audit, an observer-only projection of the
+    # owners' results (selection_audit.py); never read back by any decision.
+    selection_audit: Mapping[str, Any] | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "status", ProductionRunStatus(self.status))
@@ -375,6 +392,7 @@ class ProductionRunResult:
             "evidence_source_provenance_mismatch_distribution",
             "technical_gap_signature_distribution",
             "event_identity_diagnostic_distribution",
+            "event_identity_unconfirmed_distribution",
         ):
             values = dict(getattr(self, field_name))
             if any(
@@ -506,6 +524,8 @@ class ProductionRunResult:
             parts.append(f"technical_gap_signatures={_format_distribution(self.technical_gap_signature_distribution)}")
         if self.event_identity_diagnostic_distribution:
             parts.append(f"event_identity_diagnostics={_format_distribution(self.event_identity_diagnostic_distribution)}")
+        if self.event_identity_unconfirmed_distribution:
+            parts.append(f"event_identity_unconfirmed={_format_distribution(self.event_identity_unconfirmed_distribution)}")
         return " ".join(parts)
 
 
@@ -786,7 +806,11 @@ class ProductionRunner:
             )
         counts = _stage_counts(result)
         # Observation only: safe counts projected from the result already produced.
-        evidence_fields = {**_evidence_projection(result), **_gap_projection(result)}
+        evidence_fields = {
+            **_evidence_projection(result),
+            **_gap_projection(result),
+            "selection_audit": _selection_audit(result, start, end),
+        }
         failure_projection = None
         if acceptance is SearchRuntimeAcceptance.BLOCK:
             (

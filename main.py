@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import date
+import json
 from pathlib import Path
 import sys
 
@@ -29,7 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        help="write the formal report as Markdown and PDF plus the run summary",
+        help="write the formal report as Markdown and PDF plus the run summary and selection audit",
     )
     return parser
 
@@ -73,6 +74,12 @@ def _write_outputs(directory: Path, result) -> bool:
 
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "run_summary.txt").write_text(result.summary() + chr(10), encoding="utf-8")
+    audit = getattr(result, "selection_audit", None)
+    if audit is not None:
+        # Observer-only projection of every candidate's path (RC-31).
+        (directory / "selection_audit.json").write_text(
+            json.dumps(audit, ensure_ascii=False, indent=1, sort_keys=False) + chr(10), encoding="utf-8"
+        )
     artifact = result.final_report
     if artifact is None:
         return True

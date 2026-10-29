@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+import json
 from pathlib import Path
 import sys
 from typing import Callable
@@ -58,6 +59,13 @@ def render_app(runner_factory: Callable[[], ProductionRunner] = ProductionRunner
             data=result.final_report.content,
             file_name=f"weekly-report-{result.period_start.isoformat()}.md",
             mime="text/markdown",
+        )
+    if getattr(result, "selection_audit", None) is not None:
+        st.download_button(
+            "Download selection audit",
+            data=json.dumps(result.selection_audit, ensure_ascii=False, indent=1),
+            file_name=f"selection-audit-{result.period_start.isoformat()}.json",
+            mime="application/json",
         )
     if not result.successful:
         st.error(

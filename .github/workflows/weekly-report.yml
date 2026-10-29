@@ -122,7 +122,7 @@ jobs:
         with:
           path: .delivery
           key: delivery-record-${{ github.run_id }}-${{ github.run_attempt }}
-      - name: Keep the formal report and run summary
+      - name: Keep the formal report, run summary and selection audit
         # Only after the CLI actually ran: never after a failed health gate.
         if: ${{ !cancelled() && steps.cli.outcome != 'skipped' }}
         uses: actions/upload-artifact@v4
