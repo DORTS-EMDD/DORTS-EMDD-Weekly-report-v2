@@ -23,6 +23,7 @@ from urllib.parse import urlsplit
 from uuid import uuid4
 
 from .contracts import EvidenceResult, EvidenceState, RejectReason, SearchExecutionResult
+from .event_identity import proposal_subject_level
 
 
 STAGES = (
@@ -137,6 +138,10 @@ def _facts(stage: str, values: Any, input_count: int | None) -> dict[str, Any]:
         output = terminal.get("DATE_VALID", 0)
     elif stage == "EventIdentity":
         completed, output = input_count, len(values.groups)
+        terminal = _counts("MERGED" if len(group.member_candidate_ids) > 1 else "UNMERGED" for group in values.groups)
+        projection = event_identity_projection(values)
+        reasons = projection["event_identity_diagnostic_distribution"]
+        technical = projection["event_identity_gap_distribution"]
     elif stage == "Category":
         completed = len(values)
         terminal = _counts(_enum(item.category_state) for item in values)
@@ -494,6 +499,30 @@ def _field_diagnostic(
     if _EVIDENCE_GATE_ORDER.get(gate, 0) < reached_after_gate:
         return "NOT_REACHED"
     return None
+
+
+_EVENT_IDENTITY_DIAGNOSTICS = frozenset({
+    "EXACT_SOURCE_BODY", "INSUFFICIENT_IDENTITY", "PROPOSAL_BATCH_SPLIT", "PROPOSAL_NOT_CONFIRMED",
+    "PROPOSAL_REGION_CONFLICT", "SINGLE_MEMBER_PROPOSAL", "UPSTREAM_NOT_ELIGIBLE",
+})
+
+
+def technical_gap_signature(gap: Any) -> str:
+    """Stage, subject level, kind and failure class of one TechnicalGap, as safe tokens."""
+
+    level = proposal_subject_level(gap.subject_id) if gap.stage == "EventIdentity" else "SUBJECT"
+    return ":".join((gap.stage, level, str(gap.kind.value), _safe_diag_token(gap.failure_class) or "UNKNOWN"))
+
+
+def event_identity_projection(run: Any) -> dict[str, dict[str, int]]:
+    """Project the EventIdentityRun already produced: its diagnostics and technical gaps."""
+
+    return {
+        "event_identity_diagnostic_distribution": _counts(
+            item.reason if item.reason in _EVENT_IDENTITY_DIAGNOSTICS else "UNKNOWN" for item in run.diagnostics
+        ),
+        "event_identity_gap_distribution": _counts(technical_gap_signature(gap) for gap in run.technical_gaps),
+    }
 
 
 def evidence_projection(evidence_results: tuple[EvidenceResult, ...] | None) -> dict[str, Any]:

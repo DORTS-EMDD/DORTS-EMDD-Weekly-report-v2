@@ -334,6 +334,29 @@ def test_runner_uses_one_invocation_trace_and_same_evidence_projection_as_final_
     assert result.successful
 
 
+def test_event_identity_gap_signature_reaches_the_trace_and_the_run_summary_alike():
+    # RC-30: run 40653585176 recorded only technical_gaps_eventidentity=1.
+    from src.weekly_report.contracts import SemanticProviderTechnicalFailure
+    from src.weekly_report.event_identity import EventIdentity
+
+    def failing_advisor(_request):
+        raise SemanticProviderTechnicalFailure("UNPARSEABLE_RESPONSE", attempts=2, transient=True)
+
+    app, _ = _full_app()
+    app._event_identity = EventIdentity(failing_advisor)
+    lines = []
+    with execution_trace(ExecutionTrace(sink=lines.append)):
+        result = ProductionRunner(app).run(period_start="2026-09-12", period_end="2026-09-18")
+    identity = next(
+        row for row in records(lines) if row["stage"] == "EventIdentity" and row["event"] == "STAGE_COMPLETED"
+    )
+    signature = "EventIdentity:BATCH:TRANSIENT_FAILURE_AFTER_RETRY:UNPARSEABLE_RESPONSE"
+    assert identity["technical_distribution"] == {signature: 1}
+    assert sum(identity["terminal_distribution"].values()) == identity["output_count"]
+    assert dict(result.technical_gap_signature_distribution) == {signature: 1}
+    assert f"technical_gap_signatures={signature}=1" in result.summary()
+
+
 def test_zero_population_trace_preserves_default_scope_behavior_and_zero_writer_calls():
     app, writer_calls = _full_app()
     app._scope_classifier = ScopeClassifier()

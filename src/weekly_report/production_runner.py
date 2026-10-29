@@ -8,6 +8,7 @@ policy of its own.
 
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -18,7 +19,7 @@ from typing import Any, Protocol
 
 from .google_news_links import GoogleNewsLinkResolver
 from .category_semantic_provider import build_maiagent_category_classifier
-from .debug_service import evidence_projection, execution_trace
+from .debug_service import event_identity_projection, evidence_projection, execution_trace, technical_gap_signature
 from .classifier import Classifier
 from .contracts import (
     SemanticProviderConfigurationFailure,
@@ -247,6 +248,19 @@ def _evidence_projection(result: ReportApplicationResult) -> dict[str, Any]:
     return evidence_projection(result.evidence_results)
 
 
+def _gap_projection(result: ReportApplicationResult) -> dict[str, Any]:
+    """Which subject each TechnicalGap names and why, from the result already produced."""
+
+    gaps = tuple(getattr(result, "technical_gaps", ()) or ())
+    run = getattr(result, "event_identity_run", None)
+    return {
+        "technical_gap_signature_distribution": dict(Counter(technical_gap_signature(gap) for gap in gaps)),
+        "event_identity_diagnostic_distribution": (
+            event_identity_projection(run)["event_identity_diagnostic_distribution"] if run is not None else {}
+        ),
+    }
+
+
 @dataclass(frozen=True, slots=True)
 class ProductionRunResult:
     """Secret-free mechanical result consumed by all production shells."""
@@ -295,6 +309,8 @@ class ProductionRunResult:
     evidence_acquisition_initial_hostname_distribution: Mapping[str, int] = field(default_factory=dict)
     evidence_acquisition_failing_endpoint_hostname_distribution: Mapping[str, int] = field(default_factory=dict)
     evidence_source_provenance_mismatch_distribution: Mapping[str, int] = field(default_factory=dict)
+    technical_gap_signature_distribution: Mapping[str, int] = field(default_factory=dict)
+    event_identity_diagnostic_distribution: Mapping[str, int] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "status", ProductionRunStatus(self.status))
@@ -357,6 +373,8 @@ class ProductionRunResult:
             "evidence_acquisition_initial_hostname_distribution",
             "evidence_acquisition_failing_endpoint_hostname_distribution",
             "evidence_source_provenance_mismatch_distribution",
+            "technical_gap_signature_distribution",
+            "event_identity_diagnostic_distribution",
         ):
             values = dict(getattr(self, field_name))
             if any(
@@ -484,6 +502,10 @@ class ProductionRunResult:
             )
             for label, values in evidence_fields:
                 parts.append(f"{label}={_format_distribution(values) or 'NONE'}")
+        if self.technical_gap_signature_distribution:
+            parts.append(f"technical_gap_signatures={_format_distribution(self.technical_gap_signature_distribution)}")
+        if self.event_identity_diagnostic_distribution:
+            parts.append(f"event_identity_diagnostics={_format_distribution(self.event_identity_diagnostic_distribution)}")
         return " ".join(parts)
 
 
@@ -763,7 +785,8 @@ class ProductionRunner:
                 diagnostic="application returned no Search runtime acceptance",
             )
         counts = _stage_counts(result)
-        evidence_fields = _evidence_projection(result)
+        # Observation only: safe counts projected from the result already produced.
+        evidence_fields = {**_evidence_projection(result), **_gap_projection(result)}
         failure_projection = None
         if acceptance is SearchRuntimeAcceptance.BLOCK:
             (

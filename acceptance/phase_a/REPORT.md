@@ -1459,3 +1459,51 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - 達卡實際來源：「500億印度盧比」通過，「5,000萬印度盧比」不通過。
 
 **Event Identity：** 維持 ROOT_CAUSE_UNCONFIRMED，未修改。
+
+
+## 38. Event Identity 完全未合併的根因調查（離線，2026-10-29）
+
+**現象：**
+
+| Run | 版本 | Event Identity | 技術缺口 | 耗時 |
+|---|---|---|---|---|
+| 40623936647 | 0b43a45 | 68 → 41 | 1 | 未記錄 |
+| 40653585176 | 8f0df07 | 63 → 63（完全未合併） | 1 | 5,797 ms |
+
+40653585176 的正式報告因此出現重複報導：京都醍醐站 4 篇、林茲 3 篇、Bergamo 3 篇、仁川 5G Wi-Fi 10 篇、大邱演練 6 篇。
+
+**逐階段檢查：**
+- **程式：** 兩次執行之間 `event_identity.py` 與其 provider 完全相同。期間的修改只有 RC-28（ReportService 國家資格、地理參照表 v4、metadata 提示詞 v4）與 RC-29（Validator／Writer 數字）。這些都不會產生 Event Identity 技術缺口，也不會使合併歸零。
+- **輸入：** Search 122、Evidence 392 → 156 READY、Temporal 102 → 63 筆進入 Event Identity，規模與前次（68 筆）相當。Scope 有 18 個技術缺口，只會排除候選，不影響其餘紀錄合併。
+- **時間：** 正常的 Event Identity 是一次批次請求（本機 journal：72 筆時請求 49,653 字元、提案回應 23 KB），之後每個提案群組再一次確認請求（本機 13 次）；長篇生成加上多次確認，不可能在 6 秒內完成。helper 逾時為 30 秒且重試一次，逾時約需 60 秒，可排除。
+- **研判：** 零合併、恰好一個 Event Identity 缺口、5.8 秒，符合批次層級失敗。可能是快速的傳輸失敗（連線、HTTP 429／5xx 兩次，或其他狀態碼一次）、無法解析的回應（兩次），或簡短但 `SCHEMA_INVALID`／`UNKNOWN_RECORD` 的回應（§A.15 規定兩者使整份回應無效）。
+- **缺少的權威觀測：** 失敗的是哪個請求、失敗類別為何。artifact 只有 `technical_gaps_eventidentity=1`，trace 只有輸入與輸出數，雲端 journal 未上傳。
+
+**結論：**
+- EARLIEST_ABNORMAL_STAGE = Event Identity（批次分組提案請求）。
+- ROOT_CAUSE_VERDICT = ROOT_CAUSE_UNCONFIRMED。
+- 未修改 Event Identity 規則、提示詞或契約。
+
+**觀測補強（RC-30，§A.24，僅 Debug）：** 每個技術缺口輸出 `stage:level:kind:failure_class` 簽章。Event Identity 的 level 為 `BATCH`／`GROUP`／`CONFIRMATION`／`CONFIRMATION_GROUP`。
+
+| 輸出位置 | 內容 |
+|---|---|
+| EventIdentity trace 快照 | 缺口簽章、診斷原因分布、合併／未合併群組數 |
+| run summary | `technical_gap_signatures`（所有階段）、`event_identity_diagnostics` |
+
+兩者都由同一個 EventIdentityRun 投影而來，不含紀錄 ID、候選 ID 或來源文字，不參與決策。
+
+**測試：**
+- 新增 `tests/test_event_identity_observability.py`（9 項）。
+  - 正向：同一事件兩個來源合併；同站另一日的不同事件不合併。
+  - 整批 `UNKNOWN_RECORD`、`SCHEMA_INVALID`、傳輸失敗：全部不合併，並記為 `BATCH` 缺口。
+  - 某群引文無效：記為 `GROUP` 缺口，其他群照常合併。
+  - 確認不完整與確認中某群無效：分別記為 `CONFIRMATION`、`CONFIRMATION_GROUP` 缺口。
+  - 簽章不含 ID 或原文。
+- `tests/test_execution_trace.py` 新增 1 項：同一簽章同時出現在 trace 與 run summary。
+- 全套 1177 全過。
+
+**下一次雲端執行須確認：** run summary 的 `technical_gap_signatures` 中 EventIdentity 項目的 level 與 failure_class。據此決定下一步：
+- 傳輸或解析類：先查 helper 對大型請求的處理。
+- `UNKNOWN_RECORD`／`SCHEMA_INVALID`：檢討 §A.15 整份回應無效規則的範圍。
+- `CONFIRMATION*`：檢討確認步驟。

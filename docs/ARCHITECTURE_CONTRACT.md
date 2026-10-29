@@ -947,6 +947,43 @@ NUMERIC_GROUNDING_PRECISION = Evidence value rounded to the Writer's last writte
 UNGROUNDED_QUANTITY = SEMANTIC_CORRECTION (shared single correction) -> EVENT FAIL
 ```
 
+### A.24 RC-30 Event Identity failure observability (2026-10-29)
+
+GitHub Actions run 40653585176 (2026-10-21..27, main 8f0df07) merged nothing:
+EventIdentity input 63, output 63, one EventIdentity TechnicalGap, stage
+elapsed 5,797 ms. Run 40623936647 (same period, 0b43a45) merged 68 into 41,
+also with one EventIdentity gap. The Event Identity code is identical in
+both runs. A working stage makes one batch call whose proposal is long
+(23 KB for 72 records in the local journal) and then one confirmation per
+proposed group; it cannot finish in under 6 s, and a helper timeout (30 s,
+one retry) would take about 60 s. Zero relations with exactly one gap
+therefore fit a batch-level failure: a fast transport failure, an
+unparsable reply, or a reply that is `SCHEMA_INVALID` or `UNKNOWN_RECORD`
+(section A.15 keeps both as whole-response violations). Which one happened
+was not recorded: the run summary kept only a gap count per stage and the
+trace kept only Event Identity input and output counts.
+
+* **Verdict.** The failing request and its failure class are unobserved; the
+  root cause is unconfirmed. No Event Identity rule, prompt or contract is
+  changed.
+* **Observation added (Debug only).** Each TechnicalGap is projected as one
+  safe signature, `stage:level:kind:failure_class`; for Event Identity the
+  level names the request that failed (`BATCH`, `GROUP`, `CONFIRMATION`,
+  `CONFIRMATION_GROUP`), from the subject IDs Event Identity already forms.
+  The EventIdentity trace snapshot carries the gap signatures (technical
+  distribution), the diagnostic reasons (reason distribution) and merged
+  versus unmerged groups (terminal distribution); the run summary carries
+  `technical_gap_signatures` for every stage and `event_identity_diagnostics`.
+  Both come from one projection of the EventIdentityRun and TechnicalGaps
+  already produced; neither carries record IDs, candidate IDs or source text,
+  and neither takes part in any decision.
+
+```text
+TECHNICAL_GAP_SIGNATURE = stage:level:kind:failure_class
+EVENT_IDENTITY_GAP_LEVEL = BATCH | GROUP | CONFIRMATION | CONFIRMATION_GROUP
+EVENT_IDENTITY_ROOT_CAUSE_RC30 = UNCONFIRMED (failure class not recorded)
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：

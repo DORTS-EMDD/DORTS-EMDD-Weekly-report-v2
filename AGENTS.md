@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-29 修訂（2026-10-20～28）
+### RC-3～RC-30 修訂（2026-10-20～29）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.23 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.24 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -352,6 +352,11 @@ Transport retry 與 semantic correction 必須分開計算。
   依序由相鄰 CJK 寫法、來源自身確立的小數點、僅英文使用的量級詞、末位為 0 判定，否則視為
   無法判定、不作依據。不符者使用該事件唯一一次改寫，改寫後仍不符則該事件 FAIL；日期、件數等
   小數字不在確定性檢查範圍。
+* RC-30（§A.24，僅觀測）：雲端 Run 40653585176 的 Event Identity 63 → 63 完全未合併，
+  只有 1 個技術缺口、耗時 5.8 秒，符合整批請求失敗，但失敗類別未被記錄，根因未確認，
+  Event Identity 規則不變。每個技術缺口改以 `stage:level:kind:failure_class` 簽章輸出到
+  trace 與 run summary；Event Identity 的 level 標明失敗的是整批、某群、某次確認或確認中
+  的某群，並輸出診斷原因分布。只做觀測，不含紀錄 ID 或來源文字，不參與任何決策。
 
 ## 13. Report / Delivery
 
@@ -501,5 +506,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-29 APPLIED (2026-10-28)
+CONTRACT_REVISION = RC-3..RC-30 APPLIED (2026-10-29)
 ```

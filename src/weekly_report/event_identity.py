@@ -617,6 +617,22 @@ def _payload_size(record: EventIdentityGroupingRecord) -> int:
     return len(json.dumps(record.as_payload(), ensure_ascii=False))
 
 
+def proposal_subject_level(subject_id: str) -> str:
+    """Which request an EventIdentity TechnicalGap names, for observation only.
+
+    Subjects are formed in ``_proposed_relations`` and ``_confirmed_pairs``:
+    a batch, one group of a batch proposal, a group's confirmation request,
+    or one group of a confirmation response.
+    """
+
+    parts = subject_id.split(":")
+    if len(parts) == 1:
+        return "BATCH"
+    if parts[-1] == "confirmation":
+        return "CONFIRMATION"
+    return "CONFIRMATION_GROUP" if "confirmation" in parts else "GROUP"
+
+
 def _grouping_requests(eligible: Sequence[EventIdentityRecord]) -> list[EventIdentityGroupingRequest]:
     """One request for the whole run whenever its payload fits (RC-18).
 
