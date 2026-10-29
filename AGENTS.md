@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-35 修訂（2026-10-20～29）
+### RC-3～RC-38 修訂（2026-10-20～29）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.27 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.28 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -378,6 +378,13 @@ Transport retry 與 semantic correction 必須分開計算。
   同一提案群組內的第二個事件無法被確認。Python 驗證與判定邏輯、schema、呼叫次數與
   SAME_EVENT 規則都不變；確認仍只能移除配對，遺漏仍 fail-closed。Golden ED19 鎖定一個
   提案群組含兩個多筆事件。仁川、維也納、光州的重複根因仍未確認。
+* RC-38（§A.28，使用者核准；RC-36、RC-37 為唯讀審查）：文章的發布、更新或報導日期不是
+  事件發生時間，不作同一事件的依據；只有描述事件本身發生時間者才算。來源記載的發生日期
+  不同，本身不代表不同事件；日期不一致未能由 Evidence 釐清時，只有其他 Evidence 足以
+  確認是同一次發生（同一行為主體的同一具體行為，而非同主題、城市、系統或專案）才可確認
+  同一事件，可能是同類的不同次發生者維持分開；helper 不得自選某來源日期作為已解決。
+  提示詞 v7；Python、schema、TemporalRule 不變；Golden ED20、ED21。§K 衝突內容在
+  production 未落實（只用 canonical 來源撰寫）另案處理。
 
 ## 13. Report / Delivery
 
@@ -527,5 +534,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-35 APPLIED (2026-10-29)
+CONTRACT_REVISION = RC-3..RC-38 APPLIED (2026-10-29)
 ```

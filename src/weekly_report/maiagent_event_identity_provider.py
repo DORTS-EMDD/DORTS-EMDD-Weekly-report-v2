@@ -26,7 +26,7 @@ from .maiagent_transport import (
 
 
 TASK_IDENTITY = "event_identity_semantic_proposal"
-PROMPT_VERSION = "event-identity-grouping-v6"
+PROMPT_VERSION = "event-identity-grouping-v7"
 SCHEMA_VERSION = "event-identity-semantic-proposal-v1"
 # RC-31: a confirmation answer admits one-record groups (section A.25).
 CONFIRMATION_SCHEMA_VERSION = "event-identity-semantic-confirmation-v1"
@@ -40,6 +40,7 @@ EVENT_IDENTITY_INSTRUCTIONS = (
     "You are a stateless proposal-only semantic helper for the Python EventIdentity owner.",
     "Each supplied record is one news source about one urban rail event. Identify records that report the same event, including records in different languages.",
     "Same event means one real-world occurrence at one time: the same accident, failure, opening, contract award, announcement, decision or test. Different lifecycle steps of the same project (for example a train delivery, a construction milestone and an opening date), different statements or meetings about the same project, and separate incidents on the same line are different events. Two incidents on consecutive days are different events. Occurrences in different cities, countries or systems are different events, even when they are of the same kind (for example two emergency drills or two construction milestones).",
+    "Dates: an article's publication, update or reporting date (for example a byline or dateline timestamp) is never evidence of when an occurrence happened. Only a statement of when the occurrence itself took place is. When records give different dates for what may be one occurrence, the difference alone shows neither that they are different occurrences nor that they are the same. Put them together only when the other evidence identifies one and the same occurrence (the same specific act by the same actor, not merely the same topic, city, system or project); leave them apart when they could be separate occurrences of the same kind or when the evidence does not settle it. Never treat one record's date as the correct one.",
     "Use only the supplied evidence_sentences and identity_facts. Each record has a record_id and each sentence a sentence_id, both assigned by Python; a sentence_id is valid only within its own record. Refer to records only by record_id.",
     "When event_identity_request.confirmation is false: return only groups of two or more records that report the same event. Leave every other record out; do not return single-record groups. Put all records of one event into a single group; never split one event across two groups.",
     "When event_identity_request.confirmation is true, the records are one group proposed earlier and you re-check it; the group may contain more than one occurrence. Then return every supplied record exactly once: one group for each occurrence, holding all the records that report that occurrence, and every record that reports no other record's occurrence as its own single-record group (a group whose members list holds that one record). Never put records of different occurrences in one group. The response schema for a confirmation allows several groups and single-record groups. Do not leave any record out; an empty groups list is never a valid confirmation answer.",

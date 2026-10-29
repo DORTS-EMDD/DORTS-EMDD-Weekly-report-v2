@@ -18,10 +18,7 @@ from src.weekly_report.event_identity import (
     EventIdentity,
 )
 from src.weekly_report.evidence_sentences import segment_evidence_sentences
-from src.weekly_report.maiagent_event_identity_provider import (
-    PROMPT_VERSION,
-    build_maiagent_event_identity_model_input,
-)
+from src.weekly_report.maiagent_event_identity_provider import build_maiagent_event_identity_model_input
 from tests.test_event_identity_contract import _record
 from tests.test_event_identity_grouping_rc15 import _Scripted, _confirm, _member
 from tests.test_event_identity_rc31 import _located
@@ -57,7 +54,6 @@ _BATCH = {"groups": [{"members": [_member(name) for name in ("LAUNCH1", "LAUNCH2
 
 
 def test_the_confirmation_instruction_asks_for_one_group_per_occurrence():
-    assert PROMPT_VERSION == "event-identity-grouping-v6"
     confirmation = [line for line in _instructions(True) if "confirmation is true" in line]
     assert len(confirmation) == 1
     line = confirmation[0]

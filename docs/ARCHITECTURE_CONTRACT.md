@@ -1178,6 +1178,65 @@ EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v6
 EVENT_IDENTITY_SAME_EVENT = BATCH_PROPOSED AND REGION_COMPATIBLE AND CONFIRMED (unchanged)
 ```
 
+### A.28 RC-38 Dates in Event Identity (2026-10-29, user-approved)
+
+RC-37 (read-only) found that the contract defines how three kinds of date
+relate to identity, but not a fourth. Publication and notice dates are never
+occurrence dates (section I; Golden ED09). Separate occurrences of one kind on
+different dates are different events (Golden ED06; the helper instruction
+"two incidents on consecutive days are different events"). Sources that
+disagree on a non-identity detail still report the same event (section K;
+Golden ED14, G16). What was not stated: sources describe what may be one
+occurrence but state different dates for it. The user approved RC-37 options
+1 and 3 with the rules below. They lock existing behaviour; SAME_EVENT is not
+widened and TemporalRule is unchanged.
+
+Rules (Event Identity, helper path and exact-fact path):
+
+* An article's publication, update or reporting date (a byline or dateline
+  timestamp, "reported on ...") is never evidence of when an occurrence
+  happened and never establishes or rules out the same occurrence. Only a
+  statement of when the occurrence itself took place is occurrence-date
+  evidence (`EventIdentityFacts.occurrence_date` on the exact-fact path; the
+  occurrence sentences on the helper path).
+* Different stated occurrence dates do not by themselves establish different
+  events: Python has no DISTINCT relation, and on the exact-fact path a date
+  mismatch only leaves the pair undecided (`_fact_relation`), as a location
+  mismatch does (section K).
+* While a date disagreement is not resolved by the Authoritative Evidence,
+  SAME_EVENT is confirmed only when the other Evidence identifies one and the
+  same occurrence (the same specific act by the same actor, not the same
+  topic, city, system or project). Records that could be separate occurrences
+  of the same kind stay apart. Without such Evidence the records stay apart
+  (fail-closed, as section A.9 already requires).
+* The helper never resolves a disagreement by treating one record's date as
+  the correct one; a SAME_EVENT proposal rests on the other Evidence.
+* Unchanged: the exact-fact path never merges records whose stated
+  occurrence dates differ (`_fact_relation`); a helper SAME_EVENT still needs
+  the batch proposal, the RC-22 region check and the confirmation (sections
+  A.17, A.27); TemporalRule alone owns publication dates and eligibility
+  (section I).
+
+Owner: EventIdentity (helper instruction `event-identity-grouping-v7` and the
+existing exact-fact path). No Python, schema or call change. Golden ED20 locks
+that a date mismatch alone leaves records undecided and apart; ED21 locks that
+a confirmed proposal is not overridden by a date mismatch; ED09 keeps locking
+that publication dates are not identity.
+
+Open and separate (RC-37 finding, not part of RC-38): section K says a
+conflicting claim that cannot be resolved is not written, but production does
+not enforce it. EvidenceService never fills `non_identity_claims`, and the
+Writer and Validator read only the canonical member's Evidence. So in any
+merged Event, including one merged under these rules, a conflicting detail
+such as a date is stated as the canonical source gives it.
+
+```text
+EVENT_IDENTITY_PUBLICATION_OR_REPORTING_DATE = NOT_IDENTITY_EVIDENCE
+EVENT_IDENTITY_OCCURRENCE_DATE_CONFLICT = NOT_DISTINCT_BY_ITSELF; SAME_EVENT ONLY IF OTHER EVIDENCE IDENTIFIES ONE OCCURRENCE; ELSE APART
+EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v7
+SECTION_K_CONFLICT_ENFORCEMENT = OPEN (separate)
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
