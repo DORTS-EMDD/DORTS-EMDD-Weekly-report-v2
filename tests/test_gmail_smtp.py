@@ -13,6 +13,7 @@ from src.weekly_report.gmail_smtp import (
     GmailSmtpError,
     GmailSmtpConfig,
     GmailSmtpSender,
+    index_for_artifact,
     parse_recipient_target,
 )
 from src.weekly_report.production_runner import (
@@ -89,7 +90,11 @@ class GmailSmtpTests(TestCase):
         self.assertEqual(message["X-Weekly-Report-Id"], "weekly-report-a1b2c3d4e5f60718")
         self.assertEqual(message["X-Weekly-Report-Artifact"], "artifact-001 v1")
         self.assertEqual(message["To"], "first@example.com, second@example.com")
-        self.assertEqual(message.get_body(preferencelist=("plain",)).get_content(), self._artifact().content)
+        # RC-31: the body is a short index of the attached report, not a copy of it.
+        text, html = index_for_artifact(self._artifact())
+        self.assertEqual(message.get_body(preferencelist=("plain",)).get_content(), text)
+        self.assertEqual(message.get_body(preferencelist=("html",)).get_content().strip(), html)
+        self.assertNotIn("完整的繁體中文週報內容", text)
         attachments = list(message.iter_attachments())
         self.assertEqual([item.get_filename() for item in attachments], ["weekly-report-a1b2c3d4e5f60718.pdf"])
         self.assertTrue(attachments[0].get_content().startswith(b"%PDF"))

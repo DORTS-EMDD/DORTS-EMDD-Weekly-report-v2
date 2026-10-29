@@ -11,6 +11,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from email.message import EmailMessage
 from email.utils import parseaddr
+from html import escape
 import os
 from pathlib import Path
 import smtplib
@@ -151,6 +152,45 @@ def subject_for_artifact(artifact: FinalReportArtifact) -> str:
     return f"捷運技術週報｜{period}｜{artifact.event_count} 則"
 
 
+_ATTACHMENT_NOTE = "詳細內容及臺北捷運局啟示請參閱附件 PDF。"
+
+
+def index_for_artifact(artifact: FinalReportArtifact) -> tuple[str, str]:
+    """The message body: a short index of the attached report, as text and HTML.
+
+    RC-31 (presentation only): title, reporting period, and each section's
+    headlines in the assembled order, every headline linking its canonical
+    source; the full report travels as the PDF attachment. Nothing is selected,
+    reordered or rewritten here.
+    """
+
+    if not isinstance(artifact, FinalReportArtifact):
+        raise TypeError("Gmail SMTP requires FinalReportArtifact")
+    text = ["捷運技術週報"]
+    html = ["<p><strong>捷運技術週報</strong>"]
+    if artifact.period_display:
+        text.append(f"報告期間：{artifact.period_display}")
+        html.append(f"<br>報告期間：{escape(artifact.period_display)}")
+    html.append("</p>")
+    if artifact.no_event:
+        statement = artifact.content.splitlines()[0]
+        text.extend(("", statement))
+        html.append(f"<p>{escape(statement)}</p>")
+    for section in artifact.sections:
+        text.extend(("", f"【{section.category}】"))
+        html.append(f"<p><strong>【{escape(section.category)}】</strong></p><ul>")
+        for event in section.events:
+            text.extend((f"- {event.headline}", f"  {event.source_url}"))
+            html.append(
+                f'<li><a href="{escape(event.source_url, quote=True)}">{escape(event.headline)}</a></li>'
+            )
+        html.append("</ul>")
+    note = _ATTACHMENT_NOTE if artifact.events else "詳細內容請參閱附件 PDF。"
+    text.extend(("", note))
+    html.append(f"<p>{escape(note)}</p>")
+    return "\n".join(text) + "\n", "".join(html)
+
+
 @dataclass(frozen=True, slots=True)
 class GmailSmtpSender:
     """One-shot ``DeliverySender`` using Gmail's SSL SMTP endpoint."""
@@ -184,8 +224,10 @@ class GmailSmtpSender:
         message["Subject"] = subject_for_artifact(artifact)
         message["X-Weekly-Report-Id"] = artifact.report_id
         message["X-Weekly-Report-Artifact"] = f"{artifact.artifact_id} {artifact.artifact_version}"
-        message.set_content(artifact.content, charset="utf-8")
-        # The PDF is the same assembled content; a report that cannot be
+        text, html = index_for_artifact(artifact)
+        message.set_content(text, charset="utf-8")
+        message.add_alternative(html, subtype="html", charset="utf-8")
+        # The PDF carries the full assembled report; a report that cannot be
         # rendered is not sent (the sender raises, Delivery records FAILED).
         message.add_attachment(
             render_report_pdf(artifact),
@@ -244,6 +286,7 @@ __all__ = [
     "GmailSmtpConfig",
     "GmailSmtpSender",
     "build_gmail_smtp_sender",
+    "index_for_artifact",
     "load_delivery_values",
     "parse_recipient_target",
     "subject_for_artifact",

@@ -1,11 +1,14 @@
 """Mechanical PDF rendering of the assembled formal report (contract section R).
 
-The PDF presents ``FinalReportArtifact.content`` line by line, in the
-assembled order, so the PDF says exactly what the validated report says. It
-decides nothing and changes no text. TrueType fonts are embedded (subset) per
-script run (Traditional Chinese, Korean, Japanese kana), so the PDF renders the
-same in every viewer, including source-language metadata such as a Korean
-system name. Without a usable font, rendering fails; a broken PDF is never sent.
+The PDF presents the artifact's sections and events in the assembled order,
+with the validated prose and the ReportService metadata unchanged. It decides
+nothing and changes no text. RC-31 (presentation only): the reader-facing PDF
+omits the transit-system line and the execution notes, and shows the source as
+one line whose publisher label links the canonical URL. Those values and the
+technical disclosure stay in the Markdown artifact, the run summary and the
+selection audit. TrueType fonts are embedded (subset) per script run
+(Traditional Chinese, Korean, Japanese kana), so the PDF renders the same in
+every viewer. Without a usable font, rendering fails; a broken PDF is never sent.
 """
 
 from __future__ import annotations
@@ -18,7 +21,7 @@ import re
 
 from .report_service import FinalReportArtifact
 
-PDF_RENDERER_VERSION = "formal-report-pdf-v1"
+PDF_RENDERER_VERSION = "formal-report-pdf-v2"
 
 # Per script: an environment override, the Ubuntu runner font (apt package
 # fonts-wqy-zenhei covers Chinese, Korean and kana), then Windows fonts.
@@ -35,7 +38,6 @@ class PdfFontUnavailable(RuntimeError):
 _SCRIPT_RUNS = re.compile(
     r"(?P<ko>[가-힣ᄀ-ᇿ㄰-㆏]+)|(?P<ja>[぀-ヿㇰ-ㇿｦ-ﾝ]+)"
 )
-_LINK_LABEL = "來源網址："
 
 
 def _registered_fonts() -> dict[str, str]:
@@ -73,13 +75,40 @@ def _markup(text: str, fonts: dict[str, str]) -> str:
     return "".join(parts)
 
 
-def _link(url: str) -> str:
-    # CJK word wrapping lets a long URL break inside the page width.
-    return f'<link href="{escape(url, quote=True)}" color="#1f4e8c">{escape(url)}</link>'
+def _link(url: str, label: str, fonts: dict[str, str]) -> str:
+    return f'<link href="{escape(url, quote=True)}" color="#1f4e8c">{_markup(label, fonts)}</link>'
+
+
+def _lines(artifact: FinalReportArtifact, fonts: dict[str, str]) -> list[tuple[str, str]]:
+    """(style, markup) per paragraph, drawn from the structured artifact."""
+
+    lines = [("title", _markup("捷運技術週報", fonts))]
+    if artifact.period_display:
+        lines.append(("meta", _markup(f"報告期間：{artifact.period_display}", fonts)))
+    lines.append(("space", ""))
+    if artifact.no_event:
+        # The no-event statement, without the execution notes that follow it.
+        lines.append(("body", _markup(artifact.content.splitlines()[0], fonts)))
+        return lines
+    for section in artifact.sections:
+        lines.append(("section", _markup(f"【{section.category}】", fonts)))
+        for event in section.events:
+            lines.append(("headline", _markup(event.headline, fonts)))
+            meta = [f"日期：{event.display_date}", f"國家／地區：{event.country_display}"]
+            if event.location:
+                meta.append(f"地點：{event.location}")
+            if event.em_system_labels:
+                meta.append(f"相關系統：{'、'.join(event.em_system_labels)}")
+            lines.extend(("meta", _markup(text, fonts)) for text in meta)
+            lines.append(("body", _markup(f"事件摘要：{event.factual_summary}", fonts)))
+            lines.append(("body", _markup(f"臺北捷運局啟示：{event.taipei_insight}", fonts)))
+            lines.append(("meta", escape("來源：") + _link(event.source_url, event.source_display, fonts)))
+            lines.append(("space", ""))
+    return lines
 
 
 def render_report_pdf(artifact: FinalReportArtifact) -> bytes:
-    """Render the artifact's content as an A4 PDF; raises on any failure."""
+    """Render the artifact as an A4 PDF; raises on any failure."""
 
     if not isinstance(artifact, FinalReportArtifact):
         raise TypeError("PDF rendering requires a FinalReportArtifact")
@@ -100,28 +129,10 @@ def render_report_pdf(artifact: FinalReportArtifact) -> bytes:
         "meta": ParagraphStyle("meta", parent=body, fontSize=9.3, leading=13.5, textColor="#444444"),
     }
 
-    lines = artifact.content.rstrip("\n").split("\n")
-    story = []
-    for index, line in enumerate(lines):
-        if not line.strip():
-            story.append(Spacer(1, 3 * mm))
-            continue
-        next_line = lines[index + 1] if index + 1 < len(lines) else ""
-        if index == 0:
-            style = "title"
-        elif line.startswith("【") and line.endswith("】") or line == "執行說明：":
-            style = "section"
-        elif next_line.startswith("日期："):
-            style = "headline"
-        elif line.startswith(("報告期間：", "日期：", "國家／地區：", "運輸系統：", "地點：", "相關系統：", "來源：", _LINK_LABEL)):
-            style = "meta"
-        else:
-            style = "body"
-        if line.startswith(_LINK_LABEL):
-            text = escape(_LINK_LABEL) + _link(line[len(_LINK_LABEL):])
-        else:
-            text = _markup(line, fonts)
-        story.append(Paragraph(text, styles[style]))
+    story = [
+        Spacer(1, 3 * mm) if style == "space" else Paragraph(text, styles[style])
+        for style, text in _lines(artifact, fonts)
+    ]
 
     buffer = BytesIO()
     document = SimpleDocTemplate(

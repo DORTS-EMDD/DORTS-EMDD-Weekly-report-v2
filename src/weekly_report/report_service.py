@@ -667,8 +667,7 @@ class ReportService:
                     (
                         f"事件摘要：{event.factual_summary}",
                         f"臺北捷運局啟示：{event.taipei_insight}",
-                        f"來源：{event.source_display}",
-                        f"來源網址：{event.source_url}",
+                        f"來源：{source_link(event)}",
                         "",
                     )
                 )
@@ -930,6 +929,14 @@ class ReportService:
         raise FormalMetadataFailure(reason, event_id=event_id, candidate_ids=candidate_ids)
 
 
+def source_link(event: FinalReportBlock) -> str:
+    """RC-31: the source as one Markdown link, its label linking the canonical URL."""
+
+    label = event.source_display.replace("\\", "\\\\").replace("[", "\\[").replace("]", "\\]")
+    url = event.source_url.replace("(", "%28").replace(")", "%29").replace(" ", "%20")
+    return f"[{label}]({url})"
+
+
 # Descriptive aliases keep the single ReportService owner discoverable to
 # callers that use either "artifact" or "assembly" terminology.
 FinalReportEvent = FinalReportBlock
@@ -955,4 +962,5 @@ __all__ = [
     "ReportAssembly",
     "ReportAssemblyResult",
     "ReportService",
+    "source_link",
 ]
