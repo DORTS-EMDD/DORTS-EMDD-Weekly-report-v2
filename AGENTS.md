@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-30 修訂（2026-10-20～29）
+### RC-3～RC-31 修訂（2026-10-20～29）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.24 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.25 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -357,6 +357,14 @@ Transport retry 與 semantic correction 必須分開計算。
   Event Identity 規則不變。每個技術缺口改以 `stage:level:kind:failure_class` 簽章輸出到
   trace 與 run summary；Event Identity 的 level 標明失敗的是整批、某群、某次確認或確認中
   的某群，並輸出診斷原因分布。只做觀測，不含紀錄 ID 或來源文字，不參與任何決策。
+* RC-31（§A.25）：確認不完整的根因已確認：確認請求附帶的回應 schema 要求每群至少 2 筆，
+  與 RC-25「被分開的紀錄單獨成群」互相矛盾，helper 因此改以省略表達分開。確認請求改用允許
+  單筆群組的 schema，「不得回傳單筆群組」只適用一般分群請求；省略仍 fail-closed、不以原提案
+  代替確認。本期四組疑似重複的逐案根因因雲端回應未保留而未確認。每次執行另輸出觀測用
+  `selection_audit.json`，逐候選列出各階段結果與最早終止階段及原因，不重算任何決策。PDF
+  不顯示運輸系統與執行說明、來源改為一行連結；Email 內文改為分類標題索引並附 PDF；
+  Markdown 保留全部欄位與執行說明。來源顯示名稱仍為 hostname（§R 禁止使用候選出版者名稱，
+  改用出版者名稱需另行決定）。
 
 ## 13. Report / Delivery
 
@@ -506,5 +514,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-30 APPLIED (2026-10-29)
+CONTRACT_REVISION = RC-3..RC-31 APPLIED (2026-10-29)
 ```

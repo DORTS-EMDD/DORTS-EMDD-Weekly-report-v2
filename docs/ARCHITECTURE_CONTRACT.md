@@ -700,7 +700,7 @@ left the CLI exit code green.
 * **Subject.** `捷運技術週報｜<period>｜<n> 則`; the report and artifact
   identities travel in `X-Weekly-Report-Id` and `X-Weekly-Report-Artifact`
   headers. The body is the assembled content and the PDF is attached, as
-  before.
+  before. (Amended by section A.25: the body is a linked-headline index.)
 * **Durable delivery record.** When `DELIVERY_LEDGER_PATH` is configured, the
   sole `DeliveryService` reads a JSON record of earlier successful sends and
   returns `DUPLICATE` without sending when either the artifact identity key or
@@ -982,6 +982,90 @@ trace kept only Event Identity input and output counts.
 TECHNICAL_GAP_SIGNATURE = stage:level:kind:failure_class
 EVENT_IDENTITY_GAP_LEVEL = BATCH | GROUP | CONFIRMATION | CONFIRMATION_GROUP
 EVENT_IDENTITY_ROOT_CAUSE_RC30 = UNCONFIRMED (failure class not recorded)
+```
+
+### A.25 RC-31 Confirmation answer contract, selection audit, reader presentation (2026-10-29)
+
+GitHub Actions run 40797604176 (2026-10-21..27, main a608b19) recorded, through
+RC-30, one `EventIdentity:CONFIRMATION:PROPOSAL_CONTRACT_VIOLATION:CONFIRMATION_INCOMPLETE`
+gap, 251 `PROPOSAL_REGION_CONFLICT` pairs and 112 `PROPOSAL_NOT_CONFIRMED`
+pairs (64 records -> 44 Events). The report still listed apparent duplicates
+(a Tokyo maintenance-vehicle AI announcement x2, a Bergamo tram-test
+announcement x3, a Kyoto station fire x2, the Incheon 5G Wi-Fi completion x2).
+
+* **Confirmed root cause of `CONFIRMATION_INCOMPLETE`.** RC-25 tells the
+  helper to return a separated record as a one-record group, but every
+  confirmation request carried the grouping response schema, declared as the
+  authoritative response contract, with `members.minItems = 2`, and an
+  unconditional instruction "do not return single-record groups". The request
+  contradicted itself: no answer could be both schema-valid and complete
+  whenever a record was separated. An offline replay (no network, no MaiAgent)
+  of the recorded 2026-10-14..20 run at cbdb010 (prompt v4) shows 13
+  confirmations; the three that separated a record answered once with a
+  one-record group and twice by leaving the separated record out (the two
+  recorded `CONFIRMATION_INCOMPLETE` gaps). Every left-out record was one the
+  helper had separated; every returned group had two or more members except
+  the single schema-violating one. Earlier answers (RC-23, RC-25 Wirye empty
+  list) show the same shape.
+* **Owner and fix.** The response schema belongs to `EventIdentity`. A
+  confirmation request now declares `EVENT_IDENTITY_CONFIRMATION_RESPONSE_SCHEMA`
+  (`members.minItems = 1`, schema `event-identity-semantic-confirmation-v1`);
+  the grouping request keeps its schema and version unchanged. The
+  "no single-record groups" instruction is scoped to grouping requests
+  (prompt `event-identity-grouping-v5`). The Python validator already accepted
+  one-record groups, so validation, fail-closed omission handling (RC-25) and
+  every grouping rule are unchanged; no proposal is ever accepted without its
+  confirmation.
+* **What remains unconfirmed.** An omission only affects the omitted
+  record's pairs; pairs a confirmation returns together are confirmed either
+  way. Which of the four duplicate sets were never proposed, separated, or
+  omitted in run 40797604176 is not observable from its artifacts (the cloud
+  responses are not retained), so their per-case root cause stays
+  `ROOT_CAUSE_UNCONFIRMED`; the RC-31 fix is not claimed to merge them. The 251
+  region-conflict pairs show the cloud batch proposal grouped records from
+  different countries on a large scale, which the local week did not (0).
+* **Observation added (Debug only).** `PROPOSAL_REGION_CONFLICT` and
+  `PROPOSAL_NOT_CONFIRMED` diagnostics carry their proposal group and size;
+  `PROPOSAL_NOT_CONFIRMED` also says whether the confirmation `SEPARATED` the
+  pair, `OMITTED` a member, voided its group (`GROUP_INVALID`) or failed
+  (`CONFIRMATION_FAILED`). The run summary adds `event_identity_unconfirmed`.
+* **Selection audit (observer only).** Every run writes
+  `selection_audit.json` beside the report (GitHub Actions artifact,
+  Streamlit download): for every normalized candidate, the recorded outcome of
+  Evidence, Scope, Temporal, Event Identity (Event, merged members, proposed
+  pairs left apart and why), Category, Taxonomy, Reportability, Ordering,
+  formal metadata, Writer, Validation and final inclusion, plus the earliest
+  terminal stage and its recorded reason. It is projected mechanically from the
+  `ReportApplicationResult`, TechnicalGaps and metadata exclusions; it makes no
+  call, re-derives no decision, and a failure to project it never changes the
+  run (`unavailable`). Bounded: titles 200 characters, at most two event-focus
+  sentences of 240 characters; no article body, prompt, provider response or
+  secret.
+* **Reader presentation (user-directed; presentation only).** The Markdown
+  artifact keeps every field and the execution notes; its source becomes one
+  line, `來源：[<source display>](<canonical URL>)`. The PDF omits the
+  transit-system line and the execution notes and shows the source as one
+  line whose label links the canonical URL. The email body (amends section
+  A.20) is an index: title, period, and each section's headlines linking their
+  canonical URLs, with the full report as the PDF attachment. Disclosure of
+  technical gaps, exclusions and Validation FAILs stays in the Markdown
+  artifact, the run summary and the selection audit, and
+  `SUCCESS_WITH_TECHNICAL_GAPS` is unchanged. Delivery identity and
+  idempotency are unchanged.
+* **Not changed: source label.** Section R fixes the source display to the
+  canonical hostname and forbids the candidate publisher or brand mapping.
+  Showing the publisher name (for example "Impress Watch" from the Google News
+  `<source>` declaration) would amend that rule and needs a decision; until
+  then the label stays the hostname.
+
+```text
+EVENT_IDENTITY_CONFIRMATION_SCHEMA = members.minItems 1 (confirmation only)
+EVENT_IDENTITY_PROMPT = event-identity-grouping-v5
+CONFIRMATION_INCOMPLETE_ROOT_CAUSE = CONFIRMED (schema contradicted RC-25)
+DUPLICATES_2026_10_21_27_ROOT_CAUSE = UNCONFIRMED (per-pair path not retained)
+SELECTION_AUDIT = selection_audit.json, observer-only
+PDF = no transit-system line, no execution notes, one-line linked source
+EMAIL_BODY = section index of linked headlines; PDF attached
 ```
 
 ## B. Authoritative Owners

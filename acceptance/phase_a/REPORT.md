@@ -1507,3 +1507,86 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - 傳輸或解析類：先查 helper 對大型請求的處理。
 - `UNKNOWN_RECORD`／`SCHEMA_INVALID`：檢討 §A.15 整份回應無效規則的範圍。
 - `CONFIRMATION*`：檢討確認步驟。
+
+
+## 39. 確認不完整的根因、逐候選選題稽核與正式交付呈現（RC-31，離線，2026-10-29）
+
+**雲端 Run 40797604176（2026-10-21～27，main a608b19）：**
+- 正式報告 24 則；Event Identity 64 筆 → 44 則事件。
+- 技術缺口 19：Scope 18、Event Identity 1。
+- RC-30 簽章：`EventIdentity:CONFIRMATION:PROPOSAL_CONTRACT_VIOLATION:CONFIRMATION_INCOMPLETE=1`。
+- 診斷：`PROPOSAL_REGION_CONFLICT=251`（配對）、`PROPOSAL_NOT_CONFIRMED=112`（配對）。
+
+**P0 根因調查：**
+- **確認請求自相矛盾（已確認）：**
+  - RC-25 要求 helper 把分開的紀錄「單獨成群」。
+  - 但確認請求附帶的權威回應 schema 是一般分群用的 `members.minItems = 2`，指令也無條件寫「不得回傳單筆群組」。
+  - 只要有紀錄被分開，就不存在既符合 schema 又完整的回答。
+- **離線重播證據：**
+  - 方法：在 cbdb010（提示詞 v4）以 journal 副本完全離線重播 2026-10-14～20，沒有網路，也沒有 MaiAgent 呼叫。
+  - 共 13 次確認，其中 3 次分開了紀錄：1 次用單筆群組表達，2 次直接省略被分開的紀錄，也就是記錄到的 2 個 `CONFIRMATION_INCOMPLETE`。
+  - 被省略的紀錄都是 helper 判為不同事件者，例如梁山「最後準備階段」、大田背景專題；回傳的群組除那一次單筆外都至少 2 筆。
+  - RC-23 的蔚山省略與 RC-25 的慰禮線空清單，型態相同。
+- **其他檢查項目：**
+  - schema 不只「允許」省略，實際上是禁止完整回答，迫使 helper 省略。
+  - 回應是合法 JSON。
+  - record ID 重新編號、依發布時間排序、資料量都不是必要條件：2 筆的確認同樣會發生。
+- **省略的影響範圍：** 只影響被省略紀錄的配對；一起回傳的配對仍會確認。因此單一確認不完整本身不會使真正的重複無法合併。
+- **本期四組重複：**
+  - 雲端回應未保留，無法得知各組是未被提議、被確認分開，還是被省略，逐案根因維持 `ROOT_CAUSE_UNCONFIRMED`。
+  - 251 個跨地區配對顯示雲端批次提案大量把不同國家的紀錄分在同一群；本機那一週為 0。
+- **Evidence 判讀（四組皆應合併）：**
+  - 東京 AI：同一則 10/27 發表。
+  - Bergamo：同一則 10/26 測試時程公告；eventi.news 與 primabergamo 是同一篇。
+  - 京都：Infoseek 是產經的轉載。
+  - 仁川：同為 10/21 實證事業完成；biggo 的報導包含部長乘車體驗。
+
+**P0 修正（Event Identity owner）：**
+- 確認請求改用 `EVENT_IDENTITY_CONFIRMATION_RESPONSE_SCHEMA`（`minItems = 1`，`event-identity-semantic-confirmation-v1`）；一般分群請求的 schema 與版本不變。
+- 「不得回傳單筆群組」只適用一般分群請求（`event-identity-grouping-v5`）。
+- Python 驗證、省略 fail-closed、RC-22 地區檢查與分組規則都不變，不以原提案代替確認。
+- 觀測（僅 Debug）：
+  - 地區衝突與未確認配對的診斷註明提案群組與大小；
+  - 未確認配對再分為 `SEPARATED`／`OMITTED`／`GROUP_INVALID`／`CONFIRMATION_FAILED`；
+  - run summary 新增 `event_identity_unconfirmed`。
+- 測試：
+  - `tests/test_event_identity_rc31.py`（11 項）：請求契約；同事件換句話說合併；轉載合併；同系統不同日期分開；完整分割；省略 fail-closed；確認失敗；跨地區主題群不過度合併。
+  - Event Dedup Golden 新增 ED16～ED18（完整分割、省略 fail-closed、轉載），既有 ED01～ED15 未修改。
+
+**P1 `selection_audit.json`（僅觀測）：**
+- 逐一列出每則正規化候選：
+  - Evidence（狀態、拒絕原因與關卡、canonical URL）、地區；
+  - Scope（狀態、診斷、事件焦點句 ID 與至多兩句摘錄）、Temporal；
+  - Event Identity（事件、合併對象、未合併的提案配對與原因）；
+  - Category、Taxonomy、Reportability、排序位置、正式 metadata（含運輸系統名稱）、Validation、是否入報；
+  - 最早終止階段與記錄的原因。
+- 由既有結果機械投影：不呼叫 MaiAgent、不重算決策；投影失敗只標 `unavailable`，不影響執行。
+- 離線驗證：以 cbdb010 重播的 406 則候選全數涵蓋，大小約 0.6 MB；終止原因分布與各 owner 結果一致。
+
+**P2 呈現（僅呈現，不改上游決策）：**
+- **PDF：** 改由結構化 artifact 繪製；不顯示運輸系統與執行說明；來源為一行連結。
+- **Markdown：** 保留運輸系統與執行說明；來源改為一行 `來源：[名稱](URL)`。
+- **Email：** 內文改為分類標題索引，每個標題連到 canonical URL，並附 PDF；主旨不變。
+- **不變：** `SUCCESS_WITH_TECHNICAL_GAPS` 判定、寄送識別與冪等。
+- **未做：來源名稱改為出版者名稱（例如「Impress Watch」）。**
+  - 契約 §R 明定來源顯示為 canonical hostname，並禁止使用候選出版者名稱或品牌對照。
+  - 依 AGENTS.md 遇契約矛盾應停下，因此仍顯示 hostname，待使用者決定。
+
+**唯讀發現（未修改）：**
+- **巴塞隆納對角大道歸【採購事件】：**
+  - 來源只說招標將在兩至三週內啟動，尚未發生正式採購 action。依 §L，這不屬 `PROCUREMENT`。
+  - Owner 為 Classifier；Category 指引未明說「宣布將招標」不是正式採購 action。
+  - helper 回應未保留，根因未確認。
+- **東京ポイントAI 標示「電聯車、號誌」：**
+  - 設備裝在保守用車上，以影像辨識轉轍器開通狀態與障礙物並警示駕駛。
+  - §M 未定義非客運的保守／工程車是否屬 `ROLLING_STOCK`（顯示為電聯車）。
+  - 以攝影機辨識轉轍器狀態，而不參與聯鎖等號誌功能，是否構成 `SIGNALLING` 也屬邊界。
+  - 這是 Taxonomy 規則缺口，需 Domain 決定，不在本次自行修改。
+- **三鶯線／安坑輕軌標示「淡海輕軌」：** 運輸系統名稱來自 EvidenceService metadata 擷取，PDF 雖已不顯示，selection audit 仍可看到，需另案處理。
+
+**測試：** 全套 1198 全過；Golden 測試 27 項全過（Event Dedup 18 案），既有案例未修改。
+
+**下一次雲端執行須確認：**
+- `technical_gap_signatures` 是否不再出現 `CONFIRMATION_INCOMPLETE`。
+- `event_identity_unconfirmed` 的分布。
+- `selection_audit.json` 中重複組的 `proposals_not_merged`：未出現代表批次未提議；`SEPARATED` 代表確認判為不同事件。
