@@ -7,7 +7,6 @@ from dataclasses import dataclass, field as dataclass_field
 from enum import StrEnum
 import re
 from typing import Any, Protocol
-from urllib.parse import urlparse
 
 from .evidence_sentences import EvidenceSentence, resolve_sentence_ids, segment_evidence_sentences
 from .quantities import checked_quantities, is_grounded, stated_quantities
@@ -18,7 +17,7 @@ from .contracts import (
     TechnicalGap,
     TechnicalGapKind,
 )
-from .report_service import FormalReportMetadata
+from .report_service import FormalReportMetadata, source_display_for
 from .report_workflow import ReportWorkflowResult
 from .writer import WriterFailure, WriterReportBlock
 
@@ -620,10 +619,8 @@ class Validator:
                 ValidationStageFailureReason.METADATA_INTEGRITY_FAILURE,
                 event_id=event_id,
             )
-        try:
-            expected_display = (urlparse(evidence.canonical_source_url).hostname or "").lower()
-        except (TypeError, ValueError):
-            expected_display = ""
+        # RC-31: the one source-label owner, never a second derivation.
+        expected_display = source_display_for(canonical[0])
         if not expected_display or metadata.source_display != expected_display:
             raise ValidationStageFailure(
                 ValidationStageFailureReason.METADATA_INTEGRITY_FAILURE,

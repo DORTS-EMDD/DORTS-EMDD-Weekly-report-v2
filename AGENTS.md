@@ -363,8 +363,11 @@ Transport retry 與 semantic correction 必須分開計算。
   代替確認。本期四組疑似重複的逐案根因因雲端回應未保留而未確認。每次執行另輸出觀測用
   `selection_audit.json`，逐候選列出各階段結果與最早終止階段及原因，不重算任何決策。PDF
   不顯示運輸系統與執行說明、來源改為一行連結；Email 內文改為分類標題索引並附 PDF；
-  Markdown 保留全部欄位與執行說明。來源顯示名稱仍為 hostname（§R 禁止使用候選出版者名稱，
-  改用出版者名稱需另行決定）。
+  Markdown 保留全部欄位與執行說明。來源顯示名稱（使用者確認，修訂 §R）：EvidenceService
+  已記錄出版者來源核對相符、且宣告的出版者網域對應 canonical 網址主機時，顯示該出版者名稱
+  （如「來源：Impress Watch」，連到 canonical 網址）；否則顯示 hostname。唯一 owner 為
+  ReportService 的 `source_display_for`，Validator 呼叫同一函式，PDF／Markdown／Email 只使用
+  投影值；canonical 網址、Evidence 資格與來源判定不變。
 
 ## 13. Report / Delivery
 

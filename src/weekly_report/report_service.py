@@ -29,6 +29,7 @@ from .contracts import (
     ScopeState,
     TaxonomyState,
 )
+from .google_news_links import same_publisher
 from .report_workflow import ReportWorkflowResult
 
 
@@ -725,7 +726,7 @@ class ReportService:
         display_date = controlling_date.isoformat()
 
         source_url = canonical_member.evidence.canonical_source_url
-        source_display = self._source_display(event_id, source_url, canonical_member.candidate.candidate_id)
+        source_display = self._source_display(event_id, canonical_member)
 
         category_result = result.category_result
         if (
@@ -896,29 +897,15 @@ class ReportService:
         )
 
     @staticmethod
-    def _source_display(event_id: str, source_url: str, candidate_id: str) -> str:
-        if not _valid_exact_http_url(source_url):
+    def _source_display(event_id: str, canonical_member: EventIdentityRecord) -> str:
+        display = source_display_for(canonical_member)
+        if display is None:
             raise FormalMetadataFailure(
                 FormalMetadataFailureReason.INVALID_CANONICAL_SOURCE,
                 event_id=event_id,
-                candidate_ids=(candidate_id,),
+                candidate_ids=(canonical_member.candidate.candidate_id,),
             )
-        parsed = None
-        try:
-            parsed = urlparse(source_url)
-            hostname = parsed.hostname
-            _ = parsed.port
-        except (TypeError, ValueError):
-            hostname = None
-        if parsed is None or parsed.scheme.lower() not in {"http", "https"}:
-            hostname = None
-        if not hostname:
-            raise FormalMetadataFailure(
-                FormalMetadataFailureReason.INVALID_CANONICAL_SOURCE,
-                event_id=event_id,
-                candidate_ids=(candidate_id,),
-            )
-        return hostname.lower()
+        return display
 
     @staticmethod
     def _fail(
@@ -927,6 +914,44 @@ class ReportService:
         candidate_ids: tuple[str, ...] = (),
     ) -> None:
         raise FormalMetadataFailure(reason, event_id=event_id, candidate_ids=candidate_ids)
+
+
+_SOURCE_NAME_LIMIT = 80
+
+
+def source_display_for(record: EventIdentityRecord) -> str | None:
+    """The formal source label of a canonical member; None when its canonical URL is unusable.
+
+    RC-31 (section R): the publisher display name declared with the discovery
+    result, only when EvidenceService recorded that the resolved article
+    belongs to that declared publisher origin (``publisher_origin_check =
+    MATCH``) and the declared origin also corresponds to the canonical source
+    host; otherwise the canonical hostname. This is the only derivation: the
+    Validator calls it and every renderer uses the projected value.
+    """
+
+    source_url = record.evidence.canonical_source_url
+    if not _valid_exact_http_url(source_url):
+        return None
+    parsed = None
+    try:
+        parsed = urlparse(source_url)
+        hostname = parsed.hostname
+        _ = parsed.port
+    except (TypeError, ValueError):
+        hostname = None
+    if parsed is None or parsed.scheme.lower() not in {"http", "https"} or not hostname:
+        return None
+    candidate = record.candidate
+    name = " ".join(str(candidate.publisher or "").split())
+    if (
+        name
+        and len(name) <= _SOURCE_NAME_LIMIT
+        and dict(record.evidence.provenance or {}).get("publisher_origin_check") == "MATCH"
+        and same_publisher(candidate.publisher_url, source_url) is True
+    ):
+        return name
+    return hostname.lower()
 
 
 def source_link(event: FinalReportBlock) -> str:
@@ -962,5 +987,6 @@ __all__ = [
     "ReportAssembly",
     "ReportAssemblyResult",
     "ReportService",
+    "source_display_for",
     "source_link",
 ]

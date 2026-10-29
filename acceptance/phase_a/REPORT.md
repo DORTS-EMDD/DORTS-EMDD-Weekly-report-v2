@@ -1568,9 +1568,11 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - **Markdown：** 保留運輸系統與執行說明；來源改為一行 `來源：[名稱](URL)`。
 - **Email：** 內文改為分類標題索引，每個標題連到 canonical URL，並附 PDF；主旨不變。
 - **不變：** `SUCCESS_WITH_TECHNICAL_GAPS` 判定、寄送識別與冪等。
-- **未做：來源名稱改為出版者名稱（例如「Impress Watch」）。**
-  - 契約 §R 明定來源顯示為 canonical hostname，並禁止使用候選出版者名稱或品牌對照。
-  - 依 AGENTS.md 遇契約矛盾應停下，因此仍顯示 hostname，待使用者決定。
+- **來源名稱（使用者確認後修訂 §R）：**
+  - 原契約 §R 規定來源顯示為 canonical hostname 並禁止候選出版者名稱，因此先停下；使用者確認新需求後修訂。
+  - 規則：EvidenceService 已記錄出版者來源核對相符（`publisher_origin_check = MATCH`），且宣告的出版者網域對應 canonical 網址主機時，顯示 RSS 宣告的出版者名稱（如「來源：Impress Watch」）；否則顯示 hostname。連結目標仍是 canonical 網址。
+  - 唯一 owner 為 ReportService 的 `source_display_for`；Validator 呼叫同一函式檢查，不再自行推導 hostname；PDF、Markdown、Email 只使用投影值。
+  - 測試：正向（Impress Watch、上層網域、空白正規化）；反向與 fallback（核對不符、未宣告、無出版者紀錄、宣告網域不是 canonical 主機、canonical 移到他站、空白或過長名稱）；無效網址；三種呈現使用同一投影值；被竄改的名稱由 Validator 判為 metadata integrity 失敗。
 
 **唯讀發現（未修改）：**
 - **巴塞隆納對角大道歸【採購事件】：**
@@ -1584,7 +1586,7 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - 這是 Taxonomy 規則缺口，需 Domain 決定，不在本次自行修改。
 - **三鶯線／安坑輕軌標示「淡海輕軌」：** 運輸系統名稱來自 EvidenceService metadata 擷取，PDF 雖已不顯示，selection audit 仍可看到，需另案處理。
 
-**測試：** 全套 1198 全過；Golden 測試 27 項全過（Event Dedup 18 案），既有案例未修改。
+**測試：** 全套 1208 全過；Golden 測試 27 項全過（Event Dedup 18 案），既有案例未修改。
 
 **下一次雲端執行須確認：**
 - `technical_gap_signatures` 是否不再出現 `CONFIRMATION_INCOMPLETE`。

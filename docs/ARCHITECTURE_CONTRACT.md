@@ -1052,11 +1052,13 @@ announcement x3, a Kyoto station fire x2, the Incheon 5G Wi-Fi completion x2).
   artifact, the run summary and the selection audit, and
   `SUCCESS_WITH_TECHNICAL_GAPS` is unchanged. Delivery identity and
   idempotency are unchanged.
-* **Not changed: source label.** Section R fixes the source display to the
-  canonical hostname and forbids the candidate publisher or brand mapping.
-  Showing the publisher name (for example "Impress Watch" from the Google News
-  `<source>` declaration) would amend that rule and needs a decision; until
-  then the label stays the hostname.
+* **Source label (user-confirmed amendment of section R).** The label is the
+  publisher display name (for example `來源：Impress Watch`, linking the
+  canonical URL) when EvidenceService's recorded provenance validated the
+  declared publisher origin (`publisher_origin_check = MATCH`) and that origin
+  corresponds to the canonical source host; otherwise the canonical hostname.
+  One owner, `source_display_for` in ReportService, decides it; the Validator
+  calls it and every renderer consumes the projected value.
 
 ```text
 EVENT_IDENTITY_CONFIRMATION_SCHEMA = members.minItems 1 (confirmation only)
@@ -1066,6 +1068,8 @@ DUPLICATES_2026_10_21_27_ROOT_CAUSE = UNCONFIRMED (per-pair path not retained)
 SELECTION_AUDIT = selection_audit.json, observer-only
 PDF = no transit-system line, no execution notes, one-line linked source
 EMAIL_BODY = section index of linked headlines; PDF attached
+SOURCE_DISPLAY = validated publisher name for the canonical host, else canonical hostname
+SOURCE_DISPLAY_OWNER = ReportService.source_display_for (Validator calls it)
 ```
 
 ## B. Authoritative Owners
@@ -4125,7 +4129,7 @@ projection and final report assembly. It projects, without model rewriting:
 * optional location
 * Category
 * E&M Taxonomy labels
-* canonical source hostname
+* source display label (publisher display name or canonical hostname, RC-31)
 * canonical source URL
 
 Country/region must be established and designated for a formal event
@@ -4142,14 +4146,30 @@ artifact discloses technical gaps, metadata exclusions and Validation FAILs
 Report Service may collapse only identical supported metadata values; it does
 not semantically reconcile aliases or choose a winning member.
 
-Formal source display is not model-generated. It is the lowercase parsed
-hostname of the canonical member's authoritative
-`EvidenceResult.canonical_source_url`; `www` and other subdomains are retained,
-while scheme, port, path, query, and fragment are excluded. The displayed link
-target remains the exact canonical URL. Candidate publisher, discovery URL,
-homepage substitution, brand mapping, search, and semantic repair are
-forbidden. Missing or invalid canonical URL/hostname is a typed
-formal-metadata failure before Writer.
+Formal source display is not model-generated (amended by RC-31, section
+A.25, user-confirmed presentation requirement). The link target is always the
+exact canonical URL, the canonical member's authoritative
+`EvidenceResult.canonical_source_url`; it is never changed. The label is one
+`source_display` value, decided once by `source_display_for` in ReportService
+from the canonical member's own record:
+
+* the publisher display name declared with the discovery result
+  (`CanonicalCandidate.publisher`, the Google News `<source>` name), only when
+  EvidenceService recorded that the resolved article belongs to that declared
+  publisher origin (`publisher_origin_check = MATCH`, section A.5) and the
+  declared origin also corresponds to the canonical source host (the same
+  `same_publisher` origin rule); the name is whitespace-normalised and at most
+  80 characters;
+* otherwise the lowercase parsed hostname of the canonical URL (`www` and
+  other subdomains retained; scheme, port, path, query and fragment excluded).
+
+The Writer, the Validator, Search market, URL guessing, model knowledge,
+homepage substitution and brand mapping never supply or alter the label. The
+Validator checks `source_display` by calling the same function; PDF, Markdown
+and email render the projected `source_display` and never re-derive it. The
+label decides nothing: Evidence eligibility, source provenance and the
+canonical URL are unchanged. Missing or invalid canonical URL/hostname is a
+typed formal-metadata failure before Writer.
 
 Writer authors only `headline`, `factual_summary`, and `taipei_insight` prose.
 Report Service owns fixed labels, metadata projection, assembly, and mechanical
