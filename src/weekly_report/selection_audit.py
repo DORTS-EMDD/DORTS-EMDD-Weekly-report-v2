@@ -336,6 +336,10 @@ def build_selection_audit(
                     "proposals_not_merged": sorted(
                         identity_proposals.get(candidate_id, ()), key=lambda item: (item["with"], item["reason"])
                     ),
+                    # RC-32: the sentences the grouping request carried for this record.
+                    "proposal_excerpt_sentence_ids": list(
+                        dict(getattr(run, "proposal_excerpts", {}) or {}).get(candidate_id, ())
+                    ),
                 }
                 outcome = events[group.event_id]
                 entry["event"] = {
@@ -367,6 +371,7 @@ def build_selection_audit(
         "terminal_reason_distribution": dict(
             sorted(Counter(f"{entry['terminal_stage']}:{entry['terminal_reason']}" for entry in candidates).items())
         ),
+        "event_identity_excerpt_limits": getattr(run, "proposal_excerpt_limits", "") or None,
         "event_identity_technical_gaps": sorted(
             f"{gap.subject_id}:{_value(gap.kind)}:{gap.failure_class}"
             for gap in result.technical_gaps

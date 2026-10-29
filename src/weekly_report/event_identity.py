@@ -165,7 +165,8 @@ class EventIdentity:
             eligible.append(record)
 
         technical_gaps: list[TechnicalGap] = []
-        proposed = self._proposed_relations(eligible, diagnostics, technical_gaps)
+        excerpts: dict[str, tuple[str, ...]] = {}
+        proposed, excerpt_limits = self._proposed_relations(eligible, diagnostics, technical_gaps, excerpts)
         ordered = sorted(eligible, key=_record_sort_key)
         groups: list[list[EventIdentityRecord]] = []
         relation_cache: dict[tuple[str, str], tuple[EventIdentityRelation, str]] = {}
@@ -230,7 +231,7 @@ class EventIdentity:
                 key=lambda group: group.member_candidate_ids,
             )
         )
-        return EventIdentityRun(output, tuple(diagnostics), tuple(technical_gaps))
+        return EventIdentityRun(output, tuple(diagnostics), tuple(technical_gaps), excerpts, excerpt_limits)
 
     @staticmethod
     def _eligible(record: EventIdentityRecord) -> bool:
@@ -262,13 +263,24 @@ class EventIdentity:
         eligible: Sequence[EventIdentityRecord],
         diagnostics: list[EventIdentityDiagnostic],
         technical_gaps: list[TechnicalGap],
-    ) -> dict[tuple[str, str], tuple[EventIdentityRelation, str]]:
-        """Validate the RC-15 grouping proposals into SAME_EVENT pair relations."""
+        excerpts: dict[str, tuple[str, ...]],
+    ) -> tuple[dict[tuple[str, str], tuple[EventIdentityRelation, str]], str]:
+        """Validate the RC-15 grouping proposals into SAME_EVENT pair relations.
+
+        Also fills ``excerpts`` with the sentence IDs each record was sent with
+        and returns the excerpt limits used (RC-32, observation only).
+        """
 
         relations: dict[tuple[str, str], tuple[EventIdentityRelation, str]] = {}
         if self._grouping_advisor is None:
-            return relations
-        requests = _grouping_requests(eligible)
+            return relations, ""
+        requests, (sentence_limit, character_limit) = _grouping_requests(eligible)
+        for request in requests:
+            excerpts.update(
+                (record.candidate_id, tuple(sentence.sentence_id for sentence in record.sentences))
+                for record in request.records
+            )
+        excerpt_limits = f"{sentence_limit}x{character_limit}" if requests else ""
         by_id = {record.candidate.candidate_id: record for record in eligible}
         if len(requests) > 1:
             # Pairs in different batches cannot be merged; keep that visible.
@@ -328,7 +340,7 @@ class EventIdentity:
                         )
                         continue
                     relations[pair] = (EventIdentityRelation.SAME_EVENT, "SEMANTIC_GROUP_PROPOSAL")
-        return relations
+        return relations, excerpt_limits
 
     def _confirmed_pairs(
         self,
@@ -680,12 +692,15 @@ def proposal_subject_level(subject_id: str) -> str:
     return "CONFIRMATION_GROUP" if "confirmation" in parts else "GROUP"
 
 
-def _grouping_requests(eligible: Sequence[EventIdentityRecord]) -> list[EventIdentityGroupingRequest]:
+def _grouping_requests(
+    eligible: Sequence[EventIdentityRecord],
+) -> tuple[list[EventIdentityGroupingRequest], tuple[int, int]]:
     """One request for the whole run whenever its payload fits (RC-18).
 
     The first lead tier whose total payload fits the bound is used for every
     record. Only when even the shortest leads do not fit is the run split into
-    consecutive batches ordered by discovery publication time.
+    consecutive batches ordered by discovery publication time. Also returns
+    the lead tier used.
     """
 
     ordered = sorted(
@@ -697,7 +712,8 @@ def _grouping_requests(eligible: Sequence[EventIdentityRecord]) -> list[EventIde
         kept = [item for item in built if item is not None]
         if sum(_payload_size(item) for item in kept) <= BATCH_CHARACTER_LIMIT:
             records = [replace(item, record_id=f"R{index}") for index, item in enumerate(kept, start=1)]
-            return [EventIdentityGroupingRequest("event-identity-batch-1", tuple(records))] if len(records) >= 2 else []
+            requests = [EventIdentityGroupingRequest("event-identity-batch-1", tuple(records))] if len(records) >= 2 else []
+            return requests, lead_limits
 
     batches: list[list[EventIdentityRecord]] = [[]]
     characters = 0
@@ -717,7 +733,7 @@ def _grouping_requests(eligible: Sequence[EventIdentityRecord]) -> list[EventIde
             _grouping_record(record, f"R{index}", LEAD_TIERS[-1]) for index, record in enumerate(batch, start=1)
         )
         requests.append(EventIdentityGroupingRequest(f"event-identity-batch-{len(requests) + 1}", records))
-    return requests
+    return requests, LEAD_TIERS[-1]
 
 
 def _validate_grouping_proposal(

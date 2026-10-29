@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-31 修訂（2026-10-20～29）
+### RC-3～RC-32 修訂（2026-10-20～29）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.25 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.26 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -368,6 +368,11 @@ Transport retry 與 semantic correction 必須分開計算。
   （如「來源：Impress Watch」，連到 canonical 網址）；否則顯示 hostname。唯一 owner 為
   ReportService 的 `source_display_for`，Validator 呼叫同一函式，PDF／Markdown／Email 只使用
   投影值；canonical 網址、Evidence 資格與來源判定不變。
+* RC-32（§A.26，僅觀測）：Run 40817530617 的三組重複（維也納第 1,000 輛、光州 2 號線稽核、
+  仁川 5G 品質體驗）以離線重建請求確認：決定性 Evidence 都在送給 helper 的摘錄中，屬 helper
+  分群漏提或確認誤分，原因無法觀測，根因未確認，未修改任何規則、提示詞或 schema。Event
+  Identity 另記錄每筆紀錄送出的句子 ID 與摘錄上限，於 selection audit 與 run summary 顯示，
+  不含原文、不參與決策。
 
 ## 13. Report / Delivery
 
@@ -517,5 +522,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-31 APPLIED (2026-10-29)
+CONTRACT_REVISION = RC-3..RC-32 APPLIED (2026-10-29)
 ```

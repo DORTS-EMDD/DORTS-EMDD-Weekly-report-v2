@@ -127,3 +127,18 @@ def test_a_proposed_pair_left_apart_names_its_partner_and_why():
         {"with": right, "reason": "PROPOSAL_NOT_CONFIRMED", "detail": "event-identity-batch-1:group-1|size=2|SEPARATED"}
     ]
     assert by_id[right]["event_identity"]["proposals_not_merged"][0]["with"] == left
+
+
+def test_the_audit_and_run_summary_show_what_the_grouping_request_carried():
+    # RC-32: observation only; the grouping outcome is the owner's.
+    from src.weekly_report.event_identity import EventIdentity
+    from tests.test_event_identity_grouping_rc15 import _Scripted
+
+    app, _ = _full_app()
+    app._event_identity = EventIdentity(_Scripted({"groups": []}))
+    result = ProductionRunner(app).run(period_start="2026-09-12", period_end="2026-09-18")
+    audit = result.selection_audit
+    assert audit["event_identity_excerpt_limits"] == "6x900"
+    reached = [entry for entry in audit["candidates"] if "event_identity" in entry]
+    assert reached and all(entry["event_identity"]["proposal_excerpt_sentence_ids"] for entry in reached)
+    assert "event_identity_excerpt_limits=6x900" in result.summary()

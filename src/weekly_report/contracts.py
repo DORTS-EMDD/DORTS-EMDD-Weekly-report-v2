@@ -443,6 +443,10 @@ class EventIdentityRun:
     # RC-15: a grouping proposal that failed leaves its records unmerged;
     # these gaps never exclude a record.
     technical_gaps: tuple["TechnicalGap", ...] = ()
+    # RC-32 (observation only): the sentence IDs each record was sent with in
+    # the grouping request, and the excerpt limits used ("<sentences>x<chars>").
+    proposal_excerpts: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
+    proposal_excerpt_limits: str = ""
 
 
 class RejectReason(StrEnum):

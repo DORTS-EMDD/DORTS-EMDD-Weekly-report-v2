@@ -1072,6 +1072,62 @@ SOURCE_DISPLAY = validated publisher name for the canonical host, else canonical
 SOURCE_DISPLAY_OWNER = ReportService.source_display_for (Validator calls it)
 ```
 
+### A.26 RC-32 Event Identity duplicates after RC-31 (2026-10-29)
+
+GitHub Actions run 40817530617 (2026-10-21..27, main 08fd50f): 65 records ->
+46 Events, no `CONFIRMATION_INCOMPLETE`, one `CONFIRMATION_GROUP`
+`DUPLICATE_MEMBERSHIP` gap, `PROPOSAL_NOT_CONFIRMED` 19 (`SEPARATED` 18,
+`GROUP_INVALID` 1), no region conflicts. Three duplicate sets remained.
+
+* **Method.** The cloud helper responses are not retained. The requests were
+  rebuilt offline: the published pages of all 65 records were fetched again
+  (55 reachable), passed through the production `assess_document` and sentence
+  segmentation, and cut to each record's audited Scope event focus; the
+  audited highlight sentences matched. The batch payload is at most about
+  53,000 characters, so the request used the first excerpt tier (6 sentences,
+  900 characters).
+* **Vienna (1,000th metro car, Simmering).** Both excerpts are one sentence
+  that states the 1,000th U-Bahn car built at Simmering for the Wiener Linien
+  and handed over. The batch returned one record as a single-record group and
+  left the other out. Same occurrence; the decisive Evidence was in the
+  request, so this is a helper recall miss whose reason is not observable.
+* **Gwangju (Line 2 comprehensive audit).** One excerpt is 539 characters of
+  site navigation followed by the sentence naming the 도시철도건설본부 종합감사
+  and its 24 findings; the other names the same audit and 24 findings. The
+  sources give different release days (25 and 26 October). Same occurrence;
+  the decisive Evidence was in the request; recall miss, reason not
+  observable.
+* **Incheon (5G Wi-Fi quality-check event).** Both separated records report
+  the Ministry's 21 October ride event on Line 2 (Unyeon to Incheon City
+  Hall) checking the upgraded Wi-Fi: the same occurrence, so the confirmation
+  separating them from each other is wrong. Keeping them apart from the
+  operator's service-start reports is consistent with section A.9 (different
+  announcement). One record's excerpt (its Scope focus, two sentences) omits
+  the sentences describing the event; the excerpts still name the same
+  actor, date and subject, so the omission is a contributing factor, not a
+  proven cause.
+* **Verdict.** Earliest abnormal stage: the Event Identity helper proposals
+  (batch recall for Vienna and Gwangju, confirmation for Incheon). Root
+  cause `UNCONFIRMED`: no request-side defect explains the misses, and the
+  helper's reasons are not observable. No production rule, prompt or schema
+  is changed.
+* **Observation added (Debug only).** `EventIdentityRun` records the
+  sentence IDs each record was sent with and the excerpt limits used; the
+  selection audit shows them per candidate (`proposal_excerpt_sentence_ids`)
+  and the run summary shows `event_identity_excerpt_limits`. No source text;
+  no decision reads them.
+* **Findings, not changed.** Principal bodies that carry page chrome
+  (navigation, paywall, advertorial teasers) and a Scope event focus that
+  includes it are Evidence (section A.7) and Scope matters; they add noise to
+  excerpts. Out of scope: 25 Scope gaps, a Validation mixed-script FAIL, the
+  Barcelona planned-tender Category and a Madrid visit's Reportability.
+
+```text
+EVENT_IDENTITY_DUPLICATES_RC32 = UNCONFIRMED (helper miss with sufficient Evidence)
+PRODUCTION_CHANGE_RC32 = NONE
+OBSERVATION = proposal_excerpt_sentence_ids, event_identity_excerpt_limits
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：

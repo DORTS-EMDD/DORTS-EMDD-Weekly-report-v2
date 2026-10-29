@@ -1592,3 +1592,45 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - `technical_gap_signatures` 是否不再出現 `CONFIRMATION_INCOMPLETE`。
 - `event_identity_unconfirmed` 的分布。
 - `selection_audit.json` 中重複組的 `proposals_not_merged`：未出現代表批次未提議；`SEPARATED` 代表確認判為不同事件。
+
+
+## 40. RC-31 後仍存在的重複報導（RC-32，離線，2026-10-29）
+
+**雲端 Run 40817530617（2026-10-21～27，main 08fd50f）：**
+- Event Identity 65 筆 → 46 則事件；`CONFIRMATION_INCOMPLETE` 已消失。
+- 另有 1 個 `CONFIRMATION_GROUP` `DUPLICATE_MEMBERSHIP`：國政監查 2 篇的確認群組重複列出同一紀錄。
+- `PROPOSAL_NOT_CONFIRMED` 19（`SEPARATED` 18、`GROUP_INVALID` 1），無跨地區配對。
+
+**方法（離線，無 MaiAgent 呼叫）：**
+- 雲端 helper 回應未保留，因此改為重建請求內容。
+- 重新抓取 65 筆紀錄的公開頁面（55 筆成功），以正式 `assess_document` 與句子切分處理，再依 selection audit 的 Scope 事件焦點句 ID 取出摘錄。
+- 重建結果與 audit 記錄的摘錄句一致。
+- 批次請求內容估計最多約 53,000 字元（上限 66,000），因此使用第一級摘錄上限（6 句／900 字）。
+
+**逐案判定：**
+
+| 案例 | 送給 helper 的摘錄 | Evidence 判定 | 異常位置 |
+|---|---|---|---|
+| 維也納第 1,000 輛 | 兩筆各 1 句（ÖVZ S2，561 字；Bezirksblatt S2，309 字），都明載 Simmering 廠為 Wiener Linien 製造的第 1,000 輛 U-Bahn 車廂已交付 | 同一事件 | 批次提案漏提：ÖVZ 被單獨成群，Bezirksblatt 未列入 |
+| 光州 2 號線綜合稽核 | Pressian：S1 為 539 字網站選單，S2 才是「26일 공개 '도시철도건설본부 종합감사' … 총 24건」；Newsis：「25일 공개 … 종합감사 … 24건」 | 同一事件（同一份稽核報告、24 項缺失） | 批次提案漏提；兩來源公布日期寫法不同（25／26 日），可能有影響但無法證實 |
+| 仁川 5G 品質體驗 | digitaltoday 摘錄只有 S4–S5（部會確認改善成效、將推廣全國），本文 S6、S8、S10 才寫到體驗活動；smarttoday 摘錄 S1 即體驗活動 | 兩篇是同一場 10/21 運延～仁川市廳乘車體驗，應合併；與交通公社 8 篇「服務開始」分開符合契約（不同發布） | 確認步驟誤把兩篇彼此分開；digitaltoday 摘錄缺活動句是可能因素，但兩摘錄已載明同一主體、日期與事項，無法證明為決定性原因 |
+
+**結論：**
+- EARLIEST_ABNORMAL_STAGE = Event Identity helper 提案：維也納、光州為批次漏提，仁川為確認誤分。
+- ROOT_CAUSE_VERDICT = UNCONFIRMED：請求端沒有能解釋漏提的缺陷，決定性 Evidence 都在摘錄內；helper 的判斷原因無法觀測。
+- PRODUCTION_CHANGE = NONE：未修改分群規則、提示詞、schema 或上游判定。
+
+**觀測補強（僅 Debug）：**
+- `EventIdentityRun` 記錄每筆紀錄送出的句子 ID 與使用的摘錄上限。
+- selection audit 每筆候選顯示 `proposal_excerpt_sentence_ids`；run summary 顯示 `event_identity_excerpt_limits`。
+- 不含原文，不參與決策。之後不必再重抓頁面（頁面會變動）即可知道 helper 看到哪些句子。
+
+**記錄但未處理：**
+- 部分主文件含網站選單、付費牆、廣告摘要（Pressian、ÖVZ、Bezirksblatt），Scope 焦點也可能包含這些句子。屬 Evidence（§A.7）與 Scope 範圍，會增加摘錄雜訊。
+- 不在本次範圍：Scope 技術缺口 25、光州 AI＋數位分身因混用文字 Validation FAIL、巴塞隆納預定招標分類、馬德里無人駕駛列車參觀的 Reportability。
+
+**若要減少漏提，需另行決定的方向（未實作）：**
+- 批次提案是唯一的合併來源，漏提即無法挽回。是否增加提案機制屬新的架構決定。
+- 摘錄品質牽涉上游 Evidence 主文件與 Scope 焦點，應在各自 owner 處理。
+
+**測試：** 新增 `tests/test_event_identity_rc32.py`（3 項）與 selection audit 1 項；全套 1212 全過，Golden 27 項全過，既有案例未修改。
