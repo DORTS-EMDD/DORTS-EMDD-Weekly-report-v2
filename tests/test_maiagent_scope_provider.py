@@ -36,7 +36,7 @@ def test_prompt_and_schema_express_conditional_citation_obligations():
     instructions = " ".join(payload["instructions"])
     schema = MAIAGENT_SCOPE_RESPONSE_SCHEMA["properties"]
     # RC-9: citations are Python sentence IDs; no field carries copied text.
-    assert PROMPT_VERSION == "scope-event-target-system-v11"
+    assert PROMPT_VERSION == "scope-event-target-system-v12"
     assert SCOPE_PROPOSAL_SCHEMA_VERSION == "scope-semantic-proposal-v4"
     assert payload["scope_request"]["principal_sentences"][0]["sentence_id"] == "S1"
     assert "principal_content" not in payload["scope_request"]
@@ -178,3 +178,17 @@ def test_installed_equipment_takes_its_facilitys_membership_and_negation_is_expl
     assert any("an operator's buses, ferries or real estate never become urban rail" in line for line in instructions)
     negation = [line for line in instructions if line.startswith("Record noneligible, ambiguous")]
     assert len(negation) == 1 and "event_status is NEGATED" in negation[0] and "never an ASSERTED event" in negation[0]
+
+
+def test_the_candidate_event_is_the_documents_own_news_not_recalled_background():
+    # Section A.33: run 41018554355 took a background sentence of a
+    # parliamentary-audit report (a service launched two days earlier) as its
+    # event focus, and Event Identity, comparing focus excerpts, merged the
+    # statement into the launch.
+    instructions = build_maiagent_scope_model_input(_request())["instructions"]
+    line = [item for item in instructions if item.startswith("The Candidate event is the occurrence the document reports as its own news")]
+    assert len(line) == 1
+    assert "not an earlier occurrence the document recalls as background" in line[0]
+    assert "that statement is the Candidate event" in line[0]
+    assert "the occurrence is the Candidate event" in line[0]
+    assert instructions.index(line[0]) < next(i for i, item in enumerate(instructions) if item.startswith("event_focus cites"))

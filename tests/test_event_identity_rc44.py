@@ -112,3 +112,36 @@ def test_a_failed_second_nomination_is_a_disclosed_gap_and_keeps_the_first():
     run = EventIdentity(advisor).evaluate(_records())
     assert ("A", "B") in _groups(run)
     assert [(gap.subject_id, gap.failure_class) for gap in run.technical_gaps] == [("event-identity-batch-1-n2", "TIMEOUT")]
+
+
+def test_a_confirmed_pair_records_the_nomination_that_proposed_it():
+    # Section A.33 (observation only): run 41018554355 could not show whether
+    # the second nomination contributed any merge.
+    from src.weekly_report.debug_service import event_identity_projection
+
+    advisor = _Scripted(_batch(("A", "B")), _confirm("A", "B"), _confirm("A", "B", "C"), second=_batch(("A", "B", "C")))
+    run = EventIdentity(advisor).evaluate(_records())
+    confirmed = [(item.candidate_ids, item.detail) for item in run.diagnostics if item.reason == "PROPOSAL_CONFIRMED"]
+    assert confirmed == [
+        (("A", "B"), "event-identity-batch-1:group-1|pairs=1"),
+        (("A", "B", "C"), "event-identity-batch-1-n2:group-1|pairs=2"),
+    ]
+    assert event_identity_projection(run)["event_identity_confirmed_pairs"] == {"FIRST": 1, "SECOND": 2}
+
+
+def test_the_attribution_changes_no_grouping_outcome(monkeypatch):
+    from src.weekly_report import event_identity as module
+
+    def scripted():
+        return _Scripted(_batch(("A", "B")), _confirm("A", "B"), _confirm("A", "B", "C"), second=_batch(("A", "B", "C")))
+
+    observed = EventIdentity(scripted()).evaluate(_records())
+    real = module.EventIdentityDiagnostic
+
+    def drop_confirmed(candidate_ids, reason, detail=""):
+        return real(candidate_ids, "UPSTREAM_NOT_ELIGIBLE" if reason == "PROPOSAL_CONFIRMED" else reason, detail)
+
+    monkeypatch.setattr(module, "EventIdentityDiagnostic", drop_confirmed)
+    unobserved = EventIdentity(scripted()).evaluate(_records())
+    assert observed.groups == unobserved.groups
+    assert observed.technical_gaps == unobserved.technical_gaps

@@ -142,3 +142,17 @@ def test_the_audit_and_run_summary_show_what_the_grouping_request_carried():
     reached = [entry for entry in audit["candidates"] if "event_identity" in entry]
     assert reached and all(entry["event_identity"]["proposal_excerpt_sentence_ids"] for entry in reached)
     assert "event_identity_excerpt_limits=6x900" in result.summary()
+
+
+def test_the_run_summary_and_audit_show_which_nomination_confirmed_each_merge():
+    # Section A.33 (observation only).
+    from src.weekly_report.event_identity import EventIdentity
+    from tests.test_event_identity_contract import _SemanticAdvisor
+
+    app, _ = _full_app()
+    app._event_identity = EventIdentity(_SemanticAdvisor())
+    result = ProductionRunner(app).run(period_start="2026-09-12", period_end="2026-09-18")
+    merged = [entry for entry in result.selection_audit["candidates"] if (entry.get("event_identity") or {}).get("merged_with")]
+    assert merged and all(entry["event_identity"]["proposal_confirmed_by"] == ["event-identity-batch-1:group-1"] for entry in merged)
+    assert dict(result.event_identity_confirmed_pairs) == {"FIRST": 1}
+    assert "event_identity_confirmed_pairs=FIRST=1" in result.summary()

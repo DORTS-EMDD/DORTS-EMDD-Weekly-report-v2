@@ -356,6 +356,17 @@ class EventIdentity:
                         )
                         continue
                     relations[pair] = (EventIdentityRelation.SAME_EVENT, "SEMANTIC_GROUP_PROPOSAL")
+                accepted = [pair for pair in pairs if pair in confirmed]
+                if accepted:
+                    # Observation only (section A.33): which nomination's group
+                    # confirmed these pairs, so a run shows where merges come from.
+                    diagnostics.append(
+                        EventIdentityDiagnostic(
+                            tuple(sorted({candidate_id for pair in accepted for candidate_id in pair})),
+                            "PROPOSAL_CONFIRMED",
+                            f"{group_subject}|pairs={len(accepted)}",
+                        )
+                    )
         return relations, excerpt_limits
 
     def _confirmed_pairs(

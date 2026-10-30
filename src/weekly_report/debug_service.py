@@ -23,7 +23,7 @@ from urllib.parse import urlsplit
 from uuid import uuid4
 
 from .contracts import EvidenceResult, EvidenceState, RejectReason, SearchExecutionResult
-from .event_identity import proposal_subject_level
+from .event_identity import SECOND_NOMINATION_SUFFIX, proposal_subject_level
 
 
 STAGES = (
@@ -502,7 +502,7 @@ def _field_diagnostic(
 
 
 _EVENT_IDENTITY_DIAGNOSTICS = frozenset({
-    "EXACT_SOURCE_BODY", "INSUFFICIENT_IDENTITY", "PROPOSAL_BATCH_SPLIT", "PROPOSAL_MEMBER_REJECTED",
+    "EXACT_SOURCE_BODY", "INSUFFICIENT_IDENTITY", "PROPOSAL_BATCH_SPLIT", "PROPOSAL_CONFIRMED", "PROPOSAL_MEMBER_REJECTED",
     "PROPOSAL_NOT_CONFIRMED", "PROPOSAL_REGION_CONFLICT", "SINGLE_MEMBER_PROPOSAL", "UPSTREAM_NOT_ELIGIBLE",
 })
 _UNCONFIRMED_OUTCOMES = {"SEPARATED", "OMITTED", "MEMBER_INVALID", "CONFIRMATION_FAILED"}
@@ -530,7 +530,20 @@ def event_identity_projection(run: Any) -> dict[str, dict[str, int]]:
             for item in run.diagnostics
             if item.reason == "PROPOSAL_NOT_CONFIRMED"
         ),
+        # Section A.33: confirmed pairs by the nomination that proposed them.
+        "event_identity_confirmed_pairs": _nomination_pairs(run.diagnostics),
     }
+
+
+def _nomination_pairs(diagnostics: Any) -> dict[str, int]:
+    pairs: dict[str, int] = {}
+    for item in diagnostics:
+        if item.reason != "PROPOSAL_CONFIRMED":
+            continue
+        subject, _, count = item.detail.rpartition("|pairs=")
+        nomination = "SECOND" if subject.split(":", 1)[0].endswith(SECOND_NOMINATION_SUFFIX) else "FIRST"
+        pairs[nomination] = pairs.get(nomination, 0) + int(count)
+    return dict(sorted(pairs.items()))
 
 
 def evidence_projection(evidence_results: tuple[EvidenceResult, ...] | None) -> dict[str, Any]:

@@ -263,6 +263,9 @@ def _gap_projection(result: ReportApplicationResult) -> dict[str, Any]:
             event_identity_projection(run)["event_identity_unconfirmed_distribution"] if run is not None else {}
         ),
         "event_identity_excerpt_limits": (getattr(run, "proposal_excerpt_limits", "") or None) if run is not None else None,
+        "event_identity_confirmed_pairs": (
+            event_identity_projection(run)["event_identity_confirmed_pairs"] if run is not None else {}
+        ),
     }
 
 
@@ -328,6 +331,8 @@ class ProductionRunResult:
     event_identity_unconfirmed_distribution: Mapping[str, int] = field(default_factory=dict)
     # RC-32: Event Identity excerpt limits used by the grouping request.
     event_identity_excerpt_limits: str | None = None
+    # Section A.33: confirmed pairs by the nomination that proposed them.
+    event_identity_confirmed_pairs: Mapping[str, int] = field(default_factory=dict)
     # RC-31: per-candidate selection audit, an observer-only projection of the
     # owners' results (selection_audit.py); never read back by any decision.
     selection_audit: Mapping[str, Any] | None = field(default=None, repr=False, compare=False)
@@ -396,6 +401,7 @@ class ProductionRunResult:
             "technical_gap_signature_distribution",
             "event_identity_diagnostic_distribution",
             "event_identity_unconfirmed_distribution",
+            "event_identity_confirmed_pairs",
         ):
             values = dict(getattr(self, field_name))
             if any(
@@ -531,6 +537,8 @@ class ProductionRunResult:
             parts.append(f"event_identity_unconfirmed={_format_distribution(self.event_identity_unconfirmed_distribution)}")
         if self.event_identity_excerpt_limits:
             parts.append(f"event_identity_excerpt_limits={self.event_identity_excerpt_limits}")
+        if self.event_identity_confirmed_pairs:
+            parts.append(f"event_identity_confirmed_pairs={_format_distribution(self.event_identity_confirmed_pairs)}")
         return " ".join(parts)
 
 

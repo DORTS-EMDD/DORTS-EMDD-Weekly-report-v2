@@ -1496,6 +1496,99 @@ EVENT_IDENTITY_SAME_EVENT = PROPOSED_BY_EITHER_NOMINATION AND REGION_COMPATIBLE 
 EVENT_IDENTITY_EARLIER_VERDICT = FINAL (never re-confirmed)
 ```
 
+### A.33 RC-45 Event Identity review: Scope focus is the document's own news (2026-10-30)
+
+Run 41018554355 (2026-10-21..28, e09b6da: RC-42 to RC-44) still printed
+duplicates (Incheon 5G launch three times, the Gwangju audit twice) and
+merged a different occurrence: a 23 October parliamentary-audit report (a
+lawmaker urging a nationwide rollout) joined the 21 October Incheon launch
+Event. Technical gaps rose from 19 to 38. Method: the selection audit and
+run summaries of the four RC-38 to RC-44 live runs; the pages of 101 records
+fetched again; logged batch responses scored against hand-labelled
+occurrences; 12 capped Scope replays.
+
+Findings (established):
+
+* **Every Event Identity merge is a single-sample helper judgment.** SAME_EVENT
+  needs a batch nomination and a confirmation, and the excerpt each record
+  presents is its Scope event focus, also a helper judgment. Python verifies
+  form, citations and regions, never identity. Across three logged calls of one
+  unchanged batch request, the share of labelled same-occurrence pairs proposed
+  was 66%, 85% and 95%. Every result before this section, including RC-42 to
+  RC-44's offline evidence, rested on one or two such samples.
+* **Tests cannot measure it.** Golden and regression tests script the helper's
+  answers; they verify the Python owner's handling of an answer, not the
+  answer's quality. Passing them says nothing about a live report.
+* **Over-merge: earliest wrong decision is Scope's event focus.** For the
+  parliamentary-audit report, Scope took a background sentence (the service
+  "was introduced on the 21st") as the Candidate event focus in the cloud run
+  and in 2 of 2 replays; the statement that is the report's news (sentences
+  1-4) was ignored. Event Identity compares focus excerpts (section A.14), so
+  the record looked like a launch report. The Scope instruction asks for the
+  rail action, target and system, and nothing tells it that the Candidate
+  event is the document's own news.
+* **Separation and omissions: helper variance.** The confirmation separated a
+  launch report whose focus cites a lawmaker announcing the completion; a
+  second launch report and the Gwangju audit pair were never proposed together
+  by either nomination. No request-side defect explains them.
+* **Gaps.** All 5 Event Identity gaps are repeated members in the second
+  nomination (section A.32); each rejected member was a record without a
+  duplicate. 22 of 26 Scope gaps fell on records whose Scope proposal had been
+  valid in the previous run; 6 Evidence gaps are unparseable helper responses.
+
+Evaluation of RC-42 to RC-44:
+
+* RC-42 (per-member validation, chronological order, S1..Sn numbering): no
+  group has been voided and no citation slip has recurred in two live runs.
+  Kept.
+* RC-43 (Scope v11): the Tokyo maintenance-vehicle reports and the
+  track-monitoring train were reported; the negated access notice was not.
+  Kept.
+* RC-44 (second nomination): in the one scored pair of samples it raised
+  nomination recall from 66% to 98%, but its live contribution cannot be shown
+  because a confirmed pair recorded no nomination; it added the 5 gaps. Kept
+  with the observation below; it is to be withdrawn if live runs show the
+  second nomination confirming no pairs.
+
+Rules:
+
+* **Scope (instruction `scope-event-target-system-v12`; clarifies section
+  A.14).** The Candidate event is the occurrence the document reports as its
+  own news, as its lead presents it, not an earlier occurrence it recalls as
+  background. When the news is a statement, call, question or meeting about an
+  earlier occurrence, that statement is the Candidate event; when the document
+  reports an occurrence through someone's announcement, the occurrence is the
+  Candidate event. Python validation, schema and positive conditions are
+  unchanged. Replays: the parliamentary-audit report's focus moved to its
+  statement (2 of 2); a launch announced by a lawmaker, a launch report, the
+  Gwangju audit and two Tokyo reports kept their focus. A launch report's
+  membership still varies between calls with an unchanged focus (pre-existing
+  Scope variance).
+* **Observation (Debug only).** Each confirmation that accepts pairs records a
+  `PROPOSAL_CONFIRMED` diagnostic naming the members and `<group subject>|pairs=N`;
+  the run summary shows `event_identity_confirmed_pairs=FIRST=..,SECOND=..`
+  and the selection audit lists `proposal_confirmed_by` per candidate. No
+  decision reads them.
+
+Decision required (domain rule; not implemented): whether a report of an
+occurrence by a different announcer (a lawmaker announcing that a carrier
+completed an installation, against the operator's own announcement) is the same
+occurrence. Section A.9 lists "different statements" as different events; the
+confirmation applied that to a report whose news is the installation itself.
+
+Not addressed: Gwangju-type pairs whose sources state different release dates
+were not nominated together in three of four runs although Golden ED21 locks
+them as one occurrence when nominated and confirmed; Golden cannot show the
+nomination miss.
+
+```text
+SCOPE_PROMPT_VERSION = scope-event-target-system-v12
+SCOPE_CANDIDATE_EVENT = DOCUMENT_OWN_NEWS (not recalled background)
+EVENT_IDENTITY_CONFIRMED_PAIR_OBSERVATION = PROPOSAL_CONFIRMED (subject|pairs=N; summary by nomination)
+EVENT_IDENTITY_QUALITY_EVIDENCE = LIVE RUNS + SCORED REPLAYS (Golden/regression verify owner handling only)
+ANNOUNCER_VS_OCCURRENCE = USER_DECISION_REQUIRED
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：

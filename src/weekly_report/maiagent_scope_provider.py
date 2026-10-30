@@ -33,7 +33,7 @@ from .scope_classifier import (
 
 
 TASK_IDENTITY = "scope_semantic_proposal"
-PROMPT_VERSION = "scope-event-target-system-v11"
+PROMPT_VERSION = "scope-event-target-system-v12"
 SCHEMA_VERSION = SCOPE_PROPOSAL_SCHEMA_VERSION
 HELPER_VERSION = "maiagent-structured-helper-scope-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-scope"
@@ -58,6 +58,7 @@ SCOPE_SEMANTIC_INSTRUCTIONS = (
     "Copy each label character for character from one sentence, keeping its inflection, conjugation and particles exactly as written there (if the sentence says 'agredidos', the label is 'agredidos', not 'agresión'; if it says 'trikk', not 'trikken'). Cite in action_target and in target_system every sentence that contains one of that relation's labels, so each relation's citation contains its endpoints.",
     "Citation obligations: event_focus.sentence_ids is required for RESOLVED or CONFLICTING; action_target and target_system sentence_ids are required when ESTABLISHED or CONFLICTING; ambiguity only for CONFLICTING; noneligible_relation only for PRESENT. Otherwise use an empty list.",
     "The sentences cited by action_target must contain both the action label and the target label. The sentences cited by target_system must contain the system label and either the target label or, when the source refers back to the target, the exact referring words in target_system.target_reference (such as 'The five lines', 'This', 'the line', '該線'). Omit target_reference when the target label itself appears there.",
+    "The Candidate event is the occurrence the document reports as its own news, as its lead presents it, not an earlier occurrence the document recalls as background or context. When the news is a statement, call, question or meeting about an earlier occurrence (for example a lawmaker urging that a service launched earlier be extended), that statement is the Candidate event. When the document reports an occurrence through someone's announcement (for example an official announcing that installation has been completed), the occurrence is the Candidate event.",
     "event_focus cites the consecutive sentences describing the Candidate event; every sentence cited by a relation must lie within the range from the first to the last event_focus sentence. Do not borrow support from a separate event in the same document.",
     "When the target phrase itself names its system or mode, such as 'five metro lines', 'tram Route 19', 'Chennai Metro's Yellow Line' or '電車', that phrase already states membership: cite the sentence containing it for target_system, with the system label equal to the target label or the system word inside it.",
     "A station, platform, track, train, depot or service of a named station, line or network of the system is PART_OF that system; for example 'a northbound E train platform at the 53rd Street subway station' is PART_OF the subway, and a tram that derailed is PART_OF the tram system.",

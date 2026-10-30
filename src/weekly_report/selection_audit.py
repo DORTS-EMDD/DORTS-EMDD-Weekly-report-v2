@@ -359,6 +359,12 @@ def build_selection_audit(
                         for item in rejected_members
                         if candidate_id in item["candidate_ids"]
                     ],
+                    # Section A.33: proposal groups whose confirmation accepted a pair of this record.
+                    "proposal_confirmed_by": sorted(
+                        diagnostic.detail.rpartition("|pairs=")[0]
+                        for diagnostic in getattr(run, "diagnostics", ()) or ()
+                        if diagnostic.reason == "PROPOSAL_CONFIRMED" and candidate_id in diagnostic.candidate_ids
+                    ),
                 }
                 outcome = events[group.event_id]
                 entry["event"] = {

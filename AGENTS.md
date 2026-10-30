@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-44 修訂（2026-10-20～30）
+### RC-3～RC-45 修訂（2026-10-20～30）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.32、§N 與 §R。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.33、§N 與 §R。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -414,6 +414,13 @@ Transport retry 與 semantic correction 必須分開計算。
   complete-link 分組；SAME_EVENT 定義不變。較早一次確認的判定為最終：之後的提案只把尚未被確認
   判定過的配對送確認，已被分開的配對不會再問。每次提案的失敗或違約各自揭露為技術缺口。每次執行
   多 1 次批次呼叫，另加新增配對群組的確認。Golden ED24、ED25；ED01–ED23 不變。
+* RC-45（§A.33）：Live Run 41018554355 檢討。每個合併都取決於單次 helper 判斷（同一批次請求三次
+  提案召回 66%／85%／95%），Golden 與回歸測試只驗證 Python 對腳本答案的處理，無法預測 Live 品質。
+  國會發言併入仁川開通的最早錯誤在 Scope：事件焦點選了文章回顧的背景句。Scope 提示詞 v12：
+  候選事件是文件自身報導的新聞，不是回顧的背景；新聞是聲明或質詢時以聲明為事件，經某人宣布的
+  發生事項仍以該事項為事件。觀測：確認接受配對時記錄 `PROPOSAL_CONFIRMED`，run summary 顯示
+  各次提案確認的配對數（`event_identity_confirmed_pairs`）。RC-44 保留，若 Live 顯示第二次提案
+  未確認任何配對即撤回。「不同宣布者報導同一發生事項」是否同一事件，待使用者決定。
 
 ## 13. Report / Delivery
 
@@ -563,5 +570,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-44 APPLIED (2026-10-30)
+CONTRACT_REVISION = RC-3..RC-45 APPLIED (2026-10-30)
 ```
