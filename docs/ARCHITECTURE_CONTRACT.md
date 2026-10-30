@@ -1346,14 +1346,15 @@ Tried offline and not adopted:
   emitted one-record groups record by record, grouping 3 and then 0 of the 10
   Incheon reports that both earlier batch answers grouped in full.
 
-Decision required (domain rule; not implemented): given full excerpts, every
-replay keeps the operator's 21 October service start apart from the
-ministry's ride event the same day to check that service, as section A.9
-("different statements or meetings about the same project") and Golden ED19
-(RC-35) require. Reporting both as one item needs a user decision on whether
-an event held to mark or verify a milestone belongs to that milestone's
-occurrence; a later statement about it (the 23 October parliamentary call)
-would still be separate.
+Domain decision (user, 2026-10-30): given full excerpts, every replay keeps
+the operator's 21 October service start apart from the ministry's ride event
+the same day to check that service, as section A.9 ("different statements or
+meetings about the same project") and Golden ED19 (RC-35) require. Asked
+whether an event held to mark or verify a milestone belongs to that
+milestone's occurrence, the user decided to keep them apart: such an event is
+its own occurrence, and so is a later statement about the milestone (the
+23 October parliamentary call). Section A.9 and Golden ED19 stand unchanged;
+a report may therefore list a launch and its marking event as two items.
 
 Golden: ED22 (an ungrounded member is rejected; the grounded members merge)
 and ED23 (a repeated member is rejected; the others merge). ED01-ED21 are
@@ -1366,7 +1367,7 @@ EVENT_IDENTITY_EXCERPT_NUMBERING = S1..Sn PER RECORD IN REQUEST (RC-9 IDs observ
 EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v8
 EVENT_IDENTITY_SAME_EVENT = BATCH_PROPOSED AND REGION_COMPATIBLE AND CONFIRMED (unchanged)
 EVENT_IDENTITY_REJECTED_MEMBER_OBSERVATION = PROPOSAL_MEMBER_REJECTED
-LAUNCH_AND_MARKING_EVENT_IDENTITY = USER_DECISION_REQUIRED
+LAUNCH_AND_MARKING_EVENT_IDENTITY = DIFFERENT_OCCURRENCES (user decision; A.9, ED19 unchanged)
 ```
 
 ## B. Authoritative Owners
