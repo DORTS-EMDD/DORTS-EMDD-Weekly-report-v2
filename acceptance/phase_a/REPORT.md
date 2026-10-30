@@ -1700,3 +1700,34 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - 審查發現原 ED21 與 ED20 的 Evidence 完全相同（只有結構化身分事實、沒有本文），卻只因腳本化的 helper 回答而預期合併；這是 Python 機制而非 Domain 結果，不符合 §A.28。
 - ED21 改為有 Evidence 的 Domain 案例：兩則報導都寫明同一市稽核委員會公布同一份 2 號線建設單位綜合稽核、同樣 24 項缺失與相同具體缺失，只有日期記載不同（25 日／26 日），因此依 §A.28 為同一次發生。
 - §A.28 的 ED21 說明同步修正；「確認的提議不因日期不同被推翻」改由 RC-38 單元測試涵蓋。規則、程式、ED01～ED20 都不變。
+
+
+## 43. 被拒絕提案群組的觀測與正式章節（RC-39～RC-41，2026-10-30）
+
+**RC-39（唯讀，Run 40838021391，e100467，2026-10-21～27）：**
+- 唯一的 Event Identity 缺口是批次 group-6 因 `DUPLICATE_MEMBERSHIP`（同一筆紀錄在群組中列了兩次）被整群拒絕（§A.15）。
+- 仁川 19 筆、大邱 4 筆紀錄全部各自成為獨立事件，且沒有任何提案痕跡；但被拒絕群組的成員未被記錄，無法確認 group-6 是否包含它們。
+- 東京ポイントAI：Impress Watch 為 Scope 技術缺口、Tetsudo.com 被 Scope 判為範圍外；railf／Cloud Watch 與ぱとれーる各篇為 10/28 發布，依 Temporal 規則正確排除。
+- 章節順序原依事件排序中類別首次出現的先後；§R 所指的章節順序契約並不存在。
+
+**RC-40（只觀測）：**
+- 提案群組或確認群組因 `DUPLICATE_MEMBERSHIP`／`CITATION_INVALID` 被拒時，另記錄 `PROPOSAL_GROUP_REJECTED` 診斷：成員候選 ID 與「群組代號｜原因」，群組代號與技術缺口相同。
+- selection audit 新增 `event_identity_rejected_groups` 與每筆候選的 `proposal_groups_rejected`；run summary 的診斷分布會出現此項。
+- 整份回應無效（`SCHEMA_INVALID`、`UNKNOWN_RECORD`）沒有可對應的群組，不新增記錄。
+- §A.15 整群拒絕、分群與確認、重試都不變；不含原文。
+
+**RC-41（ReportService，只影響呈現）：**
+- 章節固定依序：技術新知、事故及安全事件、營運動態、機電標案及採購動態、規範及標準動態；以 CategoryId 對應，空章節不顯示。
+- `FORMAL_REPORT_SECTIONS` 是唯一定義，Markdown／PDF／Email 都使用組裝後的章節名稱；章節內仍保留事件排序。
+- Category 判定、§L 的 Category 標籤（`primary_category`）與 Golden 都不變；非標準 Category 標籤視為結構錯誤。
+
+**事故嚴重度排序：BLOCKED_DOMAIN_RULE。**
+- 沒有任何 owner 判定事故嚴重度：§L 規定嚴重度不是 Category 依據，Reportability 只記錄發生類型，§N 的排序只允許 Temporal 日期與 event ID，並明文禁止以安全影響排序。
+- 需先決定：以哪些 Evidence 事實定義嚴重度、由哪一個 owner 判定，並修訂 §N（及 §R 章節內保留排序的規定）。
+
+**測試：**
+- `tests/test_rc40_41_observation_and_sections.py`（14 項）：
+  - 被拒絕群組的成員記錄（批次與確認群組、兩種原因）、整份回應無效不記錄、觀測不改變分群結果、不含原文、selection audit 可追溯；
+  - 五個章節名稱與順序、任意排序下章節固定且章節內保留排序、空章節省略、Markdown／PDF／Email 一致、Category 標籤不變、非標準標籤 fail-closed、事故章節不做嚴重度排序。
+- `test_report_service.py` 的章節測試改依新契約。
+- 全套 1241 全過，Golden 27 項全過；Golden 檔案與 Category／排序／Reportability／Scope／Temporal 程式都未修改。

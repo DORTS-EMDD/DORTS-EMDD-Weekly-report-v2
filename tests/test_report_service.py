@@ -195,12 +195,12 @@ class ReportServiceTests(TestCase):
 
     def test_interleaved_categories_assemble_section_by_section(self) -> None:
         # Ordering interleaves categories in a real week (date first); the
-        # artifact groups them into sections and keeps each section's
-        # Ordering subsequence.
+        # artifact groups them into sections in the fixed RC-41 section order
+        # and keeps each section's Ordering subsequence.
         from src.weekly_report.validator import ValidatedReportEvent, ValidationResult
 
         base = self.service.project_formal_metadata((_workflow_result(),))[0]
-        categories = ("採購", "營運", "採購", "營運")
+        categories = ("採購事件", "營運動態", "採購事件", "營運動態")
         passed = []
         for index, category in enumerate(categories, start=1):
             event_id = f"E{index}"
@@ -214,8 +214,8 @@ class ReportServiceTests(TestCase):
             tuple(passed),
         )
         artifact = self.service.assemble_final_report(validation)
-        self.assertEqual([section.category for section in artifact.sections], ["採購", "營運"])
-        self.assertEqual([event.event_id for event in artifact.events], ["E1", "E3", "E2", "E4"])
+        self.assertEqual([section.category for section in artifact.sections], ["營運動態", "機電標案及採購動態"])
+        self.assertEqual([event.event_id for event in artifact.events], ["E2", "E4", "E1", "E3"])
 
     def test_zero_pass_assembles_official_no_event_artifact(self) -> None:
         result = _workflow_result()

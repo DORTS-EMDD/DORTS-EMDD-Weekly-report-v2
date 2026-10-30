@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-38 修訂（2026-10-20～29）
+### RC-3～RC-41 修訂（2026-10-20～30）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.28 與 §N。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.29 與 §N。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -385,6 +385,13 @@ Transport retry 與 semantic correction 必須分開計算。
   同一事件，可能是同類的不同次發生者維持分開；helper 不得自選某來源日期作為已解決。
   提示詞 v7；Python、schema、TemporalRule 不變；Golden ED20、ED21。§K 衝突內容在
   production 未落實（只用 canonical 來源撰寫）另案處理。
+* RC-40/41（§A.29，使用者核准；RC-39 為唯讀審查）：被拒絕的提案群組或確認群組
+  （`DUPLICATE_MEMBERSHIP`、`CITATION_INVALID`）另記錄 `PROPOSAL_GROUP_REJECTED` 診斷，
+  列出其成員候選 ID 與「群組代號｜原因」，selection audit 顯示；只觀測，§A.15 整群拒絕不變。
+  正式報告章節由 ReportService 依 CategoryId 固定排序與命名：技術新知、事故及安全事件、
+  營運動態、機電標案及採購動態、規範及標準動態，空章節不顯示；Markdown／PDF／Email 共用；
+  Category 判定、§L 標籤與 Golden 不變。事故章節依嚴重度排序因無嚴重度 owner 且 §N 禁止，
+  列為 BLOCKED_DOMAIN_RULE。
 
 ## 13. Report / Delivery
 
@@ -534,5 +541,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-38 APPLIED (2026-10-29)
+CONTRACT_REVISION = RC-3..RC-41 APPLIED (2026-10-30)
 ```

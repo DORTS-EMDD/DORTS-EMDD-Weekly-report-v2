@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 
 from .candidate_normalizer import _valid_exact_http_url
 from .contracts import (
+    CategoryId,
     CategoryState,
     EMSystemId,
     EventGroup,
@@ -528,21 +529,22 @@ class ReportService:
                 )
             )
 
-        sections_by_category: dict[str, list[FinalReportBlock]] = {}
-        category_order: list[str] = []
+        # RC-41: sections follow the fixed formal-report section contract,
+        # keyed by the Classifier's canonical CategoryId; empty sections are
+        # omitted. Each section keeps the stable Ordering subsequence
+        # (contract section R), so the artifact's event order is the sectioned
+        # order, not the raw Ordering order whenever categories interleave.
+        events_by_category: dict[CategoryId, list[FinalReportBlock]] = {}
         for event in assembled:
-            if event.category not in sections_by_category:
-                sections_by_category[event.category] = []
-                category_order.append(event.category)
-            sections_by_category[event.category].append(event)
+            category_id = _CATEGORY_ID_BY_LABEL.get(event.category)
+            if category_id is None:
+                self._fail(FormalMetadataFailureReason.STRUCTURAL_INCONSISTENCY, event.event_id)
+            events_by_category.setdefault(category_id, []).append(event)
         sections = tuple(
-            FinalReportSection(category, tuple(sections_by_category[category]))
-            for category in category_order
+            FinalReportSection(title, tuple(events_by_category[category_id]))
+            for category_id, title in FORMAL_REPORT_SECTIONS
+            if category_id in events_by_category
         )
-        # The report presents events section by section; each section keeps
-        # the stable Ordering subsequence (contract section R), so the
-        # artifact's event order is the sectioned order, not the raw
-        # Ordering order whenever categories interleave.
         events = tuple(event for section in sections for event in section.events)
         disclosure = disclosure if disclosure is not None else ReportDisclosure()
         if not isinstance(disclosure, ReportDisclosure):
@@ -918,6 +920,20 @@ class ReportService:
 
 _SOURCE_NAME_LIMIT = 80
 
+# RC-41 (contract section R, user-approved): the formal report's sections, in
+# this fixed order, with their formal titles. Keyed by the Classifier's
+# canonical CategoryId; the Category decision and its own label are unchanged.
+# ReportService is the only owner; Markdown, PDF and email render the
+# assembled FinalReportSection titles and never map categories themselves.
+FORMAL_REPORT_SECTIONS: tuple[tuple[CategoryId, str], ...] = (
+    (CategoryId.TECHNICAL_DEVELOPMENT, "技術新知"),
+    (CategoryId.INCIDENT, "事故及安全事件"),
+    (CategoryId.OPERATIONAL_CHANGE, "營運動態"),
+    (CategoryId.PROCUREMENT, "機電標案及採購動態"),
+    (CategoryId.NORMATIVE_CHANGE, "規範及標準動態"),
+)
+_CATEGORY_ID_BY_LABEL = {category_id.display_label: category_id for category_id in CategoryId}
+
 
 def source_display_for(record: EventIdentityRecord) -> str | None:
     """The formal source label of a canonical member; None when its canonical URL is unusable.
@@ -987,6 +1003,7 @@ __all__ = [
     "ReportAssembly",
     "ReportAssemblyResult",
     "ReportService",
+    "FORMAL_REPORT_SECTIONS",
     "source_display_for",
     "source_link",
 ]

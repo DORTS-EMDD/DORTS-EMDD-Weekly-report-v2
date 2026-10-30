@@ -107,9 +107,11 @@ class EventIdentityGroupingAdvisor(Protocol):
 class EventIdentityProposalViolation(ProposalContractViolation):
     """A parseable grouping proposal (or one group of it) broke its contract."""
 
-    def __init__(self, failure_class: str) -> None:
+    def __init__(self, failure_class: str, candidate_ids: tuple[str, ...] = ()) -> None:
         super().__init__(failure_class)
         self.failure_class = failure_class
+        # RC-40 (observation only): the candidates a rejected group named.
+        self.candidate_ids = candidate_ids
 
 
 class EventIdentity:
@@ -302,6 +304,7 @@ class EventIdentity:
                     technical_gaps.append(
                         TechnicalGap.from_failure("EventIdentity", f"{request.batch_id}:group-{index}", outcome)
                     )
+                    _record_rejected_group(diagnostics, f"{request.batch_id}:group-{index}", outcome)
                     continue
                 if len(outcome) == 1:
                     diagnostics.append(EventIdentityDiagnostic(outcome, "SINGLE_MEMBER_PROPOSAL"))
@@ -327,6 +330,7 @@ class EventIdentity:
                     [by_id[candidate_id] for candidate_id in outcome],
                     f"{group_subject}:confirmation",
                     technical_gaps,
+                    diagnostics,
                 )
                 for pair in pairs:
                     if pair not in confirmed:
@@ -347,6 +351,7 @@ class EventIdentity:
         members: Sequence[EventIdentityRecord],
         batch_id: str,
         technical_gaps: list[TechnicalGap],
+        diagnostics: list[EventIdentityDiagnostic],
     ) -> tuple[set[tuple[str, str]], dict[str, str] | None]:
         """RC-23: re-run the grouping task on one proposed group's members alone.
 
@@ -389,6 +394,7 @@ class EventIdentity:
         for index, outcome in enumerate(proposal, start=1):
             if isinstance(outcome, EventIdentityProposalViolation):
                 technical_gaps.append(TechnicalGap.from_failure("EventIdentity", f"{batch_id}:group-{index}", outcome))
+                _record_rejected_group(diagnostics, f"{batch_id}:group-{index}", outcome)
                 continue
             placement.update(dict.fromkeys(outcome, "PLACED"))
             for position, left_id in enumerate(outcome):
@@ -609,6 +615,24 @@ def _normalise_url(value: str) -> str:
     )
 
 
+def _record_rejected_group(
+    diagnostics: list[EventIdentityDiagnostic],
+    subject: str,
+    violation: EventIdentityProposalViolation,
+) -> None:
+    """RC-40 (observation only): which candidates a rejected proposal group named.
+
+    The group is still rejected exactly as section A.15 requires; this only
+    records its subject, its failure class and the candidate IDs it named, so
+    a run can show which records lost their pairs. No source text is kept.
+    """
+
+    if violation.candidate_ids:
+        diagnostics.append(
+            EventIdentityDiagnostic(violation.candidate_ids, "PROPOSAL_GROUP_REJECTED", f"{subject}|{violation.failure_class}")
+        )
+
+
 def _unconfirmed_outcome(pair: tuple[str, str], placement: Mapping[str, str] | None) -> str:
     """Why a proposed pair was not confirmed, for its diagnostic only."""
 
@@ -769,8 +793,9 @@ def _validate_grouping_proposal(
     outcomes: list[tuple[str, ...] | EventIdentityProposalViolation] = []
     for group in raw["groups"]:
         members = group["members"]
+        named = tuple(sorted({records[member["record_id"]].candidate_id for member in members}))
         if len({member["record_id"] for member in members}) != len(members):
-            outcomes.append(EventIdentityProposalViolation("DUPLICATE_MEMBERSHIP"))
+            outcomes.append(EventIdentityProposalViolation("DUPLICATE_MEMBERSHIP", named))
         elif len(members) < 2:
             # Proposes no merge; nothing to validate or disclose.
             outcomes.append(tuple(records[member["record_id"]].candidate_id for member in members))
@@ -779,7 +804,7 @@ def _validate_grouping_proposal(
             for member in members
             for key in _CITATION_KEYS
         ):
-            outcomes.append(EventIdentityProposalViolation("CITATION_INVALID"))
+            outcomes.append(EventIdentityProposalViolation("CITATION_INVALID", named))
         else:
             outcomes.append(tuple(records[member["record_id"]].candidate_id for member in members))
     return outcomes

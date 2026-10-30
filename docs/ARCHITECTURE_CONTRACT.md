@@ -1241,6 +1241,58 @@ EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v7
 SECTION_K_CONFLICT_ENFORCEMENT = OPEN (separate)
 ```
 
+### A.29 RC-40/41 Rejected-group observation; formal report sections (2026-10-30, user-approved)
+
+RC-39 (read-only) reviewed run 40838021391 (2026-10-21..27, e100467). Batch
+group-6 was rejected for `DUPLICATE_MEMBERSHIP` (section A.15), and 19 Incheon
+and 4 Daegu records each stayed alone with no proposal trace; whether group-6
+held them could not be shown, because a rejected group's members were not
+recorded. Report sections followed the order in which categories first
+appeared in the Ordering output: section R referred to a section-order
+contract that did not exist.
+
+* **Rejected proposal groups (observation only).** When a proposal group or a
+  confirmation group is rejected (`DUPLICATE_MEMBERSHIP`, `CITATION_INVALID`),
+  EventIdentity records a `PROPOSAL_GROUP_REJECTED` diagnostic naming the
+  candidate IDs of its members, with detail `<group subject>|<failure class>`;
+  the subject matches the TechnicalGap subject. The selection audit lists
+  `event_identity_rejected_groups` and, per candidate,
+  `proposal_groups_rejected`. A whole-response violation (`SCHEMA_INVALID`,
+  `UNKNOWN_RECORD`) names no group and records nothing new. The group is still
+  rejected exactly as section A.15 requires; no grouping, confirmation, retry
+  or decision reads the diagnostic, and no source text is kept.
+* **Formal report sections (ReportService, presentation only).** Sections
+  appear in this fixed order, keyed by the Classifier's canonical
+  `CategoryId`, and only when they hold events:
+
+  1. `TECHNICAL_DEVELOPMENT`: 技術新知
+  2. `INCIDENT`: 事故及安全事件
+  3. `OPERATIONAL_CHANGE`: 營運動態
+  4. `PROCUREMENT`: 機電標案及採購動態
+  5. `NORMATIVE_CHANGE`: 規範及標準動態
+
+  `FORMAL_REPORT_SECTIONS` in ReportService is the only definition; Markdown,
+  PDF and email render the assembled section titles. Within a section the
+  Ordering subsequence is kept (section R). The Category decision, the
+  Category labels in section L (`primary_category`) and the Golden Category
+  outcomes are unchanged; a Category label outside the canonical registry is a
+  structural failure.
+* **Incident severity ordering: not implemented (BLOCKED_DOMAIN_RULE).** No
+  owner decides incident severity: section L says severity is not a Category
+  authority, Reportability records an occurrence class but no severity, and
+  section N allows only the canonical Temporal date and the event ID as
+  Ordering comparators and forbids safety impact as one. Ordering incidents by
+  severity needs a Domain rule first: which Evidence facts define severity,
+  which single owner decides it, and an amendment of section N (and of
+  section R, which keeps the Ordering subsequence within a section).
+
+```text
+EVENT_IDENTITY_REJECTED_GROUP_OBSERVATION = PROPOSAL_GROUP_REJECTED (candidate IDs, subject|failure class)
+FORMAL_REPORT_SECTION_ORDER = 技術新知 > 事故及安全事件 > 營運動態 > 機電標案及採購動態 > 規範及標準動態
+FORMAL_REPORT_SECTION_OWNER = ReportService (keyed by CategoryId)
+INCIDENT_SEVERITY_ORDERING = BLOCKED_DOMAIN_RULE
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -4346,8 +4398,9 @@ category-section presentation. This presentation may preserve the stable
 Ordering subsequence within each section but cannot rank, select, or reorder
 events semantically.
 
-Report Service may arrange category sections according to its separately
-authorized section-order contract, but it does not own event priority. Within
+Report Service arranges category sections according to the formal-report
+section contract (section A.29: fixed order and titles keyed by CategoryId),
+but it does not own event priority. Within
 each category section it must preserve the stable subsequence of Validation-
 PASS events from the authoritative Ordering output. It may not recompute event
 priority or reorder events within a section.
