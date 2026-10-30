@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-43 修訂（2026-10-20～30）
+### RC-3～RC-44 修訂（2026-10-20～30）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.31、§N 與 §R。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.32、§N 與 §R。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -408,7 +408,12 @@ Transport retry 與 semantic correction 必須分開計算。
   焦點句陳述未發生或不會發生（如「今晚未預告施工」）時為 NEGATED，不得為 ASSERTED。
   Python 驗證、schema、正向條件不變。1904 年歷史事件經 5 次重放皆判為 FEATURE_OR_BACKGROUND，
   Reportability 不變；Event Identity 剩餘重複為批次提案召回的呼叫間變動，未修改；
-  「批次提案兩次取聯集」屬機制決定，待使用者決定。
+  「批次提案兩次取聯集」屬機制決定，已於 RC-44 依證據決定採用。
+* RC-44（§A.32）：每個 Event Identity 批次請求固定提案兩次，第二次為相同請求、紀錄反序並重新
+  編號（批次代號加 `-n2`），兩次一律都送出。任一次提出的配對照常經地區檢查、確認與
+  complete-link 分組；SAME_EVENT 定義不變。較早一次確認的判定為最終：之後的提案只把尚未被確認
+  判定過的配對送確認，已被分開的配對不會再問。每次提案的失敗或違約各自揭露為技術缺口。每次執行
+  多 1 次批次呼叫，另加新增配對群組的確認。Golden ED24、ED25；ED01–ED23 不變。
 
 ## 13. Report / Delivery
 
@@ -558,5 +563,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-43 APPLIED (2026-10-30)
+CONTRACT_REVISION = RC-3..RC-44 APPLIED (2026-10-30)
 ```

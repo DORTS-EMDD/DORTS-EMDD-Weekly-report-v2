@@ -11,7 +11,7 @@ from src.weekly_report.contracts import (
     EventIdentityFacts,
     ScopeState,
 )
-from src.weekly_report.event_identity import EventIdentity, EventIdentityRelation
+from src.weekly_report.event_identity import SECOND_NOMINATION_SUFFIX, EventIdentity, EventIdentityRelation
 from tests.test_event_identity_contract import _PairAdvisor, _SemanticAdvisor, _grounded_member, _record
 
 
@@ -25,12 +25,18 @@ class _ScriptedGroups:
     citation lists that replace the grounded defaults.
     """
 
-    def __init__(self, proposal, confirmation):
-        self.proposal, self.confirmation = proposal, confirmation
+    def __init__(self, proposal, confirmation, second=()):
+        self.proposal, self.confirmation, self.second = proposal, confirmation, second
 
     def __call__(self, request):
         record_ids = {record.candidate_id: record.record_id for record in request.records}
-        groups = self.confirmation if request.confirmation else self.proposal
+        if request.confirmation:
+            groups = self.confirmation
+        elif request.batch_id.endswith(SECOND_NOMINATION_SUFFIX):
+            # RC-44: a case scripts its second nomination; by default it proposes nothing.
+            groups = self.second
+        else:
+            groups = self.proposal
 
         def member(item):
             if isinstance(item, str):
@@ -38,7 +44,17 @@ class _ScriptedGroups:
             overrides = {key: value for key, value in item.items() if key != "candidate_id"}
             return {**_grounded_member(record_ids[item["candidate_id"]]), **overrides}
 
-        return {"groups": [{"members": [member(item) for item in group]} for group in groups]}
+        def present(item):
+            return (item if isinstance(item, str) else item["candidate_id"]) in record_ids
+
+        # A confirmation answer names only the records of that request.
+        return {
+            "groups": [
+                {"members": [member(item) for item in group if present(item)]}
+                for group in groups
+                if any(present(item) for item in group)
+            ]
+        }
 
 
 class EventDedupGoldenTests(unittest.TestCase):
@@ -47,7 +63,7 @@ class EventDedupGoldenTests(unittest.TestCase):
             (ROOT / "golden" / "event_dedup_cases.json").read_text(encoding="utf-8")
         )
         cases = manifest["cases"]
-        self.assertEqual(len(cases), 23)
+        self.assertEqual(len(cases), 25)
         self.assertEqual(
             {case["case_class"] for case in cases},
             {
@@ -74,6 +90,8 @@ class EventDedupGoldenTests(unittest.TestCase):
                 "conflicting_occurrence_date_confirmed_same_occurrence",
                 "proposal_member_citation_rejected",
                 "proposal_member_repeated_rejected",
+                "second_nomination_recovers_omitted_report",
+                "second_nomination_never_reopens_a_verdict",
             },
         )
         for case in cases:
@@ -94,7 +112,7 @@ class EventDedupGoldenTests(unittest.TestCase):
     def _advisor_for_case(case):
         if "proposal_groups" in case:
             # RC-31: the batch proposal, then each group's confirmation answer.
-            return _ScriptedGroups(case["proposal_groups"], case["confirmation_groups"])
+            return _ScriptedGroups(case["proposal_groups"], case["confirmation_groups"], case.get("second_proposal_groups", ()))
         if case.get("semantic_relation") == "INVALID":
             return _SemanticAdvisor(invalid=True)
         if case.get("semantic_relation") == EventIdentityRelation.SAME_EVENT.value:
@@ -167,7 +185,7 @@ class EventDedupGoldenTests(unittest.TestCase):
         self.assertIs(by_id["OUT_OF_SCOPE"].scope.state, ScopeState.OUT_OF_SCOPE)
         self.assertFalse(by_id["DATE_INVALID"].temporal.date_valid)
 
-    def test_all_ed01_to_ed23_execute_through_event_identity(self):
+    def test_all_ed01_to_ed25_execute_through_event_identity(self):
         for case in self._load_event_dedup_cases():
             with self.subTest(case_id=case["case_id"]):
                 owner = EventIdentity(self._advisor_for_case(case))
@@ -187,8 +205,9 @@ class EventDedupGoldenTests(unittest.TestCase):
                 if case["case_id"] == "ED10":
                     self.assertNotIn(("A", "B", "C"), [group.member_candidate_ids for group in result.groups])
                 elif case["case_id"] == "ED13":
-                    # RC-15: an invalid proposal is a disclosed technical gap.
-                    self.assertEqual([gap.stage for gap in result.technical_gaps], ["EventIdentity"])
+                    # RC-15: an invalid proposal is a disclosed technical gap
+                    # (RC-44: one for each of the two nominations).
+                    self.assertEqual([gap.stage for gap in result.technical_gaps], ["EventIdentity", "EventIdentity"])
                 elif case["case_id"] == "ED14":
                     self.assertEqual(result.groups[0].unresolved_claims[0].claim_key, "duration")
                 elif case["case_id"] == "ED15":

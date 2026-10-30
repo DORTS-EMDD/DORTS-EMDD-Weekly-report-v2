@@ -19,6 +19,12 @@ from src.weekly_report.maiagent_event_identity_provider import PROMPT_VERSION, b
 from tests.test_event_identity_contract import _record
 from tests.test_event_identity_grouping_rc15 import _Scripted, _confirm, _member
 
+
+def _scripted(*responses):
+    """These tests examine one nomination's validation: the second nomination proposes nothing (RC-44)."""
+
+    return _Scripted(*responses, second={"groups": []})
+
 BODIES = {
     "A": "The council decided on 20 October to move the tram depot after surveys found a gas main.",
     "B": "A gas main under the plaza led the council to relocate the tram depot, it resolved on 20 October.",
@@ -53,7 +59,7 @@ def _batch(*groups):
 
 
 def test_an_ungrounded_member_is_rejected_and_the_grounded_members_still_merge():
-    advisor = _Scripted(
+    advisor = _scripted(
         _batch([_member("A"), _member("B"), _member("C", **UNGROUNDED)], [_member("D", **SINGLE)]),
         _confirm("A", "B"),
     )
@@ -66,7 +72,7 @@ def test_an_ungrounded_member_is_rejected_and_the_grounded_members_still_merge()
 
 
 def test_a_repeated_member_is_rejected_and_the_others_still_merge():
-    advisor = _Scripted(
+    advisor = _scripted(
         _batch([_member("A"), _member("B"), _member("C"), _member("A")], [_member("D", **SINGLE)]),
         _confirm("B", "C"),
     )
@@ -78,7 +84,7 @@ def test_a_repeated_member_is_rejected_and_the_others_still_merge():
 
 def test_both_defects_in_one_group_are_each_disclosed():
     records = _records() + [_record("E", facts=None, body="The council moved the tram depot on 20 October over a gas main.")]
-    advisor = _Scripted(
+    advisor = _scripted(
         _batch([_member("A"), _member("A"), _member("B"), _member("C", **UNGROUNDED), _member("E")]),
         _confirm("B", "E"),
     )
@@ -91,7 +97,7 @@ def test_both_defects_in_one_group_are_each_disclosed():
 
 
 def test_a_group_left_with_one_grounded_member_proposes_no_merge():
-    run = EventIdentity(_Scripted(_batch([_member("A"), _member("B", **UNGROUNDED)]))).evaluate(_records())
+    run = EventIdentity(_scripted(_batch([_member("A"), _member("B", **UNGROUNDED)]))).evaluate(_records())
     assert _groups(run) == [("A",), ("B",), ("C",), ("D",)]
     assert _gaps(run) == [("event-identity-batch-1:group-1", "CITATION_INVALID")]
     # A is not "proposed alone": its partner was rejected.
@@ -99,7 +105,7 @@ def test_a_group_left_with_one_grounded_member_proposes_no_merge():
 
 
 def test_a_rejected_confirmation_member_leaves_its_pairs_unconfirmed_and_the_rest_confirmed():
-    advisor = _Scripted(
+    advisor = _scripted(
         _batch([_member("A"), _member("B"), _member("C")], [_member("D", **SINGLE)]),
         _batch([_member("A"), _member("B"), _member("C", **UNGROUNDED)]),
     )
@@ -113,7 +119,7 @@ def test_a_rejected_confirmation_member_leaves_its_pairs_unconfirmed_and_the_res
 
 
 def test_a_single_record_batch_group_proposes_nothing_and_needs_no_citation():
-    advisor = _Scripted(_batch([_member("A"), _member("B"), _member("C")], [_member("D", **SINGLE)]), _confirm("A", "B", "C"))
+    advisor = _scripted(_batch([_member("A"), _member("B"), _member("C")], [_member("D", **SINGLE)]), _confirm("A", "B", "C"))
     run = EventIdentity(advisor).evaluate(_records())
     assert _groups(run) == [("A", "B", "C"), ("D",)]
     assert run.technical_gaps == ()
@@ -148,7 +154,7 @@ def test_records_are_ordered_by_publication_time_not_by_the_weekday_text():
         _record("WED21", facts=None, body="Wi-Fi started on 21 October.", published_at="Wed, 21 Oct 2026 07:00:00 GMT"),
         _record("ISO22", facts=None, body="A line closed on 22 October.", published_at="2026-10-22T05:00:00Z"),
     ]
-    advisor = _Scripted(_batch())
+    advisor = _scripted(_batch())
     EventIdentity(advisor).evaluate(records)
     assert [record.candidate_id for record in advisor.requests[0].records] == ["WED21", "ISO22", "FRI23", "MON26"]
     assert [record.record_id for record in advisor.requests[0].records] == ["R1", "R2", "R3", "R4"]
@@ -166,7 +172,7 @@ def test_each_excerpt_is_numbered_from_s1_and_keeps_its_document_ids_for_observa
         scope=ScopeResult("ONE", ScopeState.IN_SCOPE, provenance={"candidate_event_focus": focus}),
     )
     other = _record("TWO", facts=None, body="The 1,000th car was handed over to the operator on 23 October.")
-    advisor = _Scripted(_batch([_member("ONE"), _member("TWO")]), _confirm("ONE", "TWO"))
+    advisor = _scripted(_batch([_member("ONE"), _member("TWO")]), _confirm("ONE", "TWO"))
     run = EventIdentity(advisor).evaluate([single, other])
     sent = {record.candidate_id: [s.sentence_id for s in record.sentences] for record in advisor.requests[0].records}
     assert sent == {"ONE": ["S1"], "TWO": ["S1"]}

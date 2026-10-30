@@ -37,6 +37,8 @@ from .evidence_sentences import event_focus_sentences, resolve_sentence_ids, seg
 LEAD_TIERS = ((6, 900), (4, 600), (3, 450), (2, 300))
 LEAD_SENTENCE_LIMIT, LEAD_CHARACTER_LIMIT = LEAD_TIERS[0]
 BATCH_CHARACTER_LIMIT = 66_000
+# RC-44 (section A.32): the second nomination's batch ID suffix.
+SECOND_NOMINATION_SUFFIX = "-n2"
 
 EVENT_IDENTITY_GROUPING_RESPONSE_SCHEMA: dict[str, object] = {
     "type": "object",
@@ -292,7 +294,18 @@ class EventIdentity:
                     f"{len(requests)} batches",
                 )
             )
-        for request in requests:
+        # RC-44: each batch is nominated twice, the second time with its
+        # records in reverse order; a pair either nomination proposes goes to
+        # confirmation. A pair's verdict from an earlier nomination stands: a
+        # later nomination only sends pairs no earlier confirmation decided.
+        decided: set[tuple[str, str]] = set()
+        conflicts: set[tuple[str, str]] = set()
+        singles: set[tuple[str, ...]] = set()
+        sent: set[tuple[str, str]] = set()
+        nominations = [nomination for request in requests for nomination in (request, _second_nomination(request))]
+        for request in nominations:
+            decided |= sent
+            sent = set()
             try:
                 proposal = _validate_grouping_proposal(self._grouping_advisor(request), request)
             except EVENT_TECHNICAL_FAILURES as failure:
@@ -304,25 +317,27 @@ class EventIdentity:
                     technical_gaps.append(TechnicalGap.from_failure("EventIdentity", group_subject, violation))
                     _record_rejected_members(diagnostics, group_subject, violation)
                 if len(outcome) < 2:
-                    if outcome and not violations:
+                    if outcome and not violations and tuple(outcome) not in singles:
+                        singles.add(tuple(outcome))
                         diagnostics.append(EventIdentityDiagnostic(outcome, "SINGLE_MEMBER_PROPOSAL"))
                     continue
                 pairs = []
                 for position, left_id in enumerate(outcome):
                     for right_id in outcome[position + 1 :]:
+                        pair = _pair_key(left_id, right_id)
                         if _different_established_regions(by_id[left_id], by_id[right_id]):
                             # RC-22: one occurrence happens in one country/region.
-                            diagnostics.append(
-                                EventIdentityDiagnostic(
-                                    tuple(sorted((left_id, right_id))),
-                                    "PROPOSAL_REGION_CONFLICT",
-                                    f"{group_subject}|size={len(outcome)}",
+                            if pair not in conflicts:
+                                conflicts.add(pair)
+                                diagnostics.append(
+                                    EventIdentityDiagnostic(pair, "PROPOSAL_REGION_CONFLICT", f"{group_subject}|size={len(outcome)}")
                                 )
-                            )
                             continue
-                        pairs.append(_pair_key(left_id, right_id))
+                        if pair not in decided:
+                            pairs.append(pair)
                 if not pairs:
                     continue
+                sent.update(pairs)
                 confirmed, placement = self._confirmed_pairs(
                     [by_id[candidate_id] for candidate_id in outcome],
                     f"{group_subject}:confirmation",
@@ -696,6 +711,18 @@ def _grouping_record(
         _advisor_identity_facts(record.identity_facts),
         tuple(sentence.sentence_id for sentence in lead),
     )
+
+
+def _second_nomination(request: EventIdentityGroupingRequest) -> EventIdentityGroupingRequest:
+    """RC-44: the same batch with its records in reverse order, renumbered R1, R2, ...
+
+    The batch helper's recall varies between calls and with a record's place
+    in a long list; a second nomination in the other order lets a pair the
+    first call left out still reach confirmation.
+    """
+
+    records = tuple(replace(record, record_id=f"R{index}") for index, record in enumerate(reversed(request.records), start=1))
+    return EventIdentityGroupingRequest(f"{request.batch_id}{SECOND_NOMINATION_SUFFIX}", records)
 
 
 def _publication_sort_key(record: EventIdentityRecord) -> tuple[str, str, str]:

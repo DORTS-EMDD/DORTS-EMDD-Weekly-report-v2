@@ -47,9 +47,9 @@ def test_an_unknown_record_voids_the_whole_batch_and_is_observed_as_a_batch_gap(
     advisor = _Scripted({"groups": [{"members": [_member("JA"), _member("EN")]}, {"members": [_member("R99")]}]})
     run = EventIdentity(advisor).evaluate(_station_reports())
     assert _groups(run) == [("EN",), ("JA",), ("OTHER",)]
-    assert len(advisor.requests) == 1
+    assert len(advisor.requests) == 2  # RC-44: both nominations are void, no confirmation
     assert event_identity_projection(run)["event_identity_gap_distribution"] == {
-        "EventIdentity:BATCH:PROPOSAL_CONTRACT_VIOLATION:UNKNOWN_RECORD": 1
+        "EventIdentity:BATCH:PROPOSAL_CONTRACT_VIOLATION:UNKNOWN_RECORD": 2
     }
 
 
@@ -59,7 +59,7 @@ def test_a_wrong_shape_voids_the_whole_batch_and_is_observed_as_a_batch_gap():
     )
     assert _groups(run) == [("EN",), ("JA",), ("OTHER",)]
     assert event_identity_projection(run)["event_identity_gap_distribution"] == {
-        "EventIdentity:BATCH:PROPOSAL_CONTRACT_VIOLATION:SCHEMA_INVALID": 1
+        "EventIdentity:BATCH:PROPOSAL_CONTRACT_VIOLATION:SCHEMA_INVALID": 2
     }
 
 
@@ -67,9 +67,9 @@ def test_a_transport_failure_after_retry_is_observed_with_its_failure_class():
     failure = SemanticProviderTechnicalFailure("HTTP_502", attempts=2, transient=True)
     run = EventIdentity(_Scripted(failure)).evaluate(_station_reports())
     assert _groups(run) == [("EN",), ("JA",), ("OTHER",)]
-    assert [gap.kind for gap in run.technical_gaps] == [TechnicalGapKind.TRANSIENT_FAILURE_AFTER_RETRY]
+    assert [gap.kind for gap in run.technical_gaps] == [TechnicalGapKind.TRANSIENT_FAILURE_AFTER_RETRY] * 2
     assert event_identity_projection(run)["event_identity_gap_distribution"] == {
-        "EventIdentity:BATCH:TRANSIENT_FAILURE_AFTER_RETRY:HTTP_502": 1
+        "EventIdentity:BATCH:TRANSIENT_FAILURE_AFTER_RETRY:HTTP_502": 2
     }
 
 
@@ -89,7 +89,7 @@ def test_an_invalid_group_is_observed_at_group_level_and_other_groups_still_merg
     assert ("B1", "B2") in _groups(run)
     assert ("EN", "JA") not in _groups(run)
     assert event_identity_projection(run)["event_identity_gap_distribution"] == {
-        "EventIdentity:GROUP:PROPOSAL_CONTRACT_VIOLATION:CITATION_INVALID": 1
+        "EventIdentity:GROUP:PROPOSAL_CONTRACT_VIOLATION:CITATION_INVALID": 2  # one per nomination (RC-44)
     }
 
 

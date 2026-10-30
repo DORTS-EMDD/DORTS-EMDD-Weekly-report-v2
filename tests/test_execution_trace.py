@@ -351,10 +351,11 @@ def test_event_identity_gap_signature_reaches_the_trace_and_the_run_summary_alik
         row for row in records(lines) if row["stage"] == "EventIdentity" and row["event"] == "STAGE_COMPLETED"
     )
     signature = "EventIdentity:BATCH:TRANSIENT_FAILURE_AFTER_RETRY:UNPARSEABLE_RESPONSE"
-    assert identity["technical_distribution"] == {signature: 1}
+    # RC-44: both nominations of the batch fail.
+    assert identity["technical_distribution"] == {signature: 2}
     assert sum(identity["terminal_distribution"].values()) == identity["output_count"]
-    assert dict(result.technical_gap_signature_distribution) == {signature: 1}
-    assert f"technical_gap_signatures={signature}=1" in result.summary()
+    assert dict(result.technical_gap_signature_distribution) == {signature: 2}
+    assert f"technical_gap_signatures={signature}=2" in result.summary()
 
 
 def test_zero_population_trace_preserves_default_scope_behavior_and_zero_writer_calls():

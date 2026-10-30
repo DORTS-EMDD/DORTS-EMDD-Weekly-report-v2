@@ -447,6 +447,8 @@ the helper is sensitive to; the request payload is.
   recorded as an Event Identity `PROPOSAL_BATCH_SPLIT` diagnostic naming the
   records outside the first batch.
 * Everything else in RC-15 is unchanged.
+* (RC-44, section A.32: each batch is nominated twice, the second time in
+  reverse record order.)
 
 ```text
 EVENT_IDENTITY_BATCH_LIMIT = 66,000 characters of record payload (no record cap)
@@ -603,6 +605,7 @@ chose a confirmation call per proposed group.
 ```text
 EVENT_IDENTITY_CONFIRMATION = PER_PROPOSED_GROUP (same task, schema, prompt)
 EVENT_IDENTITY_SAME_EVENT = BATCH_PROPOSED AND REGION_COMPATIBLE AND CONFIRMED
+(RC-44, section A.32: proposed by either of two nominations)
 ```
 
 ### A.18 RC-24 Validator citations and headline format (2026-10-22)
@@ -1426,7 +1429,7 @@ were in scope (the two that failed with v10 passed twice each); the PSG notice
 was `NEGATED`; two controls stayed out of scope (a Tokyo Metro office-building
 contract and a leak of its newsletter e-mail addresses).
 
-Decision required (mechanism; not implemented): the batch nomination's recall
+Decided in RC-44, section A.32 (mechanism, not a Domain Rule): the batch nomination's recall
 varies between calls. Nominating twice and accepting a pair proposed by either
 call (confirmation and the region check unchanged) would have grouped every
 missed Incheon and Daegu report in the two replays, at one extra call per run.
@@ -1438,7 +1441,59 @@ SCOPE_PROMPT_VERSION = scope-event-target-system-v11
 SCOPE_INSTALLED_EQUIPMENT = TAKES_FACILITY_MEMBERSHIP (track-maintenance vehicles FUNCTIONS_FOR the system)
 SCOPE_NEGATED_FOCUS = NEGATED (never ASSERTED)
 REPORTABILITY_CHANGE_RC43 = NONE (historical item not reproduced, 5/5 replays FEATURE_OR_BACKGROUND)
-EVENT_IDENTITY_CHANGE_RC43 = NONE (batch recall variance; second nomination = USER_DECISION_REQUIRED)
+EVENT_IDENTITY_CHANGE_RC43 = NONE (batch recall variance; second nomination adopted in RC-44, section A.32)
+```
+
+### A.32 RC-44 Two batch nominations per Event Identity request (2026-10-30)
+
+Section A.31 left one Event Identity mechanism question open. The user
+delegated purely technical choices that change no Domain Rule; this one
+changes how proposals are collected, not what SAME_EVENT means, so it was
+decided on the evidence.
+
+Evidence. In runs 40985179898 and 40999869397 every remaining duplicate was a
+record the batch never proposed; no member or group was rejected (RC-42) and
+no confirmation separated those records. Replays of one unchanged batch
+request proposed the missed records in some calls and not in others (the
+Daegu drill report in 2 of 2 replays after the cloud call missed it; two of
+the Incheon launch reports in 1 of 2). A reversed-order nomination of this
+run's batch proposed all 8 Incheon launch reports, 3 of which the first
+nomination had left out, and the confirmation accepted all 18 new pairs. The
+same reversed nomination also proposed two wrong groups (a Dresden and a Linz
+tram-truck collision a week apart; a Quito metro extension with the L&T
+Dhaka orders); with no region facts in the replay, the confirmation alone
+separated both.
+
+Rule (EventIdentity; amends sections A.12 and A.17):
+
+* Each batch request is nominated twice. The second nomination is the same
+  request with its records in reverse order, renumbered R1, R2, ..., batch ID
+  `<batch>-n2`; the same task, instructions and schema. Both always run; no
+  call depends on another call's answer.
+* A pair proposed by either nomination goes through the unchanged path: the
+  RC-22 region check, then confirmation of its proposed group (sections A.17,
+  A.19, A.27, A.28), then complete-link grouping. SAME_EVENT still needs a
+  proposal, region compatibility and a confirmation; a nomination never
+  merges anything by itself.
+* A pair's verdict from an earlier nomination stands: a later nomination sends
+  to confirmation only pairs that no earlier confirmation decided, so a pair a
+  confirmation separated is never asked again. Within one nomination,
+  overlapping groups behave as before (section A.15).
+* Each nomination's failure or contract violation is its own disclosed
+  `EventIdentity` TechnicalGap (subjects `<batch>` and `<batch>-n2`); a failed
+  second nomination leaves the first one's pairs as they were.
+* Cost: one more batch call per run, plus confirmations only for groups that
+  bring new pairs.
+
+Golden: ED24 (an omitted report is recovered by the second nomination and
+confirmed) and ED25 (a verdict from the first nomination is never reopened).
+ED01-ED23 are unchanged; their harness scripts the second nomination per case
+and by default it proposes nothing.
+
+```text
+EVENT_IDENTITY_NOMINATIONS = 2 PER BATCH (second in reverse record order, batch ID suffix -n2)
+EVENT_IDENTITY_SAME_EVENT = PROPOSED_BY_EITHER_NOMINATION AND REGION_COMPATIBLE AND CONFIRMED
+EVENT_IDENTITY_EARLIER_VERDICT = FINAL (never re-confirmed)
 ```
 
 ## B. Authoritative Owners

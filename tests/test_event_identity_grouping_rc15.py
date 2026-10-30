@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import unittest
 
@@ -15,6 +16,7 @@ from src.weekly_report.contracts import (
     TechnicalGapKind,
 )
 from src.weekly_report.event_identity import (
+    SECOND_NOMINATION_SUFFIX,
     BATCH_CHARACTER_LIMIT,
     LEAD_CHARACTER_LIMIT,
     LEAD_SENTENCE_LIMIT,
@@ -49,13 +51,28 @@ def _confirm(*candidate_ids, separate=(), also=()):
 
 
 class _Scripted:
-    def __init__(self, *responses):
+    """Answers requests from ``responses`` in order.
+
+    RC-44: the second nomination of a batch (records in reverse order) gets the
+    same answer as the first batch request, as a consistent helper would give,
+    unless ``second`` scripts another answer for it.
+    """
+
+    def __init__(self, *responses, second=None):
         self.responses = list(responses)
         self.requests = []
+        self.second = second
+        self.first_batch = None
 
     def __call__(self, request):
         self.requests.append(request)
-        response = self.responses.pop(0)
+        if request.batch_id.endswith(SECOND_NOMINATION_SUFFIX):
+            response = self.first_batch if self.second is None else self.second
+            response = response if isinstance(response, BaseException) else copy.deepcopy(response)
+        else:
+            response = self.responses.pop(0)
+            if not request.confirmation and self.first_batch is None:
+                self.first_batch = response if isinstance(response, BaseException) else copy.deepcopy(response)
         if isinstance(response, BaseException):
             raise response
         # Fixtures name members by candidate ID; the helper sees record IDs.
@@ -84,7 +101,8 @@ class GroupingProposalTests(unittest.TestCase):
         confirmation = advisor.requests[1]
         self.assertEqual(confirmation.batch_id, "event-identity-batch-1:group-1:confirmation")
         self.assertEqual({record.candidate_id for record in confirmation.records}, {"EN", "JA"})
-        self.assertEqual(len(advisor.requests), 2)
+        # RC-44: the second nomination proposes no new pair, so no new confirmation.
+        self.assertEqual([request.batch_id for request in advisor.requests][2:], ["event-identity-batch-1-n2"])
 
     def test_empty_proposal_keeps_every_record_unmerged_without_gap(self):
         result = EventIdentity(_Scripted({"groups": []})).evaluate(_three_records())
@@ -134,7 +152,10 @@ class GroupingProposalTests(unittest.TestCase):
                 self.assertEqual(len(result.groups), 3)
                 self.assertEqual(
                     [(gap.stage, gap.subject_id, gap.kind, gap.failure_class) for gap in result.technical_gaps],
-                    [("EventIdentity", "event-identity-batch-1", TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION, failure_class)],
+                    [
+                        ("EventIdentity", batch, TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION, failure_class)
+                        for batch in ("event-identity-batch-1", "event-identity-batch-1-n2")  # RC-44
+                    ],
                 )
 
     def test_invalid_group_is_isolated_and_valid_group_still_merges(self):
@@ -150,7 +171,7 @@ class GroupingProposalTests(unittest.TestCase):
         self.assertEqual(len(result.groups), 3)
         self.assertEqual(
             [(gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
-            [("event-identity-batch-1:group-2", "CITATION_INVALID")],
+            [("event-identity-batch-1:group-2", "CITATION_INVALID"), ("event-identity-batch-1-n2:group-2", "CITATION_INVALID")],
         )
 
     def test_record_in_two_groups_contributes_only_proposed_pairs(self):
@@ -296,7 +317,7 @@ class GroupingProposalTests(unittest.TestCase):
         advisor = _Scripted({"groups": [{"members": [_member("TW"), _member("VN")]}]})
         result = EventIdentity(advisor).evaluate([located("TW", "TW", "Taiwan"), located("VN", "VN", "Vietnam")])
         self.assertEqual(len(result.groups), 2)
-        self.assertEqual(len(advisor.requests), 1)
+        self.assertFalse(any(request.confirmation for request in advisor.requests))  # two nominations, no confirmation
 
     def test_record_repeated_inside_one_group_invalidates_that_group(self):
         records = _three_records() + [_record("SOLO", facts=None, body="Another depot fire.")]
@@ -310,7 +331,7 @@ class GroupingProposalTests(unittest.TestCase):
         self.assertIn(("OTHER", "SOLO"), [tuple(sorted(group.member_candidate_ids)) for group in result.groups])
         self.assertEqual(
             [(gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
-            [("event-identity-batch-1:group-1", "DUPLICATE_MEMBERSHIP")],
+            [("event-identity-batch-1:group-1", "DUPLICATE_MEMBERSHIP"), ("event-identity-batch-1-n2:group-1", "DUPLICATE_MEMBERSHIP")],
         )
 
     def test_single_member_group_is_a_no_op_and_empty_citation_is_a_violation(self):
@@ -324,7 +345,7 @@ class GroupingProposalTests(unittest.TestCase):
         self.assertEqual(len(result.groups), 3)
         self.assertEqual(
             [(gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
-            [("event-identity-batch-1:group-2", "CITATION_INVALID")],
+            [("event-identity-batch-1:group-2", "CITATION_INVALID"), ("event-identity-batch-1-n2:group-2", "CITATION_INVALID")],
         )
         self.assertIn(("OTHER",), [item.candidate_ids for item in result.diagnostics if item.reason == "SINGLE_MEMBER_PROPOSAL"])
 
@@ -334,7 +355,7 @@ class GroupingProposalTests(unittest.TestCase):
         self.assertEqual(len(result.groups), 3)
         self.assertEqual(
             [(gap.kind, gap.failure_class, gap.attempts) for gap in result.technical_gaps],
-            [(TechnicalGapKind.TRANSIENT_FAILURE_AFTER_RETRY, "TIMEOUT", 2)],
+            [(TechnicalGapKind.TRANSIENT_FAILURE_AFTER_RETRY, "TIMEOUT", 2)] * 2,  # RC-44: both nominations
         )
         with self.assertRaises(SemanticProviderConfigurationFailure):
             EventIdentity(_Scripted(SemanticProviderConfigurationFailure("HTTP_401"))).evaluate(_three_records())
@@ -361,7 +382,7 @@ class GroupingProposalTests(unittest.TestCase):
         ]
         advisor = _Scripted({"groups": []})
         result = EventIdentity(advisor).evaluate(records)
-        self.assertEqual([len(request.records) for request in advisor.requests], [90])
+        self.assertEqual([len(request.records) for request in advisor.requests], [90, 90])  # RC-44: two nominations
         self.assertEqual([record.record_id for record in advisor.requests[0].records][:3], ["R1", "R2", "R3"])
         self.assertNotIn("PROPOSAL_BATCH_SPLIT", [item.reason for item in result.diagnostics])
 
@@ -370,7 +391,7 @@ class GroupingProposalTests(unittest.TestCase):
         records = [_record(f"C{index:03d}", facts=None, body=long_body) for index in range(130)]
         advisor = _Scripted({"groups": []})
         EventIdentity(advisor).evaluate(records)
-        self.assertEqual(len(advisor.requests), 1)
+        self.assertEqual([request.batch_id for request in advisor.requests], ["event-identity-batch-1", "event-identity-batch-1-n2"])
         lead = advisor.requests[0].records[0].sentences
         self.assertLess(len(lead), LEAD_SENTENCE_LIMIT)
         self.assertIn(len(lead), [sentences for sentences, _ in LEAD_TIERS])
@@ -389,7 +410,9 @@ class GroupingProposalTests(unittest.TestCase):
         self.assertTrue(all(len(request.records[0].sentences) <= LEAD_TIERS[-1][0] for request in advisor.requests))
         split = [item for item in result.diagnostics if item.reason == "PROPOSAL_BATCH_SPLIT"]
         self.assertEqual(len(split), 1)
-        self.assertEqual(split[0].detail, f"{len(advisor.requests)} batches")
+        batches = [request for request in advisor.requests if not request.batch_id.endswith(SECOND_NOMINATION_SUFFIX)]
+        self.assertEqual(split[0].detail, f"{len(batches)} batches")
+        self.assertEqual(len(advisor.requests), 2 * len(batches))  # RC-44: each batch nominated twice
 
 
 class EventIdentityProviderTests(unittest.TestCase):
@@ -407,7 +430,8 @@ class EventIdentityProviderTests(unittest.TestCase):
         provider = build_maiagent_event_identity_provider(config, transport=transport)
         result = EventIdentity(provider).evaluate(_three_records())
         self.assertEqual(len(result.groups), 3)
-        self.assertEqual(len(bodies), 2)
+        # One retried first nomination, then the second nomination (RC-44).
+        self.assertEqual(len(bodies), 3)
         self.assertEqual(bodies[0], bodies[1])
         self.assertIsNone(bodies[0]["conversation"])
         self.assertEqual(bodies[0]["attachments"], [])

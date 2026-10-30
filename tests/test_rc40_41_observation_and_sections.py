@@ -30,6 +30,12 @@ from src.weekly_report.validator import ValidatedReportEvent, ValidationResult
 from src.weekly_report.writer import WriterReportBlock
 from tests.test_event_identity_contract import _record
 from tests.test_event_identity_grouping_rc15 import _Scripted, _confirm, _member
+
+
+def _scripted(*responses):
+    """These tests examine one nomination's validation: the second nomination proposes nothing (RC-44)."""
+
+    return _Scripted(*responses, second={"groups": []})
 from tests.test_report_service import _workflow_result
 
 BODIES = {
@@ -60,7 +66,7 @@ def test_a_member_rejected_for_duplicate_membership_is_recorded():
         {"members": [_member("A"), _member("B"), _member("A")]},  # A listed twice
         {"members": [_member("C"), _member("D")]},
     ]}
-    run = EventIdentity(_Scripted(batch, _confirm("C", "D"))).evaluate(_records())
+    run = EventIdentity(_scripted(batch, _confirm("C", "D"))).evaluate(_records())
     assert _groups(run) == [("A",), ("B",), ("C", "D")]  # B alone proposes no merge
     assert [gap.subject_id for gap in run.technical_gaps] == ["event-identity-batch-1:group-1"]
     assert _rejected(run) == [(("A",), "event-identity-batch-1:group-1|DUPLICATE_MEMBERSHIP")]
@@ -69,7 +75,7 @@ def test_a_member_rejected_for_duplicate_membership_is_recorded():
 
 def test_a_member_rejected_for_invalid_citations_is_recorded():
     batch = {"groups": [{"members": [_member("A", subject_sentence_ids=["S99"]), _member("B")]}]}
-    run = EventIdentity(_Scripted(batch)).evaluate(_records())
+    run = EventIdentity(_scripted(batch)).evaluate(_records())
     assert _groups(run) == [("A",), ("B",), ("C",), ("D",)]
     assert _rejected(run) == [(("A",), "event-identity-batch-1:group-1|CITATION_INVALID")]
 
@@ -77,7 +83,7 @@ def test_a_member_rejected_for_invalid_citations_is_recorded():
 def test_a_rejected_confirmation_member_is_recorded_with_its_own_subject():
     batch = {"groups": [{"members": [_member("A"), _member("B")]}]}
     confirmation = {"groups": [{"members": [_member("A"), _member("A"), _member("B")]}]}
-    run = EventIdentity(_Scripted(batch, confirmation)).evaluate(_records())
+    run = EventIdentity(_scripted(batch, confirmation)).evaluate(_records())
     assert _groups(run) == [("A",), ("B",), ("C",), ("D",)]
     assert _rejected(run) == [
         (("A",), "event-identity-batch-1:group-1:confirmation:group-1|DUPLICATE_MEMBERSHIP")
@@ -86,14 +92,14 @@ def test_a_rejected_confirmation_member_is_recorded_with_its_own_subject():
 
 def test_a_whole_response_violation_has_no_group_members_to_record():
     batch = {"groups": [{"members": [_member("A"), _member("R99")]}]}  # unknown record: whole response invalid
-    run = EventIdentity(_Scripted(batch)).evaluate(_records())
+    run = EventIdentity(_scripted(batch)).evaluate(_records())
     assert _rejected(run) == []
     assert [gap.failure_class for gap in run.technical_gaps] == ["UNKNOWN_RECORD"]
 
 
 def test_the_observation_does_not_change_any_grouping_outcome(monkeypatch):
     def scripted():
-        return _Scripted(
+        return _scripted(
             {"groups": [{"members": [_member("A"), _member("B"), _member("A")]}, {"members": [_member("C"), _member("D")]}]},
             _confirm("C", "D"),
         )
@@ -108,7 +114,7 @@ def test_the_observation_does_not_change_any_grouping_outcome(monkeypatch):
 
 def test_the_diagnostic_carries_ids_only_never_source_text():
     run = EventIdentity(
-        _Scripted({"groups": [{"members": [_member("A"), _member("B"), _member("A")]}]})
+        _scripted({"groups": [{"members": [_member("A"), _member("B"), _member("A")]}]})
     ).evaluate(_records())
     rendered = repr(_rejected(run))
     for body in BODIES.values():
@@ -128,7 +134,7 @@ def test_the_selection_audit_traces_rejected_members_to_candidates():
     result = app.run("selected")
     left, right = (record.candidate.candidate_id for record in result.event_identity_records[:2])
     run = EventIdentity(
-        _Scripted({"groups": [{"members": [_member(left), _member(right), _member(left)]}]})
+        _scripted({"groups": [{"members": [_member(left), _member(right), _member(left)]}]})
     ).evaluate(result.event_identity_records)
     view = SimpleNamespace(**{item.name: getattr(result, item.name) for item in fields(result)})
     view.event_identity_run = run

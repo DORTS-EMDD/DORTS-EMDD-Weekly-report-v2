@@ -2345,14 +2345,14 @@ class TechnicalGapIsolationTests(TestCase):
         ).run("selected")
         self.assertEqual(
             [(gap.stage, gap.subject_id) for gap in result.technical_gaps],
-            [("EventIdentity", "event-identity-batch-1")],
+            [("EventIdentity", "event-identity-batch-1"), ("EventIdentity", "event-identity-batch-1-n2")],  # RC-44
         )
         # The fixture's identical facts still merge deterministically; the gap
         # removes nothing from the report.
         self.assertEqual(len(result.event_identity_run.groups), 1)
         self.assertEqual(result.final_report.event_count, 1)
         self.assertEqual(result.final_report.disclosure.technical_gap_count, 0)
-        self.assertEqual(result.final_report.disclosure.event_identity_gap_count, 1)
+        self.assertEqual(result.final_report.disclosure.event_identity_gap_count, 2)  # both nominations (RC-44)
         self.assertIn("可能含重複報導的事件", result.final_report.content)
         self.assertNotIn("技術問題未完成處理", result.final_report.content)
 

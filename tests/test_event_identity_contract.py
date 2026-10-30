@@ -404,9 +404,10 @@ class EventIdentityContractTests(unittest.TestCase):
         advisor = _SemanticAdvisor()
         groups = EventIdentity(advisor).group(records)
         self.assertEqual(len(groups), 1)
-        # RC-23: the batch proposal and the group's confirmation.
+        # RC-23/RC-44: the batch, the group's confirmation and the second
+        # nomination, which proposes no new pair.
         self.assertEqual([request.batch_id for request in advisor.requests],
-                         ["event-identity-batch-1", "event-identity-batch-1:group-1:confirmation"])
+                         ["event-identity-batch-1", "event-identity-batch-1:group-1:confirmation", "event-identity-batch-1-n2"])
 
     def test_occurrence_date_surface_difference_defers_to_semantic_advisor(self):
         records = [
@@ -416,9 +417,10 @@ class EventIdentityContractTests(unittest.TestCase):
         advisor = _SemanticAdvisor()
         groups = EventIdentity(advisor).group(records)
         self.assertEqual(len(groups), 1)
-        # RC-23: the batch proposal and the group's confirmation.
+        # RC-23/RC-44: the batch, the group's confirmation and the second
+        # nomination, which proposes no new pair.
         self.assertEqual([request.batch_id for request in advisor.requests],
-                         ["event-identity-batch-1", "event-identity-batch-1:group-1:confirmation"])
+                         ["event-identity-batch-1", "event-identity-batch-1:group-1:confirmation", "event-identity-batch-1-n2"])
 
     def test_event_key_only_cannot_establish_same_event(self):
         records = [
@@ -445,9 +447,10 @@ class EventIdentityContractTests(unittest.TestCase):
         advisor = _SemanticAdvisor()
         groups = EventIdentity(advisor).group(records)
         self.assertEqual(len(groups), 1)
-        # RC-23: the batch proposal and the group's confirmation.
+        # RC-23/RC-44: the batch, the group's confirmation and the second
+        # nomination, which proposes no new pair.
         self.assertEqual([request.batch_id for request in advisor.requests],
-                         ["event-identity-batch-1", "event-identity-batch-1:group-1:confirmation"])
+                         ["event-identity-batch-1", "event-identity-batch-1:group-1:confirmation", "event-identity-batch-1-n2"])
 
     def test_structured_case_and_whitespace_variation_is_not_distinct(self):
         records = [
@@ -520,9 +523,10 @@ class EventIdentityContractTests(unittest.TestCase):
         advisor = _SemanticAdvisor()
         groups = EventIdentity(advisor).group(records)
         self.assertEqual(len(groups), 1)
-        # RC-23: the batch proposal and the group's confirmation.
+        # RC-23/RC-44: the batch, the group's confirmation and the second
+        # nomination, which proposes no new pair.
         self.assertEqual([request.batch_id for request in advisor.requests],
-                         ["event-identity-batch-1", "event-identity-batch-1:group-1:confirmation"])
+                         ["event-identity-batch-1", "event-identity-batch-1:group-1:confirmation", "event-identity-batch-1-n2"])
         self.assertFalse(hasattr(advisor.requests[0], "search_snippet"))
         self.assertFalse(hasattr(advisor.requests[0], "published_at"))
 
@@ -602,9 +606,10 @@ class EventIdentityContractTests(unittest.TestCase):
         self.assertEqual(len(result.groups), 2)
         self.assertEqual(
             [(gap.stage, gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
-            [("EventIdentity", "event-identity-batch-1", "SCHEMA_INVALID")],
+            # RC-44: each nomination's invalid response is its own disclosed gap.
+            [("EventIdentity", "event-identity-batch-1", "SCHEMA_INVALID"), ("EventIdentity", "event-identity-batch-1-n2", "SCHEMA_INVALID")],
         )
-        self.assertEqual(len(advisor.requests), 1)
+        self.assertEqual(len(advisor.requests), 2)
 
     def test_pairwise_distinct_response_is_outside_the_proposal_contract(self):
         def bare_distinct(_request):
@@ -620,7 +625,7 @@ class EventIdentityContractTests(unittest.TestCase):
             _record("B", facts=None, body="B body"),
         ])
         self.assertEqual(len(result.groups), 2)
-        self.assertEqual([gap.failure_class for gap in result.technical_gaps], ["SCHEMA_INVALID"])
+        self.assertEqual([gap.failure_class for gap in result.technical_gaps], ["SCHEMA_INVALID", "SCHEMA_INVALID"])
 
     def test_conflicting_non_identity_claim_remains_unresolved(self):
         records = [
