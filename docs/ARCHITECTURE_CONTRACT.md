@@ -1370,6 +1370,77 @@ EVENT_IDENTITY_REJECTED_MEMBER_OBSERVATION = PROPOSAL_MEMBER_REJECTED
 LAUNCH_AND_MARKING_EVENT_IDENTITY = DIFFERENT_OCCURRENCES (user decision; A.9, ED19 unchanged)
 ```
 
+### A.31 RC-43 Scope: installed equipment and negated focus; report review (2026-10-30)
+
+Run 40999869397 (2026-10-21..28, b559b67, RC-42 in production) reported 31
+events. The user flagged three problems: Event Identity duplicates
+(Incheon, Daegu), a historical event in the report (the 1904 New York subway
+opening, from a "this day in history" column) and the unstable loss of Tokyo
+technology news. Method: the selection audit; the pages of 105 candidates
+fetched again and passed through the production principal-document and
+sentence segmentation; 22 capped helper replays of rebuilt Scope,
+Reportability and Event Identity requests, every response logged. No GitHub
+Action, no email.
+
+* **Tokyo maintenance-vehicle AI (Scope; confirmed, fixed).** All three
+  Evidence-ready reports of Tokyo Metro fitting an AI driver-assistance
+  system to its night track-maintenance vehicles were `OUT_OF_SCOPE`
+  (`SCOPE_NOT_ESTABLISHED`); the previous run had them in scope. Replays show
+  why: when the helper takes the vehicles as the target, it establishes
+  `FUNCTIONS_FOR` and the event is in scope; when it takes the installed
+  system as the target, it leaves target-to-system `UNRESOLVED` (2 of 3
+  reports on replay). The Nikkei report of the track-monitoring train was a
+  `ACTION_TARGET_CONTAINMENT` gap in the cloud and in scope on replay.
+* **"No works tonight" notice (Scope; confirmed, fixed).** The PSG-Lyon access
+  guide reached the report as a service disruption. Its focus sentence states
+  that the metro line has *not* announced works; the helper marked the event
+  `ASSERTED`. Section J already excludes negated events.
+* **1904 subway opening (Reportability; not reproduced).** Five replays of
+  the same request returned `NOT_REPORTABLE` / `FEATURE_OR_BACKGROUND`, as the
+  existing anniversary and feature rules (sections A.14, A.19, A.21) require.
+  The cloud verdict was a helper miss that the request does not explain.
+  Reportability is unchanged.
+* **Duplicates (Event Identity; helper variance).** RC-42 removed every
+  member and group rejection (0 in this run); Daegu drill (6), Kyoto (4) and
+  the Incheon launch (5) merged. Every remaining duplicate was never proposed
+  by the batch. Two replays of the same batch request grouped the missed
+  Daegu report both times and the missed Incheon launch reports in one of
+  two: the misses vary between calls of one request, with no request-side
+  defect. No Event Identity change.
+
+Rule (ScopeClassifier instruction `scope-event-target-system-v11`; Python
+validation, schema and positive conditions unchanged):
+
+* Equipment installed on, fitted to or carried by a vehicle, train, track,
+  station or other facility takes that facility's membership. A system's
+  trains and the vehicles that inspect or maintain the system's own track
+  `FUNCTIONS_FOR` or are `PART_OF` that system, and so does equipment
+  installed on them. An operator's assets that do not run on or serve its rail
+  system (buses, ferries, real estate) remain outside it, as before.
+* `event_status` is `NEGATED` when the focus sentences state that the action
+  did not or will not take place ("no works have been announced on the line
+  tonight", "trains run as normal").
+
+Replays with v11: the three maintenance-vehicle reports and the Nikkei report
+were in scope (the two that failed with v10 passed twice each); the PSG notice
+was `NEGATED`; two controls stayed out of scope (a Tokyo Metro office-building
+contract and a leak of its newsletter e-mail addresses).
+
+Decision required (mechanism; not implemented): the batch nomination's recall
+varies between calls. Nominating twice and accepting a pair proposed by either
+call (confirmation and the region check unchanged) would have grouped every
+missed Incheon and Daegu report in the two replays, at one extra call per run.
+It changes section A.17's single batch proposal and is close to repeating a
+call until it says yes, so it needs a user decision.
+
+```text
+SCOPE_PROMPT_VERSION = scope-event-target-system-v11
+SCOPE_INSTALLED_EQUIPMENT = TAKES_FACILITY_MEMBERSHIP (track-maintenance vehicles FUNCTIONS_FOR the system)
+SCOPE_NEGATED_FOCUS = NEGATED (never ASSERTED)
+REPORTABILITY_CHANGE_RC43 = NONE (historical item not reproduced, 5/5 replays FEATURE_OR_BACKGROUND)
+EVENT_IDENTITY_CHANGE_RC43 = NONE (batch recall variance; second nomination = USER_DECISION_REQUIRED)
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：

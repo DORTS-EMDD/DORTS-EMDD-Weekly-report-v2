@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-42 修訂（2026-10-20～30）
+### RC-3～RC-43 修訂（2026-10-20～30）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.30、§N 與 §R。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.31、§N 與 §R。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -402,6 +402,13 @@ Transport retry 與 semantic correction 必須分開計算。
   10/23 國會發言與 10/21 開通誤合併）、批次逐筆完整放置（召回下降）。仁川「營運機構開通」與
   「部會同日體驗驗證活動」經使用者決定維持為不同事件（為標示或驗證里程碑而辦的活動自成
   一事件，§A.9 與 Golden ED19 不變）。Golden ED22、ED23；ED01–ED21 不變。
+* RC-43（§A.31）：Scope 提示詞 v11 補兩句既有規則：裝在車輛、列車、軌道、車站等設施上的
+  設備沿用該設施的系統歸屬，系統列車與維修、檢查本系統軌道的車輛（如夜間軌道內保守作業車）
+  屬 FUNCTIONS_FOR 或 PART_OF，其上設備亦同；營運者非軌道資產（公車、渡輪、不動產）仍排除。
+  焦點句陳述未發生或不會發生（如「今晚未預告施工」）時為 NEGATED，不得為 ASSERTED。
+  Python 驗證、schema、正向條件不變。1904 年歷史事件經 5 次重放皆判為 FEATURE_OR_BACKGROUND，
+  Reportability 不變；Event Identity 剩餘重複為批次提案召回的呼叫間變動，未修改；
+  「批次提案兩次取聯集」屬機制決定，待使用者決定。
 
 ## 13. Report / Delivery
 
@@ -551,5 +558,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-42 APPLIED (2026-10-30)
+CONTRACT_REVISION = RC-3..RC-43 APPLIED (2026-10-30)
 ```

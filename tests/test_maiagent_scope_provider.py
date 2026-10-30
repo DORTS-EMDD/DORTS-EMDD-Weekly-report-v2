@@ -36,7 +36,7 @@ def test_prompt_and_schema_express_conditional_citation_obligations():
     instructions = " ".join(payload["instructions"])
     schema = MAIAGENT_SCOPE_RESPONSE_SCHEMA["properties"]
     # RC-9: citations are Python sentence IDs; no field carries copied text.
-    assert PROMPT_VERSION == "scope-event-target-system-v10"
+    assert PROMPT_VERSION == "scope-event-target-system-v11"
     assert SCOPE_PROPOSAL_SCHEMA_VERSION == "scope-semantic-proposal-v4"
     assert payload["scope_request"]["principal_sentences"][0]["sentence_id"] == "S1"
     assert "principal_content" not in payload["scope_request"]
@@ -161,3 +161,20 @@ def test_mode_words_in_other_languages_name_the_family():
     text = " ".join(SCOPE_INSTRUCTIONS)
     assert "捷運 (Taiwan's word for MRT" in text
     assert "台鐵/臺鐵, 高鐵 and JR intercity lines are not urban rail" in text
+
+
+def test_installed_equipment_takes_its_facilitys_membership_and_negation_is_explicit():
+    # RC-43 (section A.31): run 40999869397 lost three reports of AI driver
+    # assistance fitted to track-maintenance vehicles when the helper took the
+    # installed system, not the vehicles, as the target and left its
+    # membership unresolved; a "no works tonight" notice was marked ASSERTED.
+    instructions = build_maiagent_scope_model_input(_request())["instructions"]
+    equipment = [line for line in instructions if line.startswith("Equipment, devices or systems installed on")]
+    assert len(equipment) == 1
+    assert "take that facility's membership" in equipment[0]
+    assert "track-maintenance vehicles" in equipment[0]
+    # The operator-asset exclusion stays, beside the existing operator-identity rule.
+    assert "buses, ferries or real estate, remain outside it" in equipment[0]
+    assert any("an operator's buses, ferries or real estate never become urban rail" in line for line in instructions)
+    negation = [line for line in instructions if line.startswith("Record noneligible, ambiguous")]
+    assert len(negation) == 1 and "event_status is NEGATED" in negation[0] and "never an ASSERTED event" in negation[0]
