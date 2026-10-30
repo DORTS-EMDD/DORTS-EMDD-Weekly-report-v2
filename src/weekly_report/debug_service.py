@@ -502,10 +502,10 @@ def _field_diagnostic(
 
 
 _EVENT_IDENTITY_DIAGNOSTICS = frozenset({
-    "EXACT_SOURCE_BODY", "INSUFFICIENT_IDENTITY", "PROPOSAL_BATCH_SPLIT", "PROPOSAL_GROUP_REJECTED",
+    "EXACT_SOURCE_BODY", "INSUFFICIENT_IDENTITY", "PROPOSAL_BATCH_SPLIT", "PROPOSAL_MEMBER_REJECTED",
     "PROPOSAL_NOT_CONFIRMED", "PROPOSAL_REGION_CONFLICT", "SINGLE_MEMBER_PROPOSAL", "UPSTREAM_NOT_ELIGIBLE",
 })
-_UNCONFIRMED_OUTCOMES = {"SEPARATED", "OMITTED", "GROUP_INVALID", "CONFIRMATION_FAILED"}
+_UNCONFIRMED_OUTCOMES = {"SEPARATED", "OMITTED", "MEMBER_INVALID", "CONFIRMATION_FAILED"}
 
 
 def technical_gap_signature(gap: Any) -> str:
@@ -524,7 +524,7 @@ def event_identity_projection(run: Any) -> dict[str, dict[str, int]]:
         ),
         "event_identity_gap_distribution": _counts(technical_gap_signature(gap) for gap in run.technical_gaps),
         # RC-31: why each proposed pair stayed apart (the confirmation separated
-        # it, left a member out, voided its group, or failed as a whole).
+        # it, left a member out, rejected a member, or failed as a whole).
         "event_identity_unconfirmed_distribution": _counts(
             _safe_diag_token(item.detail.rsplit("|", 1)[-1], allowed=_UNCONFIRMED_OUTCOMES)
             for item in run.diagnostics

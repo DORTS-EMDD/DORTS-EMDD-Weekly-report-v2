@@ -23,7 +23,7 @@ from typing import Any
 from .contracts import EvidenceState, ScopeState
 from .evidence_sentences import event_focus_sentences
 
-SELECTION_AUDIT_VERSION = "selection-audit-v1"
+SELECTION_AUDIT_VERSION = "selection-audit-v2"
 STAGES = (
     "EVIDENCE",
     "SCOPE",
@@ -100,16 +100,16 @@ def _region(evidence: Any) -> dict[str, Any] | None:
 _PAIR_PROPOSALS = frozenset({"PROPOSAL_NOT_CONFIRMED", "PROPOSAL_REGION_CONFLICT"})
 
 
-def _rejected_groups(run: Any) -> list[dict[str, Any]]:
-    """RC-40: each rejected proposal group, its failure class and the candidates it named."""
+def _rejected_members(run: Any) -> list[dict[str, Any]]:
+    """RC-40/RC-42: members a proposal group rejected, with the group and failure class."""
 
     rejected = []
     for diagnostic in getattr(run, "diagnostics", ()) or ():
-        if diagnostic.reason != "PROPOSAL_GROUP_REJECTED":
+        if diagnostic.reason != "PROPOSAL_MEMBER_REJECTED":
             continue
         group, _, failure_class = diagnostic.detail.rpartition("|")
         rejected.append({"group": group, "reason": failure_class, "candidate_ids": list(diagnostic.candidate_ids)})
-    return sorted(rejected, key=lambda item: item["group"])
+    return sorted(rejected, key=lambda item: (item["group"], item["reason"]))
 
 
 def _identity_diagnostics(run: Any) -> tuple[dict[str, Counter], dict[str, list[dict[str, str]]]]:
@@ -265,7 +265,7 @@ def build_selection_audit(
         for candidate_id in group.member_candidate_ids
     }
     identity_diagnostics, identity_proposals = _identity_diagnostics(run)
-    rejected_groups = _rejected_groups(run)
+    rejected_members = _rejected_members(run)
     events = _event_outcomes(result)
 
     candidates: list[dict[str, Any]] = []
@@ -353,10 +353,10 @@ def build_selection_audit(
                     "proposal_excerpt_sentence_ids": list(
                         dict(getattr(run, "proposal_excerpts", {}) or {}).get(candidate_id, ())
                     ),
-                    # RC-40: proposal groups naming this record that were rejected.
-                    "proposal_groups_rejected": [
+                    # RC-40/RC-42: proposal groups that rejected this record as a member.
+                    "proposal_member_rejected": [
                         {"group": item["group"], "reason": item["reason"]}
-                        for item in rejected_groups
+                        for item in rejected_members
                         if candidate_id in item["candidate_ids"]
                     ],
                 }
@@ -391,7 +391,7 @@ def build_selection_audit(
             sorted(Counter(f"{entry['terminal_stage']}:{entry['terminal_reason']}" for entry in candidates).items())
         ),
         "event_identity_excerpt_limits": getattr(run, "proposal_excerpt_limits", "") or None,
-        "event_identity_rejected_groups": rejected_groups,
+        "event_identity_rejected_members": rejected_members,
         "event_identity_technical_gaps": sorted(
             f"{gap.subject_id}:{_value(gap.kind)}:{gap.failure_class}"
             for gap in result.technical_gaps

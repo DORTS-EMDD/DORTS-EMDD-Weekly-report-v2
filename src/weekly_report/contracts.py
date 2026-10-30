@@ -317,15 +317,18 @@ class EventIdentityGroupingRecord:
     """One record as sent to the RC-15 grouping proposal (transport data only).
 
     ``record_id`` is the short Python-assigned reference the helper uses, so
-    it never copies a candidate ID; ``sentences`` are the leading RC-9 Evidence
-    sentences, the only citable material; ``identity_facts`` is the
-    identity-only projection (section K).
+    it never copies a candidate ID; ``sentences`` are the record's Evidence
+    excerpt, the only citable material, numbered S1, S2, … within the request
+    (RC-42); ``identity_facts`` is the identity-only projection (section K);
+    ``source_sentence_ids`` are the RC-9 IDs of the same sentences, kept for
+    observation only and never sent.
     """
 
     record_id: str
     candidate_id: str
     sentences: tuple["EvidenceSentence", ...]
     identity_facts: Mapping[str, str] = field(default_factory=dict)
+    source_sentence_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.record_id or not self.candidate_id or not self.sentences:

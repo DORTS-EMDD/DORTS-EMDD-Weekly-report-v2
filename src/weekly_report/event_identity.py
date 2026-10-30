@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import replace
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from hashlib import sha256
 import json
 from typing import Protocol
@@ -110,7 +112,7 @@ class EventIdentityProposalViolation(ProposalContractViolation):
     def __init__(self, failure_class: str, candidate_ids: tuple[str, ...] = ()) -> None:
         super().__init__(failure_class)
         self.failure_class = failure_class
-        # RC-40 (observation only): the candidates a rejected group named.
+        # RC-40/RC-42 (observation only): the members a group rejected.
         self.candidate_ids = candidate_ids
 
 
@@ -278,10 +280,7 @@ class EventIdentity:
             return relations, ""
         requests, (sentence_limit, character_limit) = _grouping_requests(eligible)
         for request in requests:
-            excerpts.update(
-                (record.candidate_id, tuple(sentence.sentence_id for sentence in record.sentences))
-                for record in request.records
-            )
+            excerpts.update((record.candidate_id, record.source_sentence_ids) for record in request.records)
         excerpt_limits = f"{sentence_limit}x{character_limit}" if requests else ""
         by_id = {record.candidate.candidate_id: record for record in eligible}
         if len(requests) > 1:
@@ -299,17 +298,15 @@ class EventIdentity:
             except EVENT_TECHNICAL_FAILURES as failure:
                 technical_gaps.append(TechnicalGap.from_failure("EventIdentity", request.batch_id, failure))
                 continue
-            for index, outcome in enumerate(proposal, start=1):
-                if isinstance(outcome, EventIdentityProposalViolation):
-                    technical_gaps.append(
-                        TechnicalGap.from_failure("EventIdentity", f"{request.batch_id}:group-{index}", outcome)
-                    )
-                    _record_rejected_group(diagnostics, f"{request.batch_id}:group-{index}", outcome)
-                    continue
-                if len(outcome) == 1:
-                    diagnostics.append(EventIdentityDiagnostic(outcome, "SINGLE_MEMBER_PROPOSAL"))
-                    continue
+            for index, (outcome, violations) in enumerate(proposal, start=1):
                 group_subject = f"{request.batch_id}:group-{index}"
+                for violation in violations:
+                    technical_gaps.append(TechnicalGap.from_failure("EventIdentity", group_subject, violation))
+                    _record_rejected_members(diagnostics, group_subject, violation)
+                if len(outcome) < 2:
+                    if outcome and not violations:
+                        diagnostics.append(EventIdentityDiagnostic(outcome, "SINGLE_MEMBER_PROPOSAL"))
+                    continue
                 pairs = []
                 for position, left_id in enumerate(outcome):
                     for right_id in outcome[position + 1 :]:
@@ -362,14 +359,11 @@ class EventIdentity:
         unconfirmed and the omission is a disclosed gap.
 
         Also returns where the confirmation placed each candidate (``PLACED``,
-        ``OMITTED`` or ``GROUP_INVALID``), or None when the confirmation failed
+        ``OMITTED`` or ``MEMBER_INVALID``), or None when the confirmation failed
         as a whole; this only explains unconfirmed pairs and decides nothing.
         """
 
-        ordered = sorted(
-            members,
-            key=lambda record: (record.candidate.published_at or "", record.candidate.candidate_id),
-        )
+        ordered = sorted(members, key=_publication_sort_key)
         records = tuple(
             _grouping_record(record, f"R{index}") for index, record in enumerate(ordered, start=1)
         )
@@ -388,14 +382,13 @@ class EventIdentity:
                 )
             )
         placement = {
-            record.candidate_id: "GROUP_INVALID" if record.record_id in named else "OMITTED" for record in records
+            record.candidate_id: "MEMBER_INVALID" if record.record_id in named else "OMITTED" for record in records
         }
         confirmed: set[tuple[str, str]] = set()
-        for index, outcome in enumerate(proposal, start=1):
-            if isinstance(outcome, EventIdentityProposalViolation):
-                technical_gaps.append(TechnicalGap.from_failure("EventIdentity", f"{batch_id}:group-{index}", outcome))
-                _record_rejected_group(diagnostics, f"{batch_id}:group-{index}", outcome)
-                continue
+        for index, (outcome, violations) in enumerate(proposal, start=1):
+            for violation in violations:
+                technical_gaps.append(TechnicalGap.from_failure("EventIdentity", f"{batch_id}:group-{index}", violation))
+                _record_rejected_members(diagnostics, f"{batch_id}:group-{index}", violation)
             placement.update(dict.fromkeys(outcome, "PLACED"))
             for position, left_id in enumerate(outcome):
                 for right_id in outcome[position + 1 :]:
@@ -615,21 +608,22 @@ def _normalise_url(value: str) -> str:
     )
 
 
-def _record_rejected_group(
+def _record_rejected_members(
     diagnostics: list[EventIdentityDiagnostic],
     subject: str,
     violation: EventIdentityProposalViolation,
 ) -> None:
-    """RC-40 (observation only): which candidates a rejected proposal group named.
+    """RC-40/RC-42 (observation only): which members a proposal group rejected.
 
-    The group is still rejected exactly as section A.15 requires; this only
-    records its subject, its failure class and the candidate IDs it named, so
-    a run can show which records lost their pairs. No source text is kept.
+    The members are rejected exactly as section A.30 requires; this only
+    records the group subject, the failure class and the rejected candidate
+    IDs, so a run can show which records lost their pairs. No source text is
+    kept.
     """
 
     if violation.candidate_ids:
         diagnostics.append(
-            EventIdentityDiagnostic(violation.candidate_ids, "PROPOSAL_GROUP_REJECTED", f"{subject}|{violation.failure_class}")
+            EventIdentityDiagnostic(violation.candidate_ids, "PROPOSAL_MEMBER_REJECTED", f"{subject}|{violation.failure_class}")
         )
 
 
@@ -639,7 +633,7 @@ def _unconfirmed_outcome(pair: tuple[str, str], placement: Mapping[str, str] | N
     if placement is None:
         return "CONFIRMATION_FAILED"
     states = {placement[candidate_id] for candidate_id in pair}
-    for state in ("OMITTED", "GROUP_INVALID"):
+    for state in ("OMITTED", "MEMBER_INVALID"):
         if state in states:
             return state
     return "SEPARATED"
@@ -691,9 +685,42 @@ def _grouping_record(
         characters += len(sentence.text)
     if not lead:
         return None
+    # RC-42: within a request the excerpt is numbered S1, S2, … in order. A
+    # record whose only sentence kept its document ID (say S2) was cited as S1
+    # and lost its group; the RC-9 IDs are kept for observation only.
+    numbered = tuple(replace(sentence, sentence_id=f"S{index}") for index, sentence in enumerate(lead, start=1))
     return EventIdentityGroupingRecord(
-        record_id, record.candidate.candidate_id, tuple(lead), _advisor_identity_facts(record.identity_facts)
+        record_id,
+        record.candidate.candidate_id,
+        numbered,
+        _advisor_identity_facts(record.identity_facts),
+        tuple(sentence.sentence_id for sentence in lead),
     )
+
+
+def _publication_sort_key(record: EventIdentityRecord) -> tuple[str, str, str]:
+    """Order records by discovery publication time (sections A.9, A.12), then candidate ID.
+
+    The RSS value is RFC 822 text that starts with the weekday name, so sorting
+    the raw string ordered a week by weekday name (RC-42). A value that parses
+    neither as RFC 822 nor as ISO 8601 sorts first, as a missing value did.
+    """
+
+    raw = str(record.candidate.published_at or "").strip()
+    instant = ""
+    if raw:
+        try:
+            parsed = parsedate_to_datetime(raw)
+        except (TypeError, ValueError, IndexError):
+            try:
+                parsed = datetime.fromisoformat(raw[:-1] + "+00:00" if raw.endswith(("Z", "z")) else raw)
+            except ValueError:
+                parsed = None
+        if parsed is not None:
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            instant = parsed.astimezone(timezone.utc).isoformat()
+    return instant, raw, record.candidate.candidate_id
 
 
 def _payload_size(record: EventIdentityGroupingRecord) -> int:
@@ -727,10 +754,7 @@ def _grouping_requests(
     the lead tier used.
     """
 
-    ordered = sorted(
-        eligible,
-        key=lambda record: (record.candidate.published_at or "", record.candidate.candidate_id),
-    )
+    ordered = sorted(eligible, key=_publication_sort_key)
     for lead_limits in LEAD_TIERS:
         built = [_grouping_record(record, f"R{index}", lead_limits) for index, record in enumerate(ordered, start=1)]
         kept = [item for item in built if item is not None]
@@ -763,14 +787,18 @@ def _grouping_requests(
 def _validate_grouping_proposal(
     raw: object,
     request: EventIdentityGroupingRequest,
-) -> list[tuple[str, ...] | EventIdentityProposalViolation]:
-    """Return each proposed group's member IDs, or the violation of that group.
+) -> list[tuple[tuple[str, ...], tuple[EventIdentityProposalViolation, ...]]]:
+    """Return, per proposed group, its accepted member IDs and its rejected members.
 
     Raises EventIdentityProposalViolation when the whole response is invalid
     (wrong shape or an unknown record). A record may be named in several
     groups (RC-21): each group only proposes SAME_EVENT pairs, and the
     complete-link grouping merges a record only with records proposed with it.
-    A record named twice in one group invalidates that group.
+    RC-42: validation is per member. A record named twice in one group
+    (``DUPLICATE_MEMBERSHIP``) and, in a group of two or more records, a record
+    whose citation does not resolve (``CITATION_INVALID``) is rejected; the
+    group's other members stand. A one-record group proposes no merge and
+    needs no citation.
     """
 
     if not isinstance(raw, Mapping) or set(raw) != {"groups"} or not isinstance(raw["groups"], list):
@@ -790,21 +818,30 @@ def _validate_grouping_proposal(
             if member["record_id"] not in records:
                 raise EventIdentityProposalViolation("UNKNOWN_RECORD")
 
-    outcomes: list[tuple[str, ...] | EventIdentityProposalViolation] = []
+    outcomes: list[tuple[tuple[str, ...], tuple[EventIdentityProposalViolation, ...]]] = []
     for group in raw["groups"]:
-        members = group["members"]
-        named = tuple(sorted({records[member["record_id"]].candidate_id for member in members}))
-        if len({member["record_id"] for member in members}) != len(members):
-            outcomes.append(EventIdentityProposalViolation("DUPLICATE_MEMBERSHIP", named))
-        elif len(members) < 2:
-            # Proposes no merge; nothing to validate or disclose.
-            outcomes.append(tuple(records[member["record_id"]].candidate_id for member in members))
-        elif any(
-            resolve_sentence_ids(records[member["record_id"]].sentences, member[key]) is None
-            for member in members
-            for key in _CITATION_KEYS
-        ):
-            outcomes.append(EventIdentityProposalViolation("CITATION_INVALID", named))
-        else:
-            outcomes.append(tuple(records[member["record_id"]].candidate_id for member in members))
+        listings: dict[str, list[Mapping[str, object]]] = {}
+        for member in group["members"]:
+            listings.setdefault(member["record_id"], []).append(member)
+        repeated = [record_id for record_id, items in listings.items() if len(items) > 1]
+        ungrounded = [
+            record_id
+            for record_id, items in listings.items()
+            if len(listings) > 1
+            and record_id not in repeated
+            and any(
+                resolve_sentence_ids(records[record_id].sentences, item[key]) is None
+                for item in items
+                for key in _CITATION_KEYS
+            )
+        ]
+        accepted = tuple(
+            records[record_id].candidate_id for record_id in listings if record_id not in repeated + ungrounded
+        )
+        violations = tuple(
+            EventIdentityProposalViolation(failure_class, tuple(sorted(records[record_id].candidate_id for record_id in rejected)))
+            for failure_class, rejected in (("DUPLICATE_MEMBERSHIP", repeated), ("CITATION_INVALID", ungrounded))
+            if rejected
+        )
+        outcomes.append((accepted, violations))
     return outcomes

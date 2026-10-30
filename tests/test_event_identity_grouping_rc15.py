@@ -449,5 +449,7 @@ class CandidateEventFocusTests(unittest.TestCase):
         record = replace(record, scope=ScopeResult("C1", ScopeState.IN_SCOPE, provenance={"candidate_event_focus": focus}))
         advisor = _Scripted({"groups": []})
         EventIdentity(advisor).evaluate([record, _record("C2", facts=None, body="Another event happened.")])
-        sentences = advisor.requests[0].records[0].sentences
-        self.assertEqual([(s.sentence_id, s.text) for s in sentences], [("S2", "The mayor warned the line may open late.")])
+        sent = advisor.requests[0].records[0]
+        # RC-42: numbered within the request; the RC-9 (document) ID is kept apart.
+        self.assertEqual([(s.sentence_id, s.text) for s in sent.sentences], [("S1", "The mayor warned the line may open late.")])
+        self.assertEqual(sent.source_sentence_ids, ("S2",))

@@ -2,7 +2,9 @@
 
 RC-40 (observation only): run 40838021391 rejected batch group-6 for
 DUPLICATE_MEMBERSHIP, but nothing recorded which records it named. EventIdentity
-now records them as a PROPOSAL_GROUP_REJECTED diagnostic; grouping is unchanged.
+records rejected members as a diagnostic; grouping is unchanged by it. RC-42
+(section A.30) made validation per member, so the diagnostic is now
+PROPOSAL_MEMBER_REJECTED and names only the rejected members.
 
 RC-41 (contract section R, user-approved): ReportService presents sections in a
 fixed order with formal titles, keyed by the Classifier's canonical CategoryId;
@@ -43,7 +45,7 @@ def _records():
 
 
 def _rejected(run):
-    return [(item.candidate_ids, item.detail) for item in run.diagnostics if item.reason == "PROPOSAL_GROUP_REJECTED"]
+    return [(item.candidate_ids, item.detail) for item in run.diagnostics if item.reason == "PROPOSAL_MEMBER_REJECTED"]
 
 
 def _groups(run):
@@ -53,32 +55,32 @@ def _groups(run):
 # --- RC-40: rejected proposal group members --------------------------------------------
 
 
-def test_a_group_rejected_for_duplicate_membership_names_its_candidates():
+def test_a_member_rejected_for_duplicate_membership_is_recorded():
     batch = {"groups": [
         {"members": [_member("A"), _member("B"), _member("A")]},  # A listed twice
         {"members": [_member("C"), _member("D")]},
     ]}
     run = EventIdentity(_Scripted(batch, _confirm("C", "D"))).evaluate(_records())
-    assert _groups(run) == [("A",), ("B",), ("C", "D")]  # section A.15 unchanged: the group is rejected
+    assert _groups(run) == [("A",), ("B",), ("C", "D")]  # B alone proposes no merge
     assert [gap.subject_id for gap in run.technical_gaps] == ["event-identity-batch-1:group-1"]
-    assert _rejected(run) == [(("A", "B"), "event-identity-batch-1:group-1|DUPLICATE_MEMBERSHIP")]
-    assert event_identity_projection(run)["event_identity_diagnostic_distribution"]["PROPOSAL_GROUP_REJECTED"] == 1
+    assert _rejected(run) == [(("A",), "event-identity-batch-1:group-1|DUPLICATE_MEMBERSHIP")]
+    assert event_identity_projection(run)["event_identity_diagnostic_distribution"]["PROPOSAL_MEMBER_REJECTED"] == 1
 
 
-def test_a_group_rejected_for_invalid_citations_names_its_candidates():
+def test_a_member_rejected_for_invalid_citations_is_recorded():
     batch = {"groups": [{"members": [_member("A", subject_sentence_ids=["S99"]), _member("B")]}]}
     run = EventIdentity(_Scripted(batch)).evaluate(_records())
     assert _groups(run) == [("A",), ("B",), ("C",), ("D",)]
-    assert _rejected(run) == [(("A", "B"), "event-identity-batch-1:group-1|CITATION_INVALID")]
+    assert _rejected(run) == [(("A",), "event-identity-batch-1:group-1|CITATION_INVALID")]
 
 
-def test_a_rejected_confirmation_group_is_recorded_with_its_own_subject():
+def test_a_rejected_confirmation_member_is_recorded_with_its_own_subject():
     batch = {"groups": [{"members": [_member("A"), _member("B")]}]}
     confirmation = {"groups": [{"members": [_member("A"), _member("A"), _member("B")]}]}
     run = EventIdentity(_Scripted(batch, confirmation)).evaluate(_records())
     assert _groups(run) == [("A",), ("B",), ("C",), ("D",)]
     assert _rejected(run) == [
-        (("A", "B"), "event-identity-batch-1:group-1:confirmation:group-1|DUPLICATE_MEMBERSHIP")
+        (("A",), "event-identity-batch-1:group-1:confirmation:group-1|DUPLICATE_MEMBERSHIP")
     ]
 
 
@@ -97,11 +99,11 @@ def test_the_observation_does_not_change_any_grouping_outcome(monkeypatch):
         )
 
     observed = EventIdentity(scripted()).evaluate(_records())
-    monkeypatch.setattr(event_identity_module, "_record_rejected_group", lambda *args: None)
+    monkeypatch.setattr(event_identity_module, "_record_rejected_members", lambda *args: None)
     unobserved = EventIdentity(scripted()).evaluate(_records())
     assert observed.groups == unobserved.groups
     assert observed.technical_gaps == unobserved.technical_gaps
-    assert [d for d in observed.diagnostics if d.reason != "PROPOSAL_GROUP_REJECTED"] == list(unobserved.diagnostics)
+    assert [d for d in observed.diagnostics if d.reason != "PROPOSAL_MEMBER_REJECTED"] == list(unobserved.diagnostics)
 
 
 def test_the_diagnostic_carries_ids_only_never_source_text():
@@ -115,7 +117,7 @@ def test_the_diagnostic_carries_ids_only_never_source_text():
                 assert word not in rendered
 
 
-def test_the_selection_audit_traces_rejected_groups_to_candidates():
+def test_the_selection_audit_traces_rejected_members_to_candidates():
     import sys
     from pathlib import Path
 
@@ -131,14 +133,14 @@ def test_the_selection_audit_traces_rejected_groups_to_candidates():
     view = SimpleNamespace(**{item.name: getattr(result, item.name) for item in fields(result)})
     view.event_identity_run = run
     audit = build_selection_audit(view)
-    assert audit["event_identity_rejected_groups"] == [
-        {"group": "event-identity-batch-1:group-1", "reason": "DUPLICATE_MEMBERSHIP", "candidate_ids": sorted([left, right])}
+    assert audit["event_identity_rejected_members"] == [
+        {"group": "event-identity-batch-1:group-1", "reason": "DUPLICATE_MEMBERSHIP", "candidate_ids": [left]}
     ]
     by_id = {entry["candidate_id"]: entry for entry in audit["candidates"]}
-    for candidate_id in (left, right):
-        assert by_id[candidate_id]["event_identity"]["proposal_groups_rejected"] == [
-            {"group": "event-identity-batch-1:group-1", "reason": "DUPLICATE_MEMBERSHIP"}
-        ]
+    assert by_id[left]["event_identity"]["proposal_member_rejected"] == [
+        {"group": "event-identity-batch-1:group-1", "reason": "DUPLICATE_MEMBERSHIP"}
+    ]
+    assert by_id[right]["event_identity"]["proposal_member_rejected"] == []
 
 
 # --- RC-41: formal report sections --------------------------------------------------------

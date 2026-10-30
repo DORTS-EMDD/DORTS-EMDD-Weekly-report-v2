@@ -19,7 +19,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class _ScriptedGroups:
-    """Answers a batch with ``proposal`` and every confirmation with ``confirmation``."""
+    """Answers a batch with ``proposal`` and every confirmation with ``confirmation``.
+
+    A member is a candidate ID, or (RC-42) a mapping with ``candidate_id`` and
+    citation lists that replace the grounded defaults.
+    """
 
     def __init__(self, proposal, confirmation):
         self.proposal, self.confirmation = proposal, confirmation
@@ -27,12 +31,14 @@ class _ScriptedGroups:
     def __call__(self, request):
         record_ids = {record.candidate_id: record.record_id for record in request.records}
         groups = self.confirmation if request.confirmation else self.proposal
-        return {
-            "groups": [
-                {"members": [_grounded_member(record_ids[candidate_id]) for candidate_id in group]}
-                for group in groups
-            ]
-        }
+
+        def member(item):
+            if isinstance(item, str):
+                return _grounded_member(record_ids[item])
+            overrides = {key: value for key, value in item.items() if key != "candidate_id"}
+            return {**_grounded_member(record_ids[item["candidate_id"]]), **overrides}
+
+        return {"groups": [{"members": [member(item) for item in group]} for group in groups]}
 
 
 class EventDedupGoldenTests(unittest.TestCase):
@@ -41,7 +47,7 @@ class EventDedupGoldenTests(unittest.TestCase):
             (ROOT / "golden" / "event_dedup_cases.json").read_text(encoding="utf-8")
         )
         cases = manifest["cases"]
-        self.assertEqual(len(cases), 21)
+        self.assertEqual(len(cases), 23)
         self.assertEqual(
             {case["case_class"] for case in cases},
             {
@@ -66,6 +72,8 @@ class EventDedupGoldenTests(unittest.TestCase):
                 "confirmation_multiple_occurrences",
                 "conflicting_occurrence_date_unresolved",
                 "conflicting_occurrence_date_confirmed_same_occurrence",
+                "proposal_member_citation_rejected",
+                "proposal_member_repeated_rejected",
             },
         )
         for case in cases:
@@ -159,7 +167,7 @@ class EventDedupGoldenTests(unittest.TestCase):
         self.assertIs(by_id["OUT_OF_SCOPE"].scope.state, ScopeState.OUT_OF_SCOPE)
         self.assertFalse(by_id["DATE_INVALID"].temporal.date_valid)
 
-    def test_all_ed01_to_ed21_execute_through_event_identity(self):
+    def test_all_ed01_to_ed23_execute_through_event_identity(self):
         for case in self._load_event_dedup_cases():
             with self.subTest(case_id=case["case_id"]):
                 owner = EventIdentity(self._advisor_for_case(case))

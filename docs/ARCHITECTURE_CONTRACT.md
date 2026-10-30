@@ -330,7 +330,9 @@ calls.
 * Python validates the proposal. The response is invalid when its shape is
   wrong or a member names no supplied `record_id` (RC-21, section A.15: a
   record may be named in several groups; a record repeated inside one group
-  invalidates that group). A group is invalid when a member citation does not resolve. A group
+  invalidates that group). A group is invalid when a member citation does not resolve. (RC-42,
+  section A.30: both defects now reject only the member concerned; the group's
+  other members stand.) A group
   with fewer than two members proposes no merge and is only recorded as a
   diagnostic. A valid group contributes SAME_EVENT relations
   between its members (RC-22 and RC-23, sections A.16 and A.17: pairs across
@@ -539,7 +541,8 @@ other valid groups.
   `INSUFFICIENT_IDENTITY` diagnostic.
 * A record named twice inside one group invalidates that group
   (`DUPLICATE_MEMBERSHIP`, a disclosed `EventIdentity` TechnicalGap); other
-  groups stand. A wrong shape or an unknown `record_id` still invalidates the
+  groups stand. (RC-42, section A.30: only the repeated record is rejected; the
+  group's other members stand.) A wrong shape or an unknown `record_id` still invalidates the
   whole response.
 * The prompt asks for every record of one event in a single group and states
   that occurrences in different cities, countries or systems are different
@@ -592,7 +595,8 @@ chose a confirmation call per proposed group.
   `PROPOSAL_NOT_CONFIRMED` diagnostic.
 * A confirmation that fails after the shared retry (RC-6) or whose response is
   invalid confirms nothing and is a disclosed `EventIdentity` TechnicalGap; an
-  invalid group inside it is a gap for that group only. HTTP 401/403/404 still
+  invalid group inside it is a gap for that group only (RC-42, section A.30:
+  an invalid member is a gap for that member only). HTTP 401/403/404 still
   stops the run.
 * Cost: one call per proposed group with a pair (about 15 a week).
 
@@ -1028,7 +1032,8 @@ announcement x3, a Kyoto station fire x2, the Incheon 5G Wi-Fi completion x2).
 * **Observation added (Debug only).** `PROPOSAL_REGION_CONFLICT` and
   `PROPOSAL_NOT_CONFIRMED` diagnostics carry their proposal group and size;
   `PROPOSAL_NOT_CONFIRMED` also says whether the confirmation `SEPARATED` the
-  pair, `OMITTED` a member, voided its group (`GROUP_INVALID`) or failed
+  pair, `OMITTED` a member, voided its group (`GROUP_INVALID`; RC-42,
+  section A.30: `MEMBER_INVALID`, a rejected member) or failed
   (`CONFIRMATION_FAILED`). The run summary adds `event_identity_unconfirmed`.
 * **Selection audit (observer only).** Every run writes
   `selection_audit.json` beside the report (GitHub Actions artifact,
@@ -1258,13 +1263,110 @@ recorded.
   `proposal_groups_rejected`. A whole-response violation (`SCHEMA_INVALID`,
   `UNKNOWN_RECORD`) names no group and records nothing new. The group is still
   rejected exactly as section A.15 requires; no grouping, confirmation, retry
-  or decision reads the diagnostic, and no source text is kept.
+  or decision reads the diagnostic, and no source text is kept. (RC-42,
+  section A.30: renamed `PROPOSAL_MEMBER_REJECTED`; it names the rejected
+  members only, and the audit fields became `event_identity_rejected_members`
+  and `proposal_member_rejected`.)
 
 The formal report section contract approved in the same batch (RC-41) is part
 of section R, its owner section.
 
 ```text
 EVENT_IDENTITY_REJECTED_GROUP_OBSERVATION = PROPOSAL_GROUP_REJECTED (candidate IDs, subject|failure class)
+```
+
+### A.30 RC-42 Event Identity: per-member validation, request order and numbering (2026-10-30)
+
+Run 40985179898 (2026-10-21..28, 4afcba4) still reported duplicates: five
+Incheon 5G Wi-Fi items, two Vienna 1,000th-car items and two Wirye tram-delay
+items; outside the report, three senior-fare study, two Gwangju audit and two
+L&T Dhaka records also stayed apart. Method: the selection audit; the 104
+Event Identity records rebuilt offline (published pages fetched again and cut
+to their audited excerpt sentence IDs); 40 capped helper replays of rebuilt
+requests, with every response logged. Findings:
+
+* **One member's defect voided its whole group (Python; confirmed).** The batch
+  proposed the two Vienna reports together, but cited S1 for a record whose
+  one-sentence excerpt carried its document ID S2; section A.9 voided the
+  group. Replays repeated that citation, and one such slip in a 26-record Wirye
+  group would have voided all 26. Run 40838021391 lost group-6 to one repeated
+  record (RC-39).
+* **Batch order (Python; contract defect).** Sections A.9 and A.12 order
+  records by discovery publication time; the code sorted the raw RSS text,
+  which begins with the weekday, so a week ran Fri, Mon, Sat, Sun, Thu, Tue,
+  Wed and the 24 and 26 October Gwangju reports sat 17 records apart.
+* **Excerpt numbering (request; mechanism confirmed).** Excerpts kept document
+  sentence IDs (S2 alone, or S2, S14, ...), which invited S1 citations.
+* **Helper judgment (not fully explained).** Batch recall varies between calls
+  of the same request (Vienna, Gwangju, Wirye and senior-fare records were
+  grouped in some replays and left out in others). Two replays of the cloud
+  confirmation request reproduced the Incheon split (6+4, 8+2). One
+  confirmation left the lifecycle citation of an attack empty.
+
+Rules (EventIdentity; amends sections A.9, A.15, A.17 and A.29):
+
+* **Per-member validation.** In a proposal or confirmation group, a record
+  named more than once (`DUPLICATE_MEMBERSHIP`) and, in a group of two or more
+  records, a record whose citation does not resolve (`CITATION_INVALID`) is
+  rejected; the group's other members stand. Each rejection is a disclosed
+  `EventIdentity` TechnicalGap with the group subject. A rejected member is
+  never sent to that group's confirmation and never merged through it; a group
+  left with fewer than two members proposes nothing. A wrong shape or an
+  unknown `record_id` still invalidates the whole response; a one-record group
+  still proposes nothing.
+* **Order.** Records are ordered by their parsed discovery publication instant
+  (RFC 822 or ISO 8601, in UTC), then `candidate_id`; a value that parses as
+  neither sorts first. This applies to the batch, an RC-18 split and the
+  numbering of a confirmation.
+* **Numbering.** Within a request each record's excerpt is numbered S1, S2, ...
+  in excerpt order; citations resolve against these. The RC-9 IDs remain the
+  observation (`proposal_excerpt_sentence_ids`). The excerpt is unchanged: the
+  Scope event focus within the RC-18 tiers (section A.14).
+* **Instruction `event-identity-grouping-v8`** adds two lines, each restating
+  an existing rule: a record that leaves out a detail another record states,
+  or states a non-identifying detail differently, is not thereby a different
+  occurrence (section K; Golden ED14, G16); each citation list names at least
+  one sentence, the occurrence sentence serving as the step when no other
+  sentence states one (Python's rule unchanged). The same-event definition,
+  the date rule (section A.28), both answer shapes and both schemas are
+  unchanged. SAME_EVENT still needs the batch proposal, the RC-22 region check
+  and the confirmation.
+* **Observation.** `PROPOSAL_GROUP_REJECTED` becomes `PROPOSAL_MEMBER_REJECTED`
+  and names only the rejected members; the selection audit (`selection-audit-v2`)
+  lists `event_identity_rejected_members` and, per candidate,
+  `proposal_member_rejected`; the unconfirmed outcome `GROUP_INVALID` becomes
+  `MEMBER_INVALID`. No decision reads them.
+
+Tried offline and not adopted:
+
+* Excerpts widened from the focus to the following sentences: two replays
+  merged a 23 October parliamentary statement with the 21 October Incheon
+  launch it quoted. The RC-20 focus excerpt stays.
+* A batch answer placing every record (one-record groups allowed): the helper
+  emitted one-record groups record by record, grouping 3 and then 0 of the 10
+  Incheon reports that both earlier batch answers grouped in full.
+
+Decision required (domain rule; not implemented): given full excerpts, every
+replay keeps the operator's 21 October service start apart from the
+ministry's ride event the same day to check that service, as section A.9
+("different statements or meetings about the same project") and Golden ED19
+(RC-35) require. Reporting both as one item needs a user decision on whether
+an event held to mark or verify a milestone belongs to that milestone's
+occurrence; a later statement about it (the 23 October parliamentary call)
+would still be separate.
+
+Golden: ED22 (an ungrounded member is rejected; the grounded members merge)
+and ED23 (a repeated member is rejected; the others merge). ED01-ED21 are
+unchanged.
+
+```text
+EVENT_IDENTITY_PROPOSAL_VALIDATION = PER_MEMBER (DUPLICATE_MEMBERSHIP, CITATION_INVALID)
+EVENT_IDENTITY_RECORD_ORDER = PARSED_DISCOVERY_PUBLICATION_INSTANT, candidate_id
+EVENT_IDENTITY_EXCERPT_NUMBERING = S1..Sn PER RECORD IN REQUEST (RC-9 IDs observed)
+EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v8
+EVENT_IDENTITY_SAME_EVENT = BATCH_PROPOSED AND REGION_COMPATIBLE AND CONFIRMED (unchanged)
+EVENT_IDENTITY_REJECTED_MEMBER_OBSERVATION = PROPOSAL_MEMBER_REJECTED
+LAUNCH_AND_MARKING_EVENT_IDENTITY = USER_DECISION_REQUIRED
 ```
 
 ## B. Authoritative Owners

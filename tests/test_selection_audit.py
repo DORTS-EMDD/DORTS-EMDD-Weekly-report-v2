@@ -92,7 +92,7 @@ def test_the_audit_is_deterministic_and_observer_only():
     assert broken.status == healthy.status
     assert broken.final_report == healthy.final_report
     assert broken.stage_counts == healthy.stage_counts
-    assert dict(broken.selection_audit) == {"audit_version": "selection-audit-v1", "unavailable": "RuntimeError"}
+    assert dict(broken.selection_audit) == {"audit_version": "selection-audit-v2", "unavailable": "RuntimeError"}
     assert healthy.selection_audit["period"] == {"start": "2026-09-12", "end": "2026-09-18"}
 
 

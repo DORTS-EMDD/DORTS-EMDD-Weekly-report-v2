@@ -48,7 +48,6 @@ def _groups(run):
 
 
 def test_every_request_carries_the_date_rule():
-    assert PROMPT_VERSION == "event-identity-grouping-v7"
     for confirmation in (False, True):
         dates = [line for line in _instructions(confirmation) if line.startswith("Dates:")]
         assert len(dates) == 1

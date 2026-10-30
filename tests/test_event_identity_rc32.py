@@ -29,7 +29,8 @@ def _focused(candidate_id, body, focus_ids):
 
 
 def _lede():
-    return _member("LEDE", subject_sentence_ids=["S2"], occurrence_sentence_ids=["S2"], lifecycle_sentence_ids=["S2"])
+    # RC-42: the request numbers each excerpt from S1; S2 is its document ID.
+    return _member("LEDE", subject_sentence_ids=["S1"], occurrence_sentence_ids=["S1"], lifecycle_sentence_ids=["S1"])
 
 
 def _records():
@@ -48,7 +49,8 @@ def test_the_run_records_the_sentences_each_record_was_sent_with_and_the_limits(
     advisor = _Scripted({"groups": [{"members": [_lede(), _member("EVENT")]}]}, {"groups": [{"members": [_lede(), _member("EVENT")]}]})
     run = EventIdentity(advisor).evaluate(_records())
     sent = {record.candidate_id: tuple(s.sentence_id for s in record.sentences) for record in advisor.requests[0].records}
-    assert dict(run.proposal_excerpts) == sent == {"LEDE": ("S2",), "EVENT": ("S1",)}
+    assert sent == {"LEDE": ("S1",), "EVENT": ("S1",)}  # numbered within the request (RC-42)
+    assert dict(run.proposal_excerpts) == {"LEDE": ("S2",), "EVENT": ("S1",)}  # document (RC-9) IDs
     assert run.proposal_excerpt_limits == f"{LEAD_TIERS[0][0]}x{LEAD_TIERS[0][1]}"
     assert sorted(group.member_candidate_ids for group in run.groups) == [("EVENT", "LEDE")]
 

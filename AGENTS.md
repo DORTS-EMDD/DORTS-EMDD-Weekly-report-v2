@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-41 修訂（2026-10-20～30）
+### RC-3～RC-42 修訂（2026-10-20～30）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.29、§N 與 §R。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.30、§N 與 §R。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -392,6 +392,16 @@ Transport retry 與 semantic correction 必須分開計算。
   營運動態、機電標案及採購動態、規範及標準動態，空章節不顯示；Markdown／PDF／Email 共用；
   Category 判定、§L 標籤與 Golden 不變。事故章節依嚴重度排序因無嚴重度 owner 且 §N 禁止，
   列為 BLOCKED_DOMAIN_RULE。
+* RC-42（§A.30）：Event Identity 提案改為逐成員驗證：群組內重複列出的紀錄
+  （`DUPLICATE_MEMBERSHIP`）或引用無法解析的紀錄（`CITATION_INVALID`）只淘汰該成員並揭露為
+  技術缺口，同群其他成員照常進入確認；觀測診斷改名 `PROPOSAL_MEMBER_REJECTED`（selection
+  audit v2）。紀錄依解析後的發布時間排序（原本按 RSS 字串的星期名稱排序，違反 §A.9／§A.12）；
+  每筆摘錄在請求內重新編號為 S1…Sn，文件句子 ID 只作觀測。提示詞 v8 只補兩句既有規則：
+  缺少或寫法不同的非識別細節不使紀錄成為不同事件（§K）；每個引用清單至少一句。同一事件定義、
+  日期規則、兩種回答格式與 schema、SAME_EVENT 條件皆不變。離線試驗後未採用：擴大摘錄（造成
+  10/23 國會發言與 10/21 開通誤合併）、批次逐筆完整放置（召回下降）。仁川「營運機構開通」與
+  「部會同日體驗驗證活動」是否同一事件屬 domain 決定，依 §A.9 與 Golden ED19 目前維持分開，
+  待使用者決定。Golden ED22、ED23；ED01–ED21 不變。
 
 ## 13. Report / Delivery
 
@@ -541,5 +551,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-41 APPLIED (2026-10-30)
+CONTRACT_REVISION = RC-3..RC-42 APPLIED (2026-10-30)
 ```
