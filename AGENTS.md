@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-47 修訂（2026-10-20～11-02）
+### RC-3～RC-48 修訂（2026-10-20～11-02）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.35、§N 與 §R。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.36、§N 與 §R。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -440,7 +440,14 @@ Transport retry 與 semantic correction 必須分開計算。
   以同一 harness、owner 與斷言執行，並以 SHA-256 與預期結果鎖定，同時要求 Golden ED24 維持 [3]；
   Event Dedup Golden 改為 23 案，代號不重用。RC-44 只能連同仍使 ED24 為 [3] 的替代機制一起撤回。
   Event Identity D1～D4 草案（`docs/EVENT_IDENTITY_OCCURRENCE_RULES_DRAFT.md`）R1～R6 已確認，尚未
-  寫入契約、尚未實作。
+  寫入契約、尚未實作（RC-48 實作）。
+* RC-48（§A.36，使用者確認 R1～R6）：Event Identity 內的 helper 輸出不得產生 DISTINCT；唯一的
+  DISTINCT 依據是已確立地區衝突（RC-22），改記為 `DISTINCT_EVENT`（診斷 `DISTINCT_REGION`），並先於
+  exact-source 與 exact-fact。exact-source 另須兩筆的 Scope 候選事件焦點相同（同一頁可報導多個事件）。
+  同一事件的粒度、日期（不由刊登時間或時區推定、只比較雙方都寫的年月日）與跨語言主體（可用翻譯音譯、
+  不可用 Evidence 外知識）寫入提示詞 v10，v9 各行逐字不變；Python 不比較名稱。請求組成、RC-44、確認
+  皆不變；逐筆 signature 與依地區分組經量測否決。Golden ED27、ED28；ED01–ED26 結果不變。R7：提示詞
+  v10 合併前須以標註語料量測（不同事件配對合併數須為 0），付費呼叫待使用者核准上限。
 
 ## 13. Report / Delivery
 
@@ -590,5 +597,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-47 APPLIED (2026-11-02)
+CONTRACT_REVISION = RC-3..RC-48 APPLIED (2026-11-02)
 ```

@@ -23,6 +23,7 @@ from src.weekly_report.event_identity import (
     EventIdentity,
     EventIdentityRelation,
 )
+from src.weekly_report.evidence_sentences import segment_evidence_sentences
 
 
 def _grounded_member(record_id):
@@ -71,6 +72,7 @@ def _record(
     evidence_state: EvidenceState = EvidenceState.READY,
     in_scope: bool = True,
     date_valid: bool = True,
+    focus: tuple[str, ...] | None = None,
 ) -> EventIdentityRecord:
     candidate = CanonicalCandidate(
         candidate_id=candidate_id,
@@ -109,7 +111,17 @@ def _record(
         reject_reason=None if evidence_state is EvidenceState.READY else "TITLE_ONLY",
         identity_facts=effective_facts,
     )
-    scope = ScopeResult(candidate_id, ScopeState.IN_SCOPE if in_scope else ScopeState.OUT_OF_SCOPE)
+    # ``focus`` names the Scope Candidate-event focus sentences (RC-20) by sentence ID.
+    provenance = {}
+    if focus is not None:
+        provenance["candidate_event_focus"] = [
+            {"start": sentence.start, "end": sentence.end}
+            for sentence in segment_evidence_sentences(evidence.substantive_content)
+            if sentence.sentence_id in focus
+        ]
+    scope = ScopeResult(
+        candidate_id, ScopeState.IN_SCOPE if in_scope else ScopeState.OUT_OF_SCOPE, provenance=provenance
+    )
     temporal = TemporalResult(
         candidate_id,
         date_valid,

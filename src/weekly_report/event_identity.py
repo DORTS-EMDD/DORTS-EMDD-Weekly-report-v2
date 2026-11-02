@@ -262,9 +262,15 @@ class EventIdentity:
         if key in cache:
             return cache[key]
 
-        result = self._deterministic_relation(left, right) or proposed.get(
-            key, (EventIdentityRelation.UNCERTAIN, "INSUFFICIENT_IDENTITY")
-        )
+        # Section A.36 (R1, R2): an established-region conflict (RC-22) is the
+        # only DISTINCT basis and precedes every SAME path; then exact-source,
+        # exact-fact and a confirmed proposal; anything else stays UNCERTAIN.
+        if _different_established_regions(left, right):
+            result = (EventIdentityRelation.DISTINCT_EVENT, "DISTINCT_REGION")
+        else:
+            result = self._deterministic_relation(left, right) or proposed.get(
+                key, (EventIdentityRelation.UNCERTAIN, "INSUFFICIENT_IDENTITY")
+            )
         cache[key] = result
         return result
 
@@ -461,16 +467,11 @@ class EventIdentity:
         left: EventIdentityRecord,
         right: EventIdentityRecord,
     ) -> tuple[EventIdentityRelation, str] | None:
-        left_facts = left.identity_facts
-        right_facts = right.identity_facts
-        if left_facts is not None and right_facts is not None:
-            relation = self._fact_relation(left_facts, right_facts)
-            if relation is not None:
-                return relation
-
         if _same_materialized_source(left, right):
             return EventIdentityRelation.SAME_EVENT, "EXACT_SOURCE_BODY"
 
+        left_facts = left.identity_facts
+        right_facts = right.identity_facts
         if left_facts is None or right_facts is None:
             return None
 
@@ -544,8 +545,9 @@ class EventIdentity:
         relations: Sequence[tuple[EventIdentityRelation, str]],
         diagnostics: list[EventIdentityDiagnostic],
     ) -> None:
+        # UNCERTAIN pairs and (section A.36) DISTINCT pairs with their basis.
         for member, (relation, reason) in zip(members, relations):
-            if relation is not EventIdentityRelation.UNCERTAIN:
+            if relation is EventIdentityRelation.SAME_EVENT:
                 continue
             diagnostics.append(
                 EventIdentityDiagnostic(
@@ -637,6 +639,14 @@ def _event_id(member_ids: tuple[str, ...]) -> str:
 
 
 def _same_materialized_source(left: EventIdentityRecord, right: EventIdentityRecord) -> bool:
+    """Same page, same text and (section A.36, R2) the same Scope Candidate event.
+
+    One page can report several events (a roundup, a live page); two records
+    on it whose Scope event focus differs are different Candidate events until
+    the helper path says otherwise. Two records without a recorded focus
+    count as having the same focus.
+    """
+
     left_url = _normalise_url(left.evidence.canonical_source_url or left.candidate.url)
     right_url = _normalise_url(right.evidence.canonical_source_url or right.candidate.url)
     return bool(
@@ -644,7 +654,15 @@ def _same_materialized_source(left: EventIdentityRecord, right: EventIdentityRec
         and left_url == right_url
         and left.evidence.substantive_content
         and left.evidence.substantive_content == right.evidence.substantive_content
+        and _focus_sentence_ids(left) == _focus_sentence_ids(right)
     )
+
+
+def _focus_sentence_ids(record: EventIdentityRecord) -> tuple[str, ...]:
+    """The record's Scope Candidate-event focus as sentence IDs; empty when none is recorded."""
+
+    focus = dict(record.scope.provenance).get("candidate_event_focus")
+    return tuple(sentence.sentence_id for sentence in event_focus_sentences(record.evidence.substantive_content, focus))
 
 
 def _fact_value(facts: EventIdentityFacts, field_name: str) -> str:

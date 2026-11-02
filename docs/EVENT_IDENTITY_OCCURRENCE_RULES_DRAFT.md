@@ -3,10 +3,10 @@
 ```text
 STATUS = DRAFT v2 (2026-11-02)，取代同檔 v1
 USER_CONFIRMATION = R1–R6 已確認（2026-11-02）；R7 已確認，ED22、ED23、ED25 已原封不動移為回歸測試（RC-47，契約 §A.35；逐案分析見 §7）
-PRODUCTION_IMPLEMENTATION = NOT AUTHORIZED
-BINDING = NO — 契約修訂與實作須另經授權
+PRODUCTION_IMPLEMENTATION = R1–R6 IMPLEMENTED ON DEV (RC-48, contract §A.36); R7 corpus measurement of prompt v10 pending a paid-call cap
+BINDING = 規則本文以 Architecture Contract §A.35、§A.36 為準；本檔保留為決策紀錄
 PRODUCTION_CHANGE = NONE（Event Identity 判定邏輯、提示詞、schema、Golden 皆未修改）
-ON_IMPLEMENTATION_AUTHORIZATION = R1–R6 成為 Architecture Contract §A.36，並修訂 §A.9、§A.28、§A.34 的相關文字（RC-44 撤回條件已於 §A.35 修訂）
+CONTRACT = R1–R6 為 §A.36（並修訂 §A.9、§A.16、§A.28、§A.34、§K）；R7 為 §A.35
 ```
 
 ## 0. v1 的問題與本版的修正

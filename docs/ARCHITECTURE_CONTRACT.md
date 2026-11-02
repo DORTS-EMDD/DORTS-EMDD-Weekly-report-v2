@@ -342,7 +342,8 @@ calls.
   existing complete-link grouping then forms the Events, and canonical-member
   and Event ID rules are unchanged.
   Pairs not proposed together stay UNCERTAIN (not merged). The helper never
-  proposes DISTINCT_EVENT.
+  proposes DISTINCT_EVENT. (Section A.36: the pair order, the exact-source
+  focus condition and the R3-R5 definition of the same occurrence.)
 * (Superseded by RC-18, section A.12: payload is the only bound and leads
   shrink before a split.) One request covers at most 60 records and 66,000
   characters of record payload (sized so that the record limit binds first). Larger inputs are split into consecutive batches ordered by
@@ -573,6 +574,9 @@ report assembly as `CONFLICTING_COUNTRY` (RC-5) and every member was lost.
 * A pair with an unestablished region on either side is unaffected. The check
   reads EvidenceService's resolution and never changes it; RC-5 still governs
   any Event whose members' regions conflict.
+* (Section A.36, R1 and R2: the region conflict is recorded as
+  DISTINCT_EVENT for every pair, with the diagnostic `DISTINCT_REGION`, and it
+  precedes the exact-source and exact-fact paths.)
 
 ```text
 EVENT_IDENTITY_REGION_CHECK = PAIR_LEVEL (established regions only)
@@ -1210,7 +1214,8 @@ Rules (Event Identity, helper path and exact-fact path):
   evidence (`EventIdentityFacts.occurrence_date` on the exact-fact path; the
   occurrence sentences on the helper path).
 * Different stated occurrence dates do not by themselves establish different
-  events: Python has no DISTINCT relation, and on the exact-fact path a date
+  events: Python has no date-based DISTINCT relation (section A.36: the only
+  DISTINCT basis is an established-region conflict), and on the exact-fact path a date
   mismatch only leaves the pair undecided (`_fact_relation`), as a location
   mismatch does (section K).
 * While a date disagreement is not resolved by the Authoritative Evidence,
@@ -1661,7 +1666,8 @@ Implemented (observation and test tooling; no decision changes):
   real records of runs 40999869397 and 41018554355 with hand-checked
   occurrence labels; a test re-derives and pins each measured outcome.
 
-Target authority (proposed; needs the decisions below): the occurrence
+Target authority (proposed; superseded by section A.36, which found that
+helper-extracted occurrence facts are not Python facts): the occurrence
 signature of each record, extracted once by EvidenceService through the
 existing `evidence_metadata_extraction` task into the existing
 `EventIdentityFacts` fields with field-level, exact-text validation (section
@@ -1708,7 +1714,7 @@ is withdrawn only with a replacement that keeps Golden ED24 = [3].)
 EVENT_IDENTITY_EXCHANGE_OBSERVATION = proposal_exchanges / event_identity_exchanges (IDs only)
 EVENT_IDENTITY_REPLAY = scripts/event_identity_replay.py (exact, offline, no source text)
 EVENT_IDENTITY_RECORDED_CORPUS = acceptance/event_identity/recorded_answers.json
-EVENT_IDENTITY_TARGET_AUTHORITY = RECORDED PER-RECORD OCCURRENCE FACTS + DETERMINISTIC COMPARISON (D1-D4 USER_DECISION_REQUIRED)
+EVENT_IDENTITY_TARGET_AUTHORITY = RECORDED PER-RECORD OCCURRENCE FACTS + DETERMINISTIC COMPARISON (SUPERSEDED BY SECTION A.36)
 RC44_SECOND_NOMINATION = TRANSITIONAL (superseded by section A.35: kept; withdraw only with a replacement that keeps Golden ED24 = [3])
 ```
 
@@ -1759,6 +1765,163 @@ GOLDEN_EXPECTED_OUTCOME = DOMAIN TRUTH OF ITS EVIDENCE (fail-closed answers to s
 EVENT_DEDUP_GOLDEN = 23 CASES (ED22, ED23, ED25 retired, IDs not reused)
 EVENT_IDENTITY_FAILURE_PATH_REGRESSION = tests/test_event_identity_failure_paths.py (verbatim, hash-pinned)
 RC44_SECOND_NOMINATION = KEPT (withdraw only with a replacement that keeps Golden ED24 = [3])
+```
+
+### A.36 RC-48 Event Identity rules R1-R6 (2026-11-02, user-confirmed)
+
+Source: `docs/EVENT_IDENTITY_OCCURRENCE_RULES_DRAFT.md` (draft v2); the user
+confirmed rules R1-R6, and R7 is section A.35.
+
+Re-examination finding:
+
+* In multilingual free text, "the same occurrence" needs semantic reading that
+  only the helper can do.
+* An occurrence type, date or subject that the helper extracted would only be
+  recorded helper output. Section A.34's per-record occurrence facts are
+  therefore not Python facts.
+* The deterministic parts stay deterministic. The semantic part is:
+  * defined (R3-R5);
+  * needs two agreements (a proposal and a confirmation);
+  * is recorded and replayable (section A.34);
+  * is measured on the labelled corpus (R7).
+
+**R1 Relations.**
+
+* EventIdentity decides each pair as one of `SAME_EVENT`, `DISTINCT_EVENT` or
+  `UNCERTAIN`.
+* `DISTINCT_EVENT` comes only from facts an upstream owner established and
+  Python compares deterministically.
+  * The only such fact today is an established-region conflict (RC-22,
+    section A.16).
+  * It is recorded as `DISTINCT_EVENT` with the diagnostic `DISTINCT_REGION`.
+* No helper output inside Event Identity produces `DISTINCT_EVENT` or becomes a
+  Python fact. This covers the proposal, the confirmation and any occurrence
+  attribute.
+* A new DISTINCT basis needs a deterministic, reproducible fact and the user's
+  approval.
+* A pair the helper does not group together is `UNCERTAIN`:
+  * it is not merged, and nothing downstream rescues it;
+  * it is not a technical gap, unless a technical failure caused it (RC-6).
+
+**R2 Order.** Each pair is decided in this order:
+
+1. An established-region conflict → `DISTINCT_EVENT`.
+2. Exact source → `SAME_EVENT`, only when all three hold:
+   * the same normalized canonical URL;
+   * the same non-empty substantive content;
+   * the same Scope Candidate-event focus (the same focus sentences; two
+     records with no recorded focus count as the same).
+3. The exact-fact path → `SAME_EVENT` (unchanged).
+4. A confirmed proposal (sections A.9, A.17) → `SAME_EVENT`.
+5. Otherwise → `UNCERTAIN`.
+
+Complete-link grouping is unchanged.
+
+* Why the focus condition: one page can report several events (a roundup, a
+  live page). Records on that page whose Scope Candidate events differ go to
+  the helper path instead.
+* Residual: two records with the same page, text and focus count as one event.
+  The Evidence cannot separate them, and publication time may not be used to
+  (RC-38).
+* In four live runs no two records shared a canonical URL.
+
+**R3 Occurrences** (helper-applied, in the instruction).
+
+* One occurrence is one specific act or happening, by or to one subject, at
+  one time or over one continuous period.
+* Different occurrences, even for the same subject:
+  * a tender; a contract award or signing; a delivery; a test or trial run
+    without passengers; a completion or start of use (a trial service that
+    carries passengers is a start of use);
+  * an incident or disruption, the release of its investigation or audit
+    findings, and a later decision or measure;
+  * a milestone, and an activity held to mark or verify it.
+* The same occurrence:
+  * the completion of an installation and the start of its use, for the same
+    deliverable;
+  * a report that an act is scheduled for a date, and a report that it took
+    place on that date, when the Evidence identifies the same scheduled act.
+* A record that reports two occurrences goes only with the records whose
+  specific details it shares. If that cannot be determined, it stays apart
+  from both.
+
+**R4 Dates** (helper-applied).
+
+* Which day is an occurrence's date:
+  * a one-time act: the day it happened;
+  * an occurrence over several days: its start or stated span (a day on which
+    it was still continuing is not its date);
+  * a scheduled act: the scheduled date;
+  * a decision: the day it was made, not the day it takes effect;
+  * an activity or statement: the day it was held or made.
+* The day someone announced or said that something happened is not that
+  occurrence's date.
+* No relative or incomplete expression is turned into a calendar date from a
+  publication time, a country or a time zone.
+* Two dates are compared only on the year, month and day that both state.
+* Disagreeing dates follow the RC-38 rule (section A.28).
+
+**R5 Subject** (helper-applied).
+
+* The subject is the specific line, system, vehicle, facility, project or
+  package, and the actor of a decision, activity or statement.
+* These identify the same subject:
+  * translations, transliterations, romanizations and script variants of a
+    name;
+  * short forms and descriptions a record itself ties to the name;
+  * specific details that both records state and that match.
+* These never identify the same subject:
+  * knowledge outside the Evidence;
+  * filling one record's gap from another record;
+  * the same city, country, system, topic or project alone.
+* A generic name with no matching detail keeps the records apart.
+* Python compares no names, aliases or locations (section K unchanged).
+
+**R6 Requests.**
+
+* Unchanged:
+  * one run-wide request (RC-18, RC-42);
+  * two nominations (RC-44; withdrawal per section A.35);
+  * a confirmation of each proposed group (RC-23, RC-25, RC-35).
+* Rejected after measuring four live runs:
+  * per-record occurrence signatures: 75 to 104 more calls per run, and still
+    helper output;
+  * requests split by region: Korea had 26 to 48 records per run, plus 10 to
+    15 records without an established region; about 38 more calls, with an
+    unmeasured gain.
+
+**Implementation.**
+
+* `EventIdentity._relation`: the region conflict comes first and is recorded
+  as `DISTINCT_REGION`.
+* `_same_materialized_source`: the focus condition.
+* `_deterministic_relation`: exact source before exact fact.
+* The diagnostic registry includes `DISTINCT_REGION`.
+* Prompt `event-identity-grouping-v10` adds four lines (R3, R3 mixed records,
+  R4, R5). The thirteen v9 lines stay byte-identical and hash-pinned.
+* Golden ED27: one page, two Candidate events → two events.
+* Golden ED28: one page, the same Candidate event → one event.
+* Regression: `tests/test_event_identity_rc48.py`.
+* ED01-ED26 outcomes are unchanged.
+
+**R7 gate before merge.**
+
+* Prompt v10 must be measured on the labelled corpus (section A.35).
+* Method: the production owner, with the real helper, on the rebuilt records
+  of runs 40999869397 and 41018554355.
+* Required: no differently labelled pair is merged.
+* Recall is reported against the live baseline:
+  * run 40999869397: 35 of 61 pairs;
+  * run 41018554355: 34 of 51 pairs, with 8 wrong pairs from the statement
+    over-merge fixed in RC-45.
+* The paid calls need the user's approval and a cap (estimate at most 40).
+* Not run yet.
+
+```text
+EVENT_IDENTITY_DISTINCT_BASIS = ESTABLISHED REGION CONFLICT ONLY (DISTINCT_EVENT, reason DISTINCT_REGION); no helper output produces DISTINCT
+EVENT_IDENTITY_PAIR_ORDER = REGION DISTINCT > EXACT SOURCE (same URL, content and Scope focus) > EXACT FACT > CONFIRMED PROPOSAL > UNCERTAIN
+EVENT_IDENTITY_PROMPT = event-identity-grouping-v10 (R3-R5 added; v9 lines unchanged)
+EVENT_IDENTITY_R7_CORPUS_MEASUREMENT = REQUIRED BEFORE MERGE (paid calls need approval and a cap)
 ```
 
 ## B. Authoritative Owners
@@ -3236,7 +3399,8 @@ metadata/provenance uses.
 `_IDENTITY_FIELDS` rule. It must not include `country`, `transit_system_name`,
 or `metadata_support`; none of those formal-only fields is an identity-basis
 fact. No change to the existing Event Identity matching algorithm is
-authorized except the RC-15 semantic proposal path (§A.9).
+authorized except the RC-15 semantic proposal path (§A.9) and the region
+precedence and exact-source focus condition of §A.36.
 
 Country and `transit_system_name` are formal metadata only and cannot alter
 Event Identity grouping or Event ID. `metadata_support` remains provenance only.

@@ -65,7 +65,8 @@ class EventDedupGoldenTests(unittest.TestCase):
         cases = manifest["cases"]
         # RC-47: ED22, ED23 and ED25 moved verbatim to the failure-path regression
         # test (tests/test_event_identity_failure_paths.py); IDs are not reused.
-        self.assertEqual(len(cases), 23)
+        # Section A.36 (R2): ED27 and ED28.
+        self.assertEqual(len(cases), 25)
         self.assertEqual(
             {case["case_class"] for case in cases},
             {
@@ -92,6 +93,8 @@ class EventDedupGoldenTests(unittest.TestCase):
                 "conflicting_occurrence_date_confirmed_same_occurrence",
                 "second_nomination_recovers_omitted_report",
                 "different_announcer_same_occurrence",
+                "same_page_different_candidate_events",
+                "same_page_same_candidate_event",
             },
         )
         for case in cases:
@@ -166,6 +169,7 @@ class EventDedupGoldenTests(unittest.TestCase):
                     evidence_state=evidence_state,
                     in_scope=in_scope,
                     date_valid=date_valid,
+                    focus=item.get("focus_sentence_ids"),
                 )
             )
         return records

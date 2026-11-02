@@ -73,8 +73,12 @@ def test_each_failure_path_contract_still_holds(case_id):
 
 
 def test_only_the_moved_cases_left_the_golden():
+    # Every other ED01-ED26 case stays, in order; later cases (ED27 on) may follow.
     golden_ids = [case["case_id"] for case in GOLDEN["cases"]]
-    assert golden_ids == [f"ED{number:02d}" for number in range(1, 27) if f"ED{number:02d}" not in MOVED]
+    kept = [f"ED{number:02d}" for number in range(1, 27) if f"ED{number:02d}" not in MOVED]
+    assert golden_ids[: len(kept)] == kept
+    assert not set(MOVED) & set(golden_ids)
+    assert all(int(case_id[2:]) > 26 for case_id in golden_ids[len(kept):])
 
 
 def test_golden_ed24_still_locks_their_evidence_as_one_event():

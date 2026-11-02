@@ -1966,3 +1966,35 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - 刪除 ED24
 - 全套與 Golden 測試全過。
 - 未修改 production 程式，未呼叫 MaiAgent，未觸發 GitHub Actions，未寄信。
+
+## 50. Event Identity 規則 R1～R6 實作（RC-48，2026-11-02）
+
+**授權**
+- 使用者確認 D1～D4 草案 v2 的 R1～R6；R7 已於 RC-47 完成。
+- 授權 production 實作；不得 merge main、執行 Live Action 或寄信。
+
+**變更（僅 EventIdentity owner）**
+
+| 規則 | 變更 |
+|---|---|
+| R1 | 唯一的 DISTINCT 依據是已確立地區衝突，記為 `DISTINCT_EVENT`／`DISTINCT_REGION`；helper 輸出不產生 DISTINCT |
+| R2 | 判定順序改為：地區 DISTINCT → exact-source → exact-fact → 經確認的提案 → UNCERTAIN；exact-source 須同一 URL、同一內文、同一 Scope 焦點 |
+| R3～R5 | 寫入提示詞 v10 的四行；v9 的 13 行逐字不變並以 SHA-256 鎖定 |
+| R6 | 不變 |
+
+**測試**
+- Golden ED27（同一頁、兩個候選事件 → 兩個事件）、ED28（同一頁、同一候選事件 → 一個事件）；ED01–ED26 結果不變。
+- 新增 `tests/test_event_identity_rc48.py`。
+- 突變檢查：
+  - 移除焦點條件 → 3 個回歸測試與 Golden ED27 失敗。
+  - 移除地區優先 → 3 個回歸測試失敗。
+- 實作過程中，v9 的 Dates 行一度因編輯而少了一個空格，被新增的「v9 各行不變」測試抓到並修正。
+
+**R7 量測（合併前必要，尚未執行）**
+- 方法：真實 helper 搭配 production owner，在 Run 40999869397、41018554355 重建的紀錄上執行。
+- 必要條件：不同事件的配對合併數 = 0。
+- 召回率對照 Live 基準：35／61，以及 34／51（含 8 組錯誤合併）。
+- 估計最多 40 次付費呼叫，待核准上限。
+- 已完成 dry run：未送出任何請求；每個 run 固定 2 次提案。
+
+**未呼叫 MaiAgent，未觸發 GitHub Actions，未寄信。**
