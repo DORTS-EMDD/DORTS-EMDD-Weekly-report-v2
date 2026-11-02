@@ -2,7 +2,9 @@
 
 ```text
 STATUS = DRAFT v2 (2026-11-02)，取代同檔 v1
-BINDING = NO — 待使用者逐條確認；確認前不得作為實作依據
+USER_CONFIRMATION = R1–R6 已確認（2026-11-02）；R7 治理方向原則同意；ED22、ED23、ED25 移出 Golden 未授權（逐案分析見 §7）
+PRODUCTION_IMPLEMENTATION = NOT AUTHORIZED
+BINDING = NO — 契約修訂與實作須另經授權
 PRODUCTION_CHANGE = NONE（Event Identity 判定邏輯、提示詞、schema、Golden 皆未修改）
 ON_CONFIRMATION = 成為 Architecture Contract §A.35，並修訂 §A.28、§A.32、§A.34 的相關文字
 ```
@@ -352,3 +354,82 @@ ED24 保持在 Golden 且不變：三篇報導是同一決定，預期 [3] 是�
 - 地區衝突以 `DISTINCT_EVENT` 記錄。
 - 提示詞 v10 寫入 R3–R5 的新增或澄清部分，合併前在語料上量測。
 - 三個 Golden 案例移為回歸測試（需核准）。
+
+## 7. R7 逐案分析：ED22、ED23、ED25（移出 Golden 未授權）
+
+### 7.1 判斷標準
+
+- 只有一個標準：Golden 的預期結果，是否等於該案 Evidence 的領域事實（依已確認的 R3–R5）。
+- 判斷與案例是否腳本化 helper 缺陷無關。
+  - 例：ED17 腳本化了確認遺漏，但預期結果（OPEN 單獨成群、兩則測試報導合併）就是領域事實，因此是正確的 Golden。
+- 預期結果與領域事實相反者，鎖的是 helper 出錯時的 fail-closed 機制，不是領域事實。
+
+### 7.2 決定性證據：相同 Evidence 在 Golden 中有互相矛盾的預期
+
+ED22、ED23、ED24 的 NEWS1、NEWS2、NEWS3 內文逐字相同；ED25 的 NEWS1、NEWS2 也與它們逐字相同。
+
+| 案例 | 紀錄 | 預期 | 差異來源 |
+|---|---|---|---|
+| ED24 | NEWS1–3 | [3] | 腳本：第一次提案漏 NEWS3，第二次提案補回 |
+| ED22 | NEWS1–3 | [1, 2] | 腳本：NEWS3 引用不存在的句子 S9 |
+| ED23 | NEWS1–3 | [1, 2] | 腳本：NEWS1 在同群內被列兩次 |
+| ED25 | NEWS1–2 | [1, 1] | 腳本：確認錯誤地把兩者分開 |
+
+- 同一份 Evidence 只能有一個領域事實。四案的差異完全來自腳本化的 helper 回答，Evidence 沒有任何不同。
+- 依 R3–R5，這組 Evidence 的領域事實是「同一事件」（§7.3），與 ED24 相符。
+- 因此 ED22、ED23、ED25 的預期不是領域事實。
+
+### 7.3 Evidence 與領域事實
+
+三篇報導都陳述：
+- 行為者：市議會。
+- 行為：決定（resolved／approved）將電車機廠從車站廣場遷移到路線上的另一處用地。
+- 日期：10 月 20 日。
+- 理由：調查發現高壓瓦斯管與軟弱地盤。
+
+依已確認的規則：
+
+| 規則 | 套用 | 結論 |
+|---|---|---|
+| R3 | 同一行為者的同一具體行為 | 同一 occurrence |
+| R4 | 三者的年月日欄位皆為 10 月 20 日 | 一致 |
+| R5 | 機廠、車站廣場、瓦斯管、地盤等具體細節相符 | 同一主體 |
+
+領域事實：
+- ED22、ED23：1 個事件，3 筆（[3]）。
+- ED25：1 個事件，2 筆（[2]）。
+
+### 7.4 逐案
+
+| | ED22 | ED23 | ED25 |
+|---|---|---|---|
+| 目前 Golden 預期 | [1, 2]；缺口 `CITATION_INVALID` | [1, 2]；缺口 `DUPLICATE_MEMBERSHIP` | [1, 1]；無缺口 |
+| 領域事實 | [3] | [3] | [2] |
+| 腳本化的 helper 缺陷 | 提案中 NEWS3 引用 S9，但其摘錄只有 S1 | 提案群組把 NEWS1 列了兩次 | 第一次確認錯誤地把同一事件的兩篇分開 |
+| 鎖住的契約 | RC-42（§A.30）：引用無效的成員只淘汰該成員並揭露；其餘成員照常確認、合併 | RC-42（§A.30）：重複列出的成員只淘汰該成員並揭露；其餘成員照常確認、合併 | RC-44（§A.32）：較早確認的判定為最終，第二次提案不得重開 |
+| 為何是機制回歸 | [1, 2] 是 helper 出錯時的 fail-closed 結果，不是 Evidence 的事實；正確的 helper 回答會得到 [3] | 同左 | [1, 1] 是錯誤確認被保留的結果；正確的確認會得到 [2] |
+
+### 7.5 移出後保留覆蓋的方式（需核准才執行）
+
+1. **原封不動搬移。**
+   - 三個案例物件逐位元組不變，移到 `tests/fixtures/event_identity_failure_path_cases.json`。
+   - 由新回歸測試 `tests/test_event_identity_failure_paths.py` 以同一個 `_ScriptedGroups` harness、同一個 EventIdentity owner 執行。
+   - 斷言與 Golden runner 相同：群組數、排序後的群組大小、無重複成員、技術缺口類別與順序。
+2. **既有回歸測試繼續保留**，以不同 fixture 覆蓋同一契約：
+
+   | 案例 | 既有測試 | 額外驗證 |
+   |---|---|---|
+   | ED22 | `test_event_identity_rc42.py::test_an_ungrounded_member_is_rejected_and_the_grounded_members_still_merge` | 被淘汰的成員不送確認、`PROPOSAL_MEMBER_REJECTED` 診斷 |
+   | ED23 | `test_event_identity_rc42.py::test_a_repeated_member_is_rejected_and_the_others_still_merge` | — |
+   | ED25 | `test_event_identity_rc44.py::test_an_earlier_verdict_stands_and_is_never_asked_again` | 加入新成員後仍不重開、診斷只記錄一次 |
+   | ED25 | `test_event_identity_rc44.py::test_the_same_proposal_twice_costs_no_second_confirmation` | — |
+
+3. **Golden 端的變更：**
+   - `golden/event_dedup_cases.json` 移除三個物件，其他 23 個物件不變。
+   - 案例代號不重新編號：ED22、ED23、ED25 標為退役，ED24、ED26 保留原代號。
+   - 索引測試由 26 案改為 23 案，並移除三個 `case_class`。
+   - §A.30、§A.32、AGENTS RC-42／RC-44 與驗收報告中「Golden ED22、ED23、ED25」的文字，改指向回歸測試。
+4. **領域事實仍由 Golden 鎖住。** 這組 Evidence 的領域事實，由 ED24（[3]）繼續鎖住；它同時涵蓋 NEWS1、NEWS2 這一對。
+5. **全案檢查。** 依同一標準檢查 ED01–ED26，只有這三案的預期與領域事實相反。
+   - ED10、ED11、ED13、ED15：預期不與領域事實衝突，屬契約不變式。
+   - 其餘各案：預期等於領域事實。
