@@ -1361,9 +1361,10 @@ its own occurrence, and so is a later statement about the milestone (the
 23 October parliamentary call). Section A.9 and Golden ED19 stand unchanged;
 a report may therefore list a launch and its marking event as two items.
 
-Golden: ED22 (an ungrounded member is rejected; the grounded members merge)
-and ED23 (a repeated member is rejected; the others merge). ED01-ED21 are
-unchanged.
+Regression: an ungrounded member is rejected and the grounded members merge;
+a repeated member is rejected and the others merge (originally Golden ED22
+and ED23, moved verbatim to `tests/test_event_identity_failure_paths.py` by
+RC-47, section A.35). ED01-ED21 are unchanged.
 
 ```text
 EVENT_IDENTITY_PROPOSAL_VALIDATION = PER_MEMBER (DUPLICATE_MEMBERSHIP, CITATION_INVALID)
@@ -1488,7 +1489,8 @@ Rule (EventIdentity; amends sections A.12 and A.17):
   bring new pairs.
 
 Golden: ED24 (an omitted report is recovered by the second nomination and
-confirmed) and ED25 (a verdict from the first nomination is never reopened).
+confirmed). ED25 (a verdict from the first nomination is never reopened) was
+moved verbatim to the failure-path regression test by RC-47 (section A.35).
 ED01-ED23 are unchanged; their harness scripts the second nomination per case
 and by default it proposes nothing.
 
@@ -1549,8 +1551,8 @@ Evaluation of RC-42 to RC-44:
 * RC-44 (second nomination): in the one scored pair of samples it raised
   nomination recall from 66% to 98%, but its live contribution cannot be shown
   because a confirmed pair recorded no nomination; it added the 5 gaps. Kept
-  with the observation below; it is to be withdrawn if live runs show the
-  second nomination confirming no pairs.
+  with the observation below. (Withdrawal condition superseded by section
+  A.35: only with a replacement that keeps Golden ED24 = [3].)
 
 Rules:
 
@@ -1699,14 +1701,64 @@ measured mitigation of nomination variance (first and reversed answers
 together 60 of 61 pairs against 40) and is kept as transitional; it is to be
 withdrawn when fact-based blocking (D1 to D3) replaces nomination, or earlier if
 live runs show the second nomination confirming no pairs
-(`event_identity_confirmed_pairs`).
+(`event_identity_confirmed_pairs`). (Superseded by section A.35: RC-44
+is withdrawn only with a replacement that keeps Golden ED24 = [3].)
 
 ```text
 EVENT_IDENTITY_EXCHANGE_OBSERVATION = proposal_exchanges / event_identity_exchanges (IDs only)
 EVENT_IDENTITY_REPLAY = scripts/event_identity_replay.py (exact, offline, no source text)
 EVENT_IDENTITY_RECORDED_CORPUS = acceptance/event_identity/recorded_answers.json
 EVENT_IDENTITY_TARGET_AUTHORITY = RECORDED PER-RECORD OCCURRENCE FACTS + DETERMINISTIC COMPARISON (D1-D4 USER_DECISION_REQUIRED)
-RC44_SECOND_NOMINATION = TRANSITIONAL (withdraw with fact-based blocking or when SECOND confirms no pairs)
+RC44_SECOND_NOMINATION = TRANSITIONAL (superseded by section A.35: kept; withdraw only with a replacement that keeps Golden ED24 = [3])
+```
+
+### A.35 RC-47 Golden holds the domain truth; failure-path cases moved (2026-11-02, user-approved)
+
+Principle (user-approved; rule R7 of the Event Identity D1-D4 draft,
+`docs/EVENT_IDENTITY_OCCURRENCE_RULES_DRAFT.md`):
+
+* A Golden case's expected outcome is the domain truth of its Evidence. A
+  scripted helper defect is allowed when the system must still reach that
+  truth (ED17, ED24). Contract invariants that do not contradict the domain
+  truth also stay (ED10, ED11, ED13, ED15).
+* A case whose expected outcome contradicts the domain truth of its own
+  Evidence, because it scripts a helper defect and locks the owner's
+  fail-closed answer, is a mechanism regression test, not Golden. Golden is
+  never changed to fit an implementation.
+
+Applied:
+
+* ED22, ED23 and ED25 hold, word for word, the reports of one council
+  decision that ED24 locks as one Event ([3]). Their expected outcomes come
+  only from scripted defects:
+  * ED22 expects [1, 2]: one member cites a sentence its record does not have.
+  * ED23 expects [1, 2]: a record is listed twice in one group.
+  * ED25 expects [1, 1]: a confirmation wrongly separates the two reports.
+* The three case objects moved verbatim to
+  `tests/fixtures/event_identity_failure_path_cases.json`.
+* They run in `tests/test_event_identity_failure_paths.py` through the Golden
+  harness, the same EventIdentity owner and the same assertions as the Golden
+  runner.
+* Each case is pinned by its SHA-256 and its expected outcome. The test also
+  requires Golden ED24 to keep [3] for the same reports.
+* The Event Dedup Golden now has 23 cases. IDs are not reused, and the other
+  23 case objects are unchanged.
+* The RC-42 and RC-44 contracts (sections A.30, A.32) are unchanged.
+
+RC-44 withdrawal (rule R6 of the same draft, user-confirmed): the second
+nomination may be withdrawn only together with a replacement under which
+Golden ED24 still yields [3]. This replaces the withdrawal conditions in
+sections A.33 and A.34 (fact-based blocking; a live run where the second
+nomination confirms no pairs).
+
+The other confirmed rules of the draft (R1 to R6) are not yet part of this
+contract and are not implemented.
+
+```text
+GOLDEN_EXPECTED_OUTCOME = DOMAIN TRUTH OF ITS EVIDENCE (fail-closed answers to scripted defects are regression tests)
+EVENT_DEDUP_GOLDEN = 23 CASES (ED22, ED23, ED25 retired, IDs not reused)
+EVENT_IDENTITY_FAILURE_PATH_REGRESSION = tests/test_event_identity_failure_paths.py (verbatim, hash-pinned)
+RC44_SECOND_NOMINATION = KEPT (withdraw only with a replacement that keeps Golden ED24 = [3])
 ```
 
 ## B. Authoritative Owners

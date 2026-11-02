@@ -1926,3 +1926,43 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - 新增重放測試 5 項、真實回答語料測試 4 項。
 - 全套與 Golden 全過，Golden 檔案未修改。
 - 未呼叫 MaiAgent，未觸發 GitHub Actions，未寄信。
+
+## 49. Golden 只鎖領域事實：ED22、ED23、ED25 移為回歸測試（RC-47，2026-11-02）
+
+**使用者決定**
+- Event Identity D1～D4 草案 v2 的 R1～R6 已確認。
+- R7（Golden 治理）原則同意，並在逐案審查後，授權移出三案。
+- production 實作未授權。
+
+**依據**
+- ED22、ED23、ED24 的 NEWS1～NEWS3，以及 ED25 的 NEWS1、NEWS2，內文逐字相同：市議會 10 月 20 日決定遷移電車機廠，理由是瓦斯管與軟弱地盤。
+- 依已確認的 R3～R5，這是同一事件，ED24 的 [3] 是領域事實。
+- 三案的預期只來自腳本化的 helper 缺陷，是 fail-closed 機制的結果：
+
+| 案例 | 預期 | 缺陷 |
+|---|---|---|
+| ED22 | [1, 2] | 引用不存在的句子 |
+| ED23 | [1, 2] | 同群重複列出 |
+| ED25 | [1, 1] | 確認錯誤分開 |
+
+**變更**
+- 三個案例物件逐位元組不變，移到 `tests/fixtures/event_identity_failure_path_cases.json`。
+- 搬移前後 SHA-256 與 HEAD 版 Golden 相同。
+- 新增 `tests/test_event_identity_failure_paths.py`（6 項）：
+  - 以 Golden harness、同一個 EventIdentity owner 與 Golden runner 相同的斷言（群組數、群組大小、無重複成員、技術缺口類別與順序）執行三案。
+  - 以 SHA-256 與預期結果鎖定案例。
+  - 要求 Golden 只少這三案，且 ED24 仍為 [3]、執行結果仍為一個事件。
+- `golden/event_dedup_cases.json` 只刪除三行；其餘 23 個物件與檔頭不變；代號不重用。
+- 索引測試由 26 案改為 23 案。
+- 契約：新增 §A.35；§A.30、§A.32 的 Golden 文字改指向回歸測試。
+- RC-44 的撤回條件改為「須有仍使 ED24 為 [3] 的替代機制」（R6；§A.33、§A.34 的舊條件被取代）。
+
+**驗證**
+- 在記憶體中刻意製造五種弱化，相關測試都失敗：
+  - 把 ED22 預期改成 [3]
+  - 刪除 ED23 的缺口斷言
+  - 改寫 ED25 的確認腳本
+  - 把 ED24 改成 [1, 2]
+  - 刪除 ED24
+- 全套與 Golden 測試全過。
+- 未修改 production 程式，未呼叫 MaiAgent，未觸發 GitHub Actions，未寄信。

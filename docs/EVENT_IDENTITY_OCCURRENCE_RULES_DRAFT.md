@@ -2,11 +2,11 @@
 
 ```text
 STATUS = DRAFT v2 (2026-11-02)，取代同檔 v1
-USER_CONFIRMATION = R1–R6 已確認（2026-11-02）；R7 治理方向原則同意；ED22、ED23、ED25 移出 Golden 未授權（逐案分析見 §7）
+USER_CONFIRMATION = R1–R6 已確認（2026-11-02）；R7 已確認，ED22、ED23、ED25 已原封不動移為回歸測試（RC-47，契約 §A.35；逐案分析見 §7）
 PRODUCTION_IMPLEMENTATION = NOT AUTHORIZED
 BINDING = NO — 契約修訂與實作須另經授權
 PRODUCTION_CHANGE = NONE（Event Identity 判定邏輯、提示詞、schema、Golden 皆未修改）
-ON_CONFIRMATION = 成為 Architecture Contract §A.35，並修訂 §A.28、§A.32、§A.34 的相關文字
+ON_IMPLEMENTATION_AUTHORIZATION = R1–R6 成為 Architecture Contract §A.36，並修訂 §A.9、§A.28、§A.34 的相關文字（RC-44 撤回條件已於 §A.35 修訂）
 ```
 
 ## 0. v1 的問題與本版的修正
@@ -355,7 +355,7 @@ ED24 保持在 Golden 且不變：三篇報導是同一決定，預期 [3] 是�
 - 提示詞 v10 寫入 R3–R5 的新增或澄清部分，合併前在語料上量測。
 - 三個 Golden 案例移為回歸測試（需核准）。
 
-## 7. R7 逐案分析：ED22、ED23、ED25（移出 Golden 未授權）
+## 7. R7 逐案分析：ED22、ED23、ED25（已授權並完成：RC-47）
 
 ### 7.1 判斷標準
 

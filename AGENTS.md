@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-46 修訂（2026-10-20～11-02）
+### RC-3～RC-47 修訂（2026-10-20～11-02）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.34、§N 與 §R。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.35、§N 與 §R。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -401,7 +401,7 @@ Transport retry 與 semantic correction 必須分開計算。
   日期規則、兩種回答格式與 schema、SAME_EVENT 條件皆不變。離線試驗後未採用：擴大摘錄（造成
   10/23 國會發言與 10/21 開通誤合併）、批次逐筆完整放置（召回下降）。仁川「營運機構開通」與
   「部會同日體驗驗證活動」經使用者決定維持為不同事件（為標示或驗證里程碑而辦的活動自成
-  一事件，§A.9 與 Golden ED19 不變）。Golden ED22、ED23；ED01–ED21 不變。
+  一事件，§A.9 與 Golden ED19 不變）。原 Golden ED22、ED23（RC-47 原封不動移為回歸測試）；ED01–ED21 不變。
 * RC-43（§A.31）：Scope 提示詞 v11 補兩句既有規則：裝在車輛、列車、軌道、車站等設施上的
   設備沿用該設施的系統歸屬，系統列車與維修、檢查本系統軌道的車輛（如夜間軌道內保守作業車）
   屬 FUNCTIONS_FOR 或 PART_OF，其上設備亦同；營運者非軌道資產（公車、渡輪、不動產）仍排除。
@@ -413,14 +413,14 @@ Transport retry 與 semantic correction 必須分開計算。
   編號（批次代號加 `-n2`），兩次一律都送出。任一次提出的配對照常經地區檢查、確認與
   complete-link 分組；SAME_EVENT 定義不變。較早一次確認的判定為最終：之後的提案只把尚未被確認
   判定過的配對送確認，已被分開的配對不會再問。每次提案的失敗或違約各自揭露為技術缺口。每次執行
-  多 1 次批次呼叫，另加新增配對群組的確認。Golden ED24、ED25；ED01–ED23 不變。
+  多 1 次批次呼叫，另加新增配對群組的確認。Golden ED24；ED25 由 RC-47 原封不動移為回歸測試；ED01–ED23 不變。
 * RC-45（§A.33）：Live Run 41018554355 檢討。每個合併都取決於單次 helper 判斷（同一批次請求三次
   提案召回 66%／85%／95%），Golden 與回歸測試只驗證 Python 對腳本答案的處理，無法預測 Live 品質。
   國會發言併入仁川開通的最早錯誤在 Scope：事件焦點選了文章回顧的背景句。Scope 提示詞 v12：
   候選事件是文件自身報導的新聞，不是回顧的背景；新聞是聲明或質詢時以聲明為事件，經某人宣布的
   發生事項仍以該事項為事件。觀測：確認接受配對時記錄 `PROPOSAL_CONFIRMED`，run summary 顯示
   各次提案確認的配對數（`event_identity_confirmed_pairs`）。RC-44 保留，若 Live 顯示第二次提案
-  未確認任何配對即撤回。使用者決定（修訂 §A.9）：不同宣布者報導同一 occurrence 視為同一事件，
+  未確認任何配對即撤回（撤回條件已由 RC-47 修訂）。使用者決定（修訂 §A.9）：不同宣布者報導同一 occurrence 視為同一事件，
   須由 Authoritative Evidence 確認為同一發生事項；本身構成獨立 occurrence 的宣布行動、政策決策、
   檢查或實際活動仍分開；不得僅依相同主題或宣布者不同決定合併或分開。提示詞 v9 另列此規則，
   同一事件定義與日期規則不變；Golden ED26。
@@ -432,7 +432,15 @@ Transport retry 與 semantic correction 必須分開計算。
   人工標註，測試重算並鎖定結果（同一請求三次提案找到 40／52／58 of 61）。建議的權威機制：由
   EvidenceService 以既有 metadata 任務擷取每筆紀錄的 occurrence 類型與日期，Event Identity 以
   確定性規則判定，helper 只判斷同區塊內主體是否相同；需使用者決定 D1～D4。RC-44 為過渡措施，
-  事實分區上線或 Live 顯示第二次提案未確認任何配對時撤回。
+  事實分區上線或 Live 顯示第二次提案未確認任何配對時撤回（撤回條件已由 RC-47 修訂）。
+* RC-47（§A.35，使用者核准）：Golden 的預期結果必須是該案 Evidence 的領域事實；腳本化 helper
+  缺陷而預期 fail-closed 結果、與自身 Evidence 領域事實相反的案例屬機制回歸測試。ED22、ED23、ED25
+  與 ED24 為逐字相同的同一決定報導（ED24 鎖 [3]），其預期只來自腳本缺陷，已原封不動移至
+  `tests/fixtures/event_identity_failure_path_cases.json`，由 `tests/test_event_identity_failure_paths.py`
+  以同一 harness、owner 與斷言執行，並以 SHA-256 與預期結果鎖定，同時要求 Golden ED24 維持 [3]；
+  Event Dedup Golden 改為 23 案，代號不重用。RC-44 只能連同仍使 ED24 為 [3] 的替代機制一起撤回。
+  Event Identity D1～D4 草案（`docs/EVENT_IDENTITY_OCCURRENCE_RULES_DRAFT.md`）R1～R6 已確認，尚未
+  寫入契約、尚未實作。
 
 ## 13. Report / Delivery
 
@@ -582,5 +590,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-46 APPLIED (2026-11-02)
+CONTRACT_REVISION = RC-3..RC-47 APPLIED (2026-11-02)
 ```
