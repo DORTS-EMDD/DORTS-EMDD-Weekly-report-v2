@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from hashlib import sha256
 import json
+import re
 from typing import Protocol
 from urllib.parse import urlsplit, urlunsplit
 
@@ -24,6 +25,7 @@ from .contracts import (
     EventIdentityRelation,
     EventIdentityRun,
     ProposalContractViolation,
+    SemanticProviderTechnicalFailure,
     ScopeState,
     TechnicalGap,
     UnresolvedClaim,
@@ -99,6 +101,7 @@ _MEMBER_KEYS = frozenset(
     ["properties"]["members"]["items"]["required"]
 )
 _CITATION_KEYS = tuple(sorted(_MEMBER_KEYS - {"record_id"}))
+_SENTENCE_ID = re.compile(r"S[1-9][0-9]*")
 
 
 class EventIdentityGroupingAdvisor(Protocol):
@@ -172,7 +175,8 @@ class EventIdentity:
 
         technical_gaps: list[TechnicalGap] = []
         excerpts: dict[str, tuple[str, ...]] = {}
-        proposed, excerpt_limits = self._proposed_relations(eligible, diagnostics, technical_gaps, excerpts)
+        exchanges: list[dict[str, object]] = []
+        proposed, excerpt_limits = self._proposed_relations(eligible, diagnostics, technical_gaps, excerpts, exchanges)
         ordered = sorted(eligible, key=_record_sort_key)
         groups: list[list[EventIdentityRecord]] = []
         relation_cache: dict[tuple[str, str], tuple[EventIdentityRelation, str]] = {}
@@ -237,7 +241,7 @@ class EventIdentity:
                 key=lambda group: group.member_candidate_ids,
             )
         )
-        return EventIdentityRun(output, tuple(diagnostics), tuple(technical_gaps), excerpts, excerpt_limits)
+        return EventIdentityRun(output, tuple(diagnostics), tuple(technical_gaps), excerpts, excerpt_limits, tuple(exchanges))
 
     @staticmethod
     def _eligible(record: EventIdentityRecord) -> bool:
@@ -270,6 +274,7 @@ class EventIdentity:
         diagnostics: list[EventIdentityDiagnostic],
         technical_gaps: list[TechnicalGap],
         excerpts: dict[str, tuple[str, ...]],
+        exchanges: list[dict[str, object]],
     ) -> tuple[dict[tuple[str, str], tuple[EventIdentityRelation, str]], str]:
         """Validate the RC-15 grouping proposals into SAME_EVENT pair relations.
 
@@ -307,7 +312,7 @@ class EventIdentity:
             decided |= sent
             sent = set()
             try:
-                proposal = _validate_grouping_proposal(self._grouping_advisor(request), request)
+                _, proposal = self._ask(request, exchanges)
             except EVENT_TECHNICAL_FAILURES as failure:
                 technical_gaps.append(TechnicalGap.from_failure("EventIdentity", request.batch_id, failure))
                 continue
@@ -343,6 +348,7 @@ class EventIdentity:
                     f"{group_subject}:confirmation",
                     technical_gaps,
                     diagnostics,
+                    exchanges,
                 )
                 for pair in pairs:
                     if pair not in confirmed:
@@ -369,12 +375,42 @@ class EventIdentity:
                     )
         return relations, excerpt_limits
 
+    def _ask(
+        self,
+        request: EventIdentityGroupingRequest,
+        exchanges: list[dict[str, object]],
+    ) -> tuple[Mapping[str, object], list[tuple[tuple[str, ...], tuple[EventIdentityProposalViolation, ...]]]]:
+        """Ask the helper and validate its answer, recording the exchange.
+
+        Section A.34 (observation only): every exchange is kept with IDs only
+        (record map, validated groups and citations, or the failure), so a run's
+        grouping can be replayed offline exactly; no decision reads the record.
+        """
+
+        exchange: dict[str, object] = {
+            "subject": request.batch_id,
+            "confirmation": request.confirmation,
+            "records": {record.record_id: record.candidate_id for record in request.records},
+        }
+        try:
+            raw = self._grouping_advisor(request)
+            proposal = _validate_grouping_proposal(raw, request)
+        except SemanticProviderTechnicalFailure as failure:
+            exchanges.append({**exchange, "failure": {"kind": "TECHNICAL", "failure_class": failure.failure_class, "attempts": failure.attempts, "transient": failure.transient}})
+            raise
+        except ProposalContractViolation as failure:
+            exchanges.append({**exchange, "failure": {"kind": "VIOLATION", "failure_class": getattr(failure, "failure_class", "PROPOSAL_INVALID")}})
+            raise
+        exchanges.append({**exchange, "response": _recorded_response(raw)})
+        return raw, proposal
+
     def _confirmed_pairs(
         self,
         members: Sequence[EventIdentityRecord],
         batch_id: str,
         technical_gaps: list[TechnicalGap],
         diagnostics: list[EventIdentityDiagnostic],
+        exchanges: list[dict[str, object]],
     ) -> tuple[set[tuple[str, str]], dict[str, str] | None]:
         """RC-23: re-run the grouping task on one proposed group's members alone.
 
@@ -395,8 +431,7 @@ class EventIdentity:
         )
         request = EventIdentityGroupingRequest(batch_id, records, confirmation=True)
         try:
-            raw = self._grouping_advisor(request)
-            proposal = _validate_grouping_proposal(raw, request)
+            raw, proposal = self._ask(request, exchanges)
         except EVENT_TECHNICAL_FAILURES as failure:
             technical_gaps.append(TechnicalGap.from_failure("EventIdentity", batch_id, failure))
             return set(), None
@@ -632,6 +667,28 @@ def _normalise_url(value: str) -> str:
             "",
         )
     )
+
+
+def _recorded_response(raw: Mapping[str, object]) -> dict[str, object]:
+    """A validated helper answer as IDs only: a citation that is not a sentence ID stays invalid."""
+
+    return {
+        "groups": [
+            {
+                "members": [
+                    {
+                        key: member[key] if key == "record_id" else [
+                            value if isinstance(value, str) and _SENTENCE_ID.fullmatch(value) else "INVALID"
+                            for value in member[key]
+                        ]
+                        for key in sorted(_MEMBER_KEYS)
+                    }
+                    for member in group["members"]
+                ]
+            }
+            for group in raw["groups"]  # type: ignore[index, union-attr]
+        ]
+    }
 
 
 def _record_rejected_members(

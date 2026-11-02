@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-45 修訂（2026-10-20～30）
+### RC-3～RC-46 修訂（2026-10-20～11-02）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.33、§N 與 §R。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.34、§N 與 §R。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -424,6 +424,15 @@ Transport retry 與 semantic correction 必須分開計算。
   須由 Authoritative Evidence 確認為同一發生事項；本身構成獨立 occurrence 的宣布行動、政策決策、
   檢查或實際活動仍分開；不得僅依相同主題或宣布者不同決定合併或分開。提示詞 v9 另列此規則，
   同一事件定義與日期規則不變；Golden ED26。
+* RC-46（§A.34）：Event Identity 架構檢討。目前每個合併都取決於 helper 回答；production 從未
+  產生事實比對所需的 occurrence 事實，§K 不授權新比對規則，§A.28 規定 Python 無 DISTINCT。
+  已實作（僅觀測與測試工具）：Event Identity 記錄每次 helper 往返（只含 ID）、selection audit
+  記錄 Evidence 雜湊；`scripts/event_identity_replay.py` 可依 audit 離線完全重現該次合併；
+  `acceptance/event_identity/recorded_answers.json` 收錄兩次 Live 紀錄上的 11 份真實 helper 回答與
+  人工標註，測試重算並鎖定結果（同一請求三次提案找到 40／52／58 of 61）。建議的權威機制：由
+  EvidenceService 以既有 metadata 任務擷取每筆紀錄的 occurrence 類型與日期，Event Identity 以
+  確定性規則判定，helper 只判斷同區塊內主體是否相同；需使用者決定 D1～D4。RC-44 為過渡措施，
+  事實分區上線或 Live 顯示第二次提案未確認任何配對時撤回。
 
 ## 13. Report / Delivery
 
@@ -573,5 +582,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-45 APPLIED (2026-10-30)
+CONTRACT_REVISION = RC-3..RC-46 APPLIED (2026-11-02)
 ```

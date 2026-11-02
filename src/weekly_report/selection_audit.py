@@ -18,6 +18,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Mapping
 from datetime import date
+from hashlib import sha256
 from typing import Any
 
 from .contracts import EvidenceState, ScopeState
@@ -74,6 +75,8 @@ def _evidence(result: Any) -> dict[str, Any]:
         "reject_reason": _value(result.reject_reason),
         "rejection_gate": provenance.get("evidence_rejection_gate"),
         "canonical_source_url": result.canonical_source_url or None,
+        # Section A.34: a hash (not text) so a replay reproduces exact-source identity.
+        "content_sha256": sha256(result.substantive_content.encode("utf-8")).hexdigest() if result.substantive_content else None,
     }
 
 
@@ -398,6 +401,9 @@ def build_selection_audit(
         ),
         "event_identity_excerpt_limits": getattr(run, "proposal_excerpt_limits", "") or None,
         "event_identity_rejected_members": rejected_members,
+        # Section A.34 (observation only): every helper exchange, IDs only, for
+        # an exact offline replay (scripts/event_identity_replay.py).
+        "event_identity_exchanges": [dict(exchange) for exchange in getattr(run, "proposal_exchanges", ()) or ()],
         "event_identity_technical_gaps": sorted(
             f"{gap.subject_id}:{_value(gap.kind)}:{gap.failure_class}"
             for gap in result.technical_gaps

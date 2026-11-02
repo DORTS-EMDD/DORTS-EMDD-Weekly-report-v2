@@ -1,0 +1,6561 @@
+{
+ "corpus_version": "event-identity-recorded-answers-v1",
+ "description": "Real Event Identity helper answers on real records of two live runs (IDs only: no source text). Records are named by candidate ID with the number of excerpt sentences sent; labels are occurrence labels checked by hand against the Evidence (section A.34).",
+ "labels": {
+  "40999869397": {
+   "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898": "incheon_launch_2026-10-21",
+   "cand_6d80a4887ffce11f13b63b43f28c05f5cc73db1531038b188767955d051f75f5": "incheon_launch_2026-10-21",
+   "cand_9ea849abc2f6292cd7e2052dd1b882f48b737e37a67a866a07406fa07f5f1db6": "incheon_launch_2026-10-21",
+   "cand_b35e3880003242135e35749949042c5918f89ca2fe7c334e1a2e54eae6735c17": "incheon_launch_2026-10-21",
+   "cand_e1a3494623549eba3bd49be064629c56560ca70ed30d702a004ac943d4c88bd5": "incheon_launch_2026-10-21",
+   "cand_4e269b06a7edbb97fa43b2ae295c4f5623560356c8c6e2b15334488d62241687": "incheon_launch_2026-10-21",
+   "cand_da42984692c6f2d8fca0a396b18a95d7407e44d4a497152ddb430b01c5230dcd": "incheon_launch_2026-10-21",
+   "cand_9013083a062368ea4b7017a3f8ca15605c284c0740c7d93e631961a464ecb134": "incheon_launch_2026-10-21",
+   "cand_a071ba69b7be024b8c7792fa69261305e180c0545abf90e33ff72ec736c71ecf": "incheon_ministry_ride_event_2026-10-21",
+   "cand_9ce03b4da316d4ea90f2eb7cf957ecf0ff5b45a5287192fe06b97878e0938997": "incheon_ministry_ride_event_2026-10-21",
+   "cand_1cd92dac6a9672f9a58aef0da8cb106a7d8c018da7d19de29a2164e687e20d88": "incheon_ministry_ride_event_2026-10-21",
+   "cand_8edce57a26e1da6c27cea9d4c9945f399e08c15ea52ffd003c3c70ef1b19a4a2": "incheon_parliament_call_2026-10-23",
+   "cand_cfcf0f292bb078626a23ddaa4b0c05c4a44e9dd070e7e8cdbc03953782e19a91": "daegu_fire_drill_2026-10-20",
+   "cand_2143015491f054e9620673f07ea09d5afa3f9c415ad342445fcb654a8f7da8be": "daegu_fire_drill_2026-10-20",
+   "cand_2209cb8572b485e76795ec5adbb4f52c54a73e1a24ba9c59ac4ba3000bf7980c": "daegu_fire_drill_2026-10-20",
+   "cand_47537cb3969fe9340279b9b4437825c393055d0982a965978f6d29ffd7937630": "daegu_fire_drill_2026-10-20",
+   "cand_939a4355d74490458a4489b3a163423d1cea1c6180c6f0cc6e4c3e0f09bb33e5": "daegu_fire_drill_2026-10-20",
+   "cand_be6a0b6e7f711943f444737805bec5c1649c0a9e4bb38ab76aca208bca54159f": "daegu_fire_drill_2026-10-20",
+   "cand_3eea53620b9566b983bd766084ff87dc9cdc6ac08e8ab7909324218405fc9157": "daegu_fire_drill_2026-10-20",
+   "cand_c3b575ffd39c3de6d71979e28f839672ab2bc80515b1033973f1ff77d2efb4d7": "daegu_myeongdeok_exit_2026-10-30",
+   "cand_fbff996e9a8b8afc0533851199f25159b96b77402999893ccae79feade5928ad": "daegu_myeongdeok_exit_2026-10-30",
+   "cand_152126f6394ced066b112a25f1cc4ea30d2263709601e13dd13f72b9cd9cd009": "kyoto_power_bank_fire_2026-10-26",
+   "cand_2dd64df318bcc7b4fe9821f602045aaf0c48d248dcc556b401c1eeb9ee1cf099": "kyoto_power_bank_fire_2026-10-26",
+   "cand_351c4d6779efb6e66d3fb09f7dcaade53fe0dfcb57f657bacd03dbe0bcf47233": "kyoto_power_bank_fire_2026-10-26",
+   "cand_84fc61cb795dc81a429b19f78a825a2b972b740c7ccb9fce8a585737def440f2": "kyoto_power_bank_fire_2026-10-26",
+   "cand_050731a7dc7c3c03404f2485ffa74bb93d94563c2cf41babe83f66e55fab5eed": "linz_tram_truck_collision_2026-10-21",
+   "cand_b8ffaa913990f28da2d109c5b19bf6700839b0861b49e5bc49e0599b6ef43943": "linz_tram_truck_collision_2026-10-21",
+   "cand_fcfcdd750fef6f86433cb76b3bfb78ad7c22cae5d2a6aa2117a2e5c1830521b3": "dresden_tram_truck_collision_2026-10-28",
+   "cand_32837d56d4284bf27c7c6c39666d09d0fd3e59428c2edbaba489e166a262d670": "kyiv_attack_2026-10-26",
+   "cand_3f1b2d5ea51ce8e64db28637f87f27ae21f52ff84bc6977f70fd32a2a5afa3c3": "kyiv_attack_2026-10-26",
+   "cand_ff8492106c7cbaef2f3c8babb26d892b35b47e621e1e2ebe576f6135f72f2dbe": "bergamo_t2_tests_2026-10-26",
+   "cand_25a28e2244ddfa2ea7cb8fa8b1a4cae455decec627060e986d1c03eb8a4abe19": "paris_demonstration_2026-10-22",
+   "cand_68c83422b6936a3809d34f51481724ed53d26ac3bd305fd6aeac76d88903b219": "paris_demonstration_2026-10-24",
+   "cand_c8207b374830e093d75fcb8c4e13e38b5d25aadce6ccacb9f11b16ab35e352c4": "quito_metro_extension",
+   "cand_768d7a2533380d468620672800e5e0966727f2e447195a05ba1725330d0273b2": "hanoi_metro_contract"
+  },
+  "41018554355": {
+   "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898": "incheon_launch_2026-10-21",
+   "cand_4e269b06a7edbb97fa43b2ae295c4f5623560356c8c6e2b15334488d62241687": "incheon_launch_2026-10-21",
+   "cand_6d80a4887ffce11f13b63b43f28c05f5cc73db1531038b188767955d051f75f5": "incheon_launch_2026-10-21",
+   "cand_9013083a062368ea4b7017a3f8ca15605c284c0740c7d93e631961a464ecb134": "incheon_launch_2026-10-21",
+   "cand_9ea849abc2f6292cd7e2052dd1b882f48b737e37a67a866a07406fa07f5f1db6": "incheon_launch_2026-10-21",
+   "cand_ac562ece73a2e8a7ae06a117fd7c1f5c63d1a672864d8dc4d1d8a7e4c04c8c24": "incheon_launch_2026-10-21",
+   "cand_b35e3880003242135e35749949042c5918f89ca2fe7c334e1a2e54eae6735c17": "incheon_launch_2026-10-21",
+   "cand_e1a3494623549eba3bd49be064629c56560ca70ed30d702a004ac943d4c88bd5": "incheon_launch_2026-10-21",
+   "cand_eb674c15f11a1418707444167c61a4447fdd870b2a027426f9b38ac2f2e3fa22": "incheon_launch_2026-10-21",
+   "cand_da42984692c6f2d8fca0a396b18a95d7407e44d4a497152ddb430b01c5230dcd": "incheon_launch_2026-10-21",
+   "cand_856a50d53899aad39d0c2ce1b9cb551bd34ffafc0f9e7219919671d0698ea316": "incheon_parliament_call_2026-10-23",
+   "cand_a071ba69b7be024b8c7792fa69261305e180c0545abf90e33ff72ec736c71ecf": "incheon_ministry_ride_event_2026-10-21",
+   "cand_9ce03b4da316d4ea90f2eb7cf957ecf0ff5b45a5287192fe06b97878e0938997": "incheon_ministry_ride_event_2026-10-21",
+   "cand_1cd92dac6a9672f9a58aef0da8cb106a7d8c018da7d19de29a2164e687e20d88": "incheon_ministry_ride_event_2026-10-21",
+   "cand_15710f61b5d7d62a9dbf3c710daa735b6dea38a56e78900e08b1ee5dc8365368": "incheon_ministry_ride_event_2026-10-21"
+  }
+ },
+ "answers": [
+  {
+   "run": "40999869397",
+   "kind": "nomination",
+   "prompt_version": "event-identity-grouping-v8",
+   "records": {
+    "R1": {
+     "candidate_id": "cand_050731a7dc7c3c03404f2485ffa74bb93d94563c2cf41babe83f66e55fab5eed",
+     "sentences": 2
+    },
+    "R2": {
+     "candidate_id": "cand_3eea53620b9566b983bd766084ff87dc9cdc6ac08e8ab7909324218405fc9157",
+     "sentences": 2
+    },
+    "R3": {
+     "candidate_id": "cand_53bcd508c3eb0d88bca28887b8faffb12c02a839b1938373e62272076196b985",
+     "sentences": 1
+    },
+    "R4": {
+     "candidate_id": "cand_7e0ff909d92fd17afdbde6d966c2d8dd9ff6f5811245252cdd4515694ea1c2fb",
+     "sentences": 1
+    },
+    "R5": {
+     "candidate_id": "cand_e4c0d3eca2fd97b958bad32a8aba60e8abd7684269d9733a1f7463959b803cc9",
+     "sentences": 2
+    },
+    "R6": {
+     "candidate_id": "cand_2209cb8572b485e76795ec5adbb4f52c54a73e1a24ba9c59ac4ba3000bf7980c",
+     "sentences": 6
+    },
+    "R7": {
+     "candidate_id": "cand_47537cb3969fe9340279b9b4437825c393055d0982a965978f6d29ffd7937630",
+     "sentences": 6
+    },
+    "R8": {
+     "candidate_id": "cand_1cd92dac6a9672f9a58aef0da8cb106a7d8c018da7d19de29a2164e687e20d88",
+     "sentences": 2
+    },
+    "R9": {
+     "candidate_id": "cand_9ce03b4da316d4ea90f2eb7cf957ecf0ff5b45a5287192fe06b97878e0938997",
+     "sentences": 2
+    },
+    "R10": {
+     "candidate_id": "cand_a071ba69b7be024b8c7792fa69261305e180c0545abf90e33ff72ec736c71ecf",
+     "sentences": 3
+    },
+    "R11": {
+     "candidate_id": "cand_be6a0b6e7f711943f444737805bec5c1649c0a9e4bb38ab76aca208bca54159f",
+     "sentences": 4
+    },
+    "R12": {
+     "candidate_id": "cand_9ea849abc2f6292cd7e2052dd1b882f48b737e37a67a866a07406fa07f5f1db6",
+     "sentences": 4
+    },
+    "R13": {
+     "candidate_id": "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898",
+     "sentences": 3
+    },
+    "R14": {
+     "candidate_id": "cand_da42984692c6f2d8fca0a396b18a95d7407e44d4a497152ddb430b01c5230dcd",
+     "sentences": 2
+    },
+    "R15": {
+     "candidate_id": "cand_cfcf0f292bb078626a23ddaa4b0c05c4a44e9dd070e7e8cdbc03953782e19a91",
+     "sentences": 4
+    },
+    "R16": {
+     "candidate_id": "cand_2143015491f054e9620673f07ea09d5afa3f9c415ad342445fcb654a8f7da8be",
+     "sentences": 6
+    },
+    "R17": {
+     "candidate_id": "cand_6d80a4887ffce11f13b63b43f28c05f5cc73db1531038b188767955d051f75f5",
+     "sentences": 4
+    },
+    "R18": {
+     "candidate_id": "cand_25a28e2244ddfa2ea7cb8fa8b1a4cae455decec627060e986d1c03eb8a4abe19",
+     "sentences": 6
+    },
+    "R19": {
+     "candidate_id": "cand_b35e3880003242135e35749949042c5918f89ca2fe7c334e1a2e54eae6735c17",
+     "sentences": 3
+    },
+    "R20": {
+     "candidate_id": "cand_9013083a062368ea4b7017a3f8ca15605c284c0740c7d93e631961a464ecb134",
+     "sentences": 1
+    },
+    "R21": {
+     "candidate_id": "cand_4e269b06a7edbb97fa43b2ae295c4f5623560356c8c6e2b15334488d62241687",
+     "sentences": 3
+    },
+    "R22": {
+     "candidate_id": "cand_0cd098d27f42ad65b6e64e4652fa4029ddfc07b772356ce88ad7859b5e1891c5",
+     "sentences": 2
+    },
+    "R23": {
+     "candidate_id": "cand_b9539a564f7eac5e1fab1fa7220629b16a2d44b7bbc4a8cc7ac505e97d215be7",
+     "sentences": 2
+    },
+    "R24": {
+     "candidate_id": "cand_939a4355d74490458a4489b3a163423d1cea1c6180c6f0cc6e4c3e0f09bb33e5",
+     "sentences": 6
+    },
+    "R25": {
+     "candidate_id": "cand_e1a3494623549eba3bd49be064629c56560ca70ed30d702a004ac943d4c88bd5",
+     "sentences": 2
+    },
+    "R26": {
+     "candidate_id": "cand_832a4b599b673a68b06f5372f1f73d0f5fc7a47c6ba9cb4c0a8e6e8bf565a338",
+     "sentences": 4
+    },
+    "R27": {
+     "candidate_id": "cand_b8ffaa913990f28da2d109c5b19bf6700839b0861b49e5bc49e0599b6ef43943",
+     "sentences": 6
+    },
+    "R28": {
+     "candidate_id": "cand_912110a7693650d8ee8d75c2aab47817353417097705b9d89fc14517f1b9f688",
+     "sentences": 2
+    },
+    "R29": {
+     "candidate_id": "cand_b8cc6a3410c4914d191499d0505bc8a45512a134e491f5b0294e2fdb474f50fc",
+     "sentences": 5
+    },
+    "R30": {
+     "candidate_id": "cand_9425d9ea8e75d438a6737a68f9c15b2cf2c2a5d03d95ae6da51c7bb7af0231b3",
+     "sentences": 3
+    },
+    "R31": {
+     "candidate_id": "cand_7147714ba3d7c06ed2bfdb7e42a9a3418b6d5b181abf352cf0bc0f41c9156044",
+     "sentences": 1
+    },
+    "R32": {
+     "candidate_id": "cand_f3deced6d710ec6d61f0f1297ac422dfa80e6c364bea4b52b86c1a6286ab25e4",
+     "sentences": 4
+    },
+    "R33": {
+     "candidate_id": "cand_60c8576b6fbe5e71789194c3d1bf06c1f664f2480dff5fb32813f2323a3d0281",
+     "sentences": 3
+    },
+    "R34": {
+     "candidate_id": "cand_6e1857a8bc53d426cf6c70c5d880ad2ab485b38afc19c0fa5be73ceb2581beb3",
+     "sentences": 1
+    },
+    "R35": {
+     "candidate_id": "cand_e9dfbd8efbde643313674ec7d2acee4a52479613fee1dd9acef01e9049723fc5",
+     "sentences": 1
+    },
+    "R36": {
+     "candidate_id": "cand_a66c54690ec7c938a14cd6566782ed8cd194d5a657cb174236921db9ff64baf0",
+     "sentences": 6
+    },
+    "R37": {
+     "candidate_id": "cand_8edce57a26e1da6c27cea9d4c9945f399e08c15ea52ffd003c3c70ef1b19a4a2",
+     "sentences": 6
+    },
+    "R38": {
+     "candidate_id": "cand_6a9f28c7266dc4d738f64f18da90735d41f0b3d47bedfb7a32c563d8323dc185",
+     "sentences": 6
+    },
+    "R39": {
+     "candidate_id": "cand_593e17d62e7b7d7d2c40ddb8c9f78f1b0ae3678614f82586a3ed082466f00219",
+     "sentences": 3
+    },
+    "R40": {
+     "candidate_id": "cand_68c83422b6936a3809d34f51481724ed53d26ac3bd305fd6aeac76d88903b219",
+     "sentences": 3
+    },
+    "R41": {
+     "candidate_id": "cand_be9cbe900ca00b1ec0de26008dc92c31d11c946c5cb9ead789d0b25ed4bf327c",
+     "sentences": 2
+    },
+    "R42": {
+     "candidate_id": "cand_fa09aa717b9a16dcf1a7b261e9fad895eb028f8433cf72b8da0c493309d19783",
+     "sentences": 6
+    },
+    "R43": {
+     "candidate_id": "cand_768d7a2533380d468620672800e5e0966727f2e447195a05ba1725330d0273b2",
+     "sentences": 2
+    },
+    "R44": {
+     "candidate_id": "cand_8e6e62d213efd3115ca7e237b99fc09bcba1f7f123d4c24cb7db2a7e5a7bdaa3",
+     "sentences": 2
+    },
+    "R45": {
+     "candidate_id": "cand_5c32a7b4aadbf2064fee59bff82f45bc388660380d383a4d637f5d2adc3cd7a4",
+     "sentences": 5
+    },
+    "R46": {
+     "candidate_id": "cand_0a277d4fd451cadebda117ac2fdf9ec45a64abf8f770e4ab7105305d2f37853d",
+     "sentences": 5
+    },
+    "R47": {
+     "candidate_id": "cand_498d6ad51b5db98f58a3ab7febd38cb3359fcc9b3e2e0810bf952f77e4b02f9e",
+     "sentences": 6
+    },
+    "R48": {
+     "candidate_id": "cand_ccefef7229e02d151e2df3db447f19d87005bcea0407faff1c1bba3229b4ef06",
+     "sentences": 4
+    },
+    "R49": {
+     "candidate_id": "cand_351c4d6779efb6e66d3fb09f7dcaade53fe0dfcb57f657bacd03dbe0bcf47233",
+     "sentences": 3
+    },
+    "R50": {
+     "candidate_id": "cand_84fc61cb795dc81a429b19f78a825a2b972b740c7ccb9fce8a585737def440f2",
+     "sentences": 2
+    },
+    "R51": {
+     "candidate_id": "cand_152126f6394ced066b112a25f1cc4ea30d2263709601e13dd13f72b9cd9cd009",
+     "sentences": 4
+    },
+    "R52": {
+     "candidate_id": "cand_2dd64df318bcc7b4fe9821f602045aaf0c48d248dcc556b401c1eeb9ee1cf099",
+     "sentences": 2
+    },
+    "R53": {
+     "candidate_id": "cand_96fd920f87f1f819f61be7a0ce0b626284588870ae934133a8cddb1a347f8927",
+     "sentences": 1
+    },
+    "R54": {
+     "candidate_id": "cand_8154844486d170435932070a4c2751fc154b08cbd8461d152d40927161e5b694",
+     "sentences": 4
+    },
+    "R55": {
+     "candidate_id": "cand_ff8492106c7cbaef2f3c8babb26d892b35b47e621e1e2ebe576f6135f72f2dbe",
+     "sentences": 5
+    },
+    "R56": {
+     "candidate_id": "cand_cee666aeec5f5d74d92109250db9e6319f19c8284c39e8d7aa01381f63f30434",
+     "sentences": 2
+    },
+    "R57": {
+     "candidate_id": "cand_cfdc66092dd72a924551c4137de00268c9a6d76f7de6070f2ff2b7fc2a885bd4",
+     "sentences": 4
+    },
+    "R58": {
+     "candidate_id": "cand_32837d56d4284bf27c7c6c39666d09d0fd3e59428c2edbaba489e166a262d670",
+     "sentences": 2
+    },
+    "R59": {
+     "candidate_id": "cand_3f1b2d5ea51ce8e64db28637f87f27ae21f52ff84bc6977f70fd32a2a5afa3c3",
+     "sentences": 1
+    },
+    "R60": {
+     "candidate_id": "cand_c461ea847d3f92d884735c8e1e77a004be5f9c64a80d770d985762d4240712fc",
+     "sentences": 1
+    },
+    "R61": {
+     "candidate_id": "cand_774a57238f875d2f88ab6167659886f201204e735899cf4e924337281fa264e7",
+     "sentences": 1
+    },
+    "R62": {
+     "candidate_id": "cand_89ec4ffee8f257cb9601affe2cf5291ce7e9745a909b168248a3ab07ae11600b",
+     "sentences": 3
+    },
+    "R63": {
+     "candidate_id": "cand_05b1a271c7681e1c3a6ecfc48ea89d9fd3fc33b82b88362e45bf227b9f451ef3",
+     "sentences": 4
+    },
+    "R64": {
+     "candidate_id": "cand_a118b341f43552d2b33269716554a43882e0638e933cc57988e4e2cdad1583dc",
+     "sentences": 6
+    },
+    "R65": {
+     "candidate_id": "cand_dfe53d531adc69fb4b0985af0a8a7b38f13c3fad2c3af68bf2195d9011d6078e",
+     "sentences": 6
+    },
+    "R66": {
+     "candidate_id": "cand_34e97800b8e8ab753f87c31d548da1fce0c2d04ee4732d421b16478b269af1fa",
+     "sentences": 4
+    },
+    "R67": {
+     "candidate_id": "cand_bc383dac0265a4669f7c267734b218830f425d36595b02ee3e565fb7f3e65d65",
+     "sentences": 2
+    },
+    "R68": {
+     "candidate_id": "cand_8bca30f35bcead97e048426a0aaae0cc4f17135c8e39d2f933ab76d79ea1a726",
+     "sentences": 2
+    },
+    "R69": {
+     "candidate_id": "cand_8769477d0c03fceeea8d4d96c4c6926009b575ba1af40ccb7eca040f2a11ccb6",
+     "sentences": 2
+    },
+    "R70": {
+     "candidate_id": "cand_4ea32d39f087c64fd6435c5fa438fc1639658223b286bd0758df0a35692439bf",
+     "sentences": 2
+    },
+    "R71": {
+     "candidate_id": "cand_6b18cbd933f4584ced526928c3d75d3fa1ebc09b39126ba4a85d7e8f3c3ac012",
+     "sentences": 3
+    },
+    "R72": {
+     "candidate_id": "cand_47cacec5b5fe1e05a2d3815fed93ef795f5233d5df0ef7612b9b156a9563c42d",
+     "sentences": 4
+    },
+    "R73": {
+     "candidate_id": "cand_b19b0a1ce40f0bd630b1b8c366ac8abd48ba88d8cdf621d954cf7adf05ccb55c",
+     "sentences": 3
+    },
+    "R74": {
+     "candidate_id": "cand_ca381ec36d701c0adbb30d82980a5c5bf00ac0d15152d86035f944d3bd492fb0",
+     "sentences": 3
+    },
+    "R75": {
+     "candidate_id": "cand_b7fcaa29b9b4a08a9ef26fd11cacacc5b24421e4c81b729494c2c1a28c812f63",
+     "sentences": 3
+    },
+    "R76": {
+     "candidate_id": "cand_b9d5db43e3e39be064a0f022c4c73a3cdcfced1764567e7e1f747087ae0631af",
+     "sentences": 6
+    },
+    "R77": {
+     "candidate_id": "cand_3a134810a05bf89c00c1ba5c8008d1bf43cb121bf1fdf09e30468de3443c01ef",
+     "sentences": 1
+    },
+    "R78": {
+     "candidate_id": "cand_6e10c6873fd9ff39f6e81c810bedc335502e140f256d990df7e528ac5c4140b2",
+     "sentences": 5
+    },
+    "R79": {
+     "candidate_id": "cand_f998a166c6ec54af0c88ce3f68a0668e23a60341cb64b41146e6d4e53bd025dc",
+     "sentences": 2
+    },
+    "R80": {
+     "candidate_id": "cand_4f343de2c8f3682274f1d08a28cd3c6f56ea16890d0263865007234b87e681d3",
+     "sentences": 1
+    },
+    "R81": {
+     "candidate_id": "cand_98d796a7dcd89830d898cddf953bfd564eae7be3701e8b5fe006d64b6b43e818",
+     "sentences": 2
+    },
+    "R82": {
+     "candidate_id": "cand_a213b0e754bf757f35ccc1776dc4f74af200794f457abb7d8e561d32f6949318",
+     "sentences": 6
+    },
+    "R83": {
+     "candidate_id": "cand_d978fceb028c29a7f4bc962f13aa7dd2ed58f6b9af3b2d52476da7dd5250fc81",
+     "sentences": 2
+    },
+    "R84": {
+     "candidate_id": "cand_9cc3e63954c7b33a45f46039f48a84996a102dfc89d85ab3fcc906391df818af",
+     "sentences": 4
+    },
+    "R85": {
+     "candidate_id": "cand_7b37310265e829ea5880273c64380aedba7693bdccbc5f2e19aae1565a15fd5f",
+     "sentences": 4
+    },
+    "R86": {
+     "candidate_id": "cand_2d54ce8d6e6bf4f3cbce82fabaae734f7d3d8365c9cae21d7c7ff7f1f70fee51",
+     "sentences": 6
+    },
+    "R87": {
+     "candidate_id": "cand_4a38d49019108d03aeee16f76514307a838b52177e56e2a8e890518f4213ca45",
+     "sentences": 6
+    },
+    "R88": {
+     "candidate_id": "cand_98e2859c91c2d29e114aed03e18f6d97961897b765fef1e695ef841b2cfc610a",
+     "sentences": 3
+    },
+    "R89": {
+     "candidate_id": "cand_fc607d8ec89e2039b80de3a611948dbb61efb69e382f472d0cb2f5ee6ad78cc6",
+     "sentences": 4
+    },
+    "R90": {
+     "candidate_id": "cand_fbff996e9a8b8afc0533851199f25159b96b77402999893ccae79feade5928ad",
+     "sentences": 1
+    },
+    "R91": {
+     "candidate_id": "cand_bf462ee3b12a4d3cb3ab83cfa2fe283ec5f042c873fbc090ac4f5012e66fcd56",
+     "sentences": 3
+    },
+    "R92": {
+     "candidate_id": "cand_e7016e6b7ab004c01e5cac421e7e240889e7580e0253f0bd5b63c5cd3bcd672e",
+     "sentences": 4
+    },
+    "R93": {
+     "candidate_id": "cand_fcfcdd750fef6f86433cb76b3bfb78ad7c22cae5d2a6aa2117a2e5c1830521b3",
+     "sentences": 2
+    },
+    "R94": {
+     "candidate_id": "cand_c3b575ffd39c3de6d71979e28f839672ab2bc80515b1033973f1ff77d2efb4d7",
+     "sentences": 5
+    },
+    "R95": {
+     "candidate_id": "cand_b0055bd6e37fdf1a371a1c7abda644e3b6c5664505ce17169ed504690a3510c1",
+     "sentences": 2
+    },
+    "R96": {
+     "candidate_id": "cand_dc402ebe46dd34e4a50e760538bfbb4807754bd42b5a864cfe8be889c67f1c00",
+     "sentences": 3
+    },
+    "R97": {
+     "candidate_id": "cand_2a5ff9772d8cc60481220f496615a405327fc2c7bbf8f62a07704d224481fdd1",
+     "sentences": 6
+    },
+    "R98": {
+     "candidate_id": "cand_eefa8b5c46c2b677e054f5f6e312ec603b9d127d76587f48dfdf4e95f87b96aa",
+     "sentences": 5
+    },
+    "R99": {
+     "candidate_id": "cand_8d9641468b3db28b814f3774d63ea2f9fabc5bf3ffb6b6992f398ae3b024e5dd",
+     "sentences": 3
+    },
+    "R100": {
+     "candidate_id": "cand_2bc5f5fe37a46e9464d3c0ff300e6f409dcc20458fa892a641b816a6c21c8e91",
+     "sentences": 2
+    },
+    "R101": {
+     "candidate_id": "cand_c8207b374830e093d75fcb8c4e13e38b5d25aadce6ccacb9f11b16ab35e352c4",
+     "sentences": 2
+    }
+   },
+   "response": {
+    "groups": [
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R2",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "record_id": "R6",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S4",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S4",
+         "S5"
+        ],
+        "record_id": "R7",
+        "subject_sentence_ids": [
+         "S1",
+         "S4",
+         "S5"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R11",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "record_id": "R15",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R16",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R24",
+        "subject_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R8",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R10",
+        "subject_sentence_ids": [
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R9",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R10",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R12",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R13",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R17",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R19",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R25",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R23",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R28",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R31",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R34",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S4",
+         "S5"
+        ],
+        "record_id": "R36",
+        "subject_sentence_ids": [
+         "S1",
+         "S4"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R49",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R50",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "record_id": "R51",
+        "subject_sentence_ids": [
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R52",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S4"
+        ],
+        "record_id": "R55",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R61",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R62",
+        "subject_sentence_ids": [
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R63",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R66",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R98",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R67",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R68",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R71",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S4"
+        ],
+        "record_id": "R72",
+        "subject_sentence_ids": [
+         "S1",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R73",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R75",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R76",
+        "subject_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S4"
+        ],
+        "record_id": "R78",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R80",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R81",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S5"
+        ],
+        "record_id": "R82",
+        "subject_sentence_ids": [
+         "S1",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R83",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R84",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R85",
+        "subject_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R86",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R87",
+        "subject_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R88",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R89",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R91",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S4"
+        ],
+        "record_id": "R92",
+        "subject_sentence_ids": [
+         "S1",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R96",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S5"
+        ],
+        "record_id": "R97",
+        "subject_sentence_ids": [
+         "S1",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R99",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R90",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R94",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R101",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "run": "40999869397",
+   "kind": "nomination",
+   "prompt_version": "event-identity-grouping-v8",
+   "records": {
+    "R1": {
+     "candidate_id": "cand_050731a7dc7c3c03404f2485ffa74bb93d94563c2cf41babe83f66e55fab5eed",
+     "sentences": 2
+    },
+    "R2": {
+     "candidate_id": "cand_3eea53620b9566b983bd766084ff87dc9cdc6ac08e8ab7909324218405fc9157",
+     "sentences": 2
+    },
+    "R3": {
+     "candidate_id": "cand_53bcd508c3eb0d88bca28887b8faffb12c02a839b1938373e62272076196b985",
+     "sentences": 1
+    },
+    "R4": {
+     "candidate_id": "cand_7e0ff909d92fd17afdbde6d966c2d8dd9ff6f5811245252cdd4515694ea1c2fb",
+     "sentences": 1
+    },
+    "R5": {
+     "candidate_id": "cand_e4c0d3eca2fd97b958bad32a8aba60e8abd7684269d9733a1f7463959b803cc9",
+     "sentences": 2
+    },
+    "R6": {
+     "candidate_id": "cand_2209cb8572b485e76795ec5adbb4f52c54a73e1a24ba9c59ac4ba3000bf7980c",
+     "sentences": 6
+    },
+    "R7": {
+     "candidate_id": "cand_47537cb3969fe9340279b9b4437825c393055d0982a965978f6d29ffd7937630",
+     "sentences": 6
+    },
+    "R8": {
+     "candidate_id": "cand_1cd92dac6a9672f9a58aef0da8cb106a7d8c018da7d19de29a2164e687e20d88",
+     "sentences": 2
+    },
+    "R9": {
+     "candidate_id": "cand_9ce03b4da316d4ea90f2eb7cf957ecf0ff5b45a5287192fe06b97878e0938997",
+     "sentences": 2
+    },
+    "R10": {
+     "candidate_id": "cand_a071ba69b7be024b8c7792fa69261305e180c0545abf90e33ff72ec736c71ecf",
+     "sentences": 3
+    },
+    "R11": {
+     "candidate_id": "cand_be6a0b6e7f711943f444737805bec5c1649c0a9e4bb38ab76aca208bca54159f",
+     "sentences": 4
+    },
+    "R12": {
+     "candidate_id": "cand_9ea849abc2f6292cd7e2052dd1b882f48b737e37a67a866a07406fa07f5f1db6",
+     "sentences": 4
+    },
+    "R13": {
+     "candidate_id": "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898",
+     "sentences": 3
+    },
+    "R14": {
+     "candidate_id": "cand_da42984692c6f2d8fca0a396b18a95d7407e44d4a497152ddb430b01c5230dcd",
+     "sentences": 2
+    },
+    "R15": {
+     "candidate_id": "cand_cfcf0f292bb078626a23ddaa4b0c05c4a44e9dd070e7e8cdbc03953782e19a91",
+     "sentences": 4
+    },
+    "R16": {
+     "candidate_id": "cand_2143015491f054e9620673f07ea09d5afa3f9c415ad342445fcb654a8f7da8be",
+     "sentences": 6
+    },
+    "R17": {
+     "candidate_id": "cand_6d80a4887ffce11f13b63b43f28c05f5cc73db1531038b188767955d051f75f5",
+     "sentences": 4
+    },
+    "R18": {
+     "candidate_id": "cand_25a28e2244ddfa2ea7cb8fa8b1a4cae455decec627060e986d1c03eb8a4abe19",
+     "sentences": 6
+    },
+    "R19": {
+     "candidate_id": "cand_b35e3880003242135e35749949042c5918f89ca2fe7c334e1a2e54eae6735c17",
+     "sentences": 3
+    },
+    "R20": {
+     "candidate_id": "cand_9013083a062368ea4b7017a3f8ca15605c284c0740c7d93e631961a464ecb134",
+     "sentences": 1
+    },
+    "R21": {
+     "candidate_id": "cand_4e269b06a7edbb97fa43b2ae295c4f5623560356c8c6e2b15334488d62241687",
+     "sentences": 3
+    },
+    "R22": {
+     "candidate_id": "cand_0cd098d27f42ad65b6e64e4652fa4029ddfc07b772356ce88ad7859b5e1891c5",
+     "sentences": 2
+    },
+    "R23": {
+     "candidate_id": "cand_b9539a564f7eac5e1fab1fa7220629b16a2d44b7bbc4a8cc7ac505e97d215be7",
+     "sentences": 2
+    },
+    "R24": {
+     "candidate_id": "cand_939a4355d74490458a4489b3a163423d1cea1c6180c6f0cc6e4c3e0f09bb33e5",
+     "sentences": 6
+    },
+    "R25": {
+     "candidate_id": "cand_e1a3494623549eba3bd49be064629c56560ca70ed30d702a004ac943d4c88bd5",
+     "sentences": 2
+    },
+    "R26": {
+     "candidate_id": "cand_832a4b599b673a68b06f5372f1f73d0f5fc7a47c6ba9cb4c0a8e6e8bf565a338",
+     "sentences": 4
+    },
+    "R27": {
+     "candidate_id": "cand_b8ffaa913990f28da2d109c5b19bf6700839b0861b49e5bc49e0599b6ef43943",
+     "sentences": 6
+    },
+    "R28": {
+     "candidate_id": "cand_912110a7693650d8ee8d75c2aab47817353417097705b9d89fc14517f1b9f688",
+     "sentences": 2
+    },
+    "R29": {
+     "candidate_id": "cand_b8cc6a3410c4914d191499d0505bc8a45512a134e491f5b0294e2fdb474f50fc",
+     "sentences": 5
+    },
+    "R30": {
+     "candidate_id": "cand_9425d9ea8e75d438a6737a68f9c15b2cf2c2a5d03d95ae6da51c7bb7af0231b3",
+     "sentences": 3
+    },
+    "R31": {
+     "candidate_id": "cand_7147714ba3d7c06ed2bfdb7e42a9a3418b6d5b181abf352cf0bc0f41c9156044",
+     "sentences": 1
+    },
+    "R32": {
+     "candidate_id": "cand_f3deced6d710ec6d61f0f1297ac422dfa80e6c364bea4b52b86c1a6286ab25e4",
+     "sentences": 4
+    },
+    "R33": {
+     "candidate_id": "cand_60c8576b6fbe5e71789194c3d1bf06c1f664f2480dff5fb32813f2323a3d0281",
+     "sentences": 3
+    },
+    "R34": {
+     "candidate_id": "cand_6e1857a8bc53d426cf6c70c5d880ad2ab485b38afc19c0fa5be73ceb2581beb3",
+     "sentences": 1
+    },
+    "R35": {
+     "candidate_id": "cand_e9dfbd8efbde643313674ec7d2acee4a52479613fee1dd9acef01e9049723fc5",
+     "sentences": 1
+    },
+    "R36": {
+     "candidate_id": "cand_a66c54690ec7c938a14cd6566782ed8cd194d5a657cb174236921db9ff64baf0",
+     "sentences": 6
+    },
+    "R37": {
+     "candidate_id": "cand_8edce57a26e1da6c27cea9d4c9945f399e08c15ea52ffd003c3c70ef1b19a4a2",
+     "sentences": 6
+    },
+    "R38": {
+     "candidate_id": "cand_6a9f28c7266dc4d738f64f18da90735d41f0b3d47bedfb7a32c563d8323dc185",
+     "sentences": 6
+    },
+    "R39": {
+     "candidate_id": "cand_593e17d62e7b7d7d2c40ddb8c9f78f1b0ae3678614f82586a3ed082466f00219",
+     "sentences": 3
+    },
+    "R40": {
+     "candidate_id": "cand_68c83422b6936a3809d34f51481724ed53d26ac3bd305fd6aeac76d88903b219",
+     "sentences": 3
+    },
+    "R41": {
+     "candidate_id": "cand_be9cbe900ca00b1ec0de26008dc92c31d11c946c5cb9ead789d0b25ed4bf327c",
+     "sentences": 2
+    },
+    "R42": {
+     "candidate_id": "cand_fa09aa717b9a16dcf1a7b261e9fad895eb028f8433cf72b8da0c493309d19783",
+     "sentences": 6
+    },
+    "R43": {
+     "candidate_id": "cand_768d7a2533380d468620672800e5e0966727f2e447195a05ba1725330d0273b2",
+     "sentences": 2
+    },
+    "R44": {
+     "candidate_id": "cand_8e6e62d213efd3115ca7e237b99fc09bcba1f7f123d4c24cb7db2a7e5a7bdaa3",
+     "sentences": 2
+    },
+    "R45": {
+     "candidate_id": "cand_5c32a7b4aadbf2064fee59bff82f45bc388660380d383a4d637f5d2adc3cd7a4",
+     "sentences": 5
+    },
+    "R46": {
+     "candidate_id": "cand_0a277d4fd451cadebda117ac2fdf9ec45a64abf8f770e4ab7105305d2f37853d",
+     "sentences": 5
+    },
+    "R47": {
+     "candidate_id": "cand_498d6ad51b5db98f58a3ab7febd38cb3359fcc9b3e2e0810bf952f77e4b02f9e",
+     "sentences": 6
+    },
+    "R48": {
+     "candidate_id": "cand_ccefef7229e02d151e2df3db447f19d87005bcea0407faff1c1bba3229b4ef06",
+     "sentences": 4
+    },
+    "R49": {
+     "candidate_id": "cand_351c4d6779efb6e66d3fb09f7dcaade53fe0dfcb57f657bacd03dbe0bcf47233",
+     "sentences": 3
+    },
+    "R50": {
+     "candidate_id": "cand_84fc61cb795dc81a429b19f78a825a2b972b740c7ccb9fce8a585737def440f2",
+     "sentences": 2
+    },
+    "R51": {
+     "candidate_id": "cand_152126f6394ced066b112a25f1cc4ea30d2263709601e13dd13f72b9cd9cd009",
+     "sentences": 4
+    },
+    "R52": {
+     "candidate_id": "cand_2dd64df318bcc7b4fe9821f602045aaf0c48d248dcc556b401c1eeb9ee1cf099",
+     "sentences": 2
+    },
+    "R53": {
+     "candidate_id": "cand_96fd920f87f1f819f61be7a0ce0b626284588870ae934133a8cddb1a347f8927",
+     "sentences": 1
+    },
+    "R54": {
+     "candidate_id": "cand_8154844486d170435932070a4c2751fc154b08cbd8461d152d40927161e5b694",
+     "sentences": 4
+    },
+    "R55": {
+     "candidate_id": "cand_ff8492106c7cbaef2f3c8babb26d892b35b47e621e1e2ebe576f6135f72f2dbe",
+     "sentences": 5
+    },
+    "R56": {
+     "candidate_id": "cand_cee666aeec5f5d74d92109250db9e6319f19c8284c39e8d7aa01381f63f30434",
+     "sentences": 2
+    },
+    "R57": {
+     "candidate_id": "cand_cfdc66092dd72a924551c4137de00268c9a6d76f7de6070f2ff2b7fc2a885bd4",
+     "sentences": 4
+    },
+    "R58": {
+     "candidate_id": "cand_32837d56d4284bf27c7c6c39666d09d0fd3e59428c2edbaba489e166a262d670",
+     "sentences": 2
+    },
+    "R59": {
+     "candidate_id": "cand_3f1b2d5ea51ce8e64db28637f87f27ae21f52ff84bc6977f70fd32a2a5afa3c3",
+     "sentences": 1
+    },
+    "R60": {
+     "candidate_id": "cand_c461ea847d3f92d884735c8e1e77a004be5f9c64a80d770d985762d4240712fc",
+     "sentences": 1
+    },
+    "R61": {
+     "candidate_id": "cand_774a57238f875d2f88ab6167659886f201204e735899cf4e924337281fa264e7",
+     "sentences": 1
+    },
+    "R62": {
+     "candidate_id": "cand_89ec4ffee8f257cb9601affe2cf5291ce7e9745a909b168248a3ab07ae11600b",
+     "sentences": 3
+    },
+    "R63": {
+     "candidate_id": "cand_05b1a271c7681e1c3a6ecfc48ea89d9fd3fc33b82b88362e45bf227b9f451ef3",
+     "sentences": 4
+    },
+    "R64": {
+     "candidate_id": "cand_a118b341f43552d2b33269716554a43882e0638e933cc57988e4e2cdad1583dc",
+     "sentences": 6
+    },
+    "R65": {
+     "candidate_id": "cand_dfe53d531adc69fb4b0985af0a8a7b38f13c3fad2c3af68bf2195d9011d6078e",
+     "sentences": 6
+    },
+    "R66": {
+     "candidate_id": "cand_34e97800b8e8ab753f87c31d548da1fce0c2d04ee4732d421b16478b269af1fa",
+     "sentences": 4
+    },
+    "R67": {
+     "candidate_id": "cand_bc383dac0265a4669f7c267734b218830f425d36595b02ee3e565fb7f3e65d65",
+     "sentences": 2
+    },
+    "R68": {
+     "candidate_id": "cand_8bca30f35bcead97e048426a0aaae0cc4f17135c8e39d2f933ab76d79ea1a726",
+     "sentences": 2
+    },
+    "R69": {
+     "candidate_id": "cand_8769477d0c03fceeea8d4d96c4c6926009b575ba1af40ccb7eca040f2a11ccb6",
+     "sentences": 2
+    },
+    "R70": {
+     "candidate_id": "cand_4ea32d39f087c64fd6435c5fa438fc1639658223b286bd0758df0a35692439bf",
+     "sentences": 2
+    },
+    "R71": {
+     "candidate_id": "cand_6b18cbd933f4584ced526928c3d75d3fa1ebc09b39126ba4a85d7e8f3c3ac012",
+     "sentences": 3
+    },
+    "R72": {
+     "candidate_id": "cand_47cacec5b5fe1e05a2d3815fed93ef795f5233d5df0ef7612b9b156a9563c42d",
+     "sentences": 4
+    },
+    "R73": {
+     "candidate_id": "cand_b19b0a1ce40f0bd630b1b8c366ac8abd48ba88d8cdf621d954cf7adf05ccb55c",
+     "sentences": 3
+    },
+    "R74": {
+     "candidate_id": "cand_ca381ec36d701c0adbb30d82980a5c5bf00ac0d15152d86035f944d3bd492fb0",
+     "sentences": 3
+    },
+    "R75": {
+     "candidate_id": "cand_b7fcaa29b9b4a08a9ef26fd11cacacc5b24421e4c81b729494c2c1a28c812f63",
+     "sentences": 3
+    },
+    "R76": {
+     "candidate_id": "cand_b9d5db43e3e39be064a0f022c4c73a3cdcfced1764567e7e1f747087ae0631af",
+     "sentences": 6
+    },
+    "R77": {
+     "candidate_id": "cand_3a134810a05bf89c00c1ba5c8008d1bf43cb121bf1fdf09e30468de3443c01ef",
+     "sentences": 1
+    },
+    "R78": {
+     "candidate_id": "cand_6e10c6873fd9ff39f6e81c810bedc335502e140f256d990df7e528ac5c4140b2",
+     "sentences": 5
+    },
+    "R79": {
+     "candidate_id": "cand_f998a166c6ec54af0c88ce3f68a0668e23a60341cb64b41146e6d4e53bd025dc",
+     "sentences": 2
+    },
+    "R80": {
+     "candidate_id": "cand_4f343de2c8f3682274f1d08a28cd3c6f56ea16890d0263865007234b87e681d3",
+     "sentences": 1
+    },
+    "R81": {
+     "candidate_id": "cand_98d796a7dcd89830d898cddf953bfd564eae7be3701e8b5fe006d64b6b43e818",
+     "sentences": 2
+    },
+    "R82": {
+     "candidate_id": "cand_a213b0e754bf757f35ccc1776dc4f74af200794f457abb7d8e561d32f6949318",
+     "sentences": 6
+    },
+    "R83": {
+     "candidate_id": "cand_d978fceb028c29a7f4bc962f13aa7dd2ed58f6b9af3b2d52476da7dd5250fc81",
+     "sentences": 2
+    },
+    "R84": {
+     "candidate_id": "cand_9cc3e63954c7b33a45f46039f48a84996a102dfc89d85ab3fcc906391df818af",
+     "sentences": 4
+    },
+    "R85": {
+     "candidate_id": "cand_7b37310265e829ea5880273c64380aedba7693bdccbc5f2e19aae1565a15fd5f",
+     "sentences": 4
+    },
+    "R86": {
+     "candidate_id": "cand_2d54ce8d6e6bf4f3cbce82fabaae734f7d3d8365c9cae21d7c7ff7f1f70fee51",
+     "sentences": 6
+    },
+    "R87": {
+     "candidate_id": "cand_4a38d49019108d03aeee16f76514307a838b52177e56e2a8e890518f4213ca45",
+     "sentences": 6
+    },
+    "R88": {
+     "candidate_id": "cand_98e2859c91c2d29e114aed03e18f6d97961897b765fef1e695ef841b2cfc610a",
+     "sentences": 3
+    },
+    "R89": {
+     "candidate_id": "cand_fc607d8ec89e2039b80de3a611948dbb61efb69e382f472d0cb2f5ee6ad78cc6",
+     "sentences": 4
+    },
+    "R90": {
+     "candidate_id": "cand_fbff996e9a8b8afc0533851199f25159b96b77402999893ccae79feade5928ad",
+     "sentences": 1
+    },
+    "R91": {
+     "candidate_id": "cand_bf462ee3b12a4d3cb3ab83cfa2fe283ec5f042c873fbc090ac4f5012e66fcd56",
+     "sentences": 3
+    },
+    "R92": {
+     "candidate_id": "cand_e7016e6b7ab004c01e5cac421e7e240889e7580e0253f0bd5b63c5cd3bcd672e",
+     "sentences": 4
+    },
+    "R93": {
+     "candidate_id": "cand_fcfcdd750fef6f86433cb76b3bfb78ad7c22cae5d2a6aa2117a2e5c1830521b3",
+     "sentences": 2
+    },
+    "R94": {
+     "candidate_id": "cand_c3b575ffd39c3de6d71979e28f839672ab2bc80515b1033973f1ff77d2efb4d7",
+     "sentences": 5
+    },
+    "R95": {
+     "candidate_id": "cand_b0055bd6e37fdf1a371a1c7abda644e3b6c5664505ce17169ed504690a3510c1",
+     "sentences": 2
+    },
+    "R96": {
+     "candidate_id": "cand_dc402ebe46dd34e4a50e760538bfbb4807754bd42b5a864cfe8be889c67f1c00",
+     "sentences": 3
+    },
+    "R97": {
+     "candidate_id": "cand_2a5ff9772d8cc60481220f496615a405327fc2c7bbf8f62a07704d224481fdd1",
+     "sentences": 6
+    },
+    "R98": {
+     "candidate_id": "cand_eefa8b5c46c2b677e054f5f6e312ec603b9d127d76587f48dfdf4e95f87b96aa",
+     "sentences": 5
+    },
+    "R99": {
+     "candidate_id": "cand_8d9641468b3db28b814f3774d63ea2f9fabc5bf3ffb6b6992f398ae3b024e5dd",
+     "sentences": 3
+    },
+    "R100": {
+     "candidate_id": "cand_2bc5f5fe37a46e9464d3c0ff300e6f409dcc20458fa892a641b816a6c21c8e91",
+     "sentences": 2
+    },
+    "R101": {
+     "candidate_id": "cand_c8207b374830e093d75fcb8c4e13e38b5d25aadce6ccacb9f11b16ab35e352c4",
+     "sentences": 2
+    }
+   },
+   "response": {
+    "groups": [
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R2",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3",
+         "S4",
+         "S5"
+        ],
+        "record_id": "R6",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R7",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R11",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R15",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R16",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R24",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R5",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S3",
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R27",
+        "subject_sentence_ids": [
+         "S4",
+         "S5",
+         "S6"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R8",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R10",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R9",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R10",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R20",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R12",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R13",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R14",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R17",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R19",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R21",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R25",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S4"
+        ],
+        "record_id": "R37",
+        "subject_sentence_ids": [
+         "S4",
+         "S5"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R23",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R28",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R31",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R34",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R36",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S6"
+        ],
+        "record_id": "R38",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R44",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R46",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R49",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R50",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R51",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R52",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R58",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R59",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R61",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R62",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R63",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ],
+        "record_id": "R66",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R98",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R67",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R68",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R71",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R72",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R73",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R75",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R76",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S4",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ],
+        "record_id": "R78",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R80",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R81",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5"
+        ],
+        "record_id": "R82",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R83",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R84",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R85",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S6"
+        ],
+        "record_id": "R86",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R87",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R88",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R89",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R91",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ],
+        "record_id": "R92",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R96",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S5"
+        ],
+        "record_id": "R97",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R99",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R90",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R94",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "run": "40999869397",
+   "kind": "nomination_reversed",
+   "prompt_version": "event-identity-grouping-v8",
+   "records": {
+    "R1": {
+     "candidate_id": "cand_c8207b374830e093d75fcb8c4e13e38b5d25aadce6ccacb9f11b16ab35e352c4",
+     "sentences": 2
+    },
+    "R2": {
+     "candidate_id": "cand_2bc5f5fe37a46e9464d3c0ff300e6f409dcc20458fa892a641b816a6c21c8e91",
+     "sentences": 2
+    },
+    "R3": {
+     "candidate_id": "cand_8d9641468b3db28b814f3774d63ea2f9fabc5bf3ffb6b6992f398ae3b024e5dd",
+     "sentences": 3
+    },
+    "R4": {
+     "candidate_id": "cand_eefa8b5c46c2b677e054f5f6e312ec603b9d127d76587f48dfdf4e95f87b96aa",
+     "sentences": 5
+    },
+    "R5": {
+     "candidate_id": "cand_2a5ff9772d8cc60481220f496615a405327fc2c7bbf8f62a07704d224481fdd1",
+     "sentences": 6
+    },
+    "R6": {
+     "candidate_id": "cand_dc402ebe46dd34e4a50e760538bfbb4807754bd42b5a864cfe8be889c67f1c00",
+     "sentences": 3
+    },
+    "R7": {
+     "candidate_id": "cand_b0055bd6e37fdf1a371a1c7abda644e3b6c5664505ce17169ed504690a3510c1",
+     "sentences": 2
+    },
+    "R8": {
+     "candidate_id": "cand_c3b575ffd39c3de6d71979e28f839672ab2bc80515b1033973f1ff77d2efb4d7",
+     "sentences": 5
+    },
+    "R9": {
+     "candidate_id": "cand_fcfcdd750fef6f86433cb76b3bfb78ad7c22cae5d2a6aa2117a2e5c1830521b3",
+     "sentences": 2
+    },
+    "R10": {
+     "candidate_id": "cand_e7016e6b7ab004c01e5cac421e7e240889e7580e0253f0bd5b63c5cd3bcd672e",
+     "sentences": 4
+    },
+    "R11": {
+     "candidate_id": "cand_bf462ee3b12a4d3cb3ab83cfa2fe283ec5f042c873fbc090ac4f5012e66fcd56",
+     "sentences": 3
+    },
+    "R12": {
+     "candidate_id": "cand_fbff996e9a8b8afc0533851199f25159b96b77402999893ccae79feade5928ad",
+     "sentences": 1
+    },
+    "R13": {
+     "candidate_id": "cand_fc607d8ec89e2039b80de3a611948dbb61efb69e382f472d0cb2f5ee6ad78cc6",
+     "sentences": 4
+    },
+    "R14": {
+     "candidate_id": "cand_98e2859c91c2d29e114aed03e18f6d97961897b765fef1e695ef841b2cfc610a",
+     "sentences": 3
+    },
+    "R15": {
+     "candidate_id": "cand_4a38d49019108d03aeee16f76514307a838b52177e56e2a8e890518f4213ca45",
+     "sentences": 6
+    },
+    "R16": {
+     "candidate_id": "cand_2d54ce8d6e6bf4f3cbce82fabaae734f7d3d8365c9cae21d7c7ff7f1f70fee51",
+     "sentences": 6
+    },
+    "R17": {
+     "candidate_id": "cand_7b37310265e829ea5880273c64380aedba7693bdccbc5f2e19aae1565a15fd5f",
+     "sentences": 4
+    },
+    "R18": {
+     "candidate_id": "cand_9cc3e63954c7b33a45f46039f48a84996a102dfc89d85ab3fcc906391df818af",
+     "sentences": 4
+    },
+    "R19": {
+     "candidate_id": "cand_d978fceb028c29a7f4bc962f13aa7dd2ed58f6b9af3b2d52476da7dd5250fc81",
+     "sentences": 2
+    },
+    "R20": {
+     "candidate_id": "cand_a213b0e754bf757f35ccc1776dc4f74af200794f457abb7d8e561d32f6949318",
+     "sentences": 6
+    },
+    "R21": {
+     "candidate_id": "cand_98d796a7dcd89830d898cddf953bfd564eae7be3701e8b5fe006d64b6b43e818",
+     "sentences": 2
+    },
+    "R22": {
+     "candidate_id": "cand_4f343de2c8f3682274f1d08a28cd3c6f56ea16890d0263865007234b87e681d3",
+     "sentences": 1
+    },
+    "R23": {
+     "candidate_id": "cand_f998a166c6ec54af0c88ce3f68a0668e23a60341cb64b41146e6d4e53bd025dc",
+     "sentences": 2
+    },
+    "R24": {
+     "candidate_id": "cand_6e10c6873fd9ff39f6e81c810bedc335502e140f256d990df7e528ac5c4140b2",
+     "sentences": 5
+    },
+    "R25": {
+     "candidate_id": "cand_3a134810a05bf89c00c1ba5c8008d1bf43cb121bf1fdf09e30468de3443c01ef",
+     "sentences": 1
+    },
+    "R26": {
+     "candidate_id": "cand_b9d5db43e3e39be064a0f022c4c73a3cdcfced1764567e7e1f747087ae0631af",
+     "sentences": 6
+    },
+    "R27": {
+     "candidate_id": "cand_b7fcaa29b9b4a08a9ef26fd11cacacc5b24421e4c81b729494c2c1a28c812f63",
+     "sentences": 3
+    },
+    "R28": {
+     "candidate_id": "cand_ca381ec36d701c0adbb30d82980a5c5bf00ac0d15152d86035f944d3bd492fb0",
+     "sentences": 3
+    },
+    "R29": {
+     "candidate_id": "cand_b19b0a1ce40f0bd630b1b8c366ac8abd48ba88d8cdf621d954cf7adf05ccb55c",
+     "sentences": 3
+    },
+    "R30": {
+     "candidate_id": "cand_47cacec5b5fe1e05a2d3815fed93ef795f5233d5df0ef7612b9b156a9563c42d",
+     "sentences": 4
+    },
+    "R31": {
+     "candidate_id": "cand_6b18cbd933f4584ced526928c3d75d3fa1ebc09b39126ba4a85d7e8f3c3ac012",
+     "sentences": 3
+    },
+    "R32": {
+     "candidate_id": "cand_4ea32d39f087c64fd6435c5fa438fc1639658223b286bd0758df0a35692439bf",
+     "sentences": 2
+    },
+    "R33": {
+     "candidate_id": "cand_8769477d0c03fceeea8d4d96c4c6926009b575ba1af40ccb7eca040f2a11ccb6",
+     "sentences": 2
+    },
+    "R34": {
+     "candidate_id": "cand_8bca30f35bcead97e048426a0aaae0cc4f17135c8e39d2f933ab76d79ea1a726",
+     "sentences": 2
+    },
+    "R35": {
+     "candidate_id": "cand_bc383dac0265a4669f7c267734b218830f425d36595b02ee3e565fb7f3e65d65",
+     "sentences": 2
+    },
+    "R36": {
+     "candidate_id": "cand_34e97800b8e8ab753f87c31d548da1fce0c2d04ee4732d421b16478b269af1fa",
+     "sentences": 4
+    },
+    "R37": {
+     "candidate_id": "cand_dfe53d531adc69fb4b0985af0a8a7b38f13c3fad2c3af68bf2195d9011d6078e",
+     "sentences": 6
+    },
+    "R38": {
+     "candidate_id": "cand_a118b341f43552d2b33269716554a43882e0638e933cc57988e4e2cdad1583dc",
+     "sentences": 6
+    },
+    "R39": {
+     "candidate_id": "cand_05b1a271c7681e1c3a6ecfc48ea89d9fd3fc33b82b88362e45bf227b9f451ef3",
+     "sentences": 4
+    },
+    "R40": {
+     "candidate_id": "cand_89ec4ffee8f257cb9601affe2cf5291ce7e9745a909b168248a3ab07ae11600b",
+     "sentences": 3
+    },
+    "R41": {
+     "candidate_id": "cand_774a57238f875d2f88ab6167659886f201204e735899cf4e924337281fa264e7",
+     "sentences": 1
+    },
+    "R42": {
+     "candidate_id": "cand_c461ea847d3f92d884735c8e1e77a004be5f9c64a80d770d985762d4240712fc",
+     "sentences": 1
+    },
+    "R43": {
+     "candidate_id": "cand_3f1b2d5ea51ce8e64db28637f87f27ae21f52ff84bc6977f70fd32a2a5afa3c3",
+     "sentences": 1
+    },
+    "R44": {
+     "candidate_id": "cand_32837d56d4284bf27c7c6c39666d09d0fd3e59428c2edbaba489e166a262d670",
+     "sentences": 2
+    },
+    "R45": {
+     "candidate_id": "cand_cfdc66092dd72a924551c4137de00268c9a6d76f7de6070f2ff2b7fc2a885bd4",
+     "sentences": 4
+    },
+    "R46": {
+     "candidate_id": "cand_cee666aeec5f5d74d92109250db9e6319f19c8284c39e8d7aa01381f63f30434",
+     "sentences": 2
+    },
+    "R47": {
+     "candidate_id": "cand_ff8492106c7cbaef2f3c8babb26d892b35b47e621e1e2ebe576f6135f72f2dbe",
+     "sentences": 5
+    },
+    "R48": {
+     "candidate_id": "cand_8154844486d170435932070a4c2751fc154b08cbd8461d152d40927161e5b694",
+     "sentences": 4
+    },
+    "R49": {
+     "candidate_id": "cand_96fd920f87f1f819f61be7a0ce0b626284588870ae934133a8cddb1a347f8927",
+     "sentences": 1
+    },
+    "R50": {
+     "candidate_id": "cand_2dd64df318bcc7b4fe9821f602045aaf0c48d248dcc556b401c1eeb9ee1cf099",
+     "sentences": 2
+    },
+    "R51": {
+     "candidate_id": "cand_152126f6394ced066b112a25f1cc4ea30d2263709601e13dd13f72b9cd9cd009",
+     "sentences": 4
+    },
+    "R52": {
+     "candidate_id": "cand_84fc61cb795dc81a429b19f78a825a2b972b740c7ccb9fce8a585737def440f2",
+     "sentences": 2
+    },
+    "R53": {
+     "candidate_id": "cand_351c4d6779efb6e66d3fb09f7dcaade53fe0dfcb57f657bacd03dbe0bcf47233",
+     "sentences": 3
+    },
+    "R54": {
+     "candidate_id": "cand_ccefef7229e02d151e2df3db447f19d87005bcea0407faff1c1bba3229b4ef06",
+     "sentences": 4
+    },
+    "R55": {
+     "candidate_id": "cand_498d6ad51b5db98f58a3ab7febd38cb3359fcc9b3e2e0810bf952f77e4b02f9e",
+     "sentences": 6
+    },
+    "R56": {
+     "candidate_id": "cand_0a277d4fd451cadebda117ac2fdf9ec45a64abf8f770e4ab7105305d2f37853d",
+     "sentences": 5
+    },
+    "R57": {
+     "candidate_id": "cand_5c32a7b4aadbf2064fee59bff82f45bc388660380d383a4d637f5d2adc3cd7a4",
+     "sentences": 5
+    },
+    "R58": {
+     "candidate_id": "cand_8e6e62d213efd3115ca7e237b99fc09bcba1f7f123d4c24cb7db2a7e5a7bdaa3",
+     "sentences": 2
+    },
+    "R59": {
+     "candidate_id": "cand_768d7a2533380d468620672800e5e0966727f2e447195a05ba1725330d0273b2",
+     "sentences": 2
+    },
+    "R60": {
+     "candidate_id": "cand_fa09aa717b9a16dcf1a7b261e9fad895eb028f8433cf72b8da0c493309d19783",
+     "sentences": 6
+    },
+    "R61": {
+     "candidate_id": "cand_be9cbe900ca00b1ec0de26008dc92c31d11c946c5cb9ead789d0b25ed4bf327c",
+     "sentences": 2
+    },
+    "R62": {
+     "candidate_id": "cand_68c83422b6936a3809d34f51481724ed53d26ac3bd305fd6aeac76d88903b219",
+     "sentences": 3
+    },
+    "R63": {
+     "candidate_id": "cand_593e17d62e7b7d7d2c40ddb8c9f78f1b0ae3678614f82586a3ed082466f00219",
+     "sentences": 3
+    },
+    "R64": {
+     "candidate_id": "cand_6a9f28c7266dc4d738f64f18da90735d41f0b3d47bedfb7a32c563d8323dc185",
+     "sentences": 6
+    },
+    "R65": {
+     "candidate_id": "cand_8edce57a26e1da6c27cea9d4c9945f399e08c15ea52ffd003c3c70ef1b19a4a2",
+     "sentences": 6
+    },
+    "R66": {
+     "candidate_id": "cand_a66c54690ec7c938a14cd6566782ed8cd194d5a657cb174236921db9ff64baf0",
+     "sentences": 6
+    },
+    "R67": {
+     "candidate_id": "cand_e9dfbd8efbde643313674ec7d2acee4a52479613fee1dd9acef01e9049723fc5",
+     "sentences": 1
+    },
+    "R68": {
+     "candidate_id": "cand_6e1857a8bc53d426cf6c70c5d880ad2ab485b38afc19c0fa5be73ceb2581beb3",
+     "sentences": 1
+    },
+    "R69": {
+     "candidate_id": "cand_60c8576b6fbe5e71789194c3d1bf06c1f664f2480dff5fb32813f2323a3d0281",
+     "sentences": 3
+    },
+    "R70": {
+     "candidate_id": "cand_f3deced6d710ec6d61f0f1297ac422dfa80e6c364bea4b52b86c1a6286ab25e4",
+     "sentences": 4
+    },
+    "R71": {
+     "candidate_id": "cand_7147714ba3d7c06ed2bfdb7e42a9a3418b6d5b181abf352cf0bc0f41c9156044",
+     "sentences": 1
+    },
+    "R72": {
+     "candidate_id": "cand_9425d9ea8e75d438a6737a68f9c15b2cf2c2a5d03d95ae6da51c7bb7af0231b3",
+     "sentences": 3
+    },
+    "R73": {
+     "candidate_id": "cand_b8cc6a3410c4914d191499d0505bc8a45512a134e491f5b0294e2fdb474f50fc",
+     "sentences": 5
+    },
+    "R74": {
+     "candidate_id": "cand_912110a7693650d8ee8d75c2aab47817353417097705b9d89fc14517f1b9f688",
+     "sentences": 2
+    },
+    "R75": {
+     "candidate_id": "cand_b8ffaa913990f28da2d109c5b19bf6700839b0861b49e5bc49e0599b6ef43943",
+     "sentences": 6
+    },
+    "R76": {
+     "candidate_id": "cand_832a4b599b673a68b06f5372f1f73d0f5fc7a47c6ba9cb4c0a8e6e8bf565a338",
+     "sentences": 4
+    },
+    "R77": {
+     "candidate_id": "cand_e1a3494623549eba3bd49be064629c56560ca70ed30d702a004ac943d4c88bd5",
+     "sentences": 2
+    },
+    "R78": {
+     "candidate_id": "cand_939a4355d74490458a4489b3a163423d1cea1c6180c6f0cc6e4c3e0f09bb33e5",
+     "sentences": 6
+    },
+    "R79": {
+     "candidate_id": "cand_b9539a564f7eac5e1fab1fa7220629b16a2d44b7bbc4a8cc7ac505e97d215be7",
+     "sentences": 2
+    },
+    "R80": {
+     "candidate_id": "cand_0cd098d27f42ad65b6e64e4652fa4029ddfc07b772356ce88ad7859b5e1891c5",
+     "sentences": 2
+    },
+    "R81": {
+     "candidate_id": "cand_4e269b06a7edbb97fa43b2ae295c4f5623560356c8c6e2b15334488d62241687",
+     "sentences": 3
+    },
+    "R82": {
+     "candidate_id": "cand_9013083a062368ea4b7017a3f8ca15605c284c0740c7d93e631961a464ecb134",
+     "sentences": 1
+    },
+    "R83": {
+     "candidate_id": "cand_b35e3880003242135e35749949042c5918f89ca2fe7c334e1a2e54eae6735c17",
+     "sentences": 3
+    },
+    "R84": {
+     "candidate_id": "cand_25a28e2244ddfa2ea7cb8fa8b1a4cae455decec627060e986d1c03eb8a4abe19",
+     "sentences": 6
+    },
+    "R85": {
+     "candidate_id": "cand_6d80a4887ffce11f13b63b43f28c05f5cc73db1531038b188767955d051f75f5",
+     "sentences": 4
+    },
+    "R86": {
+     "candidate_id": "cand_2143015491f054e9620673f07ea09d5afa3f9c415ad342445fcb654a8f7da8be",
+     "sentences": 6
+    },
+    "R87": {
+     "candidate_id": "cand_cfcf0f292bb078626a23ddaa4b0c05c4a44e9dd070e7e8cdbc03953782e19a91",
+     "sentences": 4
+    },
+    "R88": {
+     "candidate_id": "cand_da42984692c6f2d8fca0a396b18a95d7407e44d4a497152ddb430b01c5230dcd",
+     "sentences": 2
+    },
+    "R89": {
+     "candidate_id": "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898",
+     "sentences": 3
+    },
+    "R90": {
+     "candidate_id": "cand_9ea849abc2f6292cd7e2052dd1b882f48b737e37a67a866a07406fa07f5f1db6",
+     "sentences": 4
+    },
+    "R91": {
+     "candidate_id": "cand_be6a0b6e7f711943f444737805bec5c1649c0a9e4bb38ab76aca208bca54159f",
+     "sentences": 4
+    },
+    "R92": {
+     "candidate_id": "cand_a071ba69b7be024b8c7792fa69261305e180c0545abf90e33ff72ec736c71ecf",
+     "sentences": 3
+    },
+    "R93": {
+     "candidate_id": "cand_9ce03b4da316d4ea90f2eb7cf957ecf0ff5b45a5287192fe06b97878e0938997",
+     "sentences": 2
+    },
+    "R94": {
+     "candidate_id": "cand_1cd92dac6a9672f9a58aef0da8cb106a7d8c018da7d19de29a2164e687e20d88",
+     "sentences": 2
+    },
+    "R95": {
+     "candidate_id": "cand_47537cb3969fe9340279b9b4437825c393055d0982a965978f6d29ffd7937630",
+     "sentences": 6
+    },
+    "R96": {
+     "candidate_id": "cand_2209cb8572b485e76795ec5adbb4f52c54a73e1a24ba9c59ac4ba3000bf7980c",
+     "sentences": 6
+    },
+    "R97": {
+     "candidate_id": "cand_e4c0d3eca2fd97b958bad32a8aba60e8abd7684269d9733a1f7463959b803cc9",
+     "sentences": 2
+    },
+    "R98": {
+     "candidate_id": "cand_7e0ff909d92fd17afdbde6d966c2d8dd9ff6f5811245252cdd4515694ea1c2fb",
+     "sentences": 1
+    },
+    "R99": {
+     "candidate_id": "cand_53bcd508c3eb0d88bca28887b8faffb12c02a839b1938373e62272076196b985",
+     "sentences": 1
+    },
+    "R100": {
+     "candidate_id": "cand_3eea53620b9566b983bd766084ff87dc9cdc6ac08e8ab7909324218405fc9157",
+     "sentences": 2
+    },
+    "R101": {
+     "candidate_id": "cand_050731a7dc7c3c03404f2485ffa74bb93d94563c2cf41babe83f66e55fab5eed",
+     "sentences": 2
+    }
+   },
+   "response": {
+    "groups": [
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R1",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R4",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R36",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R39",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R40",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R41",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R3",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S5"
+        ],
+        "record_id": "R5",
+        "subject_sentence_ids": [
+         "S1",
+         "S4",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R6",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R10",
+        "subject_sentence_ids": [
+         "S1",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R11",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R13",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R14",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R15",
+        "subject_sentence_ids": [
+         "S1",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S6"
+        ],
+        "record_id": "R16",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R17",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R18",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R19",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S4",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5"
+        ],
+        "record_id": "R20",
+        "subject_sentence_ids": [
+         "S1",
+         "S3",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R21",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R22",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S4",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5"
+        ],
+        "record_id": "R24",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R26",
+        "subject_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R27",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R29",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R30",
+        "subject_sentence_ids": [
+         "S1",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R31",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S5"
+        ],
+        "record_id": "R8",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R12",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R9",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R75",
+        "subject_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R101",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R23",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R25",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R32",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R33",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R34",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R35",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S5",
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S5",
+         "S6"
+        ],
+        "record_id": "R37",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R38",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R42",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R43",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R44",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S4"
+        ],
+        "record_id": "R45",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R46",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S4",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S4",
+         "S5"
+        ],
+        "record_id": "R47",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "record_id": "R48",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R50",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R51",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R52",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R53",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R54",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R55",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R56",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S5"
+        ],
+        "record_id": "R57",
+        "subject_sentence_ids": [
+         "S1",
+         "S4",
+         "S5"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R58",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R59",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S5",
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R60",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R61",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R62",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "record_id": "R63",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S6"
+        ],
+        "record_id": "R64",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R65",
+        "subject_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R66",
+        "subject_sentence_ids": [
+         "S1",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R67",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R68",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R71",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R69",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "record_id": "R70",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R72",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S5"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S5"
+        ],
+        "record_id": "R73",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S4",
+         "S5"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R74",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R79",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R76",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R77",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "record_id": "R81",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R82",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R83",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R85",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R88",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R89",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R90",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R78",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R86",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R87",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R91",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R95",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R96",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R100",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R80",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R84",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R97",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R98",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R99",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "run": "40999869397",
+   "kind": "confirmation",
+   "prompt_version": "event-identity-grouping-v8",
+   "records": {
+    "R1": {
+     "candidate_id": "cand_9ea849abc2f6292cd7e2052dd1b882f48b737e37a67a866a07406fa07f5f1db6",
+     "sentences": 4
+    },
+    "R2": {
+     "candidate_id": "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898",
+     "sentences": 3
+    },
+    "R3": {
+     "candidate_id": "cand_da42984692c6f2d8fca0a396b18a95d7407e44d4a497152ddb430b01c5230dcd",
+     "sentences": 2
+    },
+    "R4": {
+     "candidate_id": "cand_6d80a4887ffce11f13b63b43f28c05f5cc73db1531038b188767955d051f75f5",
+     "sentences": 4
+    },
+    "R5": {
+     "candidate_id": "cand_b35e3880003242135e35749949042c5918f89ca2fe7c334e1a2e54eae6735c17",
+     "sentences": 3
+    },
+    "R6": {
+     "candidate_id": "cand_9013083a062368ea4b7017a3f8ca15605c284c0740c7d93e631961a464ecb134",
+     "sentences": 1
+    },
+    "R7": {
+     "candidate_id": "cand_4e269b06a7edbb97fa43b2ae295c4f5623560356c8c6e2b15334488d62241687",
+     "sentences": 3
+    },
+    "R8": {
+     "candidate_id": "cand_e1a3494623549eba3bd49be064629c56560ca70ed30d702a004ac943d4c88bd5",
+     "sentences": 2
+    }
+   },
+   "response": {
+    "groups": [
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R1",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R2",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R3",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R4",
+        "subject_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R5",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R6",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R7",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R8",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "run": "40999869397",
+   "kind": "confirmation",
+   "prompt_version": "event-identity-grouping-v8",
+   "records": {
+    "R1": {
+     "candidate_id": "cand_774a57238f875d2f88ab6167659886f201204e735899cf4e924337281fa264e7",
+     "sentences": 1
+    },
+    "R2": {
+     "candidate_id": "cand_89ec4ffee8f257cb9601affe2cf5291ce7e9745a909b168248a3ab07ae11600b",
+     "sentences": 3
+    },
+    "R3": {
+     "candidate_id": "cand_05b1a271c7681e1c3a6ecfc48ea89d9fd3fc33b82b88362e45bf227b9f451ef3",
+     "sentences": 4
+    },
+    "R4": {
+     "candidate_id": "cand_34e97800b8e8ab753f87c31d548da1fce0c2d04ee4732d421b16478b269af1fa",
+     "sentences": 4
+    },
+    "R5": {
+     "candidate_id": "cand_eefa8b5c46c2b677e054f5f6e312ec603b9d127d76587f48dfdf4e95f87b96aa",
+     "sentences": 5
+    },
+    "R6": {
+     "candidate_id": "cand_c8207b374830e093d75fcb8c4e13e38b5d25aadce6ccacb9f11b16ab35e352c4",
+     "sentences": 2
+    }
+   },
+   "response": {
+    "groups": [
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R1",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R2",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R3",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R4",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R5",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4",
+         "S5"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R6",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "run": "40999869397",
+   "kind": "confirmation",
+   "prompt_version": "event-identity-grouping-v8",
+   "records": {
+    "R1": {
+     "candidate_id": "cand_050731a7dc7c3c03404f2485ffa74bb93d94563c2cf41babe83f66e55fab5eed",
+     "sentences": 2
+    },
+    "R2": {
+     "candidate_id": "cand_b8ffaa913990f28da2d109c5b19bf6700839b0861b49e5bc49e0599b6ef43943",
+     "sentences": 6
+    },
+    "R3": {
+     "candidate_id": "cand_fcfcdd750fef6f86433cb76b3bfb78ad7c22cae5d2a6aa2117a2e5c1830521b3",
+     "sentences": 2
+    }
+   },
+   "response": {
+    "groups": [
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R1",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S6"
+        ],
+        "occurrence_sentence_ids": [
+         "S6"
+        ],
+        "record_id": "R2",
+        "subject_sentence_ids": [
+         "S4",
+         "S5",
+         "S6"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R3",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "run": "41018554355",
+   "kind": "confirmation",
+   "prompt_version": "event-identity-grouping-v9",
+   "records": {
+    "R1": {
+     "candidate_id": "cand_15710f61b5d7d62a9dbf3c710daa735b6dea38a56e78900e08b1ee5dc8365368",
+     "sentences": 3
+    },
+    "R2": {
+     "candidate_id": "cand_1cd92dac6a9672f9a58aef0da8cb106a7d8c018da7d19de29a2164e687e20d88",
+     "sentences": 2
+    },
+    "R3": {
+     "candidate_id": "cand_9ce03b4da316d4ea90f2eb7cf957ecf0ff5b45a5287192fe06b97878e0938997",
+     "sentences": 2
+    },
+    "R4": {
+     "candidate_id": "cand_a071ba69b7be024b8c7792fa69261305e180c0545abf90e33ff72ec736c71ecf",
+     "sentences": 4
+    },
+    "R5": {
+     "candidate_id": "cand_eb674c15f11a1418707444167c61a4447fdd870b2a027426f9b38ac2f2e3fa22",
+     "sentences": 3
+    },
+    "R6": {
+     "candidate_id": "cand_9ea849abc2f6292cd7e2052dd1b882f48b737e37a67a866a07406fa07f5f1db6",
+     "sentences": 4
+    },
+    "R7": {
+     "candidate_id": "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898",
+     "sentences": 3
+    },
+    "R8": {
+     "candidate_id": "cand_da42984692c6f2d8fca0a396b18a95d7407e44d4a497152ddb430b01c5230dcd",
+     "sentences": 2
+    },
+    "R9": {
+     "candidate_id": "cand_6d80a4887ffce11f13b63b43f28c05f5cc73db1531038b188767955d051f75f5",
+     "sentences": 4
+    },
+    "R10": {
+     "candidate_id": "cand_b35e3880003242135e35749949042c5918f89ca2fe7c334e1a2e54eae6735c17",
+     "sentences": 3
+    },
+    "R11": {
+     "candidate_id": "cand_9013083a062368ea4b7017a3f8ca15605c284c0740c7d93e631961a464ecb134",
+     "sentences": 1
+    },
+    "R12": {
+     "candidate_id": "cand_4e269b06a7edbb97fa43b2ae295c4f5623560356c8c6e2b15334488d62241687",
+     "sentences": 2
+    },
+    "R13": {
+     "candidate_id": "cand_e1a3494623549eba3bd49be064629c56560ca70ed30d702a004ac943d4c88bd5",
+     "sentences": 2
+    },
+    "R14": {
+     "candidate_id": "cand_856a50d53899aad39d0c2ce1b9cb551bd34ffafc0f9e7219919671d0698ea316",
+     "sentences": 4
+    },
+    "R15": {
+     "candidate_id": "cand_ac562ece73a2e8a7ae06a117fd7c1f5c63d1a672864d8dc4d1d8a7e4c04c8c24",
+     "sentences": 6
+    }
+   },
+   "response": {
+    "groups": [
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R1",
+        "subject_sentence_ids": [
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R2",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R3",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R4",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "record_id": "R5",
+        "subject_sentence_ids": [
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R6",
+        "subject_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R7",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R8",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ],
+        "record_id": "R9",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R10",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R11",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R12",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R13",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ],
+        "record_id": "R15",
+        "subject_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S5",
+         "S6"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R14",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "run": "41018554355",
+   "kind": "confirmation",
+   "prompt_version": "event-identity-grouping-v9",
+   "records": {
+    "R1": {
+     "candidate_id": "cand_15710f61b5d7d62a9dbf3c710daa735b6dea38a56e78900e08b1ee5dc8365368",
+     "sentences": 3
+    },
+    "R2": {
+     "candidate_id": "cand_1cd92dac6a9672f9a58aef0da8cb106a7d8c018da7d19de29a2164e687e20d88",
+     "sentences": 2
+    },
+    "R3": {
+     "candidate_id": "cand_9ce03b4da316d4ea90f2eb7cf957ecf0ff5b45a5287192fe06b97878e0938997",
+     "sentences": 2
+    },
+    "R4": {
+     "candidate_id": "cand_a071ba69b7be024b8c7792fa69261305e180c0545abf90e33ff72ec736c71ecf",
+     "sentences": 4
+    },
+    "R5": {
+     "candidate_id": "cand_eb674c15f11a1418707444167c61a4447fdd870b2a027426f9b38ac2f2e3fa22",
+     "sentences": 3
+    },
+    "R6": {
+     "candidate_id": "cand_9ea849abc2f6292cd7e2052dd1b882f48b737e37a67a866a07406fa07f5f1db6",
+     "sentences": 4
+    },
+    "R7": {
+     "candidate_id": "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898",
+     "sentences": 3
+    },
+    "R8": {
+     "candidate_id": "cand_da42984692c6f2d8fca0a396b18a95d7407e44d4a497152ddb430b01c5230dcd",
+     "sentences": 2
+    },
+    "R9": {
+     "candidate_id": "cand_6d80a4887ffce11f13b63b43f28c05f5cc73db1531038b188767955d051f75f5",
+     "sentences": 4
+    },
+    "R10": {
+     "candidate_id": "cand_b35e3880003242135e35749949042c5918f89ca2fe7c334e1a2e54eae6735c17",
+     "sentences": 3
+    },
+    "R11": {
+     "candidate_id": "cand_9013083a062368ea4b7017a3f8ca15605c284c0740c7d93e631961a464ecb134",
+     "sentences": 1
+    },
+    "R12": {
+     "candidate_id": "cand_4e269b06a7edbb97fa43b2ae295c4f5623560356c8c6e2b15334488d62241687",
+     "sentences": 2
+    },
+    "R13": {
+     "candidate_id": "cand_e1a3494623549eba3bd49be064629c56560ca70ed30d702a004ac943d4c88bd5",
+     "sentences": 2
+    },
+    "R14": {
+     "candidate_id": "cand_856a50d53899aad39d0c2ce1b9cb551bd34ffafc0f9e7219919671d0698ea316",
+     "sentences": 4
+    },
+    "R15": {
+     "candidate_id": "cand_ac562ece73a2e8a7ae06a117fd7c1f5c63d1a672864d8dc4d1d8a7e4c04c8c24",
+     "sentences": 6
+    }
+   },
+   "response": {
+    "groups": [
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R1",
+        "subject_sentence_ids": [
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R2",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R3",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R4",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "record_id": "R5",
+        "subject_sentence_ids": [
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R6",
+        "subject_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R7",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R8",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S4"
+        ],
+        "record_id": "R9",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R10",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R11",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R12",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R13",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R15",
+        "subject_sentence_ids": [
+         "S1",
+         "S3",
+         "S4",
+         "S6"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R14",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "run": "41018554355",
+   "kind": "confirmation",
+   "prompt_version": "event-identity-grouping-v8 (v9 without the announcer line)",
+   "records": {
+    "R1": {
+     "candidate_id": "cand_15710f61b5d7d62a9dbf3c710daa735b6dea38a56e78900e08b1ee5dc8365368",
+     "sentences": 3
+    },
+    "R2": {
+     "candidate_id": "cand_1cd92dac6a9672f9a58aef0da8cb106a7d8c018da7d19de29a2164e687e20d88",
+     "sentences": 2
+    },
+    "R3": {
+     "candidate_id": "cand_9ce03b4da316d4ea90f2eb7cf957ecf0ff5b45a5287192fe06b97878e0938997",
+     "sentences": 2
+    },
+    "R4": {
+     "candidate_id": "cand_a071ba69b7be024b8c7792fa69261305e180c0545abf90e33ff72ec736c71ecf",
+     "sentences": 4
+    },
+    "R5": {
+     "candidate_id": "cand_eb674c15f11a1418707444167c61a4447fdd870b2a027426f9b38ac2f2e3fa22",
+     "sentences": 3
+    },
+    "R6": {
+     "candidate_id": "cand_9ea849abc2f6292cd7e2052dd1b882f48b737e37a67a866a07406fa07f5f1db6",
+     "sentences": 4
+    },
+    "R7": {
+     "candidate_id": "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898",
+     "sentences": 3
+    },
+    "R8": {
+     "candidate_id": "cand_da42984692c6f2d8fca0a396b18a95d7407e44d4a497152ddb430b01c5230dcd",
+     "sentences": 2
+    },
+    "R9": {
+     "candidate_id": "cand_6d80a4887ffce11f13b63b43f28c05f5cc73db1531038b188767955d051f75f5",
+     "sentences": 4
+    },
+    "R10": {
+     "candidate_id": "cand_b35e3880003242135e35749949042c5918f89ca2fe7c334e1a2e54eae6735c17",
+     "sentences": 3
+    },
+    "R11": {
+     "candidate_id": "cand_9013083a062368ea4b7017a3f8ca15605c284c0740c7d93e631961a464ecb134",
+     "sentences": 1
+    },
+    "R12": {
+     "candidate_id": "cand_4e269b06a7edbb97fa43b2ae295c4f5623560356c8c6e2b15334488d62241687",
+     "sentences": 2
+    },
+    "R13": {
+     "candidate_id": "cand_e1a3494623549eba3bd49be064629c56560ca70ed30d702a004ac943d4c88bd5",
+     "sentences": 2
+    },
+    "R14": {
+     "candidate_id": "cand_856a50d53899aad39d0c2ce1b9cb551bd34ffafc0f9e7219919671d0698ea316",
+     "sentences": 4
+    },
+    "R15": {
+     "candidate_id": "cand_ac562ece73a2e8a7ae06a117fd7c1f5c63d1a672864d8dc4d1d8a7e4c04c8c24",
+     "sentences": 6
+    }
+   },
+   "response": {
+    "groups": [
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R1",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R2",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R3",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S4"
+        ],
+        "record_id": "R4",
+        "subject_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R5",
+        "subject_sentence_ids": [
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S2"
+        ],
+        "record_id": "R6",
+        "subject_sentence_ids": [
+         "S2",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R7",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R8",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R9",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R10",
+        "subject_sentence_ids": [
+         "S1",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R12",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R13",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S3"
+        ],
+        "record_id": "R15",
+        "subject_sentence_ids": [
+         "S3",
+         "S5",
+         "S6"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R11",
+        "subject_sentence_ids": [
+         "S1"
+        ]
+       }
+      ]
+     },
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R14",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "run": "41018554355",
+   "kind": "confirmation",
+   "prompt_version": "event-identity-grouping-v9",
+   "records": {
+    "R1": {
+     "candidate_id": "cand_eb674c15f11a1418707444167c61a4447fdd870b2a027426f9b38ac2f2e3fa22",
+     "sentences": 3
+    },
+    "R2": {
+     "candidate_id": "cand_da42984692c6f2d8fca0a396b18a95d7407e44d4a497152ddb430b01c5230dcd",
+     "sentences": 2
+    },
+    "R3": {
+     "candidate_id": "cand_6d80a4887ffce11f13b63b43f28c05f5cc73db1531038b188767955d051f75f5",
+     "sentences": 4
+    },
+    "R4": {
+     "candidate_id": "cand_b35e3880003242135e35749949042c5918f89ca2fe7c334e1a2e54eae6735c17",
+     "sentences": 3
+    }
+   },
+   "response": {
+    "groups": [
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "record_id": "R1",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R2",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S4"
+        ],
+        "record_id": "R3",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R4",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "run": "41018554355",
+   "kind": "confirmation",
+   "prompt_version": "event-identity-grouping-v9",
+   "records": {
+    "R1": {
+     "candidate_id": "cand_eb674c15f11a1418707444167c61a4447fdd870b2a027426f9b38ac2f2e3fa22",
+     "sentences": 3
+    },
+    "R2": {
+     "candidate_id": "cand_da42984692c6f2d8fca0a396b18a95d7407e44d4a497152ddb430b01c5230dcd",
+     "sentences": 2
+    },
+    "R3": {
+     "candidate_id": "cand_6d80a4887ffce11f13b63b43f28c05f5cc73db1531038b188767955d051f75f5",
+     "sentences": 4
+    },
+    "R4": {
+     "candidate_id": "cand_b35e3880003242135e35749949042c5918f89ca2fe7c334e1a2e54eae6735c17",
+     "sentences": 3
+    }
+   },
+   "response": {
+    "groups": [
+     {
+      "members": [
+       {
+        "lifecycle_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "occurrence_sentence_ids": [
+         "S2",
+         "S3"
+        ],
+        "record_id": "R1",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1"
+        ],
+        "occurrence_sentence_ids": [
+         "S1"
+        ],
+        "record_id": "R2",
+        "subject_sentence_ids": [
+         "S1",
+         "S2"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S3",
+         "S4"
+        ],
+        "record_id": "R3",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3",
+         "S4"
+        ]
+       },
+       {
+        "lifecycle_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "occurrence_sentence_ids": [
+         "S1",
+         "S2"
+        ],
+        "record_id": "R4",
+        "subject_sentence_ids": [
+         "S1",
+         "S2",
+         "S3"
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

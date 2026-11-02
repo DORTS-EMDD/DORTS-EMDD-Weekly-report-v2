@@ -450,6 +450,9 @@ class EventIdentityRun:
     # the grouping request, and the excerpt limits used ("<sentences>x<chars>").
     proposal_excerpts: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
     proposal_excerpt_limits: str = ""
+    # Section A.34 (observation only): every helper exchange, IDs only, so the
+    # run's grouping can be replayed offline (scripts/event_identity_replay.py).
+    proposal_exchanges: tuple[Mapping[str, Any], ...] = ()
 
 
 class RejectReason(StrEnum):

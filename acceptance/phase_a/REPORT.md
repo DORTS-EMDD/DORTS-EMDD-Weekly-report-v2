@@ -1887,3 +1887,42 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - **成本與測試：**
   - 本輪本機 helper 呼叫 17 次（上限 20）。
   - 全套 1264 全過；Golden 29 項全過，ED01–ED25 未修改。
+
+
+## 48. Event Identity 架構檢討：可重現、可回歸的依據（RC-46，2026-11-02）
+
+**結論：**
+- 目前每個合併都取決於 helper 的回答。production 從未產生 occurrence 事實，因此確定性的事實比對路徑從未在 Live 判定過任何配對。
+- §K 不授權新的比對規則，§A.28 規定 Python 沒有 DISTINCT。
+- Golden 用腳本代替 helper 回答；Live 也從未保留 helper 回答，所以 Live 決定無法重現。
+
+**已實作（僅觀測與測試工具，未改任何判定）：**
+- **記錄往返：** Event Identity 記錄每次 helper 往返，只含 ID（請求紀錄對照、驗證後的群組與引用、或失敗類別）。selection audit 列出 `event_identity_exchanges`，並記錄 Evidence 的 SHA-256（不含原文）。
+- **離線重放：** `scripts/event_identity_replay.py` 依 audit 重建紀錄，並以記錄的回答作答，未改動的 owner 可完全重現該次的事件、技術缺口與合併來源；加上標註時可評分。測試以 production 管線產生 audit、序列化後重放，結果一致，包括確定性同源路徑、技術失敗與引用錯誤。
+- **真實回答語料：** `acceptance/event_identity/recorded_answers.json` 收錄兩次 Live 紀錄上的 11 份真實 helper 回答（只含 ID）與人工標註，測試重算並鎖定：
+  - 同一請求三次提案：找到 40、52、58／61 個同事件配對。
+  - 第一次加反序提案：60／61。
+  - 同一筆報導：在 15 筆的確認中被分開，在 4 筆的確認中合併。
+  - 所有被錯誤提出的配對，都在確認中被移除。
+
+**建議的權威機制（需使用者決定）：**
+- 由 EvidenceService 以既有的 metadata 擷取任務，取得每筆紀錄的 occurrence 類型（封閉清單）與記載日期，採欄位層級、原文驗證。
+- Event Identity 依記錄的事實以確定性規則判定 DISTINCT 與候選區塊；helper 只判斷同區塊內的主體是否相同。
+- 需決定：
+  - **D1** Python 可判定 DISTINCT。
+  - **D2** occurrence 類型清單與粒度。
+  - **D3** 各類型的日期規則（含光州 25／26 日）。
+  - **D4** 跨語言主體相同的判定方式。
+
+**RC 分類：**
+- **確定性缺陷修正（必要）：** RC-31、RC-42、RC-43、RC-45 的 Scope 修正。
+- **Domain 規則：** RC-38、不同宣布者。
+- **機率性補強：** RC-44、提示詞 v8 用詞。
+- **觀測：** RC-30、RC-32、RC-40、RC-45 歸屬，以及本節。
+
+**RC-44：** 非架構必要，列為過渡措施。在事實分區取代提案時撤回；若 Live 顯示第二次提案未確認任何配對，則提前撤回。
+
+**測試：**
+- 新增重放測試 5 項、真實回答語料測試 4 項。
+- 全套與 Golden 全過，Golden 檔案未修改。
+- 未呼叫 MaiAgent，未觸發 GitHub Actions，未寄信。

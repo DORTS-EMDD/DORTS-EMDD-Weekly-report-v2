@@ -1614,6 +1614,101 @@ EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v9
 ANNOUNCER_VS_OCCURRENCE = SAME_OCCURRENCE_WHEN_EVIDENCE_IDENTIFIES_IT (user decision; independent announcements, decisions, inspections, activities stay apart)
 ```
 
+### A.34 RC-46 Event Identity authority review; recorded exchanges and replay (2026-11-02)
+
+The question: what mechanism should make "same occurrence" verifiable,
+regressable and reproducible, instead of resting on single helper outputs.
+
+Findings (established):
+
+* **Where the authority sits today.** Production fills `EventIdentityFacts`
+  with country, system name and location only; the fields the exact-fact path
+  compares (`action`, `lifecycle_step`, `subject`, `occurrence_context`,
+  `occurrence_date`) are never produced, so `_fact_relation` never decides a
+  live pair. Section K authorizes no matching change except the helper path,
+  and section A.28 states that Python has no DISTINCT relation. Every live
+  SAME_EVENT therefore rests on helper answers (batch nomination, now two, and
+  confirmation); Python checks form, citations, regions and that a confirmation
+  only removes pairs.
+* **Why Golden and regression cannot verify it.** Golden scripts the helper's
+  answers, so it tests the owner's handling of an answer, never the answer.
+  Until this section a live run kept no helper answer, so no live decision
+  could be re-executed; offline "replays" re-sampled the helper.
+* **Measured variance (real answers, now in the repository).** One unchanged
+  101-record nomination request returned 40, 52 and (reversed) 58 of 61
+  labelled same-occurrence pairs; one 15-record confirmation separated a
+  launch report that two 4-record confirmations merged. Every wrong nominated
+  pair in the corpus was removed by the confirmation that saw it.
+
+Implemented (observation and test tooling; no decision changes):
+
+* EventIdentity records every helper exchange, IDs only: the subject, whether
+  it is a confirmation, the request's record map, and either the validated
+  groups with their citations (a citation that is not a sentence ID is kept as
+  `INVALID`) or the failure kind and class. `EventIdentityRun.proposal_exchanges`;
+  the selection audit lists them as `event_identity_exchanges` and records each
+  Evidence body's SHA-256 (`content_sha256`), not its text.
+* `scripts/event_identity_replay.py` rebuilds the Event Identity records from a
+  selection audit (candidate, publication time, canonical URL, region, excerpt
+  sentence IDs, content hash) and answers each request from its recorded
+  exchange; the unchanged owner then reproduces the run's Events, gaps and
+  confirmation attribution exactly. With labels it scores merges, misses and
+  wrong merges. From the next live run on, any duplicate or wrong merge can be
+  turned into a regression case with the helper answers that caused it.
+* `acceptance/event_identity/recorded_answers.json`: 11 real helper answers on
+  real records of runs 40999869397 and 41018554355 with hand-checked
+  occurrence labels; a test re-derives and pins each measured outcome.
+
+Target authority (proposed; needs the decisions below): the occurrence
+signature of each record, extracted once by EvidenceService through the
+existing `evidence_metadata_extraction` task into the existing
+`EventIdentityFacts` fields with field-level, exact-text validation (section
+H, RC-3): an occurrence type from a closed list, the stated occurrence date,
+and the region EvidenceService already resolves. EventIdentity then decides
+deterministically from those recorded facts: records whose established types,
+dates or regions are incompatible are DISTINCT; only records in the same
+fact-compatible block are compared, and the helper answers only what Python
+cannot decide, whether two records in one block concern the same subject.
+Because the facts are per record and recorded, the same inputs give the same
+decision, Golden can store real records' facts, and a live failure replays
+exactly. Decisions required (domain; not implemented):
+
+* D1. Python may decide DISTINCT from Evidence-grounded facts (changes section
+  A.28's "no DISTINCT relation" and section K's matching clause).
+* D2. The closed occurrence-type list and its granularity, including the
+  decided cases (a launch and its verification event differ; the announcer
+  does not), and whether "installation completed" and "service started" of the
+  same installation are one type.
+* D3. The occurrence-date rule per type: different stated dates separate
+  repeatable occurrences (incidents, drills, tests, statements); for a unique
+  milestone, whether a one-day difference between release and report days
+  (the Gwangju audit, 25 and 26 October) keeps them together.
+* D4. Subject equivalence across languages: judged by the helper within a
+  block, or allow the transit-system name and location (formal-only under
+  section K) as identity facts.
+
+Classification of RC-31 to RC-45: deterministic defects removed (necessary):
+RC-31 schema, RC-42 per-member validation, ordering and numbering, RC-43 and
+RC-45 Scope clarifications (systematic, reproduced errors); domain rules:
+RC-38 dates, the announcer decision; probabilistic reinforcement: RC-44 second
+nomination, prompt v8 wording; observation: RC-30, RC-32, RC-40, RC-45
+attribution, this section.
+
+RC-44 (second nomination): not architecturally necessary. It is the only
+measured mitigation of nomination variance (first and reversed answers
+together 60 of 61 pairs against 40) and is kept as transitional; it is to be
+withdrawn when fact-based blocking (D1 to D3) replaces nomination, or earlier if
+live runs show the second nomination confirming no pairs
+(`event_identity_confirmed_pairs`).
+
+```text
+EVENT_IDENTITY_EXCHANGE_OBSERVATION = proposal_exchanges / event_identity_exchanges (IDs only)
+EVENT_IDENTITY_REPLAY = scripts/event_identity_replay.py (exact, offline, no source text)
+EVENT_IDENTITY_RECORDED_CORPUS = acceptance/event_identity/recorded_answers.json
+EVENT_IDENTITY_TARGET_AUTHORITY = RECORDED PER-RECORD OCCURRENCE FACTS + DETERMINISTIC COMPARISON (D1-D4 USER_DECISION_REQUIRED)
+RC44_SECOND_NOMINATION = TRANSITIONAL (withdraw with fact-based blocking or when SECOND confirms no pairs)
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
