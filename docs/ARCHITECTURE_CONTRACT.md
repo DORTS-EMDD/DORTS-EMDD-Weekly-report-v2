@@ -1570,11 +1570,33 @@ Rules:
   and the selection audit lists `proposal_confirmed_by` per candidate. No
   decision reads them.
 
-Decision required (domain rule; not implemented): whether a report of an
-occurrence by a different announcer (a lawmaker announcing that a carrier
-completed an installation, against the operator's own announcement) is the same
-occurrence. Section A.9 lists "different statements" as different events; the
-confirmation applied that to a report whose news is the installation itself.
+Domain decision (user, 2026-10-30; amends section A.9): reports of one
+occurrence through different announcers are one event. An operator's,
+ministry's, lawmaker's or contractor's announcement of the same completed
+installation, opening, delivery or result, and press reports of it, are the
+same occurrence when the Authoritative Evidence identifies that occurrence;
+the actor of an occurrence is whoever performed it, not whoever announced it.
+An announcement, policy decision, inspection, statement, question, meeting or
+other activity that is itself a separate occurrence stays a different event
+(a lawmaker's later call for a nationwide rollout; a ride event held to check
+the service, as section A.30 and Golden ED19 already lock). Neither the same
+topic nor a different announcer alone decides it; section A.9's "different
+statements" means statements that are themselves the news. Instruction
+`event-identity-grouping-v9` adds this as its own line; the same-event
+definition, the date rule, schemas and the Python owner are unchanged. Golden
+ED26 locks the outcome: the operator's service start and a lawmaker's
+announcement that the carriers completed the same installation merge, the
+later call and the ride event stay apart.
+
+Replays (one confirmation over 15 labelled records of run 41018554355, with
+the v12 focus for the parliamentary-audit report): with v9, 2 of 2 answers kept
+the 9 launch reports together (including one the live run never nominated),
+the 4 ride-event reports together and the parliamentary call alone; v8 split
+one more launch report. One report whose excerpt names the same lawmaker as the
+parliamentary call was separated in all three answers, yet merged in 2 of 2
+four-record confirmations: a confirmation's verdict on a record depends on the
+other records in the request. That is a property of group confirmation, not of
+the announcer rule, and is not addressed.
 
 Not addressed: Gwangju-type pairs whose sources state different release dates
 were not nominated together in three of four runs although Golden ED21 locks
@@ -1586,7 +1608,8 @@ SCOPE_PROMPT_VERSION = scope-event-target-system-v12
 SCOPE_CANDIDATE_EVENT = DOCUMENT_OWN_NEWS (not recalled background)
 EVENT_IDENTITY_CONFIRMED_PAIR_OBSERVATION = PROPOSAL_CONFIRMED (subject|pairs=N; summary by nomination)
 EVENT_IDENTITY_QUALITY_EVIDENCE = LIVE RUNS + SCORED REPLAYS (Golden/regression verify owner handling only)
-ANNOUNCER_VS_OCCURRENCE = USER_DECISION_REQUIRED
+EVENT_IDENTITY_PROMPT_VERSION = event-identity-grouping-v9
+ANNOUNCER_VS_OCCURRENCE = SAME_OCCURRENCE_WHEN_EVIDENCE_IDENTIFIES_IT (user decision; independent announcements, decisions, inspections, activities stay apart)
 ```
 
 ## B. Authoritative Owners

@@ -26,7 +26,7 @@ from .maiagent_transport import (
 
 
 TASK_IDENTITY = "event_identity_semantic_proposal"
-PROMPT_VERSION = "event-identity-grouping-v8"
+PROMPT_VERSION = "event-identity-grouping-v9"
 SCHEMA_VERSION = "event-identity-semantic-proposal-v1"
 # RC-31: a confirmation answer admits one-record groups (section A.25).
 CONFIRMATION_SCHEMA_VERSION = "event-identity-semantic-confirmation-v1"
@@ -40,6 +40,7 @@ EVENT_IDENTITY_INSTRUCTIONS = (
     "You are a stateless proposal-only semantic helper for the Python EventIdentity owner.",
     "Each supplied record is one news source about one urban rail event. Identify records that report the same event, including records in different languages.",
     "Same event means one real-world occurrence at one time: the same accident, failure, opening, contract award, announcement, decision or test. Different lifecycle steps of the same project (for example a train delivery, a construction milestone and an opening date), different statements or meetings about the same project, and separate incidents on the same line are different events. Two incidents on consecutive days are different events. Occurrences in different cities, countries or systems are different events, even when they are of the same kind (for example two emergency drills or two construction milestones).",
+    "Who announced or reported an occurrence does not by itself make it a different occurrence: an operator's, ministry's, lawmaker's or contractor's announcement of the same completed installation, opening, delivery or result, and press reports of it, are one event when the evidence identifies that same occurrence; the actor of an occurrence is whoever performed it, not whoever announced it. An announcement, policy decision, inspection, statement, question, meeting or other activity that is itself a separate occurrence stays a different event (for example a lawmaker later urging that the service be extended nationwide, or a ride event held to check the new service). Decide from the evidence: neither the same topic nor a different announcer alone settles it.",
     "Dates: an article's publication, update or reporting date (for example a byline or dateline timestamp) is never evidence of when an occurrence happened. Only a statement of when the occurrence itself took place is. When records give different dates for what may be one occurrence, the difference alone shows neither that they are different occurrences nor that they are the same. Put them together only when the other evidence identifies one and the same occurrence (the same specific act by the same actor, not merely the same topic, city, system or project); leave them apart when they could be separate occurrences of the same kind or when the evidence does not settle it. Never treat one record's date as the correct one.",
     "A record that leaves out a detail another record states (an actor, a date, a place, a figure), or states a non-identifying detail differently, is not thereby a different occurrence; decide from the details the records do state.",
     "Use only the supplied evidence_sentences and identity_facts. Each record has a record_id and each sentence a sentence_id, both assigned by Python; a sentence_id is valid only within its own record. Refer to records only by record_id.",

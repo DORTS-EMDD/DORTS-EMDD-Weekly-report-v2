@@ -420,7 +420,10 @@ Transport retry 與 semantic correction 必須分開計算。
   候選事件是文件自身報導的新聞，不是回顧的背景；新聞是聲明或質詢時以聲明為事件，經某人宣布的
   發生事項仍以該事項為事件。觀測：確認接受配對時記錄 `PROPOSAL_CONFIRMED`，run summary 顯示
   各次提案確認的配對數（`event_identity_confirmed_pairs`）。RC-44 保留，若 Live 顯示第二次提案
-  未確認任何配對即撤回。「不同宣布者報導同一發生事項」是否同一事件，待使用者決定。
+  未確認任何配對即撤回。使用者決定（修訂 §A.9）：不同宣布者報導同一 occurrence 視為同一事件，
+  須由 Authoritative Evidence 確認為同一發生事項；本身構成獨立 occurrence 的宣布行動、政策決策、
+  檢查或實際活動仍分開；不得僅依相同主題或宣布者不同決定合併或分開。提示詞 v9 另列此規則，
+  同一事件定義與日期規則不變；Golden ED26。
 
 ## 13. Report / Delivery
 

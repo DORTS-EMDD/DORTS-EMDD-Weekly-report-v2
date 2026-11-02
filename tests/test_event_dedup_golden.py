@@ -63,7 +63,7 @@ class EventDedupGoldenTests(unittest.TestCase):
             (ROOT / "golden" / "event_dedup_cases.json").read_text(encoding="utf-8")
         )
         cases = manifest["cases"]
-        self.assertEqual(len(cases), 25)
+        self.assertEqual(len(cases), 26)
         self.assertEqual(
             {case["case_class"] for case in cases},
             {
@@ -92,6 +92,7 @@ class EventDedupGoldenTests(unittest.TestCase):
                 "proposal_member_repeated_rejected",
                 "second_nomination_recovers_omitted_report",
                 "second_nomination_never_reopens_a_verdict",
+                "different_announcer_same_occurrence",
             },
         )
         for case in cases:
@@ -185,7 +186,7 @@ class EventDedupGoldenTests(unittest.TestCase):
         self.assertIs(by_id["OUT_OF_SCOPE"].scope.state, ScopeState.OUT_OF_SCOPE)
         self.assertFalse(by_id["DATE_INVALID"].temporal.date_valid)
 
-    def test_all_ed01_to_ed25_execute_through_event_identity(self):
+    def test_all_ed01_to_ed26_execute_through_event_identity(self):
         for case in self._load_event_dedup_cases():
             with self.subTest(case_id=case["case_id"]):
                 owner = EventIdentity(self._advisor_for_case(case))

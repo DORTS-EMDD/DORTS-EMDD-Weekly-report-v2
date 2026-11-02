@@ -132,7 +132,6 @@ def test_the_instruction_says_omitted_details_do_not_make_a_different_occurrence
         for index in (1, 2)
     )
     instructions = build_maiagent_event_identity_model_input(EventIdentityGroupingRequest("b", records))["instructions"]
-    assert PROMPT_VERSION == "event-identity-grouping-v8"
     line = [item for item in instructions if item.startswith("A record that leaves out a detail")]
     assert line == [
         "A record that leaves out a detail another record states (an actor, a date, a place, a figure), or states a "
@@ -191,3 +190,24 @@ def test_the_instruction_asks_every_citation_list_to_name_a_sentence():
     assert len(citation) == 1
     assert "Each of the three lists names at least one sentence" in citation[0]
     assert "cite the occurrence sentence as the step too" in citation[0]
+
+
+def test_the_instruction_states_the_announcer_rule_decided_by_the_user():
+    # Section A.33 (user decision): a different announcer of the same occurrence
+    # does not make a different event; a separate announcement, decision,
+    # inspection or activity stays apart; the Evidence decides.
+    records = tuple(
+        EventIdentityGroupingRecord(f"R{index}", f"cand-{index}", segment_evidence_sentences("A tram line opened."), {})
+        for index in (1, 2)
+    )
+    instructions = build_maiagent_event_identity_model_input(EventIdentityGroupingRequest("b", records))["instructions"]
+    assert PROMPT_VERSION == "event-identity-grouping-v9"
+    line = [item for item in instructions if item.startswith("Who announced or reported an occurrence")]
+    assert len(line) == 1
+    assert "does not by itself make it a different occurrence" in line[0]
+    assert "when the evidence identifies that same occurrence" in line[0]
+    assert "policy decision, inspection" in line[0] and "stays a different event" in line[0]
+    assert "neither the same topic nor a different announcer alone settles it" in line[0]
+    # The user-approved definition and the date rule stay as they were.
+    assert sum(item.startswith("Same event means") for item in instructions) == 1
+    assert sum(item.startswith("Dates:") for item in instructions) == 1
