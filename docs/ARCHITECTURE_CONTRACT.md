@@ -326,7 +326,9 @@ calls.
   `occurrence` (what happened) and `lifecycle` (the step reached). Same event
   means one real-world occurrence at one time; other lifecycle steps,
   statements, meetings or incidents concerning the same project are different
-  events.
+  events. (Section A.33, user decision: a different announcer of the same
+  occurrence does not make a different event; a statement is different only
+  when it is itself the news; the Evidence decides.)
 * Python validates the proposal. The response is invalid when its shape is
   wrong or a member names no supplied `record_id` (RC-21, section A.15: a
   record may be named in several groups; a record repeated inside one group
