@@ -13,6 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
+from tests.event_identity_single_procedure import single_proposal_procedure  # RC-52: one procedure
 from src.weekly_report.contracts import EvidenceResult, EvidenceState, RejectReason
 from src.weekly_report.contracts import CandidateNormalizationFailure
 from src.weekly_report.candidate_normalizer import CandidateNormalizer, CandidateNormalizationError
@@ -334,6 +335,7 @@ def test_runner_uses_one_invocation_trace_and_same_evidence_projection_as_final_
     assert result.successful
 
 
+@single_proposal_procedure
 def test_event_identity_gap_signature_reaches_the_trace_and_the_run_summary_alike():
     # RC-30: run 40653585176 recorded only technical_gaps_eventidentity=1.
     from src.weekly_report.contracts import SemanticProviderTechnicalFailure

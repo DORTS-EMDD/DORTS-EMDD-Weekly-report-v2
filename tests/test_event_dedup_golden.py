@@ -11,7 +11,7 @@ from src.weekly_report.contracts import (
     EventIdentityFacts,
     ScopeState,
 )
-from src.weekly_report.event_identity import SECOND_NOMINATION_SUFFIX, EventIdentity, EventIdentityRelation
+from src.weekly_report.event_identity import AGREEMENT_PROCEDURES, SECOND_NOMINATION_SUFFIX, EventIdentity, EventIdentityRelation
 from tests.test_event_identity_contract import _PairAdvisor, _SemanticAdvisor, _grounded_member, _record
 
 
@@ -210,15 +210,21 @@ class EventDedupGoldenTests(unittest.TestCase):
                     self.assertNotIn(("A", "B", "C"), [group.member_candidate_ids for group in result.groups])
                 elif case["case_id"] == "ED13":
                     # RC-15: an invalid proposal is a disclosed technical gap
-                    # (RC-44: one for each of the two nominations).
-                    self.assertEqual([gap.stage for gap in result.technical_gaps], ["EventIdentity", "EventIdentity"])
+                    # (RC-44: one for each of the two nominations; RC-52: in
+                    # each independent procedure).
+                    self.assertEqual(
+                        [gap.stage for gap in result.technical_gaps], ["EventIdentity", "EventIdentity"] * AGREEMENT_PROCEDURES
+                    )
                 elif case["case_id"] == "ED14":
                     self.assertEqual(result.groups[0].unresolved_claims[0].claim_key, "duration")
                 elif case["case_id"] == "ED15":
                     self.assertEqual(all_members, ["READY"])
                 if "expected_technical_gaps" in case:
+                    # The Golden lists one procedure's gaps; RC-52 runs the
+                    # procedure AGREEMENT_PROCEDURES times on the same answers.
                     self.assertEqual(
-                        [gap.failure_class for gap in result.technical_gaps], case["expected_technical_gaps"]
+                        [gap.failure_class for gap in result.technical_gaps],
+                        case["expected_technical_gaps"] * AGREEMENT_PROCEDURES,
                     )
 
     def test_ed11_golden_case_is_order_invariant(self):

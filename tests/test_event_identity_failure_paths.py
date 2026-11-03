@@ -20,6 +20,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.event_identity_single_procedure import _single_proposal_procedure  # noqa: F401  (RC-52: one procedure)
 from src.weekly_report.event_identity import EventIdentity
 from tests import test_event_dedup_golden as golden_harness
 

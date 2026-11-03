@@ -4,6 +4,7 @@ from datetime import date
 from dataclasses import replace
 from unittest import TestCase
 
+from tests.event_identity_single_procedure import single_proposal_procedure  # RC-52: one procedure
 from src.weekly_report.candidate_normalizer import CandidateNormalizationError, CandidateNormalizer
 from src.weekly_report.classifier import Classifier
 from src.weekly_report.contracts import (
@@ -2325,6 +2326,7 @@ class TechnicalGapIsolationTests(TestCase):
         self.assertEqual(result.final_report.event_count, 1)
         self.assertEqual(result.final_report.disclosure.technical_gap_count, 1)
 
+    @single_proposal_procedure
     def test_event_identity_grouping_gap_keeps_events_and_discloses_duplicates(self):
         # RC-15: a failed grouping proposal leaves records unmerged, never excluded.
         def failing_advisor(_request):

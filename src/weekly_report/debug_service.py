@@ -23,7 +23,7 @@ from urllib.parse import urlsplit
 from uuid import uuid4
 
 from .contracts import EvidenceResult, EvidenceState, RejectReason, SearchExecutionResult
-from .event_identity import SECOND_NOMINATION_SUFFIX, proposal_subject_level
+from .event_identity import PROCEDURE_SUFFIX, SECOND_NOMINATION_SUFFIX, proposal_subject_level
 
 
 STAGES = (
@@ -503,7 +503,7 @@ def _field_diagnostic(
 
 _EVENT_IDENTITY_DIAGNOSTICS = frozenset({
     "DISTINCT_REGION", "EXACT_SOURCE_BODY", "INSUFFICIENT_IDENTITY", "PROPOSAL_BATCH_SPLIT", "PROPOSAL_CONFIRMED", "PROPOSAL_MEMBER_REJECTED",
-    "PROPOSAL_NOT_CONFIRMED", "PROPOSAL_REGION_CONFLICT", "SINGLE_MEMBER_PROPOSAL", "UPSTREAM_NOT_ELIGIBLE",
+    "PROPOSAL_NOT_AGREED", "PROPOSAL_NOT_CONFIRMED", "PROPOSAL_REGION_CONFLICT", "SINGLE_MEMBER_PROPOSAL", "UPSTREAM_NOT_ELIGIBLE",
 })
 _UNCONFIRMED_OUTCOMES = {"SEPARATED", "OMITTED", "MEMBER_INVALID", "CONFIRMATION_FAILED"}
 
@@ -541,8 +541,12 @@ def _nomination_pairs(diagnostics: Any) -> dict[str, int]:
         if item.reason != "PROPOSAL_CONFIRMED":
             continue
         subject, _, count = item.detail.rpartition("|pairs=")
-        nomination = "SECOND" if subject.split(":", 1)[0].endswith(SECOND_NOMINATION_SUFFIX) else "FIRST"
-        pairs[nomination] = pairs.get(nomination, 0) + int(count)
+        batch = subject.split(":", 1)[0]
+        nomination = "SECOND" if batch.endswith(SECOND_NOMINATION_SUFFIX) else "FIRST"
+        # RC-52: confirmations of the second and later procedures are counted apart.
+        procedure = re.search(rf"{re.escape(PROCEDURE_SUFFIX)}(\d+)", batch)
+        key = f"{nomination}_P{procedure.group(1)}" if procedure else nomination
+        pairs[key] = pairs.get(key, 0) + int(count)
     return dict(sorted(pairs.items()))
 
 

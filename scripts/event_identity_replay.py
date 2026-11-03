@@ -22,9 +22,11 @@ import argparse
 from collections.abc import Mapping, Sequence
 from itertools import combinations
 import json
+import re
 from pathlib import Path
 import sys
 from typing import Any
+from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
@@ -46,6 +48,7 @@ from src.weekly_report.contracts import (  # noqa: E402
     TemporalDiagnostic,
     TemporalResult,
 )
+from src.weekly_report import event_identity as event_identity_module  # noqa: E402
 from src.weekly_report.event_identity import EventIdentity, EventIdentityProposalViolation  # noqa: E402
 from src.weekly_report.evidence_sentences import segment_evidence_sentences  # noqa: E402
 
@@ -154,10 +157,28 @@ class RecordedAdvisor:
         }
 
 
-def replay(audit: Mapping[str, Any]) -> EventIdentityRun:
-    """Run the unchanged EventIdentity owner on the audited records and recorded answers."""
+def recorded_procedures(exchanges: Sequence[Mapping[str, Any]]) -> int:
+    """How many RC-52 proposal procedures the run asked (1 for runs before RC-52)."""
 
-    return EventIdentity(RecordedAdvisor(audit.get("event_identity_exchanges") or ())).evaluate(records_from_audit(audit))
+    pattern = re.compile(rf"{re.escape(event_identity_module.PROCEDURE_SUFFIX)}(\d+)")
+    return max((int(match.group(1)) for exchange in exchanges if (match := pattern.search(exchange["subject"]))), default=1)
+
+
+def replay(audit: Mapping[str, Any]) -> EventIdentityRun:
+    """Run the unchanged EventIdentity owner on the audited records and recorded answers.
+
+    RC-52 (section A.38): a run is replayed with the number of proposal
+    procedures it recorded, so runs from before RC-52 replay as one procedure.
+    """
+
+    exchanges = audit.get("event_identity_exchanges") or ()
+    procedures = recorded_procedures(exchanges)
+    with patch.multiple(
+        event_identity_module,
+        AGREEMENT_PROCEDURES=procedures,
+        AGREEMENT_REQUIRED=min(event_identity_module.AGREEMENT_REQUIRED, procedures),
+    ):
+        return EventIdentity(RecordedAdvisor(exchanges)).evaluate(records_from_audit(audit))
 
 
 def audited_groups(audit: Mapping[str, Any]) -> set[tuple[str, ...]]:

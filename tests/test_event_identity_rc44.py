@@ -10,6 +10,7 @@ Fixture texts are generic.
 
 from __future__ import annotations
 
+from tests.event_identity_single_procedure import _single_proposal_procedure  # noqa: F401  (RC-52: one procedure)
 from src.weekly_report.event_identity import SECOND_NOMINATION_SUFFIX, EventIdentity
 from tests.test_event_identity_contract import _record
 from tests.test_event_identity_grouping_rc15 import _Scripted, _confirm, _member

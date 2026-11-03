@@ -19,6 +19,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from tests.event_identity_single_procedure import single_proposal_procedure  # RC-52: one procedure
 from src.weekly_report import event_identity as event_identity_module
 from src.weekly_report.contracts import CategoryId
 from src.weekly_report.debug_service import event_identity_projection
@@ -61,6 +62,7 @@ def _groups(run):
 # --- RC-40: rejected proposal group members --------------------------------------------
 
 
+@single_proposal_procedure
 def test_a_member_rejected_for_duplicate_membership_is_recorded():
     batch = {"groups": [
         {"members": [_member("A"), _member("B"), _member("A")]},  # A listed twice
@@ -73,6 +75,7 @@ def test_a_member_rejected_for_duplicate_membership_is_recorded():
     assert event_identity_projection(run)["event_identity_diagnostic_distribution"]["PROPOSAL_MEMBER_REJECTED"] == 1
 
 
+@single_proposal_procedure
 def test_a_member_rejected_for_invalid_citations_is_recorded():
     batch = {"groups": [{"members": [_member("A", subject_sentence_ids=["S99"]), _member("B")]}]}
     run = EventIdentity(_scripted(batch)).evaluate(_records())
@@ -80,6 +83,7 @@ def test_a_member_rejected_for_invalid_citations_is_recorded():
     assert _rejected(run) == [(("A",), "event-identity-batch-1:group-1|CITATION_INVALID")]
 
 
+@single_proposal_procedure
 def test_a_rejected_confirmation_member_is_recorded_with_its_own_subject():
     batch = {"groups": [{"members": [_member("A"), _member("B")]}]}
     confirmation = {"groups": [{"members": [_member("A"), _member("A"), _member("B")]}]}
@@ -90,6 +94,7 @@ def test_a_rejected_confirmation_member_is_recorded_with_its_own_subject():
     ]
 
 
+@single_proposal_procedure
 def test_a_whole_response_violation_has_no_group_members_to_record():
     batch = {"groups": [{"members": [_member("A"), _member("R99")]}]}  # unknown record: whole response invalid
     run = EventIdentity(_scripted(batch)).evaluate(_records())
@@ -123,6 +128,7 @@ def test_the_diagnostic_carries_ids_only_never_source_text():
                 assert word not in rendered
 
 
+@single_proposal_procedure
 def test_the_selection_audit_traces_rejected_members_to_candidates():
     import sys
     from pathlib import Path

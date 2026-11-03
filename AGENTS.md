@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-51 修訂（2026-10-20～11-03）
+### RC-3～RC-52 修訂（2026-10-20～11-03）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.37、§N 與 §R。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.38、§N 與 §R。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -453,6 +453,11 @@ Transport retry 與 semantic correction 必須分開計算。
   顯示同事件召回在每份語料都低於 RC-48；損失主要是更多配對未被提案、更多配對在確認時被分開，焦點檢查每次
   最多只移除 3 個配對，未發現 Python 缺陷。依使用者決定撤回，§A.14 與 RC-48 的請求、提示詞 v10 恢復有效。
   R7 量測中 v10 在三次之一合併了一個不同標註配對，R7 條件未達成，main 維持阻擋。
+* RC-52（§A.38，使用者核准）：Event Identity 的提案程序（RC-44 兩次提案加各群確認）在相同請求上獨立執行三次；
+  至少兩次確認的配對才是 SAME，只被一次確認者維持 UNCERTAIN，記為 `PROPOSAL_NOT_AGREED` 診斷。
+  R1～R5、提示詞 v10、請求、complete-link 分組、fail-closed 處理皆不變；每次程序各自揭露技術缺口；批次代號加
+  `-p2`、`-p3`，重放依各程序的往返記錄。helper 呼叫約為三倍。以記錄的九次 RC-48 回答作為三次程序，
+  不同標註配對合併為 0，召回為 46/61、48/51、298/312；Golden 結果不變。
 
 ## 13. Report / Delivery
 
@@ -602,5 +607,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-51 APPLIED (2026-11-03; RC-51 reverted)
+CONTRACT_REVISION = RC-3..RC-52 APPLIED (2026-11-03; RC-51 reverted; RC-52 on dev)
 ```

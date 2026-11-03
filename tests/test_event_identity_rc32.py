@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from tests.event_identity_single_procedure import _single_proposal_procedure  # noqa: F401  (RC-52: one procedure)
 from src.weekly_report.event_identity import LEAD_TIERS, EventIdentity
 from src.weekly_report.evidence_sentences import segment_evidence_sentences
 from tests.test_event_identity_contract import _record

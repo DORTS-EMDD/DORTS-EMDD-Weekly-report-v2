@@ -8,6 +8,7 @@ pin the observation and the unchanged grouping outcomes it observes.
 
 from __future__ import annotations
 
+from tests.event_identity_single_procedure import _single_proposal_procedure  # noqa: F401  (RC-52: one procedure)
 from src.weekly_report.contracts import SemanticProviderTechnicalFailure, TechnicalGapKind
 from src.weekly_report.debug_service import event_identity_projection, technical_gap_signature
 from src.weekly_report.event_identity import EventIdentity, proposal_subject_level

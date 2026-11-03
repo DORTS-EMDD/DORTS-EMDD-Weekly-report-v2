@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 
 from scripts.event_identity_replay import audited_groups, main, replay, score
+from tests.event_identity_single_procedure import _single_proposal_procedure  # noqa: F401  (RC-52: one procedure)
 from src.weekly_report.contracts import SemanticProviderTechnicalFailure
 from src.weekly_report.event_identity import SECOND_NOMINATION_SUFFIX, EventIdentity
 from src.weekly_report.production_runner import ProductionRunner

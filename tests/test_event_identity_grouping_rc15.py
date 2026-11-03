@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import copy
+import re
 import json
 import unittest
 
+from tests.event_identity_single_procedure import _single_proposal_procedure  # noqa: F401  (RC-52: one procedure)
 from src.weekly_report.contracts import (
     EventIdentityFacts,
     IdentityMetadataSupport,
@@ -16,6 +18,8 @@ from src.weekly_report.contracts import (
     TechnicalGapKind,
 )
 from src.weekly_report.event_identity import (
+    AGREEMENT_PROCEDURES,
+    PROCEDURE_SUFFIX,
     SECOND_NOMINATION_SUFFIX,
     BATCH_CHARACTER_LIMIT,
     LEAD_CHARACTER_LIMIT,
@@ -63,9 +67,25 @@ class _Scripted:
         self.requests = []
         self.second = second
         self.first_batch = None
+        self.answered = {}
 
     def __call__(self, request):
         self.requests.append(request)
+        # RC-52: a later procedure asks the same requests again; a consistent
+        # helper gives the answer it gave the first procedure.
+        key = re.sub(rf"{PROCEDURE_SUFFIX}\d+(?=[-:]|$)", "", request.batch_id)
+        if key != request.batch_id and key in self.answered:
+            response = self.answered[key]
+            if isinstance(response, BaseException):
+                raise response
+            return copy.deepcopy(response)
+        response = self._answer(request)
+        self.answered[request.batch_id] = response if isinstance(response, BaseException) else copy.deepcopy(response)
+        if isinstance(response, BaseException):
+            raise response
+        return response
+
+    def _answer(self, request):
         if request.batch_id.endswith(SECOND_NOMINATION_SUFFIX):
             response = self.first_batch if self.second is None else self.second
             response = response if isinstance(response, BaseException) else copy.deepcopy(response)
@@ -74,7 +94,7 @@ class _Scripted:
             if not request.confirmation and self.first_batch is None:
                 self.first_batch = response if isinstance(response, BaseException) else copy.deepcopy(response)
         if isinstance(response, BaseException):
-            raise response
+            return response
         # Fixtures name members by candidate ID; the helper sees record IDs.
         record_ids = {record.candidate_id: record.record_id for record in request.records}
         for group in response.get("groups", ()) if isinstance(response, dict) else ():

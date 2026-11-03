@@ -1920,6 +1920,12 @@ Complete-link grouping is unchanged.
   (run 40999869397, one of three runs), so the R7 condition is not met.
   RC-51's prompt v11 merged none but lowered recall on every corpus and was
   reverted (section A.37). Merge to main stays blocked.
+* RC-52 (section A.38): the implemented agreement of two of three
+  procedures, answered by the recorded runs, merged no differently labelled
+  pair on either R7 corpus. Recall was 46 of 61 and 48 of 51, against
+  baselines of 35 and 34. This uses recorded helper answers, not a fresh
+  paid run. Merge to main still needs a dev Live run and separate
+  authorization.
 
 ```text
 EVENT_IDENTITY_DISTINCT_BASIS = ESTABLISHED REGION CONFLICT ONLY (DISTINCT_EVENT, reason DISTINCT_REGION); no helper output produces DISTINCT
@@ -1942,6 +1948,48 @@ A.14 and the RC-48 request, prompt v10 and audit are in force again.
 
 ```text
 EVENT_IDENTITY_CONTEXT = NONE (RC-51 reverted 2026-11-03)
+```
+
+### A.38 RC-52 Agreement of independent proposal procedures (2026-11-03, user-approved)
+
+Finding (acceptance report sections 54-56): the RC-48 procedure, run three
+times on the same labelled records, merged a differently labelled pair in two
+of nine runs (run 40999869397: a mixed launch/ride-event report with a launch
+report; run 41405830454: two different Kyiv attacks). Each came from a single
+run. Each run's same-event recall also varied widely, from 38 to 58 of 61.
+
+**Rule.**
+
+* Event Identity runs the whole proposal procedure (the two nominations of
+  RC-44 and the confirmation of each proposed group, RC-23) three times on the
+  same requests. Each run is independent: a pair one procedure separated is
+  still asked in the next.
+* A pair is `SAME_EVENT` from proposals only when at least two of the three
+  procedures confirmed it. A pair confirmed by one procedure stays
+  `UNCERTAIN`, recorded as `PROPOSAL_NOT_AGREED` with `confirmed=1/3`
+  (observation only).
+* Unchanged: R1 (no helper output produces DISTINCT), R2's order (region
+  conflict, exact source and exact fact still need no agreement), R3-R5, the
+  requests and prompt v10, complete-link grouping (section A.9, ED10), and
+  the fail-closed handling of omissions, invalid members and technical
+  failures. Each procedure discloses its own technical gaps. A failed
+  procedure confirms nothing, so the other two must both confirm a pair.
+* Batch IDs: the second and third procedures add `-p2` and `-p3` before RC-44's
+  `-n2`. Every exchange is recorded, and the replay (section A.34) answers
+  each procedure from its own exchanges.
+* Cost: about three times the Event Identity helper calls of RC-48, roughly
+  45-90 calls per weekly run in the measurement. That is about 10 more
+  minutes of run time.
+
+**Evidence.** The implemented owner, answered by the nine recorded RC-48 runs
+as its procedures, merged no differently labelled pair. Same-event recall was
+46 of 61, 48 of 51 and 298 of 312, against the R7 live baselines of 35 and 34
+and Live run 41405830454's 278. The single-run results were 38-58, 39-48 and
+288-306. Golden ED01-ED28 outcomes are unchanged, and the Golden harness
+counts each procedure's gaps.
+
+```text
+EVENT_IDENTITY_AGREEMENT = SAME FROM PROPOSALS ONLY WHEN >= 2 OF 3 INDEPENDENT PROPOSAL PROCEDURES CONFIRMED THE PAIR
 ```
 
 ## B. Authoritative Owners

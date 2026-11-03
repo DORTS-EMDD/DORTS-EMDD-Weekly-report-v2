@@ -9,6 +9,7 @@ import sys
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from tests.event_identity_single_procedure import single_proposal_procedure  # RC-52: one procedure
 from src.weekly_report.contracts import EvidenceResult, EvidenceState, RejectReason, TechnicalGap, TechnicalGapKind
 from src.weekly_report.production_runner import ProductionRunner
 from src.weekly_report.selection_audit import STAGES, build_selection_audit, selection_audit_mapping_is_bounded
@@ -111,6 +112,7 @@ def test_the_cli_writes_the_audit_beside_the_report(tmp_path):
     }
 
 
+@single_proposal_procedure
 def test_a_proposed_pair_left_apart_names_its_partner_and_why():
     from src.weekly_report.event_identity import EventIdentity
     from tests.test_event_identity_grouping_rc15 import _Scripted, _confirm, _member
@@ -144,6 +146,7 @@ def test_the_audit_and_run_summary_show_what_the_grouping_request_carried():
     assert "event_identity_excerpt_limits=6x900" in result.summary()
 
 
+@single_proposal_procedure
 def test_the_run_summary_and_audit_show_which_nomination_confirmed_each_merge():
     # Section A.33 (observation only).
     from src.weekly_report.event_identity import EventIdentity

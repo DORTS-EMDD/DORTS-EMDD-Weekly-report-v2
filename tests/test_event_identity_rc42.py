@@ -11,6 +11,7 @@ S1). Fixture texts are generic.
 
 from __future__ import annotations
 
+from tests.event_identity_single_procedure import _single_proposal_procedure  # noqa: F401  (RC-52: one procedure)
 from src.weekly_report.contracts import EventIdentityGroupingRecord, EventIdentityGroupingRequest
 from src.weekly_report.debug_service import event_identity_projection
 from src.weekly_report.event_identity import EventIdentity

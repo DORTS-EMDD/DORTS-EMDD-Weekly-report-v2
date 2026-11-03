@@ -41,6 +41,12 @@ LEAD_SENTENCE_LIMIT, LEAD_CHARACTER_LIMIT = LEAD_TIERS[0]
 BATCH_CHARACTER_LIMIT = 66_000
 # RC-44 (section A.32): the second nomination's batch ID suffix.
 SECOND_NOMINATION_SUFFIX = "-n2"
+# RC-52 (section A.38): the proposal procedure runs this many times
+# independently; a pair is SAME only when this many of them confirm it.
+AGREEMENT_PROCEDURES = 3
+AGREEMENT_REQUIRED = 2
+# Batch ID suffix of the second and later procedures ("-p2", "-p3").
+PROCEDURE_SUFFIX = "-p"
 
 EVENT_IDENTITY_GROUPING_RESPONSE_SCHEMA: dict[str, object] = {
     "type": "object",
@@ -286,6 +292,12 @@ class EventIdentity:
 
         Also fills ``excerpts`` with the sentence IDs each record was sent with
         and returns the excerpt limits used (RC-32, observation only).
+
+        RC-52 (section A.38): the whole procedure (both nominations and their
+        confirmations) runs AGREEMENT_PROCEDURES times on the same requests,
+        each independent of the others. A pair is SAME_EVENT only when at least
+        AGREEMENT_REQUIRED procedures confirmed it; a single helper call or a
+        single procedure never makes a pair SAME.
         """
 
         relations: dict[tuple[str, str], tuple[EventIdentityRelation, str]] = {}
@@ -305,14 +317,45 @@ class EventIdentity:
                     f"{len(requests)} batches",
                 )
             )
+        conflicts: set[tuple[str, str]] = set()
+        singles: set[tuple[str, ...]] = set()
+        confirmed_in: dict[tuple[str, str], int] = {}
+        for procedure in range(1, AGREEMENT_PROCEDURES + 1):
+            suffix = "" if procedure == 1 else f"{PROCEDURE_SUFFIX}{procedure}"
+            for pair in self._proposal_procedure(
+                [replace(request, batch_id=f"{request.batch_id}{suffix}") for request in requests],
+                by_id, diagnostics, technical_gaps, exchanges, conflicts, singles,
+            ):
+                confirmed_in[pair] = confirmed_in.get(pair, 0) + 1
+        for pair, count in sorted(confirmed_in.items()):
+            if count >= AGREEMENT_REQUIRED:
+                relations[pair] = (EventIdentityRelation.SAME_EVENT, "SEMANTIC_GROUP_PROPOSAL")
+            else:
+                # Observation only: confirmed, but by too few procedures.
+                diagnostics.append(
+                    EventIdentityDiagnostic(pair, "PROPOSAL_NOT_AGREED", f"confirmed={count}/{AGREEMENT_PROCEDURES}")
+                )
+        return relations, excerpt_limits
+
+    def _proposal_procedure(
+        self,
+        requests: Sequence[EventIdentityGroupingRequest],
+        by_id: Mapping[str, EventIdentityRecord],
+        diagnostics: list[EventIdentityDiagnostic],
+        technical_gaps: list[TechnicalGap],
+        exchanges: list[dict[str, object]],
+        conflicts: set[tuple[str, str]],
+        singles: set[tuple[str, ...]],
+    ) -> set[tuple[str, str]]:
+        """One RC-23/RC-44 proposal procedure; returns the pairs its confirmations confirmed."""
+
         # RC-44: each batch is nominated twice, the second time with its
         # records in reverse order; a pair either nomination proposes goes to
         # confirmation. A pair's verdict from an earlier nomination stands: a
         # later nomination only sends pairs no earlier confirmation decided.
         decided: set[tuple[str, str]] = set()
-        conflicts: set[tuple[str, str]] = set()
-        singles: set[tuple[str, ...]] = set()
         sent: set[tuple[str, str]] = set()
+        confirmed_pairs: set[tuple[str, str]] = set()
         nominations = [nomination for request in requests for nomination in (request, _second_nomination(request))]
         for request in nominations:
             decided |= sent
@@ -367,7 +410,7 @@ class EventIdentity:
                             )
                         )
                         continue
-                    relations[pair] = (EventIdentityRelation.SAME_EVENT, "SEMANTIC_GROUP_PROPOSAL")
+                    confirmed_pairs.add(pair)
                 accepted = [pair for pair in pairs if pair in confirmed]
                 if accepted:
                     # Observation only (section A.33): which nomination's group
@@ -379,7 +422,7 @@ class EventIdentity:
                             f"{group_subject}|pairs={len(accepted)}",
                         )
                     )
-        return relations, excerpt_limits
+        return confirmed_pairs
 
     def _ask(
         self,

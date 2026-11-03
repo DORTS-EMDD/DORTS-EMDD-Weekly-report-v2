@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 
+from tests.event_identity_single_procedure import _single_proposal_procedure  # noqa: F401  (RC-52: one procedure)
 from src.weekly_report.contracts import (
     EventIdentityFacts,
     EventIdentityGroupingRecord,
