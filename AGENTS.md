@@ -451,7 +451,8 @@ Transport retry 與 semantic correction 必須分開計算。
 * RC-51（§A.37，使用者核准，僅 dev）：Event Identity 每筆摘錄改為 Scope 焦點句，後接同一 Evidence 中
   焦點之後的句子作為 context，兩者分別標示 role。context 只在焦點完整放入後，使用該層上限內剩餘的空間；
   請求超過上限時先統一縮短 context，不因 context 降低焦點層級，分批時不送 context。紀錄的事件只由焦點句
-  陳述。成員的 occurrence 引用超出焦點時，Python 以 `OCCURRENCE_OUTSIDE_FOCUS` 逐成員淘汰並揭露。
+  陳述。成員的 occurrence 引用不含任何焦點句時，Python 以 `OCCURRENCE_OUTSIDE_FOCUS` 逐成員淘汰並揭露；
+  引用焦點句再加上同一事件的 context 細節則不淘汰。
   提示詞 v11 只新增一行，v9、v10 各行不變。R1～R6、確認、呼叫次數與 Golden 皆不變。Live 品質尚未驗證，
   R7 量測範圍改為 v11 與此請求組成。
 

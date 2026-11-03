@@ -2185,7 +2185,7 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 
 - 變更：每筆紀錄送出 Scope 焦點句，後接同一 Evidence 中焦點之後的句子作為 context，兩者分別標示 role。
   - context 只在焦點完整放入後，使用該層上限內剩餘的空間；超出請求上限時先統一縮短 context，不因此降低焦點層級。
-  - 紀錄的事件只由焦點句陳述。成員的 occurrence 引用超出焦點時，Python 以 `OCCURRENCE_OUTSIDE_FOCUS` 逐成員淘汰並揭露。
+  - 紀錄的事件只由焦點句陳述。成員的 occurrence 引用不含任何焦點句時，Python 以 `OCCURRENCE_OUTSIDE_FOCUS` 逐成員淘汰並揭露（見下方驗收更正）。
   - 提示詞 v11 只新增一行，v9、v10 各行以雜湊鎖定不變；呼叫次數、確認、R1～R6 皆不變。
 - 離線資訊流（用 production 的 `_grouping_record`，套在 Run 41405830454 雜湊相符的 Evidence 上）：
   - 焦點與 Live 相同。
@@ -2197,3 +2197,9 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - 四個 mutation（拿掉焦點檢查、context 不受字數限制、context 降低焦點層級、context 取自焦點之前）皆被測試擋下。
   - Run 41405830454 audit 重放仍完全重現（60 個 Event）。
 - 未證實：helper 是否因此提高召回或維持零誤合併。Live 品質仍為 FAIL／未驗證；R7 未授權；main 維持阻擋。
+- 驗收更正（2026-11-03）：`542a3de` 的焦點檢查會淘汰「occurrence 引用含任一 context 句」的成員。
+  - Run 41405830454 中，helper 對 103 個多句成員有 83 個引用多句 occurrence、91 個引用 S1 以外的句子。這個習慣下，焦點只有一句的紀錄（RC-51 的目標）只要再引用同一事件的 context 細節，就會被淘汰。
+  - 離線重現：同一次演練的兩筆被拆開。
+  - 改為只淘汰完全沒有引用焦點句的成員；只靠 context 的 occurrence 仍被淘汰，並仍須經確認（RC-23）。
+  - 提示詞 v11 的該行同步修正（v11 尚未有任何執行使用）；§A.37 隨之更正。
+  - 新增正對照測試；舊規則與移除檢查兩個 mutation 皆被擋下；全部測試 1304 通過；Live audit 重放仍完全重現。

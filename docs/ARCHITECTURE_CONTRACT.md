@@ -1954,9 +1954,14 @@ providing it improves the helper's decisions.
   supplies details of that event. An occurrence that only context reports
   neither joins nor separates records.
 * Python enforces the occurrence boundary. In a group of two or more records,
-  a member whose `occurrence_sentence_ids` name any sentence outside its focus
-  is rejected per member as `OCCURRENCE_OUTSIDE_FOCUS`, a disclosed technical
-  gap (section A.30). Subject and lifecycle citations may name context.
+  a member whose `occurrence_sentence_ids` name no focus sentence (an
+  occurrence that only context reports) is rejected per member as
+  `OCCURRENCE_OUTSIDE_FOCUS`, a disclosed technical gap (section A.30). An
+  occurrence citation that names a focus sentence may add context sentences
+  stating details of the same event; subject and lifecycle citations may name
+  context. (Correction before any run used prompt v11: the first rule rejected
+  any context sentence in an occurrence citation, which also rejected
+  focus-anchored citations of the same event.)
 * Unchanged: R1-R6, confirmation (RC-23), the number of calls, the SAME and
   DISTINCT bases, and Golden.
 
@@ -1969,7 +1974,7 @@ them.
 
 ```text
 EVENT_IDENTITY_CONTEXT = FOLLOWING EVIDENCE SENTENCES AFTER A WHOLE FOCUS, ROLE-MARKED, WITHIN THE FOCUS TIER'S ROOM; SHORTENED BEFORE ANY FOCUS TIER CHANGE
-EVENT_IDENTITY_OCCURRENCE_CITATION = FOCUS SENTENCES ONLY (OCCURRENCE_OUTSIDE_FOCUS rejects the member)
+EVENT_IDENTITY_OCCURRENCE_CITATION = AT LEAST ONE FOCUS SENTENCE; CONTEXT ONLY FOR DETAILS OF THE SAME EVENT (OCCURRENCE_OUTSIDE_FOCUS rejects a member citing no focus sentence)
 ```
 
 ## B. Authoritative Owners

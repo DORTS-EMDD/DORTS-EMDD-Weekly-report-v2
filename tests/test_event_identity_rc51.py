@@ -140,11 +140,24 @@ def test_the_guard_applies_to_confirmations_and_leaves_other_members_standing():
     raw = {"groups": [{"members": [
         {**_cite("A", ["S1"]), "record_id": "R1"},
         {**_cite("B", ["S1"]), "record_id": "R2"},
-        {**_cite("C", ["S1", "S3"]), "record_id": "R3"},
+        {**_cite("C", ["S3"]), "record_id": "R3"},
     ]}]}
     ((accepted, violations),) = _validate_grouping_proposal(raw, request)
     assert accepted == ("A", "B")
     assert [(item.failure_class, item.candidate_ids) for item in violations] == [("OCCURRENCE_OUTSIDE_FOCUS", ("C",))]
+
+
+def test_a_focus_anchored_occurrence_citation_may_add_context_details():
+    # The Live helper cited several sentences for 83 of 103 members; citing
+    # the focus plus a context detail of the same drill is not rejected, and
+    # the pair still needs its confirmation (RC-23).
+    a = _focused("A", "The operator held a fire drill at Duryu station on 20 October. Smoke filled the platform in the scenario. Crews entered the tunnel by trolley.", {"S1"})
+    b = _focused("B", "A fire drill was held at Duryu station on 20 October. Smoke filled the platform in the scenario. Crews entered the tunnel by trolley.", {"S1", "S2", "S3"})
+    nomination = {"groups": [{"members": [_cite("A", ["S1", "S2"]), _cite("B", ["S1", "S2"])]}]}
+    run = EventIdentity(_Scripted(nomination, _confirm("A", "B"))).evaluate([a, b])
+    assert [group.member_candidate_ids for group in run.groups] == [("A", "B")] and run.technical_gaps == ()
+    separated = EventIdentity(_Scripted(nomination, _confirm(separate=("A", "B")))).evaluate([a, b])
+    assert sorted(group.member_candidate_ids for group in separated.groups) == [("A",), ("B",)]
 
 
 V10_LINE_SHA256 = (
@@ -162,7 +175,8 @@ def test_v10_lines_are_unchanged_and_the_role_line_states_the_boundary():
     for phrase in (
         "A record's event is only what its focus sentences report",
         "an occurrence that only context sentences report is not the record's event and never joins or separates records",
-        "occurrence_sentence_ids must name only focus sentences",
+        "occurrence_sentence_ids must name at least one focus sentence that states the event",
+        "may add a context sentence only when it states a detail of that same event",
     ):
         assert phrase in line, phrase
     payload = build_maiagent_event_identity_model_input(

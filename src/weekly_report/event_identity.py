@@ -945,7 +945,7 @@ def _validate_grouping_proposal(
     whose citation does not resolve (``CITATION_INVALID``) is rejected; the
     group's other members stand. A one-record group proposes no merge and
     needs no citation. RC-51: so is a member whose ``occurrence_sentence_ids``
-    leave its Scope focus (``OCCURRENCE_OUTSIDE_FOCUS``).
+    name no sentence of its Scope focus (``OCCURRENCE_OUTSIDE_FOCUS``).
     """
 
     if not isinstance(raw, Mapping) or set(raw) != {"groups"} or not isinstance(raw["groups"], list):
@@ -982,15 +982,17 @@ def _validate_grouping_proposal(
                 for key in _CITATION_KEYS
             )
         ]
-        # RC-51 (section A.37): context only supports details; a member whose
-        # occurrence is cited outside its Scope focus proposes another event.
+        # RC-51 (section A.37): context only supports details of the focus
+        # event; a member whose occurrence cites no focus sentence proposes an
+        # event that only context reports.
         unfocused = [
             record_id
             for record_id, items in listings.items()
             if len(listings) > 1
             and record_id not in repeated + ungrounded
             and any(
-                resolve_sentence_ids(records[record_id].focus_sentences, item["occurrence_sentence_ids"]) is None
+                not {sentence.sentence_id for sentence in records[record_id].focus_sentences}
+                & set(item["occurrence_sentence_ids"])
                 for item in items
             )
         ]
