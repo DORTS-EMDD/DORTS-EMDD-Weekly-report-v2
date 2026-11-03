@@ -1931,7 +1931,7 @@ Complete-link grouping is unchanged.
 EVENT_IDENTITY_DISTINCT_BASIS = ESTABLISHED REGION CONFLICT ONLY (DISTINCT_EVENT, reason DISTINCT_REGION); no helper output produces DISTINCT
 EVENT_IDENTITY_PAIR_ORDER = REGION DISTINCT > EXACT SOURCE (same URL, content and Scope focus) > EXACT FACT > CONFIRMED PROPOSAL > UNCERTAIN
 EVENT_IDENTITY_PROMPT = event-identity-grouping-v10 (R3-R5 added; v9 lines unchanged; v11 of RC-51 reverted)
-EVENT_IDENTITY_R7_CORPUS_MEASUREMENT = REQUIRED BEFORE MERGE (paid calls need approval and a cap)
+EVENT_IDENTITY_R7_CORPUS_MEASUREMENT = MET FOR RC-52 (section A.38: 0 differently labelled merges on the R7 corpora; dev Live 41566485174 0 false merges, acceptance report section 58; Daegu-type residual duplicate accepted, section 59; merge authorized 2026-11-03)
 ```
 
 ### A.37 RC-51 Evidence context after the Scope focus (2026-11-03, reverted)
