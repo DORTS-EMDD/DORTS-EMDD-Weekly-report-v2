@@ -448,13 +448,11 @@ Transport retry 與 semantic correction 必須分開計算。
   不可用 Evidence 外知識）寫入提示詞 v10，v9 各行逐字不變；Python 不比較名稱。請求組成、RC-44、確認
   皆不變；逐筆 signature 與依地區分組經量測否決。Golden ED27、ED28；ED01–ED26 結果不變。R7：提示詞
   v10 合併前須以標註語料量測（不同事件配對合併數須為 0），付費呼叫待使用者核准上限。
-* RC-51（§A.37，使用者核准，僅 dev）：Event Identity 每筆摘錄改為 Scope 焦點句，後接同一 Evidence 中
-  焦點之後的句子作為 context，以 `context_sentence_ids` 標示（無 context 的紀錄不加欄位）。context 只在焦點完整放入後，使用該層上限內剩餘的空間；
-  請求超過上限時先統一縮短 context，不因 context 降低焦點層級，分批時不送 context。紀錄的事件只由焦點句
-  陳述。成員的 occurrence 引用不含任何焦點句時，Python 以 `OCCURRENCE_OUTSIDE_FOCUS` 逐成員淘汰並揭露；
-  引用焦點句再加上同一事件的 context 細節則不淘汰。
-  提示詞 v11 只新增一行，v9、v10 各行不變。R1～R6、確認、呼叫次數與 Golden 皆不變。Live 品質尚未驗證，
-  R7 量測範圍改為 v11 與此請求組成。
+* RC-51（§A.37，使用者核准後已撤回，2026-11-03）：曾在 Scope 焦點句後加上同一 Evidence 的後續句作為 context，
+  使用提示詞 v11，並以焦點檢查限制 occurrence 引用。使用者授權的成對量測（426 次呼叫，三份語料、各組三次）
+  顯示同事件召回在每份語料都低於 RC-48；損失主要是更多配對未被提案、更多配對在確認時被分開，焦點檢查每次
+  最多只移除 3 個配對，未發現 Python 缺陷。依使用者決定撤回，§A.14 與 RC-48 的請求、提示詞 v10 恢復有效。
+  R7 量測中 v10 在三次之一合併了一個不同標註配對，R7 條件未達成，main 維持阻擋。
 
 ## 13. Report / Delivery
 
@@ -604,5 +602,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-51 APPLIED (2026-11-03; RC-51 on dev only)
+CONTRACT_REVISION = RC-3..RC-51 APPLIED (2026-11-03; RC-51 reverted)
 ```

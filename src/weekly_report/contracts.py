@@ -329,40 +329,23 @@ class EventIdentityGroupingRecord:
     sentences: tuple["EvidenceSentence", ...]
     identity_facts: Mapping[str, str] = field(default_factory=dict)
     source_sentence_ids: tuple[str, ...] = ()
-    # RC-51 (section A.37): the last ``context_sentence_count`` sentences are
-    # context that follows the Scope focus; the sentences before them are the
-    # focus, which alone states the record's event.
-    context_sentence_count: int = 0
 
     def __post_init__(self) -> None:
         if not self.record_id or not self.candidate_id or not self.sentences:
             raise ValueError("EventIdentityGroupingRecord requires record_id, candidate_id and sentences")
         object.__setattr__(self, "sentences", tuple(self.sentences))
-        if not 0 <= self.context_sentence_count < len(self.sentences):
-            raise ValueError("EventIdentityGroupingRecord needs at least one focus sentence")
         object.__setattr__(
             self,
             "identity_facts",
             MappingProxyType({str(k): str(v) for k, v in dict(self.identity_facts).items() if str(v).strip()}),
         )
 
-    @property
-    def focus_sentences(self) -> tuple["EvidenceSentence", ...]:
-        return self.sentences[: len(self.sentences) - self.context_sentence_count]
-
     def as_payload(self) -> dict[str, Any]:
-        payload: dict[str, Any] = {
+        return {
             "record_id": self.record_id,
             "evidence_sentences": [sentence.as_mapping() for sentence in self.sentences],
             "identity_facts": dict(self.identity_facts),
         }
-        # RC-51: only a record with context names it, so a record without
-        # context costs the request bound (section A.12) nothing extra.
-        if self.context_sentence_count:
-            payload["context_sentence_ids"] = [
-                sentence.sentence_id for sentence in self.sentences[len(self.focus_sentences) :]
-            ]
-        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -470,8 +453,6 @@ class EventIdentityRun:
     # Section A.34 (observation only): every helper exchange, IDs only, so the
     # run's grouping can be replayed offline (scripts/event_identity_replay.py).
     proposal_exchanges: tuple[Mapping[str, Any], ...] = ()
-    # RC-51 (observation only): which of each record's excerpt IDs were context.
-    proposal_contexts: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 class RejectReason(StrEnum):

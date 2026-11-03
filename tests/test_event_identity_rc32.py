@@ -49,11 +49,8 @@ def test_the_run_records_the_sentences_each_record_was_sent_with_and_the_limits(
     advisor = _Scripted({"groups": [{"members": [_lede(), _member("EVENT")]}]}, {"groups": [{"members": [_lede(), _member("EVENT")]}]})
     run = EventIdentity(advisor).evaluate(_records())
     sent = {record.candidate_id: tuple(s.sentence_id for s in record.sentences) for record in advisor.requests[0].records}
-    # Numbered within the request (RC-42); LEDE's focus S2 is followed by its
-    # two context sentences (RC-51).
-    assert sent == {"LEDE": ("S1", "S2", "S3"), "EVENT": ("S1",)}
-    assert dict(run.proposal_excerpts) == {"LEDE": ("S2", "S3", "S4"), "EVENT": ("S1",)}  # document (RC-9) IDs
-    assert dict(run.proposal_contexts) == {"LEDE": ("S3", "S4"), "EVENT": ()}
+    assert sent == {"LEDE": ("S1",), "EVENT": ("S1",)}  # numbered within the request (RC-42)
+    assert dict(run.proposal_excerpts) == {"LEDE": ("S2",), "EVENT": ("S1",)}  # document (RC-9) IDs
     assert run.proposal_excerpt_limits == f"{LEAD_TIERS[0][0]}x{LEAD_TIERS[0][1]}"
     assert sorted(group.member_candidate_ids for group in run.groups) == [("EVENT", "LEDE")]
 

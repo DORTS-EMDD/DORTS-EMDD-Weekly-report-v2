@@ -496,9 +496,7 @@ warning), mixed Korean letters with Chinese characters (`경남道長`,
   sentences of the Candidate's own event) is the excerpt each record presents
   to Event Identity, bounded by the RC-18 tiers; a record without a recorded
   focus presents its document lead. Event Identity therefore compares Candidate
-  events rather than every occurrence an article mentions. RC-51 (section
-  A.37) adds the sentences that follow the focus as marked context; the focus
-  alone still states the Candidate's event. The Writer receives
+  events rather than every occurrence an article mentions. The Writer receives
   the canonical member's focus sentences as `event_focus` and writes about that
   event only, using the rest of the evidence for details of the same event.
 * **Names and language.** The Writer uses the established Traditional Chinese
@@ -527,7 +525,7 @@ warning), mixed Korean letters with Chinese characters (`경남道長`,
 WRITER_PROMPT_VERSION = formal-report-writer-v4
 REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v4
 EVIDENCE_METADATA_PROMPT_VERSION = evidence-metadata-principal-body-v3
-EVENT_IDENTITY_EXCERPT = SCOPE_CANDIDATE_EVENT_FOCUS + FOLLOWING EVIDENCE CONTEXT, role-marked (RC-51, section A.37; document lead without a focus, no context)
+EVENT_IDENTITY_EXCERPT = SCOPE_CANDIDATE_EVENT_FOCUS (document lead without one; RC-51 context reverted, section A.37)
 ```
 
 ### A.15 RC-21 Overlapping Event Identity groups (2026-10-22)
@@ -1908,8 +1906,7 @@ Complete-link grouping is unchanged.
 
 **R7 gate before merge.**
 
-* The current prompt (v11 since RC-51, section A.37) and request composition
-  must be measured on the labelled corpus (section A.35).
+* Prompt v10 must be measured on the labelled corpus (section A.35).
 * Method: the production owner, with the real helper, on the rebuilt records
   of runs 40999869397 and 41018554355.
 * Required: no differently labelled pair is merged.
@@ -1918,68 +1915,33 @@ Complete-link grouping is unchanged.
   * run 41018554355: 34 of 51 pairs, with 8 wrong pairs from the statement
     over-merge fixed in RC-45.
 * The paid calls need the user's approval and a cap (estimate at most 40).
-* Measured 2026-11-03 (acceptance report section 54, user-authorized): prompt v11
-  merged no differently labelled pair in 6 runs; recall did not improve on
-  RC-48 (prompt v10, which merged one differently labelled pair in 3 runs).
-  Merge to main still needs separate authorization.
+* Measured 2026-11-03 (acceptance report sections 54-55, user-authorized,
+  three runs per corpus): prompt v10 merged one differently labelled pair
+  (run 40999869397, one of three runs), so the R7 condition is not met.
+  RC-51's prompt v11 merged none but lowered recall on every corpus and was
+  reverted (section A.37). Merge to main stays blocked.
 
 ```text
 EVENT_IDENTITY_DISTINCT_BASIS = ESTABLISHED REGION CONFLICT ONLY (DISTINCT_EVENT, reason DISTINCT_REGION); no helper output produces DISTINCT
 EVENT_IDENTITY_PAIR_ORDER = REGION DISTINCT > EXACT SOURCE (same URL, content and Scope focus) > EXACT FACT > CONFIRMED PROPOSAL > UNCERTAIN
-EVENT_IDENTITY_PROMPT = event-identity-grouping-v11 (v10 added R3-R5; v11 adds the RC-51 role line; earlier lines unchanged)
+EVENT_IDENTITY_PROMPT = event-identity-grouping-v10 (R3-R5 added; v9 lines unchanged; v11 of RC-51 reverted)
 EVENT_IDENTITY_R7_CORPUS_MEASUREMENT = REQUIRED BEFORE MERGE (paid calls need approval and a cap)
 ```
 
-### A.37 RC-51 Evidence context after the Scope focus (2026-11-03, user-approved)
+### A.37 RC-51 Evidence context after the Scope focus (2026-11-03, reverted)
 
-Finding (Live run 41405830454, acceptance report section 52): 34 same-event
-pairs stayed apart. For most failing records Event Identity received only the
-Scope focus, often one sentence. The details that matched the other records
-were in the following sentences of the same hash-verified Evidence. This shows
-that information was not available to the helper. It does not show that
-providing it improves the helper's decisions.
-
-**Rule.**
-
-* A record's excerpt is its Scope focus sentences, then context: the sentences
-  that follow the last focus sentence in the same Evidence, in document order.
-* Context is sent only when the whole focus fits. It uses only the room the
-  focus leaves within the record's tier limits (section A.12).
-* A record with context lists its context sentence IDs
-  (`context_sentence_ids`); its other sentences are the focus. A record without
-  context carries no extra field, so it costs the request bound nothing more
-  than before. A record without a recorded focus presents its document lead
-  as today, with no context.
-* The focus tier is chosen exactly as before, on the focus alone. When the
-  context does not fit the request bound, every record's context is capped
-  uniformly and shortened until the request fits. Context never lowers the
-  focus tier and is never sent in a split run. The excerpt limits record a
-  reduced cap as `+context<n>`.
-* The focus alone states the record's event (section A.14). Context only
-  supplies details of that event. An occurrence that only context reports
-  neither joins nor separates records.
-* Python enforces the occurrence boundary. In a group of two or more records,
-  a member whose `occurrence_sentence_ids` name no focus sentence (an
-  occurrence that only context reports) is rejected per member as
-  `OCCURRENCE_OUTSIDE_FOCUS`, a disclosed technical gap (section A.30). An
-  occurrence citation that names a focus sentence may add context sentences
-  stating details of the same event; subject and lifecycle citations may name
-  context. (Correction before any run used prompt v11: the first rule rejected
-  any context sentence in an occurrence citation, which also rejected
-  focus-anchored citations of the same event.)
-* Unchanged: R1-R6, confirmation (RC-23), the number of calls, the SAME and
-  DISTINCT bases, and Golden.
-
-**Observation.** The selection audit records each record's context sentence
-IDs (`proposal_context_sentence_ids`), and the replay rebuilds the focus from
-them.
-
-**Status.** Implemented on dev. Live quality is not validated. The R7 gate
-(section A.36) now covers prompt v11 and this composition.
+RC-51 sent each record's Scope focus followed by the next sentences of the
+same Evidence as context, with prompt v11 and a Python check that an
+occurrence citation names a focus sentence. The user-authorized paired
+measurement (acceptance report sections 54-55; 426 calls, three runs per arm
+on three labelled corpora) showed lower same-event recall than RC-48 on every
+corpus. Most of the loss came from more pairs left unnominated and more pairs
+split at confirmation. The focus check removed at most 3 pairs in a run. No
+Python defect was found. RC-51 was reverted on the user's decision; section
+A.14 and the RC-48 request, prompt v10 and audit are in force again.
 
 ```text
-EVENT_IDENTITY_CONTEXT = FOLLOWING EVIDENCE SENTENCES AFTER A WHOLE FOCUS, ROLE-MARKED, WITHIN THE FOCUS TIER'S ROOM; SHORTENED BEFORE ANY FOCUS TIER CHANGE
-EVENT_IDENTITY_OCCURRENCE_CITATION = AT LEAST ONE FOCUS SENTENCE; CONTEXT ONLY FOR DETAILS OF THE SAME EVENT (OCCURRENCE_OUTSIDE_FOCUS rejects a member citing no focus sentence)
+EVENT_IDENTITY_CONTEXT = NONE (RC-51 reverted 2026-11-03)
 ```
 
 ## B. Authoritative Owners
