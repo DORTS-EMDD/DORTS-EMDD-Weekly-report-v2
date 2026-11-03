@@ -255,6 +255,34 @@ class CorrectionTests(TestCase):
         self.assertEqual((validation.pass_count, len(validation.failed)), (0, 0))
         self.assertEqual([gap.failure_class for gap in gaps], ["TIMEOUT"])
 
+    def test_an_invalid_writer_correction_answer_is_an_event_gap(self):
+        # RC-6: a parseable correction answer that breaks the Writer schema
+        # (an extra key, a blank field) isolates its event, as in write().
+        from src.weekly_report.writer import ReportWriter
+
+        results = (_workflow_result("E1"), _workflow_result("E2"))
+
+        def writer_provider(request):
+            event_id = request["writer_request"]["event_id"]
+            if "correction" in request:
+                return {"event_id": event_id, "headline": "Taiwan", "factual_summary": "Metro", "taipei_insight": " "}
+            raise AssertionError("only corrections are requested here")
+
+        def provider(request):
+            if request.writer_prose.factual_summary == self._SUMMARY:
+                return _proposal(request, assessment_overrides={"factual_summary-2": "UNSUPPORTED"})
+            return _proposal(request)
+
+        gaps = []
+        validation = Validator(correction_provider=ReportWriter(writer_provider).correct, semantic_provider=provider).validate(
+            results,
+            tuple(_metadata(result) for result in results),
+            (_block("E1", summary=self._SUMMARY), _block("E2")),
+            on_event_technical_gap=gaps.append,
+        )
+        self.assertEqual([event.event_id for event in validation.passed], ["E2"])
+        self.assertEqual([(gap.subject_id, gap.failure_class) for gap in gaps], [("E1", "CORRECTION_FAILURE")])
+
     def test_untyped_correction_defect_still_aborts(self):
         # A correction provider returning a non-block is a programming defect,
         # not an event-level technical gap.

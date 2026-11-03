@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from enum import StrEnum
 
@@ -137,7 +137,15 @@ class ReportApplicationResult:
         gaps = tuple(self.technical_gaps)
         if any(not isinstance(gap, TechnicalGap) for gap in gaps):
             raise TypeError("ReportApplicationResult technical_gaps must be TechnicalGap values")
-        if len({(gap.stage, gap.subject_id) for gap in gaps}) != len(gaps):
+        # One gap per subject and stage. An EventIdentity subject is a proposal
+        # request or group, not a Candidate or Event: section A.30 discloses
+        # each rejected-member class of one group (DUPLICATE_MEMBERSHIP,
+        # CITATION_INVALID) as its own gap with the group subject.
+        keys = [
+            (gap.stage, gap.subject_id, gap.failure_class if gap.stage == "EventIdentity" else "")
+            for gap in gaps
+        ]
+        if len(set(keys)) != len(keys):
             raise ValueError("a subject can have at most one technical gap per stage")
         object.__setattr__(self, "technical_gaps", gaps)
         exclusions = tuple(self.metadata_exclusions)
@@ -772,11 +780,13 @@ class ReportApplication:
         )
         ordered_results = self._run_ordering(downstream_results)
         formal_metadata, metadata_exclusions = self._run_formal_metadata_projection(ordered_results)
-        writer_blocks, validation_result, final_report, delivery_result = self._run_final_pipeline(
+        writer_blocks, validation_result, final_report = self._run_final_pipeline(
             ordered_results, formal_metadata, metadata_exclusions, technical_gaps, (window_start, window_end)
         )
 
-        return ReportApplicationResult(
+        # Every result invariant is checked before Delivery: an invariant
+        # breach aborts the run without emailing an artifact it never keeps.
+        result = ReportApplicationResult(
             plan,
             execution,
             acquisitions=acquisitions,
@@ -796,10 +806,17 @@ class ReportApplication:
             writer_blocks=writer_blocks,
             validation_result=validation_result,
             final_report=final_report,
-            delivery_result=delivery_result,
             technical_gaps=tuple(technical_gaps),
             metadata_exclusions=metadata_exclusions,
         )
+        if final_report is None or self._delivery is None or self._delivery_recipient is None:
+            return result
+        with observe_stage("Delivery", 1) as observation:
+            delivery_result = self._delivery.deliver(final_report, self._delivery_recipient)
+            if not isinstance(delivery_result, DeliveryReceipt):
+                raise TypeError("DeliveryService must return a DeliveryReceipt")
+            observation.observe(delivery_result, final=True)
+        return replace(result, delivery_result=delivery_result)
 
     def _run_final_pipeline(
         self,
@@ -812,12 +829,11 @@ class ReportApplication:
         tuple[WriterReportBlock, ...] | None,
         ValidationResult | None,
         FinalReportArtifact | None,
-        DeliveryReceipt | None,
     ]:
         if self._writer is None or self._validator is None:
-            return None, None, None, None
+            return None, None, None
         if ordered_results is None or formal_metadata is None:
-            return None, None, None, None
+            return None, None, None
         gaps = technical_gaps if technical_gaps is not None else []
         excluded_ids = {item.event_id for item in metadata_exclusions}
         reportable = tuple(
@@ -866,15 +882,7 @@ class ReportApplication:
                 raise TypeError("ReportService must return a FinalReportArtifact")
             observation.observe(final_report, final=True)
 
-        delivery_result = None
-        if self._delivery is not None and self._delivery_recipient is not None:
-            with observe_stage("Delivery", 1) as observation:
-                delivery_result = self._delivery.deliver(final_report, self._delivery_recipient)
-                if not isinstance(delivery_result, DeliveryReceipt):
-                    raise TypeError("DeliveryService must return a DeliveryReceipt")
-                observation.observe(delivery_result, final=True)
-
-        return writer_blocks, validation_result, final_report, delivery_result
+        return writer_blocks, validation_result, final_report
 
     def _run_formal_metadata_projection(
         self,

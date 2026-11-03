@@ -2259,6 +2259,61 @@ class TechnicalGapIsolationTests(TestCase):
         self.assertEqual(result.final_report.disclosure.technical_gap_count, 1)
         self.assertIn("技術問題未完成處理", result.final_report.content)
 
+    def _run_with_event_identity_gaps(self, failure_classes):
+        # Section A.30: each rejected-member class of one proposal group is a
+        # gap with the group subject; a recording Delivery shows whether the
+        # run reached it.
+        from src.weekly_report.contracts import TechnicalGap
+
+        gaps = tuple(
+            TechnicalGap("EventIdentity", "event-identity-batch-1:group-1", TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION, failure_class, 1)
+            for failure_class in failure_classes
+        )
+
+        class _GappedEventIdentity(RecordingEventIdentity):
+            def evaluate(self, records):
+                return replace(super().evaluate(records), technical_gaps=gaps)
+
+        class _RecordingDelivery(DeliveryService):
+            def __init__(self):
+                super().__init__(live_email_send=False)
+                self.delivered = []
+
+            def deliver(self, artifact, recipient_target):
+                self.delivered.append(artifact.artifact_id)
+                return super().deliver(artifact, recipient_target)
+
+        delivery = _RecordingDelivery()
+        app = self._app(
+            TwoFormalResultProvider(),
+            evidence_service=FormalEvidenceService(),
+            scope_classifier=RecordingScopeClassifier(),
+            temporal_rule=RecordingTemporalRule(default_date=date(2026, 9, 18)),
+            event_identity=_GappedEventIdentity(),
+            classifier=RecordingClassifier(),
+            report_workflow=RecordingDownstreamWorkflow(reportable=True),
+            ordering=RecordingOrdering(),
+            report_service=ReportService(),
+            writer=ReportWriter(provider=lambda request: _block(request["writer_request"]["event_id"])),
+            validator=Validator(semantic_provider=_semantic_provider),
+            delivery=delivery,
+            delivery_recipient="reader@example.test",
+        )
+        return app, delivery
+
+    def test_one_event_identity_group_may_disclose_both_rejected_member_classes(self):
+        app, delivery = self._run_with_event_identity_gaps(("DUPLICATE_MEMBERSHIP", "CITATION_INVALID"))
+        result = app.run("selected")
+        self.assertEqual(result.final_report.disclosure.event_identity_gap_count, 2)
+        self.assertEqual(result.delivery_result.status, DeliveryStatus.STAGED)
+        self.assertEqual(delivery.delivered, [result.final_report.artifact_id])
+
+    def test_a_result_invariant_breach_aborts_the_run_before_delivery(self):
+        app, delivery = self._run_with_event_identity_gaps(("DUPLICATE_MEMBERSHIP", "DUPLICATE_MEMBERSHIP"))
+        with self.assertRaisesRegex(ValueError, "at most one technical gap per stage"):
+            app.run("selected")
+        self.assertEqual(delivery.delivered, [])
+
     def test_scope_proposal_violation_is_a_disclosed_gap_not_out_of_scope(self):
         # RC-9: a Scope proposal the owner cannot validate is a technical gap.
         from src.weekly_report.scope_classifier import ScopeProposalViolation

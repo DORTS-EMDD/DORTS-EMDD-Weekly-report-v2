@@ -423,7 +423,12 @@ class ReportWriter:
         request = dict(request)
         request["correction"] = {"previous_block": {name: getattr(block, name) for name in WRITER_RESPONSE_FIELDS}, "reasons": list(reasons)}
         raw = self._provider(request)
-        corrected = raw if isinstance(raw, WriterReportBlock) else WriterReportBlock.from_mapping(raw)  # type: ignore[arg-type]
+        try:
+            corrected = raw if isinstance(raw, WriterReportBlock) else WriterReportBlock.from_mapping(raw)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            # RC-6: an invalid parseable correction is an event-level gap, as
+            # the same answer from ``write`` is; never a whole-run failure.
+            raise WriterResponseError("Writer correction response does not match the exact schema") from None
         if corrected.event_id != result.event_group.event_id:
             raise WriterResponseError("Writer correction event_id does not match request")
         return corrected
