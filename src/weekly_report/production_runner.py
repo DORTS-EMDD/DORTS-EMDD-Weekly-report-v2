@@ -454,6 +454,9 @@ class ProductionRunResult:
             parts.append(f"artifact_id={self.artifact_id}")
         if self.delivery_result is not None:
             parts.append(f"delivery={self.delivery_result.status.value}")
+            if self.delivery_result.failure_signature:
+                # RC-54: where the failed send stopped (phase, type, code).
+                parts.append(f"delivery_failure={self.delivery_result.failure_signature}")
         if self.failure_stage:
             parts.append(f"failure_stage={self.failure_stage}")
         if self.failure_class:

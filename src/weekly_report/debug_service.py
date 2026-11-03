@@ -179,6 +179,8 @@ def _facts(stage: str, values: Any, input_count: int | None) -> dict[str, Any]:
     elif stage == "Delivery":
         completed, output = 1, 1
         terminal = _counts((_enum(values.status),))
+        if getattr(values, "failure_signature", None):
+            reasons = _counts((values.failure_signature,))
     else:
         completed = input_count if stage == "Acquisition" else len(values)
         output = len(values)

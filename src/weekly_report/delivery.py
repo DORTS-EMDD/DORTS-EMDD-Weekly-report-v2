@@ -15,6 +15,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 
 from .report_service import FinalReportArtifact
 
@@ -24,6 +25,29 @@ class DeliveryStatus(StrEnum):
     SENT = "SENT"
     DUPLICATE = "DUPLICATE"
     FAILED = "FAILED"
+
+
+class DeliveryFailurePhase(StrEnum):
+    """Where a failed send attempt stopped (RC-54, observation only).
+
+    ``QUIT`` and ``REFUSED`` mean the server had already accepted the message
+    for every or for some recipients; the receipt is still FAILED.
+    """
+
+    MESSAGE = "MESSAGE"
+    CONNECT = "CONNECT"
+    LOGIN = "LOGIN"
+    SENDMAIL = "SENDMAIL"
+    REFUSED = "REFUSED"
+    QUIT = "QUIT"
+    SENDER = "SENDER"
+
+
+# PHASE:ExceptionType[:SMTP reply code]; fixed tokens and digits only, so no
+# server text, credential or address can travel in it.
+_FAILURE_SIGNATURE = re.compile(
+    rf"(?:{'|'.join(phase.value for phase in DeliveryFailurePhase)}):[A-Za-z_][A-Za-z0-9_]{{0,63}}(?::[1-5][0-9]{{2}})?"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,12 +77,20 @@ class DeliveryReceipt:
     status: DeliveryStatus
     event_ids: tuple[str, ...]
     error: str | None = None
+    # RC-54 (observation only): where a FAILED attempt stopped.
+    failure_signature: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.identity, DeliveryIdentity):
             raise TypeError("DeliveryReceipt requires DeliveryIdentity")
         status = DeliveryStatus(self.status)
         object.__setattr__(self, "status", status)
+        if self.failure_signature is not None and (
+            status is not DeliveryStatus.FAILED
+            or not isinstance(self.failure_signature, str)
+            or not _FAILURE_SIGNATURE.fullmatch(self.failure_signature)
+        ):
+            raise ValueError("DeliveryReceipt failure_signature must be a safe signature of a FAILED attempt")
         event_ids = tuple(self.event_ids)
         if any(not isinstance(event_id, str) or not event_id.strip() for event_id in event_ids):
             raise ValueError("DeliveryReceipt event_ids must be nonblank strings")
@@ -74,7 +106,38 @@ class DeliveryReceipt:
 
 
 class DeliveryFailure(RuntimeError):
-    """A delivery attempt failed without modifying the assembled artifact."""
+    """A delivery attempt failed without modifying the assembled artifact.
+
+    RC-54: a sender names the phase where its attempt stopped, the type of
+    the underlying exception and, when the server replied, the numeric SMTP
+    code. The message text is never copied onto a receipt.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        phase: DeliveryFailurePhase | str = DeliveryFailurePhase.SENDER,
+        failure_class: str = "",
+        smtp_code: int | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.phase = DeliveryFailurePhase(phase)
+        self.failure_class = failure_class or type(self).__name__
+        self.smtp_code = smtp_code
+
+
+def failure_signature(failure: BaseException) -> str:
+    """The receipt's safe ``PHASE:ExceptionType[:code]`` for a failed send."""
+
+    if isinstance(failure, DeliveryFailure):
+        phase, failure_class, code = failure.phase, failure.failure_class, failure.smtp_code
+    else:
+        phase, failure_class, code = DeliveryFailurePhase.SENDER, type(failure).__name__, None
+    signature = f"{phase.value}:{failure_class}"
+    if isinstance(code, int) and not isinstance(code, bool) and 100 <= code <= 599:
+        signature += f":{code}"
+    return signature if _FAILURE_SIGNATURE.fullmatch(signature) else f"{phase.value}:UNKNOWN"
 
 
 def _period_key(artifact: FinalReportArtifact, recipient_target: str) -> str | None:
@@ -187,12 +250,13 @@ class DeliveryService:
         try:
             assert self._sender is not None
             self._sender(artifact, identity.recipient_target)
-        except Exception:
+        except Exception as failure:
             receipt = DeliveryReceipt(
                 identity,
                 DeliveryStatus.FAILED,
                 tuple(event.event_id for event in artifact.events),
                 error="delivery sender failed",
+                failure_signature=failure_signature(failure),
             )
             self.attempts.append(receipt)
             return receipt
@@ -206,8 +270,10 @@ class DeliveryService:
 
 __all__ = [
     "DeliveryStatus",
+    "DeliveryFailurePhase",
     "DeliveryIdentity",
     "DeliveryReceipt",
     "DeliveryFailure",
     "DeliveryService",
+    "failure_signature",
 ]

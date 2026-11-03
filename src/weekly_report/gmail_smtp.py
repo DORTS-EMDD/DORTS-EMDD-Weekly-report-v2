@@ -18,6 +18,7 @@ import smtplib
 import ssl
 from typing import Final
 
+from .delivery import DeliveryFailure, DeliveryFailurePhase
 from .pdf_renderer import pdf_filename, render_report_pdf
 from .report_service import FinalReportArtifact
 
@@ -37,8 +38,15 @@ class GmailSmtpConfigurationError(ValueError):
     """Gmail SMTP configuration is incomplete or invalid."""
 
 
-class GmailSmtpError(RuntimeError):
+class GmailSmtpError(DeliveryFailure):
     """A Gmail SMTP attempt failed without exposing transport secrets."""
+
+
+def _smtp_code(failure: BaseException) -> int | None:
+    """The numeric SMTP reply code of a server response, never its text."""
+
+    code = getattr(failure, "smtp_code", None)
+    return code if isinstance(code, int) and not isinstance(code, bool) else None
 
 
 def load_delivery_values(
@@ -243,8 +251,15 @@ class GmailSmtpSender:
         recipients = parse_recipient_target(recipient_target)
         try:
             message = self._message(artifact, recipients)
-        except Exception:
-            raise GmailSmtpError("formal report PDF could not be rendered") from None
+        except Exception as exc:
+            raise GmailSmtpError(
+                "formal report PDF could not be rendered",
+                phase=DeliveryFailurePhase.MESSAGE,
+                failure_class=type(exc).__name__,
+            ) from None
+        # RC-54: the phase reached when a failure occurs. Only the phase, the
+        # exception type and a numeric reply code are kept.
+        phase = DeliveryFailurePhase.CONNECT
         try:
             context = ssl.create_default_context()
             with smtplib.SMTP_SSL(
@@ -253,21 +268,37 @@ class GmailSmtpSender:
                 context=context,
                 timeout=self.timeout_seconds,
             ) as smtp:
+                phase = DeliveryFailurePhase.LOGIN
                 smtp.login(self.config.user, self.config.app_password)
+                phase = DeliveryFailurePhase.SENDMAIL
                 refused = smtp.sendmail(
                     self.config.user,
                     list(recipients),
                     message.as_string(),
                 )
                 if refused:
-                    raise GmailSmtpError("Gmail SMTP refused one or more recipients")
+                    # smtplib returns refusals only when some recipient was
+                    # accepted; the message went out to the others.
+                    phase = DeliveryFailurePhase.REFUSED
+                    raise GmailSmtpError(
+                        "Gmail SMTP refused one or more recipients",
+                        phase=phase,
+                        failure_class="RecipientsPartiallyRefused",
+                    )
+                # The server accepted the message; leaving the block sends QUIT.
+                phase = DeliveryFailurePhase.QUIT
         except GmailSmtpError:
             raise
-        except Exception:
+        except Exception as exc:
             # Keep server, credentials, and provider response details out of
             # receipts and deployment logs. DeliveryService supplies the
             # public FAILED status and safe error text.
-            raise GmailSmtpError("Gmail SMTP send failed") from None
+            raise GmailSmtpError(
+                "Gmail SMTP send failed",
+                phase=phase,
+                failure_class=type(exc).__name__,
+                smtp_code=_smtp_code(exc),
+            ) from None
 
 
 def build_gmail_smtp_sender(
