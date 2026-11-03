@@ -2140,3 +2140,43 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - 釐清 R3：報導同一組 occurrence 的紀錄應同群。這是提示詞變更，依 R7 須先以標註語料量測。
   - 改斷句規則：會改變所有引用句子 ID 的 seam（Scope、Validator、Event Identity），影響面大，且未證明是原因，本輪拒絕。
 - 誤合併：36c71ecf＋87e20d88 依 R3 屬允許的結果，不是誤合併。14420e24＋e6fd66d7（紐約）不在本次重建範圍，仍未核對。
+
+**結案：獨立架構審查與狀態（2026-11-03，唯讀審查，無付費呼叫）**
+- 審查核實：
+  - Run 41405830454 執行 dev `f86798d`；41378751642、41395574313 皆執行 main `dd9f28e`，不是 RC-46～RC-48 的 Live 驗收證據。
+  - 解壓後的 artifact 與該 Run 的 zip 以 SHA-256 逐檔相符；重放完全重現。
+  - 每個缺少的案例配對都是 `INSUFFICIENT_IDENTITY`，沒有 `DISTINCT_REGION`；283 個已確認配對全部成為 SAME，Python 沒有遺失任何一個。
+  - Production 的 EvidenceService 只產生 country、transit system、location、region，不產生 `action`／`lifecycle_step`，因此 exact-fact 路徑在 production 不會觸發。不同網址的紀錄只能經 helper 提案加確認成為 SAME。
+- 本節前文的更正（以下取代前文對應敘述）：
+  - 「跨 Run 對照」不能證明結果的變數只在 helper 呼叫：兩次 Run 的提示詞（v9／v10）、Python 程式與紀錄數（91／101）都不同，上一 Run 的 audit 也沒有內容雜湊。變動性的證據改為：
+    - 本 Run 內，相同紀錄反序的第二次提案只把 23 筆放進群組，第一次是 61 筆；
+    - `tests/test_event_identity_recorded_answers.py` 鎖定同一請求三次提案的 40／52／58 of 61。
+  - 被確認分開的紀錄共 7 筆，前文少列雪梨的兩筆（5e1891c5、55757053，未重建來源文字，可能是正確分開）。
+  - 「摘錄混合兩個 occurrence」沒有基準比例：已合併的對照組也有照片說明併入首句的情況（d7937630、65f54134），混合紀錄 36c71ecf 也被合併。這仍只是假說。
+  - 明德站：R3 已規定混合紀錄與共享其細節的紀錄同群，兩筆內容相同，契約結果是 SAME。分開是 helper 未依指示，不是領域規則缺口；前文「釐清 R3」的方向因此不成立。
+  - 光州：只有 e4b02f9e 一側經雜湊驗證。
+  - 漏提發生在請求中相鄰的紀錄之間（京都 R49 對 R50／R51、大邱 R2 對 R5～R16、光州 R44 對 R47），清單距離不能解釋。
+- 已確立：
+  - 每個案例最早可觀察的失敗是 helper 漏提或確認分開。
+  - SAME 唯一的途徑經過兩次 helper 判斷，且召回在呼叫間大幅變動。
+  - 殘餘重複是 R1 規定的 fail-closed 行為，符合契約。
+- 未確立：個別漏提與分開的原因（helper 不提供理由，無法觀測）。
+- 領域規則（R3～R5、§A.28、§K）已決定所有已檢查案例的正確結果，沒有 BLOCKED_DOMAIN_RULE。
+
+| 項目 | 狀態 |
+|---|---|
+| RC-48 Engineering（1294 tests、Golden、mutation） | PASS |
+| RC-46 觀測與精確重放 | PASS |
+| RC-48 Live 品質（重複事件） | FAIL |
+| 契約符合性（R1 fail-closed、無誤合併於已核對群組） | 符合；紐約 14420e24＋e6fd66d7 未核對 |
+| R7 合併前量測（§A.36） | 未執行；付費呼叫未獲核准 |
+| 架構決定（召回／請求組成） | BLOCKED_ARCHITECTURE_DECISION |
+| Production 修改 | 不成立 |
+| Merge main | BLOCKED |
+
+- 使用者決定（2026-11-03）：維持阻擋，不核准 R7 付費量測。
+- 下一個獲授權的工程邊界：只做離線分析與文件；不得修改提示詞、請求組成、斷句規則或 Python 判定。
+- 重新開啟的條件：
+  - R7：使用者核准付費呼叫上限。依 §A.36，以 production owner 與真實 helper 在標註語料上執行，要求不同標註配對的合併數為 0，並對照 Live 基準報告召回。若要把本 Run 的紀錄加入語料，屬於變更 R7 方法，須另獲核准。
+  - 架構決定：須有量測結果，能區分提案與確認兩階段的損失與重複呼叫的變動。離線重放只能重算 Python，無法評估任何改變 helper 請求的方案。
+  - Merge main：R7 通過，且無 Golden 回歸。RC-44 撤回仍須使 ED24 為 [3]。
