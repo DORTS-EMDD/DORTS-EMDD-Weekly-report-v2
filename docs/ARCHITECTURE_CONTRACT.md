@@ -1942,9 +1942,11 @@ providing it improves the helper's decisions.
   that follow the last focus sentence in the same Evidence, in document order.
 * Context is sent only when the whole focus fits. It uses only the room the
   focus leaves within the record's tier limits (section A.12).
-* Every sentence is marked with its role, `focus` or `context`. A record
-  without a recorded focus presents its document lead as today, with no
-  context.
+* A record with context lists its context sentence IDs
+  (`context_sentence_ids`); its other sentences are the focus. A record without
+  context carries no extra field, so it costs the request bound nothing more
+  than before. A record without a recorded focus presents its document lead
+  as today, with no context.
 * The focus tier is chosen exactly as before, on the focus alone. When the
   context does not fit the request bound, every record's context is capped
   uniformly and shortened until the request fits. Context never lowers the

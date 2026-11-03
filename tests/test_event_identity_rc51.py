@@ -67,14 +67,17 @@ def test_context_follows_the_focus_and_is_marked_apart():
     sent = _grouping_record(_focused("A", body, {"S2"}), "R1")
     assert [s.text for s in sent.focus_sentences] == ["The tram line opened on 3 May."]
     assert sent.source_sentence_ids == ("S2", "S3", "S4") and sent.context_sentence_count == 2
-    assert [item["role"] for item in sent.as_payload()["evidence_sentences"]] == ["focus", "context", "context"]
-    assert [item["sentence_id"] for item in sent.as_payload()["evidence_sentences"]] == ["S1", "S2", "S3"]
+    payload = sent.as_payload()
+    assert [item["sentence_id"] for item in payload["evidence_sentences"]] == ["S1", "S2", "S3"]
+    assert payload["context_sentence_ids"] == ["S2", "S3"]
 
 
 def test_a_record_without_a_focus_still_presents_its_lead_and_no_context():
     body = "The tram line opened on 3 May. It runs 12 km."
     sent = _grouping_record(_record("A", facts=None, body=body), "R1")
     assert sent.context_sentence_count == 0 and sent.source_sentence_ids == ("S1", "S2")
+    # Without context the payload is the RC-48 payload: no extra field.
+    assert set(sent.as_payload()) == {"record_id", "evidence_sentences", "identity_facts"}
 
 
 def test_the_focus_is_never_shortened_and_the_limits_bound_focus_and_context_together():
@@ -168,12 +171,13 @@ V10_LINE_SHA256 = (
 )
 
 
-def test_v10_lines_are_unchanged_and_the_role_line_states_the_boundary():
+def test_v10_lines_are_unchanged_and_the_context_line_states_the_boundary():
     digests = [sha256(line.encode("utf-8")).hexdigest() for line in EVENT_IDENTITY_INSTRUCTIONS]
     assert [digest for digest in digests if digest in V10_LINE_SHA256] == list(V10_LINE_SHA256)
-    (line,) = [item for item in EVENT_IDENTITY_INSTRUCTIONS if item.startswith("Each evidence sentence has a role.")]
+    (line,) = [item for item in EVENT_IDENTITY_INSTRUCTIONS if item.startswith("Some records list context_sentence_ids.")]
     for phrase in (
-        "A record's event is only what its focus sentences report",
+        "a record's event is only what its focus sentences report",
+        "a record without context_sentence_ids has only focus sentences",
         "an occurrence that only context sentences report is not the record's event and never joins or separates records",
         "occurrence_sentence_ids must name at least one focus sentence that states the event",
         "may add a context sentence only when it states a detail of that same event",
@@ -182,4 +186,4 @@ def test_v10_lines_are_unchanged_and_the_role_line_states_the_boundary():
     payload = build_maiagent_event_identity_model_input(
         EventIdentityGroupingRequest("b", (_grouping_record(_focused("L", LAUNCH, {"S1"}), "R1"), _grouping_record(_focused("R", RIDE, {"S1"}), "R2")))
     )
-    assert "context" in str(payload)
+    assert "context_sentence_ids" in str(payload)

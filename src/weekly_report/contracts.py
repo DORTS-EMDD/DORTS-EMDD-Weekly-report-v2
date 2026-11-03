@@ -351,15 +351,18 @@ class EventIdentityGroupingRecord:
         return self.sentences[: len(self.sentences) - self.context_sentence_count]
 
     def as_payload(self) -> dict[str, Any]:
-        focus_count = len(self.focus_sentences)
-        return {
+        payload: dict[str, Any] = {
             "record_id": self.record_id,
-            "evidence_sentences": [
-                {**sentence.as_mapping(), "role": "focus" if index < focus_count else "context"}
-                for index, sentence in enumerate(self.sentences)
-            ],
+            "evidence_sentences": [sentence.as_mapping() for sentence in self.sentences],
             "identity_facts": dict(self.identity_facts),
         }
+        # RC-51: only a record with context names it, so a record without
+        # context costs the request bound (section A.12) nothing extra.
+        if self.context_sentence_count:
+            payload["context_sentence_ids"] = [
+                sentence.sentence_id for sentence in self.sentences[len(self.focus_sentences) :]
+            ]
+        return payload
 
 
 @dataclass(frozen=True, slots=True)

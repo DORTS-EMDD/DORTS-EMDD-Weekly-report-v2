@@ -449,7 +449,7 @@ Transport retry 與 semantic correction 必須分開計算。
   皆不變；逐筆 signature 與依地區分組經量測否決。Golden ED27、ED28；ED01–ED26 結果不變。R7：提示詞
   v10 合併前須以標註語料量測（不同事件配對合併數須為 0），付費呼叫待使用者核准上限。
 * RC-51（§A.37，使用者核准，僅 dev）：Event Identity 每筆摘錄改為 Scope 焦點句，後接同一 Evidence 中
-  焦點之後的句子作為 context，兩者分別標示 role。context 只在焦點完整放入後，使用該層上限內剩餘的空間；
+  焦點之後的句子作為 context，以 `context_sentence_ids` 標示（無 context 的紀錄不加欄位）。context 只在焦點完整放入後，使用該層上限內剩餘的空間；
   請求超過上限時先統一縮短 context，不因 context 降低焦點層級，分批時不送 context。紀錄的事件只由焦點句
   陳述。成員的 occurrence 引用不含任何焦點句時，Python 以 `OCCURRENCE_OUTSIDE_FOCUS` 逐成員淘汰並揭露；
   引用焦點句再加上同一事件的 context 細節則不淘汰。
