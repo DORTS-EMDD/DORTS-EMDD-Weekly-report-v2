@@ -1918,7 +1918,10 @@ Complete-link grouping is unchanged.
   * run 41018554355: 34 of 51 pairs, with 8 wrong pairs from the statement
     over-merge fixed in RC-45.
 * The paid calls need the user's approval and a cap (estimate at most 40).
-* Not run yet.
+* Measured 2026-11-03 (acceptance report section 54, user-authorized): prompt v11
+  merged no differently labelled pair in 6 runs; recall did not improve on
+  RC-48 (prompt v10, which merged one differently labelled pair in 3 runs).
+  Merge to main still needs separate authorization.
 
 ```text
 EVENT_IDENTITY_DISTINCT_BASIS = ESTABLISHED REGION CONFLICT ONLY (DISTINCT_EVENT, reason DISTINCT_REGION); no helper output produces DISTINCT
