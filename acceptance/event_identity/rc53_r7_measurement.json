@@ -1,0 +1,359 @@
+{
+ "description": "RC-53 R7 measurement (section A.39 draft, prompt v12 programme line): three single RC-48 procedures per corpus with v12, compared with the section 54 v10 runs; 2-of-3 is the RC-52 owner answered by the three runs. IDs only.",
+ "paid_calls_v12": 169,
+ "cap": 270,
+ "runs": [
+  {
+   "tag": "40999869397-v10-r1",
+   "corpus": "40999869397",
+   "prompt": "event-identity-grouping-v10",
+   "calls": 15,
+   "events": 54,
+   "same_total": 61,
+   "same_merged": 58,
+   "daegu_merged": 21,
+   "daegu_total": 21,
+   "non_daegu_merged": 37,
+   "non_daegu_total": 40,
+   "diff_merged": [],
+   "gaps": [
+    "DUPLICATE_MEMBERSHIP",
+    "DUPLICATE_MEMBERSHIP"
+   ]
+  },
+  {
+   "tag": "40999869397-v10-r2",
+   "corpus": "40999869397",
+   "prompt": "event-identity-grouping-v10",
+   "calls": 31,
+   "events": 57,
+   "same_total": 61,
+   "same_merged": 38,
+   "daegu_merged": 15,
+   "daegu_total": 21,
+   "non_daegu_merged": 23,
+   "non_daegu_total": 40,
+   "diff_merged": [
+    [
+     "cand_9013083a062368ea4b7017a3f8ca15605c284c0740c7d93e631961a464ecb134",
+     "cand_a071ba69b7be024b8c7792fa69261305e180c0545abf90e33ff72ec736c71ecf"
+    ]
+   ],
+   "gaps": []
+  },
+  {
+   "tag": "40999869397-v10-r3",
+   "corpus": "40999869397",
+   "prompt": "event-identity-grouping-v10",
+   "calls": 16,
+   "events": 55,
+   "same_total": 61,
+   "same_merged": 46,
+   "daegu_merged": 21,
+   "daegu_total": 21,
+   "non_daegu_merged": 25,
+   "non_daegu_total": 40,
+   "diff_merged": [],
+   "gaps": []
+  },
+  {
+   "tag": "40999869397-v12-r1",
+   "corpus": "40999869397",
+   "prompt": "event-identity-grouping-v12",
+   "calls": 21,
+   "events": 55,
+   "same_total": 61,
+   "same_merged": 57,
+   "daegu_merged": 21,
+   "daegu_total": 21,
+   "non_daegu_merged": 36,
+   "non_daegu_total": 40,
+   "diff_merged": [],
+   "gaps": []
+  },
+  {
+   "tag": "40999869397-v12-r2",
+   "corpus": "40999869397",
+   "prompt": "event-identity-grouping-v12",
+   "calls": 15,
+   "events": 59,
+   "same_total": 61,
+   "same_merged": 45,
+   "daegu_merged": 15,
+   "daegu_total": 21,
+   "non_daegu_merged": 30,
+   "non_daegu_total": 40,
+   "diff_merged": [],
+   "gaps": []
+  },
+  {
+   "tag": "40999869397-v12-r3",
+   "corpus": "40999869397",
+   "prompt": "event-identity-grouping-v12",
+   "calls": 20,
+   "events": 56,
+   "same_total": 61,
+   "same_merged": 51,
+   "daegu_merged": 15,
+   "daegu_total": 21,
+   "non_daegu_merged": 36,
+   "non_daegu_total": 40,
+   "diff_merged": [],
+   "gaps": []
+  },
+  {
+   "tag": "41018554355-v10-r1",
+   "corpus": "41018554355",
+   "prompt": "event-identity-grouping-v10",
+   "calls": 23,
+   "events": 55,
+   "same_total": 51,
+   "same_merged": 48,
+   "daegu_merged": 0,
+   "daegu_total": 0,
+   "non_daegu_merged": 48,
+   "non_daegu_total": 51,
+   "diff_merged": [],
+   "gaps": [
+    "DUPLICATE_MEMBERSHIP",
+    "DUPLICATE_MEMBERSHIP",
+    "DUPLICATE_MEMBERSHIP"
+   ]
+  },
+  {
+   "tag": "41018554355-v10-r2",
+   "corpus": "41018554355",
+   "prompt": "event-identity-grouping-v10",
+   "calls": 60,
+   "events": 59,
+   "same_total": 51,
+   "same_merged": 39,
+   "daegu_merged": 0,
+   "daegu_total": 0,
+   "non_daegu_merged": 39,
+   "non_daegu_total": 51,
+   "diff_merged": [],
+   "gaps": [
+    "DUPLICATE_MEMBERSHIP",
+    "DUPLICATE_MEMBERSHIP"
+   ]
+  },
+  {
+   "tag": "41018554355-v10-r3",
+   "corpus": "41018554355",
+   "prompt": "event-identity-grouping-v10",
+   "calls": 19,
+   "events": 56,
+   "same_total": 51,
+   "same_merged": 48,
+   "daegu_merged": 0,
+   "daegu_total": 0,
+   "non_daegu_merged": 48,
+   "non_daegu_total": 51,
+   "diff_merged": [],
+   "gaps": [
+    "DUPLICATE_MEMBERSHIP"
+   ]
+  },
+  {
+   "tag": "41018554355-v12-r1",
+   "corpus": "41018554355",
+   "prompt": "event-identity-grouping-v12",
+   "calls": 24,
+   "events": 57,
+   "same_total": 51,
+   "same_merged": 48,
+   "daegu_merged": 0,
+   "daegu_total": 0,
+   "non_daegu_merged": 48,
+   "non_daegu_total": 51,
+   "diff_merged": [],
+   "gaps": []
+  },
+  {
+   "tag": "41018554355-v12-r2",
+   "corpus": "41018554355",
+   "prompt": "event-identity-grouping-v12",
+   "calls": 15,
+   "events": 58,
+   "same_total": 51,
+   "same_merged": 48,
+   "daegu_merged": 0,
+   "daegu_total": 0,
+   "non_daegu_merged": 48,
+   "non_daegu_total": 51,
+   "diff_merged": [],
+   "gaps": [
+    "DUPLICATE_MEMBERSHIP",
+    "DUPLICATE_MEMBERSHIP",
+    "DUPLICATE_MEMBERSHIP"
+   ]
+  },
+  {
+   "tag": "41018554355-v12-r3",
+   "corpus": "41018554355",
+   "prompt": "event-identity-grouping-v12",
+   "calls": 22,
+   "events": 58,
+   "same_total": 51,
+   "same_merged": 37,
+   "daegu_merged": 0,
+   "daegu_total": 0,
+   "non_daegu_merged": 37,
+   "non_daegu_total": 51,
+   "diff_merged": [],
+   "gaps": [
+    "DUPLICATE_MEMBERSHIP",
+    "DUPLICATE_MEMBERSHIP"
+   ]
+  },
+  {
+   "tag": "41405830454-v10-r1",
+   "corpus": "41405830454",
+   "prompt": "event-identity-grouping-v10",
+   "calls": 20,
+   "events": 53,
+   "same_total": 312,
+   "same_merged": 288,
+   "daegu_merged": 3,
+   "daegu_total": 10,
+   "non_daegu_merged": 285,
+   "non_daegu_total": 302,
+   "diff_merged": [],
+   "gaps": [
+    "CITATION_INVALID",
+    "UNPARSEABLE_RESPONSE"
+   ]
+  },
+  {
+   "tag": "41405830454-v10-r2",
+   "corpus": "41405830454",
+   "prompt": "event-identity-grouping-v10",
+   "calls": 22,
+   "events": 50,
+   "same_total": 312,
+   "same_merged": 292,
+   "daegu_merged": 6,
+   "daegu_total": 10,
+   "non_daegu_merged": 286,
+   "non_daegu_total": 302,
+   "diff_merged": [],
+   "gaps": []
+  },
+  {
+   "tag": "41405830454-v10-r3",
+   "corpus": "41405830454",
+   "prompt": "event-identity-grouping-v10",
+   "calls": 27,
+   "events": 48,
+   "same_total": 312,
+   "same_merged": 306,
+   "daegu_merged": 6,
+   "daegu_total": 10,
+   "non_daegu_merged": 300,
+   "non_daegu_total": 302,
+   "diff_merged": [
+    [
+     "cand_12aaae13731c64594c85c9ea7b8854125f8a4803e4730dd1420d9a6449dddf6f",
+     "cand_32837d56d4284bf27c7c6c39666d09d0fd3e59428c2edbaba489e166a262d670"
+    ],
+    [
+     "cand_12aaae13731c64594c85c9ea7b8854125f8a4803e4730dd1420d9a6449dddf6f",
+     "cand_3f1b2d5ea51ce8e64db28637f87f27ae21f52ff84bc6977f70fd32a2a5afa3c3"
+    ]
+   ],
+   "gaps": [
+    "DUPLICATE_MEMBERSHIP",
+    "DUPLICATE_MEMBERSHIP",
+    "DUPLICATE_MEMBERSHIP"
+   ]
+  },
+  {
+   "tag": "41405830454-v12-r1",
+   "corpus": "41405830454",
+   "prompt": "event-identity-grouping-v12",
+   "calls": 15,
+   "events": 59,
+   "same_total": 312,
+   "same_merged": 282,
+   "daegu_merged": 0,
+   "daegu_total": 10,
+   "non_daegu_merged": 282,
+   "non_daegu_total": 302,
+   "diff_merged": [],
+   "gaps": [
+    "UNKNOWN_RECORD"
+   ]
+  },
+  {
+   "tag": "41405830454-v12-r2",
+   "corpus": "41405830454",
+   "prompt": "event-identity-grouping-v12",
+   "calls": 17,
+   "events": 55,
+   "same_total": 312,
+   "same_merged": 288,
+   "daegu_merged": 3,
+   "daegu_total": 10,
+   "non_daegu_merged": 285,
+   "non_daegu_total": 302,
+   "diff_merged": [],
+   "gaps": []
+  },
+  {
+   "tag": "41405830454-v12-r3",
+   "corpus": "41405830454",
+   "prompt": "event-identity-grouping-v12",
+   "calls": 20,
+   "events": 55,
+   "same_total": 312,
+   "same_merged": 286,
+   "daegu_merged": 6,
+   "daegu_total": 10,
+   "non_daegu_merged": 280,
+   "non_daegu_total": 302,
+   "diff_merged": [],
+   "gaps": [
+    "DUPLICATE_MEMBERSHIP",
+    "UNKNOWN_RECORD"
+   ]
+  }
+ ],
+ "two_of_three": {
+  "v10": {
+   "40999869397": {
+    "daegu": "21/21",
+    "non_daegu": "25/40",
+    "diff": 0
+   },
+   "41018554355": {
+    "daegu": "0/0",
+    "non_daegu": "48/51",
+    "diff": 0
+   },
+   "41405830454": {
+    "daegu": "6/10",
+    "non_daegu": "292/302",
+    "diff": 0
+   }
+  },
+  "v12": {
+   "40999869397": {
+    "daegu": "15/21",
+    "non_daegu": "36/40",
+    "diff": 0
+   },
+   "41018554355": {
+    "daegu": "0/0",
+    "non_daegu": "48/51",
+    "diff": 0
+   },
+   "41405830454": {
+    "daegu": "3/10",
+    "non_daegu": "284/302",
+    "diff": 0
+   }
+  }
+ },
+ "verdict": "NOT_ADOPTED: R7 met (0 different-label merges); target missed (Daegu 3/10 and 15/21, below v10); non-Daegu 284/302 on 41405830454 is below the lowest v10 single run (285)."
+}
