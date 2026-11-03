@@ -84,6 +84,12 @@ def records_from_audit(audit: Mapping[str, Any]) -> list[EventIdentityRecord]:
     def excerpt_of(entry: Mapping[str, Any]) -> list[str]:
         return list(entry["event_identity"].get("proposal_excerpt_sentence_ids") or ["S1"])
 
+    # RC-51: the focus is the excerpt without its context sentences (audits
+    # before RC-51 carry no context, so their whole excerpt is the focus).
+    def focus_of(entry: Mapping[str, Any]) -> list[str]:
+        context = set(entry["event_identity"].get("proposal_context_sentence_ids") or ())
+        return [sentence_id for sentence_id in excerpt_of(entry) if sentence_id not in context]
+
     # Records with identical Evidence text (same content hash) get identical
     # placeholder bodies, so the deterministic exact-source path replays too.
     def content_key(entry: Mapping[str, Any]) -> str:
@@ -97,14 +103,13 @@ def records_from_audit(audit: Mapping[str, Any]) -> list[EventIdentityRecord]:
     records = []
     for entry in reached:
         candidate_id = entry["candidate_id"]
-        excerpt = excerpt_of(entry)
         key = content_key(entry)
         body = "\n".join(f"Replay {key} sentence {index}." for index in range(1, lengths[key] + 1))
         region_id = (entry.get("region") or {}).get("region_id")
         if region_id:
             body += f"\nRegion {region_id}"
         sentences = {sentence.sentence_id: sentence for sentence in segment_evidence_sentences(body)}
-        focus = [{"start": sentences[sid].start, "end": sentences[sid].end} for sid in excerpt]
+        focus = [{"start": sentences[sid].start, "end": sentences[sid].end} for sid in focus_of(entry)]
         url = (entry.get("evidence") or {}).get("canonical_source_url") or f"https://replay.invalid/{candidate_id}"
         candidate = CanonicalCandidate(
             candidate_id=candidate_id, title="replay", url=url, publisher="replay",

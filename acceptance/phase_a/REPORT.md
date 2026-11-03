@@ -2180,3 +2180,20 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - R7：使用者核准付費呼叫上限。依 §A.36，以 production owner 與真實 helper 在標註語料上執行，要求不同標註配對的合併數為 0，並對照 Live 基準報告召回。若要把本 Run 的紀錄加入語料，屬於變更 R7 方法，須另獲核准。
   - 架構決定：須有量測結果，能區分提案與確認兩階段的損失與重複呼叫的變動。離線重放只能重算 Python，無法評估任何改變 helper 請求的方案。
   - Merge main：R7 通過，且無 Golden 回歸。RC-44 撤回仍須使 ED24 為 [3]。
+
+## 53. Event Identity 摘錄加入 Evidence context（RC-51，§A.37，使用者核准，僅 dev，2026-11-03）
+
+- 變更：每筆紀錄送出 Scope 焦點句，後接同一 Evidence 中焦點之後的句子作為 context，兩者分別標示 role。
+  - context 只在焦點完整放入後，使用該層上限內剩餘的空間；超出請求上限時先統一縮短 context，不因此降低焦點層級。
+  - 紀錄的事件只由焦點句陳述。成員的 occurrence 引用超出焦點時，Python 以 `OCCURRENCE_OUTSIDE_FOCUS` 逐成員淘汰並揭露。
+  - 提示詞 v11 只新增一行，v9、v10 各行以雜湊鎖定不變；呼叫次數、確認、R1～R6 皆不變。
+- 離線資訊流（用 production 的 `_grouping_record`，套在 Run 41405830454 雜湊相符的 Evidence 上）：
+  - 焦點與 Live 相同。
+  - 京都 bcf47233、大邱 74624e77、明德站兩筆、仁川 0852f571、c04c8c24、64ecb134 都新增後續句子作為 context。
+  - 原本缺少的比對細節因此可送達：滅火與恢復運轉；與 d7937630 幾乎逐字相同的演練內容；대명2동 명덕지구 재개발；77편성 358량 與 83.2→215～285Mbps。
+  - 負對照：65f54134、64ecb134、e0938997 的 context 含部會體驗活動等另一 occurrence；這類 context 不能作為 occurrence 引用，以 Python 規則與測試鎖定。
+- 驗證：
+  - 全部測試 1303 通過，含新增 `tests/test_event_identity_rc51.py` 9 項；Golden、failure-path、recorded corpus 不變。
+  - 四個 mutation（拿掉焦點檢查、context 不受字數限制、context 降低焦點層級、context 取自焦點之前）皆被測試擋下。
+  - Run 41405830454 audit 重放仍完全重現（60 個 Event）。
+- 未證實：helper 是否因此提高召回或維持零誤合併。Live 品質仍為 FAIL／未驗證；R7 未授權；main 維持阻擋。

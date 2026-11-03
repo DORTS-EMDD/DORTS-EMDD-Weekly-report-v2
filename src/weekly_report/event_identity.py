@@ -175,8 +175,11 @@ class EventIdentity:
 
         technical_gaps: list[TechnicalGap] = []
         excerpts: dict[str, tuple[str, ...]] = {}
+        contexts: dict[str, tuple[str, ...]] = {}
         exchanges: list[dict[str, object]] = []
-        proposed, excerpt_limits = self._proposed_relations(eligible, diagnostics, technical_gaps, excerpts, exchanges)
+        proposed, excerpt_limits = self._proposed_relations(
+            eligible, diagnostics, technical_gaps, excerpts, exchanges, contexts
+        )
         ordered = sorted(eligible, key=_record_sort_key)
         groups: list[list[EventIdentityRecord]] = []
         relation_cache: dict[tuple[str, str], tuple[EventIdentityRelation, str]] = {}
@@ -241,7 +244,9 @@ class EventIdentity:
                 key=lambda group: group.member_candidate_ids,
             )
         )
-        return EventIdentityRun(output, tuple(diagnostics), tuple(technical_gaps), excerpts, excerpt_limits, tuple(exchanges))
+        return EventIdentityRun(
+            output, tuple(diagnostics), tuple(technical_gaps), excerpts, excerpt_limits, tuple(exchanges), contexts
+        )
 
     @staticmethod
     def _eligible(record: EventIdentityRecord) -> bool:
@@ -281,20 +286,26 @@ class EventIdentity:
         technical_gaps: list[TechnicalGap],
         excerpts: dict[str, tuple[str, ...]],
         exchanges: list[dict[str, object]],
+        contexts: dict[str, tuple[str, ...]],
     ) -> tuple[dict[tuple[str, str], tuple[EventIdentityRelation, str]], str]:
         """Validate the RC-15 grouping proposals into SAME_EVENT pair relations.
 
-        Also fills ``excerpts`` with the sentence IDs each record was sent with
-        and returns the excerpt limits used (RC-32, observation only).
+        Also fills ``excerpts`` with the sentence IDs each record was sent with,
+        ``contexts`` with those that were context (RC-51), and returns the
+        excerpt limits used (RC-32, observation only).
         """
 
         relations: dict[tuple[str, str], tuple[EventIdentityRelation, str]] = {}
         if self._grouping_advisor is None:
             return relations, ""
-        requests, (sentence_limit, character_limit) = _grouping_requests(eligible)
+        requests, (sentence_limit, character_limit), context_limit = _grouping_requests(eligible)
         for request in requests:
-            excerpts.update((record.candidate_id, record.source_sentence_ids) for record in request.records)
+            for record in request.records:
+                excerpts[record.candidate_id] = record.source_sentence_ids
+                contexts[record.candidate_id] = record.source_sentence_ids[len(record.focus_sentences) :]
         excerpt_limits = f"{sentence_limit}x{character_limit}" if requests else ""
+        if requests and context_limit < sentence_limit - 1:
+            excerpt_limits += f"+context{context_limit}"
         by_id = {record.candidate.candidate_id: record for record in eligible}
         if len(requests) > 1:
             # Pairs in different batches cannot be merged; keep that visible.
@@ -771,6 +782,7 @@ def _grouping_record(
     record: EventIdentityRecord,
     record_id: str,
     lead_limits: tuple[int, int] = LEAD_TIERS[0],
+    context_limit: int | None = None,
 ) -> EventIdentityGroupingRecord | None:
     sentence_limit, character_limit = lead_limits
     lead = []
@@ -786,16 +798,29 @@ def _grouping_record(
         characters += len(sentence.text)
     if not lead:
         return None
+    # RC-51 (section A.37): after a whole focus, the sentences that follow it
+    # in the same Evidence are context, in the room the focus leaves (at most
+    # ``context_limit`` of them). The focus alone states the record's event.
+    context = []
+    if focus and len(lead) == len(focus):
+        room = sentence_limit - len(lead) if context_limit is None else min(context_limit, sentence_limit - len(lead))
+        for sentence in (item for item in segment_evidence_sentences(content) if item.start >= focus[-1].end):
+            if len(context) >= room or characters + len(sentence.text) > character_limit:
+                break
+            context.append(sentence)
+            characters += len(sentence.text)
     # RC-42: within a request the excerpt is numbered S1, S2, … in order. A
     # record whose only sentence kept its document ID (say S2) was cited as S1
     # and lost its group; the RC-9 IDs are kept for observation only.
-    numbered = tuple(replace(sentence, sentence_id=f"S{index}") for index, sentence in enumerate(lead, start=1))
+    sent = lead + context
+    numbered = tuple(replace(sentence, sentence_id=f"S{index}") for index, sentence in enumerate(sent, start=1))
     return EventIdentityGroupingRecord(
         record_id,
         record.candidate.candidate_id,
         numbered,
         _advisor_identity_facts(record.identity_facts),
-        tuple(sentence.sentence_id for sentence in lead),
+        tuple(sentence.sentence_id for sentence in sent),
+        len(context),
     )
 
 
@@ -858,28 +883,36 @@ def proposal_subject_level(subject_id: str) -> str:
 
 def _grouping_requests(
     eligible: Sequence[EventIdentityRecord],
-) -> tuple[list[EventIdentityGroupingRequest], tuple[int, int]]:
+) -> tuple[list[EventIdentityGroupingRequest], tuple[int, int], int]:
     """One request for the whole run whenever its payload fits (RC-18).
 
-    The first lead tier whose total payload fits the bound is used for every
-    record. Only when even the shortest leads do not fit is the run split into
-    consecutive batches ordered by discovery publication time. Also returns
-    the lead tier used.
+    The first lead tier whose total focus payload fits the bound is used for
+    every record. RC-51: context is then added in the room each focus leaves,
+    capped uniformly and shortened until the request fits; context never
+    lowers the focus tier. Only when even the shortest leads do not fit is the
+    run split into consecutive batches ordered by discovery publication time,
+    without context. Also returns the lead tier and context cap used.
     """
 
     ordered = sorted(eligible, key=_publication_sort_key)
+
+    def built(lead_limits: tuple[int, int], context_limit: int) -> list[EventIdentityGroupingRecord]:
+        records = (_grouping_record(record, "R1", lead_limits, context_limit) for record in ordered)
+        return [replace(item, record_id=f"R{index}") for index, item in enumerate((item for item in records if item is not None), start=1)]
+
     for lead_limits in LEAD_TIERS:
-        built = [_grouping_record(record, f"R{index}", lead_limits) for index, record in enumerate(ordered, start=1)]
-        kept = [item for item in built if item is not None]
-        if sum(_payload_size(item) for item in kept) <= BATCH_CHARACTER_LIMIT:
-            records = [replace(item, record_id=f"R{index}") for index, item in enumerate(kept, start=1)]
+        if sum(_payload_size(item) for item in built(lead_limits, 0)) <= BATCH_CHARACTER_LIMIT:
+            for context_limit in range(lead_limits[0] - 1, -1, -1):
+                records = built(lead_limits, context_limit)
+                if sum(_payload_size(item) for item in records) <= BATCH_CHARACTER_LIMIT:
+                    break
             requests = [EventIdentityGroupingRequest("event-identity-batch-1", tuple(records))] if len(records) >= 2 else []
-            return requests, lead_limits
+            return requests, lead_limits, context_limit
 
     batches: list[list[EventIdentityRecord]] = [[]]
     characters = 0
     for record in ordered:
-        grouping_record = _grouping_record(record, "R1", LEAD_TIERS[-1])
+        grouping_record = _grouping_record(record, "R1", LEAD_TIERS[-1], 0)
         if grouping_record is None:
             continue
         size = _payload_size(grouping_record)
@@ -891,10 +924,10 @@ def _grouping_requests(
     requests = []
     for batch in (batch for batch in batches if len(batch) >= 2):
         records = tuple(
-            _grouping_record(record, f"R{index}", LEAD_TIERS[-1]) for index, record in enumerate(batch, start=1)
+            _grouping_record(record, f"R{index}", LEAD_TIERS[-1], 0) for index, record in enumerate(batch, start=1)
         )
         requests.append(EventIdentityGroupingRequest(f"event-identity-batch-{len(requests) + 1}", records))
-    return requests, LEAD_TIERS[-1]
+    return requests, LEAD_TIERS[-1], 0
 
 
 def _validate_grouping_proposal(
@@ -911,7 +944,8 @@ def _validate_grouping_proposal(
     (``DUPLICATE_MEMBERSHIP``) and, in a group of two or more records, a record
     whose citation does not resolve (``CITATION_INVALID``) is rejected; the
     group's other members stand. A one-record group proposes no merge and
-    needs no citation.
+    needs no citation. RC-51: so is a member whose ``occurrence_sentence_ids``
+    leave its Scope focus (``OCCURRENCE_OUTSIDE_FOCUS``).
     """
 
     if not isinstance(raw, Mapping) or set(raw) != {"groups"} or not isinstance(raw["groups"], list):
@@ -948,12 +982,27 @@ def _validate_grouping_proposal(
                 for key in _CITATION_KEYS
             )
         ]
-        accepted = tuple(
-            records[record_id].candidate_id for record_id in listings if record_id not in repeated + ungrounded
-        )
+        # RC-51 (section A.37): context only supports details; a member whose
+        # occurrence is cited outside its Scope focus proposes another event.
+        unfocused = [
+            record_id
+            for record_id, items in listings.items()
+            if len(listings) > 1
+            and record_id not in repeated + ungrounded
+            and any(
+                resolve_sentence_ids(records[record_id].focus_sentences, item["occurrence_sentence_ids"]) is None
+                for item in items
+            )
+        ]
+        rejected_ids = repeated + ungrounded + unfocused
+        accepted = tuple(records[record_id].candidate_id for record_id in listings if record_id not in rejected_ids)
         violations = tuple(
             EventIdentityProposalViolation(failure_class, tuple(sorted(records[record_id].candidate_id for record_id in rejected)))
-            for failure_class, rejected in (("DUPLICATE_MEMBERSHIP", repeated), ("CITATION_INVALID", ungrounded))
+            for failure_class, rejected in (
+                ("DUPLICATE_MEMBERSHIP", repeated),
+                ("CITATION_INVALID", ungrounded),
+                ("OCCURRENCE_OUTSIDE_FOCUS", unfocused),
+            )
             if rejected
         )
         outcomes.append((accepted, violations))

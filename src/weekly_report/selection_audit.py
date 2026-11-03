@@ -356,6 +356,10 @@ def build_selection_audit(
                     "proposal_excerpt_sentence_ids": list(
                         dict(getattr(run, "proposal_excerpts", {}) or {}).get(candidate_id, ())
                     ),
+                    # RC-51: which of those sentences were context after the Scope focus.
+                    "proposal_context_sentence_ids": list(
+                        dict(getattr(run, "proposal_contexts", {}) or {}).get(candidate_id, ())
+                    ),
                     # RC-40/RC-42: proposal groups that rejected this record as a member.
                     "proposal_member_rejected": [
                         {"group": item["group"], "reason": item["reason"]}

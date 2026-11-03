@@ -161,8 +161,9 @@ def _line(prefix):
     return lines[0]
 
 
-def test_the_instruction_is_version_ten():
-    assert PROMPT_VERSION == "event-identity-grouping-v10"
+def test_the_instruction_is_version_eleven():
+    # v10 (this section) is kept in v11, which adds the RC-51 role line (section A.37).
+    assert PROMPT_VERSION == "event-identity-grouping-v11"
 
 
 def test_r3_occurrence_granularity_is_stated():
@@ -235,7 +236,8 @@ V9_LINE_SHA256 = (
 def test_every_v9_line_is_kept_byte_identical_and_in_order():
     digests = [sha256(line.encode("utf-8")).hexdigest() for line in _instructions()]
     assert [digest for digest in digests if digest in V9_LINE_SHA256] == list(V9_LINE_SHA256)
-    assert len(digests) == len(V9_LINE_SHA256) + 4
+    # Four lines from v10 (R3, R3 mixed records, R4, R5) and one from v11 (RC-51).
+    assert len(digests) == len(V9_LINE_SHA256) + 4 + 1
 
 
 def test_the_v9_lines_are_unchanged():

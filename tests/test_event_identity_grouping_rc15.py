@@ -475,5 +475,11 @@ class CandidateEventFocusTests(unittest.TestCase):
         EventIdentity(advisor).evaluate([record, _record("C2", facts=None, body="Another event happened.")])
         sent = advisor.requests[0].records[0]
         # RC-42: numbered within the request; the RC-9 (document) ID is kept apart.
-        self.assertEqual([(s.sentence_id, s.text) for s in sent.sentences], [("S1", "The mayor warned the line may open late.")])
-        self.assertEqual(sent.source_sentence_ids, ("S2",))
+        # RC-51: the focus comes first and alone states the event; the sentence
+        # after it follows as context, and the one before it is not sent.
+        self.assertEqual(
+            [(s.sentence_id, s.text) for s in sent.sentences],
+            [("S1", "The mayor warned the line may open late."), ("S2", "Trains arrived last week.")],
+        )
+        self.assertEqual([s.text for s in sent.focus_sentences], ["The mayor warned the line may open late."])
+        self.assertEqual(sent.source_sentence_ids, ("S2", "S3"))

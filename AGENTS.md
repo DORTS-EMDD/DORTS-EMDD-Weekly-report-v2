@@ -237,9 +237,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-48 修訂（2026-10-20～11-02）
+### RC-3～RC-51 修訂（2026-10-20～11-03）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.36、§N 與 §R。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.37、§N 與 §R。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -448,6 +448,12 @@ Transport retry 與 semantic correction 必須分開計算。
   不可用 Evidence 外知識）寫入提示詞 v10，v9 各行逐字不變；Python 不比較名稱。請求組成、RC-44、確認
   皆不變；逐筆 signature 與依地區分組經量測否決。Golden ED27、ED28；ED01–ED26 結果不變。R7：提示詞
   v10 合併前須以標註語料量測（不同事件配對合併數須為 0），付費呼叫待使用者核准上限。
+* RC-51（§A.37，使用者核准，僅 dev）：Event Identity 每筆摘錄改為 Scope 焦點句，後接同一 Evidence 中
+  焦點之後的句子作為 context，兩者分別標示 role。context 只在焦點完整放入後，使用該層上限內剩餘的空間；
+  請求超過上限時先統一縮短 context，不因 context 降低焦點層級，分批時不送 context。紀錄的事件只由焦點句
+  陳述。成員的 occurrence 引用超出焦點時，Python 以 `OCCURRENCE_OUTSIDE_FOCUS` 逐成員淘汰並揭露。
+  提示詞 v11 只新增一行，v9、v10 各行不變。R1～R6、確認、呼叫次數與 Golden 皆不變。Live 品質尚未驗證，
+  R7 量測範圍改為 v11 與此請求組成。
 
 ## 13. Report / Delivery
 
@@ -597,5 +603,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-48 APPLIED (2026-11-02)
+CONTRACT_REVISION = RC-3..RC-51 APPLIED (2026-11-03; RC-51 on dev only)
 ```
