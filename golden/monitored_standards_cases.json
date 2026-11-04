@@ -1,0 +1,166 @@
+{
+  "golden_version": "monitored-standards-golden-v1",
+  "contract": "docs/ARCHITECTURE_CONTRACT.md section A.42 (RC-58)",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "notes": [
+    "Each case is one EventGroup that already passed Evidence, Scope, Temporal, Event Identity and Taxonomy; category_id is the Classifier outcome under section L, which RC-58 does not change.",
+    "expected is the domain outcome of the case's own Evidence under RC-58: the monitored standard formally changed (or null), the Reportability state and reason, and the report section.",
+    "helper_answers are the semantically correct helper answers for that Evidence, so the production Reportability owner can be executed. NOT_CALLED means Python must decide without calling the helper.",
+    "Report assembly, the empty-section rule and Delivery are covered by tests/test_rc58_monitored_standards.py."
+  ],
+  "cases": [
+    {
+      "case_id": "MS01",
+      "scenario": "monitored standard: new edition published",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "The IEC published the third edition of IEC 61373 for shock and vibration tests of rolling stock equipment used on metro and railway vehicles. The new edition replaces the 2010 edition and revises the test levels for bogie-mounted equipment.",
+      "helper_answers": {
+        "monitored_standard": {"changed_standard": "IEC 61373", "lifecycle_action": "NEW_EDITION_OR_REVISION", "sentence_ids": ["S1", "S2"]},
+        "value_path": {"proposed_state": "REPORTABLE", "principal_occurrence": "DECISION_OR_APPROVAL", "sentence_ids": ["S1", "S2"]}
+      },
+      "expected": {
+        "monitored_standard": "IEC 61373",
+        "lifecycle_action": "NEW_EDITION_OR_REVISION",
+        "reportability": "REPORTABLE",
+        "reportability_reason": null,
+        "report_section": "規範及標準動態"
+      }
+    },
+    {
+      "case_id": "MS02",
+      "scenario": "monitored standard: formal draft opened for public comment",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "NFPA opened the public comment period on the first draft of the next edition of NFPA 130, Standard for Fixed Guideway Transit and Passenger Rail Systems. Comments on the draft revisions to tunnel ventilation and emergency egress requirements are accepted until the stated closing date.",
+      "helper_answers": {
+        "monitored_standard": {"changed_standard": "NFPA 130", "lifecycle_action": "DRAFT_OR_CONSULTATION", "sentence_ids": ["S1"]},
+        "value_path": {"proposed_state": "REPORTABLE", "principal_occurrence": "DECISION_OR_APPROVAL", "sentence_ids": ["S1", "S2"]}
+      },
+      "expected": {
+        "monitored_standard": "NFPA 130",
+        "lifecycle_action": "DRAFT_OR_CONSULTATION",
+        "reportability": "REPORTABLE",
+        "reportability_reason": null,
+        "report_section": "規範及標準動態"
+      }
+    },
+    {
+      "case_id": "MS03",
+      "scenario": "monitored standard only required by a procurement",
+      "category_id": "PROCUREMENT",
+      "source_content": "The metro operator awarded the signalling replacement contract for Line 2 to a named supplier. The contract requires the supplier to demonstrate compliance with EN 50126 and EN 50129 before commissioning.",
+      "helper_answers": {
+        "monitored_standard": "NOT_CALLED",
+        "value_path": {"proposed_state": "REPORTABLE", "principal_occurrence": "CONTRACT_OR_PROCUREMENT", "sentence_ids": ["S1", "S2"]}
+      },
+      "expected": {
+        "monitored_standard": null,
+        "lifecycle_action": null,
+        "reportability": "REPORTABLE",
+        "reportability_reason": null,
+        "report_section": "機電標案及採購動態"
+      }
+    },
+    {
+      "case_id": "MS04",
+      "scenario": "monitored standard only mentioned by formal guidance that does not change it",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "The transport ministry issued formal fire-safety guidance to all metro operators with an implementation date next year. The guidance notes that NFPA 130 remains the reference for station egress design.",
+      "helper_answers": {
+        "monitored_standard": {"changed_standard": null, "lifecycle_action": null, "sentence_ids": []},
+        "value_path": "NOT_CALLED"
+      },
+      "expected": {
+        "monitored_standard": null,
+        "lifecycle_action": null,
+        "reportability": "NOT_REPORTABLE",
+        "reportability_reason": "OUTSIDE_MONITORED_STANDARDS",
+        "report_section": null
+      }
+    },
+    {
+      "case_id": "MS05",
+      "scenario": "a regulation makes compliance with a monitored standard mandatory; the standard itself is unchanged",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "The rail regulator adopted a binding rule that makes compliance with EN 50128 mandatory for new metro signalling software from next year. EN 50128 itself is not revised by the rule.",
+      "helper_answers": {
+        "monitored_standard": {"changed_standard": null, "lifecycle_action": null, "sentence_ids": []},
+        "value_path": "NOT_CALLED"
+      },
+      "expected": {
+        "monitored_standard": null,
+        "lifecycle_action": null,
+        "reportability": "NOT_REPORTABLE",
+        "reportability_reason": "OUTSIDE_MONITORED_STANDARDS",
+        "report_section": null
+      }
+    },
+    {
+      "case_id": "MS06",
+      "scenario": "a standard outside the monitored list is revised",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "The IEC published a revised edition of IEC 62290-1 on management and command/control systems for urban guided transport. The revision updates the grades of automation used by metro operators.",
+      "helper_answers": {
+        "monitored_standard": "NOT_CALLED",
+        "value_path": "NOT_CALLED"
+      },
+      "expected": {
+        "monitored_standard": null,
+        "lifecycle_action": null,
+        "reportability": "NOT_REPORTABLE",
+        "reportability_reason": "OUTSIDE_MONITORED_STANDARDS",
+        "report_section": null
+      }
+    },
+    {
+      "case_id": "MS07",
+      "scenario": "a city ordinance on subway safety is amended",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "The city council amended the ordinance on subway platform safety to require gap-warning devices at curved platforms. The amended ordinance takes effect in March.",
+      "helper_answers": {
+        "monitored_standard": "NOT_CALLED",
+        "value_path": "NOT_CALLED"
+      },
+      "expected": {
+        "monitored_standard": null,
+        "lifecycle_action": null,
+        "reportability": "NOT_REPORTABLE",
+        "reportability_reason": "OUTSIDE_MONITORED_STANDARDS",
+        "report_section": null
+      }
+    },
+    {
+      "case_id": "MS08",
+      "scenario": "a deployed system is described as compliant with a monitored standard",
+      "category_id": "TECHNICAL_DEVELOPMENT",
+      "source_content": "The metro completed trial running of its new onboard condition-monitoring units on Line 5. The units were tested to IEC 61373 before installation.",
+      "helper_answers": {
+        "monitored_standard": "NOT_CALLED",
+        "value_path": {"proposed_state": "REPORTABLE", "principal_occurrence": "TECHNOLOGY_DEPLOYMENT_OR_TRIAL", "sentence_ids": ["S1"]}
+      },
+      "expected": {
+        "monitored_standard": null,
+        "lifecycle_action": null,
+        "reportability": "REPORTABLE",
+        "reportability_reason": null,
+        "report_section": "技術新知"
+      }
+    },
+    {
+      "case_id": "MS09",
+      "scenario": "monitored standard: amendment adopted nationally, written with a national prefix and part number",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "BSI published amendment A1 to BS EN 50122-2:2010, which revises the stray-current limits for DC traction systems including metro lines.",
+      "helper_answers": {
+        "monitored_standard": {"changed_standard": "EN 50122-2", "lifecycle_action": "AMENDMENT", "sentence_ids": ["S1"]},
+        "value_path": {"proposed_state": "REPORTABLE", "principal_occurrence": "DECISION_OR_APPROVAL", "sentence_ids": ["S1"]}
+      },
+      "expected": {
+        "monitored_standard": "EN 50122-2",
+        "lifecycle_action": "AMENDMENT",
+        "reportability": "REPORTABLE",
+        "reportability_reason": null,
+        "report_section": "規範及標準動態"
+      }
+    }
+  ]
+}

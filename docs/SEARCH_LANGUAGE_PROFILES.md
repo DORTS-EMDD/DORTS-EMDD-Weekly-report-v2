@@ -23,8 +23,8 @@ consumes the RegionRegistry target set; this document does not add targets.
 The profile list and mapping were recovered from repository evidence:
 
 * V2 `docs/ARCHITECTURE_CONTRACT.md` supplies the locked selected-market
-  registry and the discovery intents (four until RC-57; `normative` added by
-  RC-57, ARCHITECTURE_CONTRACT §A.41).
+  registry and the discovery intents (four until RC-57; RC-58 replaced RC-57's
+  `normative` intent with `monitored_standards`, ARCHITECTURE_CONTRACT §A.42).
 * The V1 frozen reference `search_queries.py` supplies explicit `lang`
   metadata, `REGION_NEWS_QUERIES`, `REGION_QUERY_LANGUAGES`, and
   `SEARCH_LANGUAGE_MARKERS`.
@@ -53,7 +53,7 @@ technology     -> technology
 major_incident -> major incident
 operations    -> operations
 procurement   -> procurement
-normative     -> normative
+monitored_standards -> monitored standards
 ```
 
 `major_incident` is the canonical machine ID and `major incident` is its
@@ -190,21 +190,18 @@ contract rather than maintained as a divergent second registry.
 ## 5. Intent vocabulary groups
 
 Every enabled profile covers all five Architecture Contract discovery intents:
-`technology`, `major_incident`, `operations`, `procurement`, and `normative`.
+`technology`, `major_incident`, `operations`, `procurement`, and `monitored_standards`.
 
-RC-57 (`search-discovery-v8`, ARCHITECTURE_CONTRACT §A.41): the `normative`
-intent actively discovers changes of the kinds the `NORMATIVE_CHANGE` Category
-describes: published or revised regulations, mandatory technical rules,
-standard revisions, formal guidance, operator-wide specifications, and formal
-drafts or consultations. Its `normative_terms` are generic normative-action
-phrases in each language. They name no standard number, standards body,
-regulator, website or publication, and they decide nothing downstream.
-
-The terms are intentionally broad discovery seeds. The technology intent
-preserves the highest priority of new technology, new material, and new
-method, including trials, pilots, deployment, commissioning, upgrades,
-modernization, innovation, automation, digitalization, new systems, and new
-equipment.
+RC-58 (`search-discovery-v9`, ARCHITECTURE_CONTRACT §A.42): the
+`monitored_standards` intent discovers news about the monitored standards. Its
+only group, `monitored_standard_ids`, is written `@monitored_standards`: the
+materializer replaces it with the identifiers of
+`src/weekly_report/monitored_standards.json`, the single source of truth for
+which standards are monitored, and validates parity with it. The identifiers
+are language-independent, so every profile uses the same list, and no
+lifecycle, mode or other word is added. RC-57's generic `normative_terms` are
+withdrawn. The identifiers are discovery vocabulary only: a result is not a
+standard update until Reportability decides so on Authoritative Evidence.
 
 ### `en` — English
 
@@ -212,7 +209,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=metro line, metro station, subway station, light rail, tram, LRT`; `accident_terms=collision, derailment, fire, smoke, injury, fatality`; `disruption_terms=service suspension, shutdown, disruption, evacuation`; `technical_failure_terms=power failure, signal failure, system failure, infrastructure failure`; `safety_terms=safety investigation, technical incident, emergency response`.
 * `operations`: `urban_rail_terms=metro line, metro station, subway line, light rail, tram`; `policy_terms=policy, regulation, approval, operating plan`; `dispute_terms=strike, union, lawsuit, dispute, arbitration, protest`; `opening_service_terms=line opening, service opening, passenger service, commissioning`; `fare_ticketing_terms=fare, ticketing, fare gate`; `operating_method_terms=operating hours, service change, line extension, capacity, management change`.
 * `procurement`: `urban_rail_terms=metro line, metro system, light rail, tram, urban rail`; `tender_terms=tender, bid, request for proposal, framework agreement`; `procurement_terms=procurement, equipment procurement, system replacement`; `award_terms=award, awarded, contract award`; `contract_terms=contract, modernization contract, delivery milestones`.
-* `normative`: `urban_rail_terms=metro line, metro station, subway line, light rail, tram`; `normative_terms=new standard, revised standard, standard revision, technical standard, safety standard, new regulations, amended regulations, technical specification, design guidelines, draft standard, draft regulations`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `zh` — Chinese
 
@@ -220,7 +217,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=地鐵, 地铁, 捷運, 輕軌, 轻轨, 電車`; `accident_terms=碰撞, 撞擊, 脫軌/脱轨, 火災/火灾, 煙霧/烟雾, 傷亡/伤亡`; `disruption_terms=停駛/停驶, 中斷/中断, 疏散, 線路故障`; `technical_failure_terms=停電/停电, 號誌故障/信号故障, 系統故障/系统故障, 基礎設施故障/基础设施故障`; `safety_terms=安全事故, 技術事故/技术事故, 調查, 應變/应变`.
 * `operations`: `urban_rail_terms=地鐵, 地铁, 捷運, MRT, 輕軌, 轻轨, 電車`; `policy_terms=政策, 規範/规范, 核准, 營運計畫/运营计划`; `dispute_terms=罷工/罢工, 勞資爭議/劳资争议, 合約爭議/合同争议, 仲裁, 抗議/抗议`; `opening_service_terms=通車, 开通, 開業, 開幕, 載客, 旅客服務/旅客服务`; `fare_ticketing_terms=票價/票价, 售票, 票務/票务, 閘門/闸门`; `operating_method_terms=班次, 運行時間/运行时间, 服務調整/服务调整, 路線延伸/路线延伸, 運能/运能, 管理變更/管理变更`.
 * `procurement`: `urban_rail_terms=地鐵, 地铁, 捷運, MRT, 輕軌, 轻轨, 城市軌道`; `tender_terms=招標/招标, 投標/投标, 徵求提案/征求提案`; `procurement_terms=採購/采购, 設備採購/设备采购, 系統更新/系统更新`; `award_terms=決標/决标, 得標/得标, 授標/授标`; `contract_terms=合約/合同, 框架協議/框架协议, 現代化合約/现代化合同`.
-* `normative`: `urban_rail_terms=地鐵, 地铁, 捷運, MRT, 輕軌, 轻轨, 電車`; `normative_terms=標準修訂/标准修订, 新標準/新标准, 技術規範/技术规范, 安全規範/安全规范, 法規修正/法规修正, 規範草案/规范草案, 修正草案, 技術指引/技术指引`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `ja` — Japanese
 
@@ -228,7 +225,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=地下鉄, メトロ, 路面電車, 都市鉄道`; `accident_terms=脱線, 衝突, 火災, 煙, 負傷, 死亡`; `disruption_terms=運休, 運転見合わせ, 避難, 輸送障害`; `technical_failure_terms=停電, 信号故障, システム障害, 設備故障`; `safety_terms=安全事故, 技術事故, 調査, 対策`.
 * `operations`: `urban_rail_terms=地下鉄, メトロ, 路面電車, 都市鉄道`; `policy_terms=政策, 規則, 認可, 運行計画`; `dispute_terms=ストライキ, 労使紛争, 契約紛争, 仲裁, 抗議`; `opening_service_terms=開業, 開通, 営業運転開始, 旅客サービス`; `fare_ticketing_terms=運賃, 料金, 券売, チケット`; `operating_method_terms=運行時間, 路線延伸, 運行変更, 輸送力, 経営変更`.
 * `procurement`: `urban_rail_terms=地下鉄, メトロ, 路面電車, 都市鉄道`; `tender_terms=入札, 公募, 提案依頼, 枠組み契約`; `procurement_terms=調達, 機器調達, システム更新`; `award_terms=落札, 契約締結, 発注`; `contract_terms=契約, 更新契約, 納入計画`.
-* `normative`: `urban_rail_terms=地下鉄, メトロ, 路面電車, 都市鉄道`; `normative_terms=基準改正, 新基準, 技術基準, 安全基準, 規格改定, 新規格, 省令改正, 規則改正, 指針改定, ガイドライン策定, 改正案`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `ko` — Korean
 
@@ -236,7 +233,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=지하철, 도시철도, 경전철, 트램`; `accident_terms=탈선, 충돌, 화재, 연기, 부상, 사망`; `disruption_terms=운행중단, 운행차질, 대피, 수송장애`; `technical_failure_terms=정전, 신호장애, 시스템 고장, 시설 고장`; `safety_terms=안전사고, 기술사고, 조사, 대응`.
 * `operations`: `urban_rail_terms=지하철, 도시철도, 경전철, 트램`; `policy_terms=정책, 규정, 승인, 운행계획`; `dispute_terms=파업, 노사분쟁, 계약분쟁, 중재, 시위`; `opening_service_terms=개통, 영업운전 개시, 승객 서비스`; `fare_ticketing_terms=요금, 승차권, 발권, 개찰`; `operating_method_terms=운행시간, 노선연장, 서비스 변경, 수송능력, 운영 변경`.
 * `procurement`: `urban_rail_terms=지하철, 도시철도, 경전철, 트램`; `tender_terms=입찰, 공고, 제안요청, 기본협약`; `procurement_terms=조달, 장비 조달, 시스템 교체`; `award_terms=낙찰, 계약 체결, 발주`; `contract_terms=계약, 현대화 계약, 납품 일정`.
-* `normative`: `urban_rail_terms=지하철, 도시철도, 경전철, 트램`; `normative_terms=기준 개정, 신규 기준, 기술기준, 안전기준, 표준 개정, 규정 개정, 시행규칙 개정, 지침 개정, 가이드라인 제정, 개정안, 행정예고`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `de` — German
 
@@ -244,7 +241,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=U-Bahn, Stadtbahn, Straßenbahn, Tram`; `accident_terms=Entgleisung, Zusammenstoß, Kollision, Brand, Rauch, Verletzte, Todesopfer`; `disruption_terms=Betriebsunterbrechung, Streckensperrung, Evakuierung, Verkehrsstörung`; `technical_failure_terms=Stromausfall, Signalstörung, Systemausfall, Infrastrukturausfall`; `safety_terms=Sicherheitsunfall, technischer Vorfall, Untersuchung, Notfallmaßnahmen`.
 * `operations`: `urban_rail_terms=U-Bahn, Stadtbahn, Straßenbahn, Tram`; `policy_terms=Politik, Regelung, Genehmigung, Betriebsplan`; `dispute_terms=Streik, Gewerkschaft, Vertragsstreit, Schiedsverfahren, Protest`; `opening_service_terms=Eröffnung, Inbetriebnahme, Fahrgastbetrieb, Linieneröffnung`; `fare_ticketing_terms=Tarif, Fahrkarte, Ticketing, Fahrgeldmanagement`; `operating_method_terms=Fahrplan, Betriebszeiten, Linienverlängerung, Kapazität, Betriebsänderung`.
 * `procurement`: `urban_rail_terms=U-Bahn, Stadtbahn, Straßenbahn, Tram`; `tender_terms=Ausschreibung, Vergabe, Angebot, Aufforderung zur Angebotsabgabe, Rahmenvertrag`; `procurement_terms=Beschaffung, Ausrüstungsbeschaffung, Systemersatz`; `award_terms=Zuschlag, Auftragsvergabe, Auftragserteilung`; `contract_terms=Vertrag, Modernisierungsvertrag, Lieferplan`.
-* `normative`: `urban_rail_terms=U-Bahn, Stadtbahn, Straßenbahn, Tram`; `normative_terms=neue Norm, Normänderung, technische Norm, Sicherheitsnorm, neue Verordnung, Verordnungsänderung, technische Vorschrift, technische Spezifikation, Normentwurf, Verordnungsentwurf`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `fr` — French
 
@@ -252,7 +249,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=métro, tramway, transport urbain sur rail`; `accident_terms=déraillement, collision, incendie, fumée, blessé, décès`; `disruption_terms=interruption de service, arrêt du trafic, évacuation, perturbation`; `technical_failure_terms=panne électrique, panne de signalisation, défaillance du système, défaillance de l'infrastructure`; `safety_terms=incident technique, accident de sécurité, enquête, intervention`.
 * `operations`: `urban_rail_terms=métro, tramway, transport urbain sur rail`; `policy_terms=politique, réglementation, autorisation, plan d'exploitation`; `dispute_terms=grève, conflit social, litige contractuel, arbitrage, protestation`; `opening_service_terms=ouverture de ligne, mise en service, service voyageurs`; `fare_ticketing_terms=tarif, billettique, titre de transport, valideur`; `operating_method_terms=horaires, extension de ligne, changement de service, capacité, changement de gestion`.
 * `procurement`: `urban_rail_terms=métro, tramway, transport urbain sur rail`; `tender_terms=appel d'offres, soumission, demande de propositions, accord-cadre`; `procurement_terms=achat, approvisionnement, acquisition d'équipement, remplacement de système`; `award_terms=attribution, marché attribué, commande`; `contract_terms=contrat, contrat de modernisation, calendrier de livraison`.
-* `normative`: `urban_rail_terms=métro, tramway, transport urbain sur rail`; `normative_terms=nouvelle norme, norme révisée, révision de la norme, norme technique, norme de sécurité, nouvelle réglementation, spécification technique, guide technique, projet de norme, projet de décret, projet d'arrêté`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `es` — Spanish
 
@@ -260,7 +257,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=metro, tranvía, tren ligero`; `accident_terms=descarrilamiento, colisión, incendio, humo, heridos, fallecidos`; `disruption_terms=suspensión del servicio, interrupción, evacuación, perturbación`; `technical_failure_terms=fallo eléctrico, fallo de señalización, fallo del sistema, fallo de infraestructura`; `safety_terms=incidente técnico, accidente de seguridad, investigación, respuesta de emergencia`.
 * `operations`: `urban_rail_terms=metro, tranvía, tren ligero`; `policy_terms=política, normativa, aprobación, plan operativo`; `dispute_terms=huelga, conflicto laboral, disputa contractual, arbitraje, protesta`; `opening_service_terms=apertura de línea, puesta en servicio, servicio de pasajeros`; `fare_ticketing_terms=tarifa, billetaje, billete, control de acceso`; `operating_method_terms=horario, ampliación de línea, cambio de servicio, capacidad, cambio de gestión`.
 * `procurement`: `urban_rail_terms=metro, tranvía, tren ligero`; `tender_terms=licitación, concurso, solicitud de propuestas, acuerdo marco`; `procurement_terms=contratación, adquisición de equipos, sustitución del sistema`; `award_terms=adjudicación, contrato adjudicado, encargo`; `contract_terms=contrato, contrato de modernización, calendario de entrega`.
-* `normative`: `urban_rail_terms=metro, tranvía, tren ligero`; `normative_terms=nueva norma, norma revisada, revisión de la norma, norma técnica, norma de seguridad, nuevo reglamento, reglamento técnico, especificación técnica, guía técnica, proyecto de norma, proyecto de reglamento`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `it` — Italian
 
@@ -268,7 +265,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=metro, metropolitana, tram, ferrovia urbana`; `accident_terms=deragliamento, collisione, incendio, fumo, feriti, vittime`; `disruption_terms=sospensione del servizio, interruzione, evacuazione, disservizio`; `technical_failure_terms=guasto elettrico, guasto al segnalamento, guasto del sistema, guasto infrastrutturale`; `safety_terms=incidente tecnico, incidente di sicurezza, indagine, risposta di emergenza`.
 * `operations`: `urban_rail_terms=metro, metropolitana, tram, ferrovia urbana`; `policy_terms=politica, normativa, autorizzazione, piano operativo`; `dispute_terms=sciopero, controversia sindacale, controversia contrattuale, arbitrato, protesta`; `opening_service_terms=apertura della linea, avvio del servizio, servizio passeggeri`; `fare_ticketing_terms=tariffa, bigliettazione, biglietto, tornello`; `operating_method_terms=orario, prolungamento della linea, modifica del servizio, capacità, cambio di gestione`.
 * `procurement`: `urban_rail_terms=metro, metropolitana, tram, ferrovia urbana`; `tender_terms=appalto, gara, offerta, richiesta di proposta, accordo quadro`; `procurement_terms=approvvigionamento, acquisto di apparecchiature, sostituzione del sistema`; `award_terms=aggiudicazione, contratto assegnato, ordine`; `contract_terms=contratto, contratto di ammodernamento, programma di consegna`.
-* `normative`: `urban_rail_terms=metro, metropolitana, tram, ferrovia urbana`; `normative_terms=nuova norma, norma revisionata, revisione della norma, norma tecnica, norma di sicurezza, nuovo regolamento, specifica tecnica, linee guida tecniche, progetto di norma, schema di decreto`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `pt` — Portuguese
 
@@ -276,7 +273,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=metro, metropolitana, tram, transporte ferroviário urbano`; `accident_terms=descarrilamento, colisão, incêndio, fumo, feridos, mortos`; `disruption_terms=suspensão do serviço, interrupção, evacuação, perturbação`; `technical_failure_terms=falha elétrica, falha de sinalização, falha do sistema, falha de infraestrutura`; `safety_terms=acidente técnico, incidente de segurança, investigação, resposta de emergência`.
 * `operations`: `urban_rail_terms=metro, metropolitana, tram, transporte ferroviário urbano`; `policy_terms=política, regulamentação, autorização, plano operacional`; `dispute_terms=greve, conflito laboral, disputa contratual, arbitragem, protesto`; `opening_service_terms=abertura da linha, entrada em serviço, serviço de passageiros`; `fare_ticketing_terms=tarifa, bilhética, título de transporte, torniquete`; `operating_method_terms=horário, extensão da linha, alteração do serviço, capacidade, mudança de gestão`.
 * `procurement`: `urban_rail_terms=metro, metropolitana, tram, transporte ferroviário urbano`; `tender_terms=concurso, licitação, proposta, pedido de propostas, acordo-quadro`; `procurement_terms=contratação, aquisição de equipamento, substituição do sistema`; `award_terms=adjudicação, contrato adjudicado, encomenda`; `contract_terms=contrato, contrato de modernização, calendário de entrega`.
-* `normative`: `urban_rail_terms=metro, metropolitana, tram, transporte ferroviário urbano`; `normative_terms=nova norma, norma revista, revisão da norma, norma técnica, norma de segurança, novo regulamento, especificação técnica, guia técnico, projeto de norma, projeto de regulamento`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `nl` — Dutch
 
@@ -284,7 +281,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=metro, tram, lightrail, stedelijk spoorvervoer`; `accident_terms=ongeval, botsing, ontsporing, brand, rook, gewonden, doden`; `disruption_terms=dienstonderbreking, uitval, evacuatie, verstoring`; `technical_failure_terms=stroomstoring, seininstallatiestoring, systeemstoring, infrastructuurstoring`; `safety_terms=technisch incident, veiligheidsincident, onderzoek, noodrespons`.
 * `operations`: `urban_rail_terms=metro, tram, lightrail`; `policy_terms=beleid, regelgeving, vergunning, exploitatieplan`; `dispute_terms=staking, arbeidsconflict, contractgeschil, arbitrage, protest`; `opening_service_terms=lijnopening, ingebruikname, reizigersdienst`; `fare_ticketing_terms=tarief, ticketing, kaartje, toegangspoort`; `operating_method_terms=dienstregeling, lijnverlenging, dienstwijziging, capaciteit, managementwijziging`.
 * `procurement`: `urban_rail_terms=metro, tram, lightrail`; `tender_terms=aanbesteding, inschrijving, offerteaanvraag, raamovereenkomst`; `procurement_terms=inkoop, apparatuurinkoop, systeemvervanging`; `award_terms=gunning, gegund contract, opdracht`; `contract_terms=contract, moderniseringscontract, leveringsplanning`.
-* `normative`: `urban_rail_terms=metro, tram, lightrail`; `normative_terms=nieuwe norm, herziene norm, normherziening, technische norm, veiligheidsnorm, nieuwe regelgeving, technische specificatie, technische richtlijn, ontwerpnorm, ontwerpbesluit`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `sv` — Swedish
 
@@ -292,7 +289,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=tunnelbana, spårväg, lättbana`; `accident_terms=olycka, kollision, urspårning, brand, rök, skadade, omkomna`; `disruption_terms=trafikstopp, driftstörning, evakuering, störning`; `technical_failure_terms=strömavbrott, signalfel, systemfel, infrastrukturfel`; `safety_terms=teknisk incident, säkerhetsincident, utredning, räddningsinsats`.
 * `operations`: `urban_rail_terms=tunnelbana, spårväg, lättbana`; `policy_terms=policy, föreskrift, tillstånd, driftplan`; `dispute_terms=strejk, arbetskonflikt, avtalskonflikt, skiljeförfarande, protest`; `opening_service_terms=linjeöppning, trafikstart, passagerartrafik`; `fare_ticketing_terms=taxa, biljettering, biljett, spärr`; `operating_method_terms=tidtabell, linjeförlängning, trafikändring, kapacitet, ledningsändring`.
 * `procurement`: `urban_rail_terms=tunnelbana, spårväg, lättbana`; `tender_terms=upphandling, anbud, offertförfrågan, ramavtal`; `procurement_terms=inköp, utrustningsinköp, systembyte`; `award_terms=kontraktstilldelning, tilldelat kontrakt, beställning`; `contract_terms=avtal, moderniseringsavtal, leveransplan`.
-* `normative`: `urban_rail_terms=tunnelbana, spårväg, lättbana`; `normative_terms=ny standard, reviderad standard, teknisk standard, säkerhetsstandard, nya föreskrifter, ändrade föreskrifter, teknisk specifikation, tekniska riktlinjer, förslag till föreskrifter`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `da` — Danish
 
@@ -300,7 +297,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=metro, letbane, sporvogn, bybane`; `accident_terms=ulykke, kollision, afsporing, brand, røg, tilskadekomne, omkomne`; `disruption_terms=driftsforstyrrelse, driftsstop, evakuering, trafikforstyrrelse`; `technical_failure_terms=strømsvigt, signalfejl, systemfejl, infrastrukturfejl`; `safety_terms=teknisk hændelse, sikkerhedshændelse, undersøgelse, beredskab`.
 * `operations`: `urban_rail_terms=metro, letbane, sporvogn, bybane`; `policy_terms=politik, regulering, godkendelse, driftsplan`; `dispute_terms=strejke, arbejdsstrid, kontraktstrid, voldgift, protest`; `opening_service_terms=linjeåbning, ibrugtagning, passagerdrift`; `fare_ticketing_terms=takst, billet, billetsystem, adgangskontrol`; `operating_method_terms=køreplan, linjeforlængelse, driftsændring, kapacitet, ledelsesændring`.
 * `procurement`: `urban_rail_terms=metro, letbane, sporvogn, bybane`; `tender_terms=udbud, tilbud, anmodning om forslag, rammeaftale`; `procurement_terms=indkøb, udstyrsindkøb, systemudskiftning`; `award_terms=tildeling, tildelt kontrakt, ordre`; `contract_terms=kontrakt, moderniseringskontrakt, leveringsplan`.
-* `normative`: `urban_rail_terms=metro, letbane, sporvogn, bybane`; `normative_terms=ny standard, revideret standard, teknisk standard, sikkerhedsstandard, ny bekendtgørelse, ændret bekendtgørelse, teknisk specifikation, tekniske retningslinjer, udkast til bekendtgørelse, høring`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `no` — Norwegian
 
@@ -308,7 +305,7 @@ equipment.
 * `major_incident`: `urban_rail_terms=T-bane, trikk, bybane`; `accident_terms=ulykke, kollisjon, avsporing, brann, røyk, skadde, omkomne`; `disruption_terms=driftsstans, driftsforstyrrelse, evakuering, trafikkforstyrrelse`; `technical_failure_terms=strømbrudd, signalfeil, systemfeil, infrastrukturfeil`; `safety_terms=teknisk hendelse, sikkerhetshendelse, gransking, beredskap`.
 * `operations`: `urban_rail_terms=T-bane, trikk, bybane`; `policy_terms=politikk, forskrift, godkjenning, driftsplan`; `dispute_terms=streik, arbeidskonflikt, kontraktstvist, voldgift, protest`; `opening_service_terms=linjeåpning, trafikkstart, passasjertrafikk`; `fare_ticketing_terms=takst, billett, billettering, adgangskontroll`; `operating_method_terms=rutetabell, linjeforlengelse, driftsendring, kapasitet, ledelsesendring`.
 * `procurement`: `urban_rail_terms=T-bane, trikk, bybane`; `tender_terms=anbud, tilbud, forespørsel om forslag, rammeavtale`; `procurement_terms=anskaffelse, utstyrsanskaffelse, systemutskifting`; `award_terms=tildeling, tildelt kontrakt, bestilling`; `contract_terms=kontrakt, moderniseringskontrakt, leveringsplan`.
-* `normative`: `urban_rail_terms=T-bane, trikk, bybane`; `normative_terms=ny standard, revidert standard, teknisk standard, sikkerhetsstandard, ny forskrift, forskriftsendring, teknisk spesifikasjon, tekniske retningslinjer, forskriftsutkast, høring`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ## 6. Intent and profile rules
 
@@ -324,11 +321,12 @@ thresholds.
 `operations` vocabulary **MUST NOT** become a Category classifier. The
 `operations` intent is a retrieval lane only.
 
-`normative` vocabulary **MUST NOT** become a Category classifier either: a
-`normative` result is not `NORMATIVE_CHANGE` until the Classifier decides so on
-Authoritative Evidence, and another intent's result can be `NORMATIVE_CHANGE`.
-It **MUST** stay generic normative-action vocabulary and **MUST NOT** list
-standard numbers, standards bodies, regulators, websites or publications.
+`monitored_standards` vocabulary **MUST NOT** become a Category or
+Reportability rule: a result is neither `NORMATIVE_CHANGE` nor a monitored
+standard update until the Classifier and Reportability decide so on
+Authoritative Evidence, and another intent's result can be either. Its
+identifiers come only from `monitored_standards.json`; no identifier may be
+added to, or removed from, this document or the Search configuration by hand.
 
 `procurement` vocabulary **MUST NOT** use vendor-specific or website-specific
 rules and **MUST NOT** use USD 3M as an eligibility gate. USD 3M remains the

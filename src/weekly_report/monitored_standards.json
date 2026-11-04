@@ -1,0 +1,32 @@
+{
+  "reference_version": "monitored-standards-v1",
+  "provenance": {
+    "source": "V1 FROZEN_REFERENCE streamlit_app.py, module-level literal STANDARDS_WATCHLIST",
+    "source_location": "local V1 snapshot Desktop/週報/streamlit_app.py line 513 (2026-09-04); the authoritative V1 GitHub repository was not reachable",
+    "source_literal_sha256": "515c5321ac6b8de33f8c28353b6c24b672b6fef058ab622e6770350aec46503c",
+    "source_literal_digest_input": "UTF-8 of json.dumps(literal, ensure_ascii=False) with default separators",
+    "copies_compared": 31,
+    "copies_identical": true,
+    "extraction": "ast.literal_eval of the assignment; group labels and identifier strings copied unchanged, in V1 order",
+    "approved_by": "user, 2026-11-04 (RC-58): the V1 list is the authoritative scope of standards-update monitoring",
+    "not_in_source": "titles, editions, years and current status; none is added here"
+  },
+  "groups": [
+    {
+      "label": "碰撞/出軌類",
+      "standards": ["EN 50126", "EN 50128", "EN 50129", "IEEE 1474.1", "EN 13674-1", "UIC 860-0", "IEC 61373"]
+    },
+    {
+      "label": "觸電/電弧爆炸類",
+      "standards": ["EN 50122", "EN 50122-2", "EN 50327", "EN 50328", "EN 50329", "IEC 62271-100", "IEC 62271-102", "IEC 60947-1", "IEC 60850"]
+    },
+    {
+      "label": "火災/中毒類",
+      "standards": ["NFPA 130", "ASTM E119", "IEC 60754-1", "IEC 60754-2", "IEC 60332-1", "ASTM E662", "NFPA 258", "NFPA 70"]
+    },
+    {
+      "label": "結構性/爆炸性設備失效類",
+      "standards": ["IEC 60076", "IEC 60076-11", "IEC 62695"]
+    }
+  ]
+}

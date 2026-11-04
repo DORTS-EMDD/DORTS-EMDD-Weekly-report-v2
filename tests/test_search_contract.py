@@ -100,7 +100,7 @@ class SearchContractTests(TestCase):
     def test_discovery_intent_is_canonical_and_not_category(self) -> None:
         self.assertEqual(
             tuple(intent.value for intent in DiscoveryIntent),
-            ("technology", "major_incident", "operations", "procurement", "normative"),
+            ("technology", "major_incident", "operations", "procurement", "monitored_standards"),
         )
         self.assertEqual(DiscoveryIntent.MAJOR_INCIDENT.display_label, "major incident")
         self.assertEqual(DiscoveryIntent.PROCUREMENT.display_label, "procurement")

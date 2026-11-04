@@ -130,7 +130,7 @@ class SearchPlannerTests(unittest.TestCase):
                 "major_incident": ["accident_terms"],
                 "operations": ["policy_terms"],
                 "procurement": ["tender_terms"],
-                "normative": ["normative_terms"],
+                "monitored_standards": ["monitored_standard_ids"],
             },
         )
         registry = RegionRegistry.from_mapping(source)

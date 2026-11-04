@@ -19,6 +19,11 @@ if str(ROOT) not in sys.path:
 
 from src.weekly_report.contracts import DiscoveryIntent, SearchProviderId  # noqa: E402
 from src.weekly_report.region_registry import CONFIGURATION_PATH, RegionRegistry  # noqa: E402
+from src.weekly_report.monitored_standards import monitored_standards  # noqa: E402
+
+# RC-58: a governed vocabulary group written as this token is hydrated from the
+# single monitored-standards list, never maintained as a second copy.
+MONITORED_STANDARDS_TOKEN = "@monitored_standards"
 
 
 _TOP_LEVEL_FIELDS = frozenset(
@@ -92,6 +97,10 @@ def _extract_governed_vocabulary(language: str) -> dict[str, dict[str, dict[str,
             group_name, raw_terms = segment.split("=", 1)
             group_name = group_name.strip()
             terms = tuple(term.strip() for term in raw_terms.split(","))
+            if MONITORED_STANDARDS_TOKEN in terms:
+                if terms != (MONITORED_STANDARDS_TOKEN,):
+                    raise ValueError(f"{MONITORED_STANDARDS_TOKEN} must be the whole group in {current_profile}/{intent}")
+                terms = monitored_standards().identifiers
             if not terms or any(not term for term in terms):
                 raise ValueError(f"empty governed vocabulary term in {current_profile}/{intent}")
             groups[group_name] = terms
@@ -143,7 +152,7 @@ def _validate_governance_documents(registry: RegionRegistry) -> None:
         r"REDIRECT_FOLLOW_COUNT\s*=\s*0",
         r"PAGINATION\s*=\s*ONE_PROVIDER_REQUEST_PAGE_ONLY",
         r"EXECUTION_CONCURRENCY\s*=\s*SEQUENTIAL",
-        r"SEARCH_CONFIGURATION_VERSION\s*=\s*search-discovery-v8",
+        r"SEARCH_CONFIGURATION_VERSION\s*=\s*search-discovery-v9",
         r"PROVIDER_PROFILE_ELIGIBILITY_OWNER\s*=\s*RegionRegistry",
     ):
         if re.search(marker, architecture) is None:

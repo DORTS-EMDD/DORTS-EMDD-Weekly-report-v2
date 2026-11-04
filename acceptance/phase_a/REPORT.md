@@ -2424,3 +2424,22 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - 專業軌道媒體加規範詞的兩次試查詢只得到 1 筆非規範文章，因此 `rail_trade_press` 不變。
 - 測試：新增 `tests/test_rc57_normative_discovery.py`（12 項）。乾淨匯出（HEAD＋本次檔案）1401 passed；Golden contract 21 passed；搜尋設定一致性檢查 `--check` 通過。
 - 未做：Live 正式執行。本次為本機 commit，未 push；main 經使用者授權 fast-forward 後，每週排程才會使用新計畫。
+
+## 61. RC-58：標準更新監控限定為 V1 監控標準清單（§A.42，使用者核定 Domain Rule，2026-11-04）
+
+- 需求修正：只追蹤 V1 原本設定的標準；只有 Evidence 證明「清單中某一標準本身」發生正式變動者，才進「規範及標準動態」。其他標準、法規、條例與一般指引都不算。
+- 清單來源：本機 V1 快照 `streamlit_app.py` 的 `STANDARDS_WATCHLIST`，以 `ast.literal_eval` 擷取，未執行 V1 程式。
+  - 31 份副本（現行檔與所有保存版本）完全相同：4 類、27 個、無重複。
+  - SHA-256 `515c5321ac6b8de33f8c28353b6c24b672b6fef058ab622e6770350aec46503c`。
+  - 與先前稽核的 27 個一致。V1 只存編號，沒有名稱、版次或年份。
+- RC-57 的處置：
+  - 保留：第五個 discovery intent 的機制、空章節省略、單一週報與單一寄送。
+  - 修改：intent 改名為 `monitored_standards`；查詢詞改為 27 個編號，由資料檔帶入搜尋設定。
+  - 刪除：泛用規範詞（新標準、法規修正、技術規格、指引、草案等）及其測試。
+- 僅搜尋的實測（Google News RSS；未抓出版者頁面、未呼叫 MaiAgent、未寄信），期間 2026-09-01～11-01：
+  - 21 個版本、各 3 次，共 63 次，0 次技術失敗。
+  - 58 筆原始結果，20 個不同網址，約每週 2～3 筆。
+  - 含一則 NFPA 70 的暫行修正（TIA）提案報導；其餘多為只引用標準的文章（NFPA 75 介紹、產品認證、變壓器出口），由下游 owner 排除。
+- 測試與 Golden：新增 `tests/test_rc58_monitored_standards.py`、`golden/monitored_standards_cases.json`（MS01–MS09）；G69–G74 改為 NOT_REPORTABLE（`OUTSIDE_MONITORED_STANDARDS`）。
+- 突變測試：6 個突變中 5 個被測試抓到。存活的 1 個是「只接受已提供編號」檢查；引用句必須含該編號的檢查已涵蓋它，屬重複防護。
+- 未決 Domain 決定（未實作）：監控標準的公告若未提及都市軌道系統或指定地區，仍依既有 Scope 與 RC-28 被排除。上述 NFPA 70 文章即屬此類，需要使用者決定是否以「列入監控清單」本身作為 Scope 與地區的依據。

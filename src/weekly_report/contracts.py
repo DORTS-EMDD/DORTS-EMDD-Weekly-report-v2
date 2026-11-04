@@ -1093,9 +1093,23 @@ class ReportabilityState(StrEnum):
 
 
 class ReportabilityReason(StrEnum):
-    """The only authoritative negative Reportability reason."""
+    """The authoritative negative Reportability reasons."""
 
     LOW_REPORTABILITY_VALUE = "LOW_REPORTABILITY_VALUE"
+    # RC-58 (section A.42): a NORMATIVE_CHANGE event that is not a formal
+    # lifecycle change of a monitored standard is outside the product scope.
+    OUTSIDE_MONITORED_STANDARDS = "OUTSIDE_MONITORED_STANDARDS"
+
+
+class StandardLifecycleAction(StrEnum):
+    """RC-58: the formal lifecycle change a monitored standard itself undergoes."""
+
+    NEW_EDITION_OR_REVISION = "NEW_EDITION_OR_REVISION"
+    AMENDMENT = "AMENDMENT"
+    CORRIGENDUM = "CORRIGENDUM"
+    WITHDRAWAL = "WITHDRAWAL"
+    SUPERSESSION = "SUPERSESSION"
+    DRAFT_OR_CONSULTATION = "DRAFT_OR_CONSULTATION"
 
 
 class ReportabilityOccurrence(StrEnum):
@@ -1223,10 +1237,8 @@ class ReportabilityResult:
             if not self.provenance.support_spans:
                 raise ValueError("REPORTABLE requires support spans")
         else:
-            if reason is not ReportabilityReason.LOW_REPORTABILITY_VALUE:
-                raise ValueError(
-                    "NOT_REPORTABLE requires LOW_REPORTABILITY_VALUE"
-                )
+            if reason is None:
+                raise ValueError("NOT_REPORTABLE requires a Reportability reason")
             if self.provenance.support_spans:
                 raise ValueError("NOT_REPORTABLE cannot carry support spans")
 
@@ -1374,6 +1386,90 @@ class ReportabilitySemanticProposal:
             raise ValueError("NOT_REPORTABLE proposal cannot carry support citations")
 
 
+@dataclass(frozen=True, slots=True)
+class MonitoredStandardRequest:
+    """RC-58: ask which monitored standard, if any, the Evidence reports as itself changed.
+
+    Sent only for NORMATIVE_CHANGE events whose Evidence mentions at least one
+    monitored identifier. ``monitored_identifiers`` are the identifiers Python
+    found; the helper may answer only one of them or null.
+    """
+
+    event_id: str
+    members: tuple[ReportabilitySemanticMember, ...]
+    monitored_identifiers: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        base = ReportabilitySemanticRequest(self.event_id, self.members)
+        object.__setattr__(self, "members", base.members)
+        if isinstance(self.monitored_identifiers, (str, bytes, bytearray)):
+            raise TypeError("monitored_identifiers must be a sequence")
+        identifiers = tuple(self.monitored_identifiers)
+        if not identifiers or any(not isinstance(value, str) or not value.strip() for value in identifiers):
+            raise ValueError("MonitoredStandardRequest requires monitored identifiers")
+        if len(identifiers) != len(set(identifiers)):
+            raise ValueError("monitored identifiers must be unique")
+        object.__setattr__(self, "monitored_identifiers", identifiers)
+
+    @property
+    def member_candidate_ids(self) -> tuple[str, ...]:
+        return tuple(member.candidate_id for member in self.members)
+
+    @property
+    def source_refs(self) -> dict[str, str]:
+        from .source_refs import source_refs
+
+        return source_refs(self.member_candidate_ids)
+
+    def as_payload(self) -> dict[str, Any]:
+        payload = ReportabilitySemanticRequest(self.event_id, self.members).as_payload()
+        payload["monitored_identifiers"] = list(self.monitored_identifiers)
+        return payload
+
+
+@dataclass(frozen=True, slots=True)
+class MonitoredStandardProposal:
+    """Untrusted answer to a :class:`MonitoredStandardRequest`."""
+
+    event_id: str
+    examined_source_refs: tuple[str, ...]
+    changed_standard: str | None
+    lifecycle_action: StandardLifecycleAction | None
+    citations: tuple[ReportabilitySemanticCitation, ...]
+    rationale: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.event_id, str) or not self.event_id.strip():
+            raise ValueError("monitored standard proposal requires event_id")
+        if isinstance(self.examined_source_refs, (str, bytes, bytearray)):
+            raise TypeError("examined_source_refs must be a sequence")
+        refs = tuple(self.examined_source_refs)
+        if not refs or any(not isinstance(ref, str) or not ref.strip() for ref in refs) or len(refs) != len(set(refs)):
+            raise ValueError("monitored standard proposal requires unique examined source references")
+        object.__setattr__(self, "examined_source_refs", refs)
+        if isinstance(self.citations, (str, bytes, bytearray)):
+            raise TypeError("citations must contain ReportabilitySemanticCitation values")
+        citations = tuple(self.citations)
+        if any(not isinstance(citation, ReportabilitySemanticCitation) for citation in citations):
+            raise TypeError("citations must contain ReportabilitySemanticCitation values")
+        object.__setattr__(self, "citations", citations)
+        if not isinstance(self.rationale, str) or not self.rationale.strip():
+            raise ValueError("monitored standard proposal requires rationale")
+        if self.changed_standard is None:
+            if self.lifecycle_action is not None or citations:
+                raise ValueError("a null changed_standard carries no lifecycle action or citations")
+            return
+        if not isinstance(self.changed_standard, str) or not self.changed_standard.strip():
+            raise ValueError("changed_standard must be an identifier or null")
+        try:
+            action = StandardLifecycleAction(self.lifecycle_action)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("changed_standard requires a valid lifecycle_action") from exc
+        object.__setattr__(self, "lifecycle_action", action)
+        if not citations:
+            raise ValueError("changed_standard requires citations")
+
+
 class ReportabilitySemanticProposalProvider(Protocol):
     """Narrow proposal-only semantic provider interface."""
 
@@ -1453,9 +1549,10 @@ class DiscoveryIntent(StrEnum):
     MAJOR_INCIDENT = "major_incident"
     OPERATIONS = "operations"
     PROCUREMENT = "procurement"
-    # RC-57 (section A.41): active discovery of normative/standard changes.
-    # A discovery lane only; it never derives Category NORMATIVE_CHANGE.
-    NORMATIVE = "normative"
+    # RC-58 (section A.42): discovery of the monitored standards by their
+    # identifiers. A discovery lane only; it never derives a Category or the
+    # monitored-standard decision, which belongs to Reportability.
+    MONITORED_STANDARDS = "monitored_standards"
 
     @property
     def display_label(self) -> str:
@@ -1468,7 +1565,7 @@ _DISCOVERY_INTENT_DISPLAY_LABELS = MappingProxyType(
         DiscoveryIntent.MAJOR_INCIDENT: "major incident",
         DiscoveryIntent.OPERATIONS: "operations",
         DiscoveryIntent.PROCUREMENT: "procurement",
-        DiscoveryIntent.NORMATIVE: "normative",
+        DiscoveryIntent.MONITORED_STANDARDS: "monitored standards",
     }
 )
 

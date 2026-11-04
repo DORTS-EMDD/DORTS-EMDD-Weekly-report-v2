@@ -44,11 +44,11 @@
     "e&m_taxonomy": [
       "通訊"
     ],
-    "reportability": "REPORTABLE",
+    "reportability": "NOT_REPORTABLE",
     "classification_reason": "PRINCIPAL_ACTION_NORMATIVE_CHANGE",
     "category_resolution_reason": "NONE",
-    "reject_stage": "NONE",
-    "reject_reason": "NONE"
+    "reject_stage": "REPORTABILITY",
+    "reject_reason": "OUTSIDE_MONITORED_STANDARDS"
   },
   "contract_notes": [
     "Category follows the supported principal action in substantive source content.",

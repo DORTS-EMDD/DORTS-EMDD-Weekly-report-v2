@@ -743,7 +743,22 @@ class GoldenContractTests(unittest.TestCase):
                     self.assertNotEqual(expected["reject_reason"], "LOW_REPORTABILITY_VALUE", case_id)
                 else:
                     self.assertEqual(expected["reject_stage"], "REPORTABILITY", case_id)
-                    self.assertEqual(expected["reject_reason"], "LOW_REPORTABILITY_VALUE", case_id)
+                    # RC-58: a normative change outside the monitored standards
+                    # has its own reason; every other rejection is low value.
+                    allowed = (
+                        {"LOW_REPORTABILITY_VALUE", "OUTSIDE_MONITORED_STANDARDS"}
+                        if expected.get("primary_category_id") == "NORMATIVE_CHANGE"
+                        else {"LOW_REPORTABILITY_VALUE"}
+                    )
+                    self.assertIn(expected["reject_reason"], allowed, case_id)
+
+        # RC-58 (section A.42): none of the six normative cases names a standard on
+        # the monitored list, so each is outside the product's standards scope.
+        for case_id in ("G69", "G70", "G71", "G72", "G73", "G74"):
+            expected = self.fixtures[case_id]["expected"]
+            self.assertEqual(expected["primary_category_id"], "NORMATIVE_CHANGE", case_id)
+            self.assertEqual(expected["reportability"], "NOT_REPORTABLE", case_id)
+            self.assertEqual(expected["reject_reason"], "OUTSIDE_MONITORED_STANDARDS", case_id)
 
         self.assertEqual(self.fixtures["G07"]["expected"]["reportability"], "NOT_REPORTABLE")
         self.assertEqual(self.fixtures["G07"]["expected"]["reject_stage"], "REPORTABILITY")

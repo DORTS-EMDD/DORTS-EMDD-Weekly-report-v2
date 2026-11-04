@@ -45,7 +45,11 @@ class ReportabilityContractTests(TestCase):
         )
         self.assertEqual(
             {reason.name: reason.value for reason in ReportabilityReason},
-            {"LOW_REPORTABILITY_VALUE": "LOW_REPORTABILITY_VALUE"},
+            {
+                "LOW_REPORTABILITY_VALUE": "LOW_REPORTABILITY_VALUE",
+                # RC-58 (section A.42): a normative change outside the monitored standards.
+                "OUTSIDE_MONITORED_STANDARDS": "OUTSIDE_MONITORED_STANDARDS",
+            },
         )
 
     def test_support_span_accepts_valid_bounds_and_is_immutable(self):

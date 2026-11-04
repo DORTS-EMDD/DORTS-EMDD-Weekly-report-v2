@@ -76,7 +76,7 @@ Search 不得正式決定 Evidence Ready、Scope、Date validity、Category 或 
 * major incident
 * operations
 * procurement
-* normative（RC-57：主動搜尋符合 `NORMATIVE_CHANGE` 定義的規範／標準變動）
+* monitored_standards（RC-58：以監控標準清單的編號搜尋該批標準的動態）
 
 每個啟用 intent 都必須至少 `PLANNED + ATTEMPTED`。
 
@@ -84,7 +84,7 @@ Search 不得正式決定 Evidence Ready、Scope、Date validity、Category 或 
 
 > 新技術、新材料、新方式。
 
-Search intent 不等於正式 Category；`normative` intent 不得推導 `NORMATIVE_CHANGE`。
+Search intent 不等於正式 Category；`monitored_standards` intent 不得推導 `NORMATIVE_CHANGE`，也不決定是否為監控標準更新。
 
 ## 6. Evidence First
 
@@ -156,6 +156,9 @@ DETERMINISTIC ORDERING
 0 篇是合法結果。
 
 「對臺北捷運有參考價值」不得單獨救回缺乏事件本身實質價值的普通事件。
+
+`NORMATIVE_CHANGE` 事件只有在 Evidence 證明為監控標準清單（`src/weekly_report/monitored_standards.json`）
+中某一標準本身的正式變動時才 REPORTABLE（RC-58）；其他規範變動為 NOT_REPORTABLE（`OUTSIDE_MONITORED_STANDARDS`）。
 
 Ordering 採可解釋 deterministic / lexicographic rules，不使用不透明總分。
 
@@ -238,7 +241,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-57 修訂（2026-10-20～11-04）
+### RC-3～RC-58 修訂（2026-10-20～11-04）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.38、§N 與 §R。
 
@@ -485,7 +488,18 @@ Transport retry 與 semantic correction 必須分開計算。
   法規修正、技術規格、正式指引、草案），不列任何標準編號、標準組織、主管機關或網站；計畫 122 → 155 次（normative
   33）。Search intent 不是 Category：結果照常走完 Evidence 至 Validation，Classifier 仍是唯一 Category owner，§L、
   §N 不變；符合者進入當週週報既有「規範及標準動態」章節，沒有時省略該章節；不另寄信、不另設排程、不保存標準
-  版本狀態，Delivery（RC-55）、訂閱（RC-56）與報告週期不變；不搬 V1 watchlist。
+  版本狀態，Delivery（RC-55）、訂閱（RC-56）與報告週期不變；不搬 V1 watchlist。（產品範圍與搜尋詞已由 RC-58 修正。）
+* RC-58（§A.42，使用者核定 Domain Rule，部分取代 RC-57）：標準更新監控的範圍是 V1 原始固定標準清單，共 27 個
+  （4 類；本機 V1 快照 31 份副本完全相同，SHA-256 記於資料檔），唯一來源為 `src/weekly_report/monitored_standards.json`；
+  只有 Evidence 證明「清單中某一標準本身」發生正式變動（新版或修訂、修正、勘誤、撤回、被取代、正式草案或徵詢）才算；
+  其他標準、國家或地方法規、條例、一般指引即使屬 `NORMATIVE_CHANGE` 也不進「規範及標準動態」。RC-57 的根因：把需求讀成
+  「主動搜尋所有規範變動」並使用泛用規範詞。修正：discovery intent 改為 `monitored_standards`，以 27 個編號為 OR 查詢
+  （每個支援版本 3 次，由資料檔自動帶入搜尋設定）；計畫 185 次，其餘 122 次與 v7 相同。Category 不變；由 Reportability
+  決定：`NORMATIVE_CHANGE` 事件沒有監控編號即 NOT_REPORTABLE（`OUTSIDE_MONITORED_STANDARDS`，不呼叫 helper），有則以同一
+  helper task 的第二種請求問「哪一個標準本身變動」，Python 只接受有出現在引用句中的已提供編號，再走原本的價值判斷；引用、
+  遵循、採購要求、建議、回顧都不算。G69–G74 的 Reportability 改為 NOT_REPORTABLE；新增 Golden MS01–MS09。Scope、RC-28、
+  Delivery、訂閱、排程、報告週期不變，不新增狀態。未決 Domain 決定：監控標準的公告若未提及都市軌道或指定地區，仍會被 Scope
+  或 RC-28 排除（BLOCKED_DOMAIN_RULE）。
 
 ## 13. Report / Delivery
 
@@ -636,5 +650,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-57 APPLIED (2026-11-04; RC-57 normative discovery intent; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
+CONTRACT_REVISION = RC-3..RC-58 APPLIED (2026-11-04; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```

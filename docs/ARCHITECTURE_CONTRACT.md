@@ -2204,6 +2204,12 @@ GO_LIVE_GATE = SATISFIED 2026-11-04 (CONTROLLED CANARY RUN 41765559889); DEFAULT
 
 ### A.41 RC-57 Active discovery of normative and standard changes (2026-11-04, user-approved Domain Rule)
 
+**Superseded in part by RC-58 (section A.42).** The `normative` intent and its
+generic normative vocabulary are withdrawn, and the product scope of standards
+updates is the monitored list. The root cause below and the rules on one
+report, one Delivery and no separate notification, state or schedule still
+apply.
+
 **Requirement (user, 2026-11-04).** V2 must actively search for changes of the
 kinds the existing `NORMATIVE_CHANGE` definition (section L) describes. An
 event that passes Evidence, Scope, Temporal, Event Identity, Category,
@@ -2283,6 +2289,140 @@ NORMATIVE_DISCOVERY_OWNER = SearchPlanner (RegionRegistry configuration)
 NORMATIVE_CATEGORY_OWNER = Classifier (section L unchanged)
 NORMATIVE_REPORT_SECTION = 規範及標準動態 (ReportService; omitted when empty)
 NORMATIVE_NOTIFICATION = THE WEEKLY REPORT VIA RC-55 DELIVERY; NO SEPARATE MESSAGE, STATE OR SCHEDULE
+```
+
+### A.42 RC-58 Monitored standards: the scope of standards-update monitoring (2026-11-04, user-approved Domain Rule)
+
+**Requirement (user, 2026-11-04).** Standards-update monitoring covers only the
+standards on the V1 monitored list. Only an event that Authoritative Evidence
+shows to be a formal lifecycle change of one of those standards is a standards
+update for this product. Other standards, national or local regulations,
+ordinances, general rules, other industry standards and other technical
+guidance are not standards updates, even when the Classifier assigns them
+`NORMATIVE_CHANGE`. The discovery method is free. There is still one weekly
+report, one Delivery and the same mailing list. Qualifying updates appear in
+「規範及標準動態」 and are delivered with the rest of the report. Without one
+the section is omitted, nothing else is sent, and the weekly report still goes
+out.
+
+**Root cause of the RC-57 mismatch.** RC-57 read the requirement as "actively
+discover `NORMATIVE_CHANGE`" and widened discovery with generic normative
+vocabulary. Section N accepted "substantive normative action or formal
+guidance" for every normative event, and no owner held the monitored list.
+Any regulation or ordinance that passed the formal owners could therefore
+reach 「規範及標準動態」.
+
+**The list.** `src/weekly_report/monitored_standards.json`
+(`monitored-standards-v1`) is the only source of truth. It is the V1
+`STANDARDS_WATCHLIST` literal copied unchanged: 27 identifiers in four groups.
+* 碰撞/出軌類: EN 50126, EN 50128, EN 50129, IEEE 1474.1, EN 13674-1, UIC 860-0,
+  IEC 61373.
+* 觸電/電弧爆炸類: EN 50122, EN 50122-2, EN 50327, EN 50328, EN 50329,
+  IEC 62271-100, IEC 62271-102, IEC 60947-1, IEC 60850.
+* 火災/中毒類: NFPA 130, ASTM E119, IEC 60754-1, IEC 60754-2, IEC 60332-1,
+  ASTM E662, NFPA 258, NFPA 70.
+* 結構性/爆炸性設備失效類: IEC 60076, IEC 60076-11, IEC 62695.
+
+Provenance: all 31 copies of the literal in the local V1 snapshot (the current
+file and every saved version) are identical. The SHA-256 of the literal is
+recorded in the file and re-checked by tests. The authoritative V1 GitHub
+repository was not reachable. V1 stored identifiers only: no titles, editions,
+years or current status are recorded, and none are added. Two overlaps are kept
+as V1 has them: EN 50122 (series) with EN 50122-2 (part), and IEC 60076 with
+IEC 60076-11.
+
+`monitored_standards.py` loads the list and locates identifiers mechanically.
+A match needs the body prefix and number as one token. An optional "Std" and a
+space or hyphen are allowed, and a part, edition or year may follow. A longer
+number, a letter or a decimal does not match ("NFPA 70E", "IEEE 1474.10").
+Text is NFKC-normalised first. The module decides nothing.
+
+**Owners.**
+* Which standards are monitored: the data file, changed only by a user
+  decision.
+* Discovery: SearchPlanner. The RC-57 `normative` intent becomes
+  `monitored_standards`. Its family, `monitored_standard_identifiers`, sends the
+  27 identifiers as OR groups (3 requests) on every supported edition, with no
+  mode, lifecycle or other word. The materializer hydrates the identifiers into
+  the Search configuration from the data file (`@monitored_standards`) and
+  checks parity, so no second copy is maintained by hand. The plan is 185
+  requests: the 122 non-standards requests are identical in content to
+  `search-discovery-v7`, and 63 are identifier requests. A search hit decides
+  nothing.
+* Category: unchanged. The Classifier still assigns `NORMATIVE_CHANGE` under
+  section L to any normative change, monitored or not.
+* Whether a `NORMATIVE_CHANGE` event is a monitored standard update:
+  Reportability (section N), the sole owner of what the report contains. For a
+  `NORMATIVE_CHANGE` event:
+  1. Python finds the monitored identifiers in the members' Evidence. If there
+     are none, the result is `NOT_REPORTABLE` with reason
+     `OUTSIDE_MONITORED_STANDARDS`, and no helper is called.
+  2. Otherwise one more `reportability_semantic_proposal` request, a second
+     request kind with its own prompt (`reportability-monitored-standard-v1`)
+     and schema (`reportability-monitored-standard-proposal-v1`), asks which
+     supplied identifier, if any, the Evidence reports as itself formally
+     changed. The lifecycle actions are: new edition or revision (including
+     formal national adoption), amendment, corrigendum, withdrawal,
+     supersession, and formal draft or consultation. The answer cites sentence
+     IDs. Citing, applying, requiring or recommending a standard is not a
+     change, nor is reviewing an existing edition or rumouring a revision.
+  3. Python accepts only a supplied identifier whose cited sentences contain it.
+     Null means `OUTSIDE_MONITORED_STANDARDS`. Any other contract violation is a
+     disclosed technical gap (RC-6, RC-9).
+  4. The existing value-path request then runs unchanged. `REPORTABLE` requires
+     both answers, and its rationale records the standard and the action.
+
+  Other Categories are unchanged. A procurement, deployment or project that
+  cites a monitored standard keeps its own section and is never a standards
+  update. The helper is not given the list, does not search, and does not
+  decide scope.
+* Report and Delivery: unchanged (section R, RC-41, RC-55, RC-56).
+
+**Not changed.** Scope (section J and `docs/SCOPE_CONTRACT.md`), region
+eligibility (RC-28), Temporal, Event Identity, Category, Taxonomy, Writer,
+Validation, the PDF, the report sections, Delivery, the subscription, the
+schedule and the reporting week. There is no persistent standards state:
+TemporalRule and Event Identity already bind an update to its week, so no
+version database, last-seen store or notification history is needed.
+
+**Golden.** G69 to G74 keep their Category. Their Reportability becomes
+`NOT_REPORTABLE` with `OUTSIDE_MONITORED_STANDARDS`, because none names a
+monitored standard. This follows the new Domain Rule; it is not a change to fit
+an implementation. `golden/monitored_standards_cases.json` (MS01 to MS09) locks:
+a monitored new edition, a draft, a national amendment, a procurement citation,
+a mention in formal guidance, a regulation making compliance mandatory, a
+non-monitored standard revision, a city ordinance, and a deployment that
+complies with a monitored standard.
+
+**Search-only probe (2026-11-04; RSS only; no publisher page, MaiAgent call or
+email).** Over 2026-09-01..11-01 the 63 identifier requests ran with 0
+failures and returned 58 raw results with 20 distinct URLs, about 2 to 3
+candidates a week. They include a proposed Tentative Interim Amendment to
+NFPA 70 (trade press). Most results only cite a standard (an NFPA 75
+explainer, product certifications, transformer exports), and downstream owners
+reject them.
+
+**Open Domain decision (BLOCKED_DOMAIN_RULE, not implemented).** A monitored
+standard update must still pass Scope and RC-28 like every event. Scope needs a
+source-stated tie to an eligible urban-rail mode family. RC-28 needs an
+established event location in one of the 20 designated regions. Most of the 27
+standards are cross-industry or railway-wide, for example IEC 60076,
+IEC 62271, IEC 60947-1, NFPA 70, ASTM E119, IEC 60754 and IEC 60332. A notice
+of a new edition often names neither a metro nor a designated location (for
+example a CENELEC publication in Brussels). It then ends `OUT_OF_SCOPE`,
+`REGION_NOT_ESTABLISHED` or `NON_DESIGNATED_REGION`, and the probe's NFPA 70
+article is such a case. Admitting a formal lifecycle change of a monitored
+standard by designation would amend Scope and the user-locked RC-28, so it
+needs the user's decision.
+
+```text
+MONITORED_STANDARDS_SOURCE_OF_TRUTH = src/weekly_report/monitored_standards.json (monitored-standards-v1, 27 identifiers, V1 literal)
+MONITORED_STANDARDS_DISCOVERY_OWNER = SearchPlanner (intent monitored_standards; family monitored_standard_identifiers)
+MONITORED_STANDARD_UPDATE_OWNER = Reportability (NORMATIVE_CHANGE events only)
+REPORTABILITY_REASONS = LOW_REPORTABILITY_VALUE, OUTSIDE_MONITORED_STANDARDS
+NORMATIVE_CHANGE_CATEGORY = UNCHANGED (section L)
+SEARCH_CONFIGURATION_VERSION = search-discovery-v9
+MONITORED_STANDARD_SCOPE_AND_REGION = BLOCKED_DOMAIN_RULE (existing Scope and RC-28 apply)
 ```
 
 ## B. Authoritative Owners
@@ -2452,7 +2592,7 @@ HIDDEN_TRANSPORT_RETRY = FORBIDDEN
 REDIRECT_FOLLOW_COUNT = 0
 PAGINATION = ONE_PROVIDER_REQUEST_PAGE_ONLY
 EXECUTION_CONCURRENCY = SEQUENTIAL
-SEARCH_CONFIGURATION_VERSION = search-discovery-v8
+SEARCH_CONFIGURATION_VERSION = search-discovery-v9
 PROVIDER_PROFILE_ELIGIBILITY_OWNER = RegionRegistry
 ```
 
@@ -2680,15 +2820,15 @@ TAIWAN_SELECTED_SEARCH_PLAN_ITEMS = ALLOWED
 TAIWAN_GLOBAL_SEARCH_PLAN_ITEMS = ALLOWED
 ```
 
-五個 discovery intent（RC-57，§A.41 新增 `normative`）使用一個 canonical typed
-machine representation：
+五個 discovery intent（RC-57 新增第五個；RC-58，§A.42 改為 `monitored_standards`）
+使用一個 canonical typed machine representation：
 
 ```text
 technology
 major_incident
 operations
 procurement
-normative
+monitored_standards
 ```
 
 Provider capability is part of the same materialized RegionRegistry contract.
@@ -2753,13 +2893,13 @@ technology     -> technology
 major_incident -> major incident
 operations     -> operations
 procurement    -> procurement
-normative      -> normative
+monitored_standards -> monitored standards
 ```
 
 不得以 whitespace replacement、case conversion 或各層自行 normalization
 取代 canonical mapping。Search intent 不等於 Category；`procurement` intent
-不得推導 `Category = PROCUREMENT`，`normative` intent 不得推導
-`Category = NORMATIVE_CHANGE`。
+不得推導 `Category = PROCUREMENT`，`monitored_standards` intent 不得推導
+`Category = NORMATIVE_CHANGE`，也不得決定監控標準更新（Reportability，§A.42）。
 
 五種 discovery intent：
 
@@ -2767,7 +2907,7 @@ normative      -> normative
 * major incident
 * operations
 * procurement
-* normative（RC-57，§A.41：主動搜尋符合 §L `NORMATIVE_CHANGE` 定義的規範／標準變動）
+* monitored_standards（RC-58，§A.42：以監控清單的標準編號搜尋該批標準的動態）
 
 每個啟用 intent 至少：
 
@@ -4471,7 +4611,9 @@ authoritative EventGroup evidence positively supports at least one accepted
 substantive urban-rail reporting-value path. `NOT_REPORTABLE` means that
 Reportability successfully evaluated the complete EventGroup, but the
 supplied authoritative evidence does not positively support such value. Its
-only domain reason is `LOW_REPORTABILITY_VALUE`. This is a semantic result,
+domain reason is `LOW_REPORTABILITY_VALUE`; since RC-58 (section A.42) a
+`NORMATIVE_CHANGE` event that is not a formal lifecycle change of a monitored
+standard is `NOT_REPORTABLE` with `OUTSIDE_MONITORED_STANDARDS`. This is a semantic result,
 not a technical failure or a claim that the event has no value in every
 context.
 
@@ -4490,7 +4632,8 @@ system renewal, integration or engineering intervention; consequential
 safety, failure, service-impact or corrective investigation; concrete
 service, fare, operating-practice, safety-governance or policy change;
 substantive operational controversy; substantive normative action or formal
-guidance; and procurement, demonstration or trial activity with concrete
+guidance (for `NORMATIVE_CHANGE` only a formal lifecycle change of a monitored
+standard, RC-58, section A.42); and procurement, demonstration or trial activity with concrete
 engineering, system, test, update or operational significance. No path
 requires novelty, a non-empty E&M taxonomy, a severity threshold or a
 monetary threshold. Ordinary administrative, corporate, promotional,
