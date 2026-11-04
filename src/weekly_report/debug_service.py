@@ -48,6 +48,9 @@ def _enum(value: object) -> str | None:
     if module not in {
         f"{__package__}.contracts", f"{__package__}.validator",
         f"{__package__}.report_service", f"{__package__}.delivery",
+        # ProductionRunStatus: without it the Engineering Summary reported
+        # run.status = null (Run 41765559889).
+        f"{__package__}.production_runner",
     }:
         return None
     return str(value.value)

@@ -109,6 +109,9 @@ def test_a_tenfold_magnitude_error_is_not_grounded_and_the_exact_conversion_is()
         ("The order is worth $1.93 billion.", "訂單金額19.3億美元"),
         ("¥500 billion", "5,000億日圓"),
         ("Rs 5,000 crore", "500億印度盧比"),
+        # Run 41765559889: 달러 / ドル name no particular dollar.
+        ("19억 달러 규모 사업", "19億美元的計畫"),
+        ("総事業費は19億ドル", "總經費19億美元"),
         # A different value that a relative tolerance would have accepted.
         ("事業費は1,040億円", "經費1,000億日圓"),
         ("Ridership grew 20%.", "運量增加21%"),
@@ -131,6 +134,8 @@ def test_a_number_is_not_grounded_by_the_same_digits_in_another_unit_or_value(ev
         ("총사업비 1조 9000억 원", "總經費1兆9,000億韓元"),
         ("사업비 300억 원", "經費300億韓元"),
         ("¥500 billion", "¥5,000億"),
+        # The grounded way to write a generic dollar amount (Run 41765559889).
+        ("19억 달러 규모 사업", "$19億的計畫"),
         ("事業費は5,000～10,000億円", "經費5,000億至1兆日圓"),
         ("NT$5億元", "新臺幣5億元"),
         ("總經費5億元", "總經費5億元"),

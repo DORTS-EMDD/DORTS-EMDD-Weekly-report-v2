@@ -473,8 +473,10 @@ Transport retry 與 semantic correction 必須分開計算。
   為 UTC，週一 06:30 臺北仍是週日，會選到上上週）；所有入口共用，手動指定期間仍優先。排程為每週一 06:30
   Asia/Taipei（cron 加 timezone），仍由 WEEKLY_REPORT_SCHEDULE 與 LIVE_EMAIL_SEND 變數把關。訂閱名單由外部郵件
   清單（Google Group）擁有並自助加入、退出；V2 只知道 DEFAULT_RECIPIENTS 中設定的發送地址，不保存任何訂閱者
-  地址；RC-55 對每個設定地址保證每期至多交付一次。上線閘門：目前程式產生的報告先寄給受控地址且附件未被
-  標記後，才改寄清單；不寄政府信箱、不補寄 Run 41585675879。
+  地址；RC-55 對每個設定地址保證每期至多交付一次。上線閘門（原則不變）：目前程式產生的報告先寄給受控地址且
+  附件未被標記後，才改寄清單；公務信箱須經使用者明確授權才屬受控地址；不補寄 Run 41585675879。閘門已於
+  2026-11-04 滿足：Run 41765559889 經使用者授權寄至其公務信箱（SENT），使用者確認收到、PDF 可下載開啟且無附件
+  警告；正式部署已改寄外部郵件清單，並啟用 WEEKLY_REPORT_SCHEDULE 與 LIVE_EMAIL_SEND。
 
 ## 13. Report / Delivery
 
@@ -625,5 +627,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-56 APPLIED (2026-11-04; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied)
+CONTRACT_REVISION = RC-3..RC-56 APPLIED (2026-11-04; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```

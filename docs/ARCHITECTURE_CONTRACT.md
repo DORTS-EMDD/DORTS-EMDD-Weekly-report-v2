@@ -2172,9 +2172,21 @@ the next report, with no backfill.
 
 **Go-live gate (operations, not code).** Until a report produced by the current
 code has been delivered to a controlled address and its PDF attachment is not
-flagged by the mail provider, `DEFAULT_RECIPIENTS` stays a controlled address:
-no list, no government mailbox. Run 41585675879 is not resent and has no ledger
-entry.
+flagged by the mail provider, `DEFAULT_RECIPIENTS` stays a controlled address
+and no mailing list receives a report. A controlled address is a single mailbox
+the user names for the canary and inspects; a government mailbox qualifies only
+with the user's explicit authorisation. Run 41585675879 is not resent and has
+no ledger entry.
+
+Gate status (2026-11-04): satisfied. Run 41765559889 (commit 8611e1b, period
+2026-10-26..2026-11-01) delivered the report, with the user's explicit
+authorisation, to the user's government mailbox as the controlled address
+(Delivery SENT). The user confirmed that the message arrived and that the PDF
+downloaded and opened with no attachment warning. The deployment then set
+`DEFAULT_RECIPIENTS` to the external mailing list and enabled
+`WEEKLY_REPORT_SCHEDULE` and `LIVE_EMAIL_SEND`. Recipient addresses are
+configuration (secrets) and are not recorded here. Delivery, the reporting week,
+the schedule and subscription ownership are unchanged by the gate.
 
 **Residual risks (disclosed).** GitHub may delay or drop scheduled runs under
 load; scheduled workflows in a public repository are disabled after 60 days
@@ -2187,6 +2199,7 @@ REPORTING_WEEK = [MONDAY 00:00, NEXT MONDAY 00:00) ASIA/TAIPEI, SHOWN AS MONDAY.
 REPORTING_WEEK_OWNER = production_runner.default_period (ASIA/TAIPEI DATE OF THE RUN INSTANT)
 WEEKLY_SCHEDULE = MONDAY 06:30 ASIA/TAIPEI (cron "30 6 * * 1", timezone "Asia/Taipei")
 SUBSCRIPTION_OWNER = EXTERNAL MAILING LIST; V2 KNOWS ONLY THE CONFIGURED DISTRIBUTION ADDRESSES
+GO_LIVE_GATE = SATISFIED 2026-11-04 (CONTROLLED CANARY RUN 41765559889); DEFAULT_RECIPIENTS = EXTERNAL MAILING LIST
 ```
 
 ## B. Authoritative Owners

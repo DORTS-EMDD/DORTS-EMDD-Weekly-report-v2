@@ -79,6 +79,9 @@ class DebugArtifactTests(TestCase):
             self.assertEqual(document["run"]["report_id"], result.final_report.report_id)
         for key in REQUIRED:
             self.assertIn(key, summary)
+        # A run with technical gaps is never shown as an unknown or complete success (RC-6).
+        self.assertEqual(summary["run"]["status"], "SUCCESS_WITH_TECHNICAL_GAPS")
+        self.assertEqual(debug["observations"]["status"], "SUCCESS_WITH_TECHNICAL_GAPS")
         # Candidate counts and Event counts stay separate.
         self.assertEqual(summary["candidate_counts"]["discovered"], 336)
         self.assertEqual(summary["dedup"]["events"], 41)
