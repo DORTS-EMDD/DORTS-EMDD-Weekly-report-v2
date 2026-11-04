@@ -348,6 +348,13 @@ def observe_stage(stage: str, input_count: int | None = None):
         _STAGE.reset(token)
 
 
+def current_run_id() -> str | None:
+    """The active execution's RunTrace ``run_id``, or None outside an execution."""
+
+    active = _ACTIVE.get()
+    return None if active is None else active.run_id
+
+
 def observe_progress(stage: str, values: Any) -> None:
     observation = _STAGE.get()
     if observation is not None and observation.stage == stage:

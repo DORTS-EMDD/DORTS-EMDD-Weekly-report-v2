@@ -237,7 +237,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-52 修訂（2026-10-20～11-03）
+### RC-3～RC-55 修訂（2026-10-20～11-04）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.38、§N 與 §R。
 
@@ -458,6 +458,14 @@ Transport retry 與 semantic correction 必須分開計算。
   R1～R5、提示詞 v10、請求、complete-link 分組、fail-closed 處理皆不變；每次程序各自揭露技術缺口；批次代號加
   `-p2`、`-p3`，重放依各程序的往返記錄。helper 呼叫約為三倍。以記錄的九次 RC-48 回答作為三次程序，
   不同標註配對合併為 0，召回為 46/61、48/51、298/312；Golden 結果不變。
+* RC-55（§A.39，使用者核准，取代 §A.20 的 Actions cache 寄送紀錄）：Run 41585675879 回報 Delivery FAILED 且未留
+  紀錄，寄件備份卻有該信（備份不代表已取得最終 250）。正式郵件改為每位收件者一封，由 Delivery 唯一 owner 在獨立
+  private repository 的交付紀錄中逐人記錄：寄出前以 compare-and-swap 寫入 ATTEMPTED，觀察到最終 250 才記 SENT，
+  明確拒收或從未開始的交易記 NOT_SENT；ATTEMPTED 與 SENT 擋下再次寄送，ATTEMPTED 不會因時間過期。claim 屬於寫入
+  它的那次執行（RunTrace run_id）；寫入衝突時重讀並依 claim ID 對帳。紀錄只存 HMAC 雜湊，不存地址。人工解除只能在
+  手動執行中指名同期間、至少 24 小時前的 ATTEMPTED claim，全有或全無並留稽核；排程執行不得解除。無法讀寫紀錄、
+  claim 未確認或寫入失敗時一律 fail-closed；未設定紀錄不得寄正式郵件。workflow 接線、紀錄 repository／token 與
+  live 驗證 L1～L3 待另行核准。
 
 ## 13. Report / Delivery
 
@@ -475,7 +483,8 @@ Streamlit 只做 UI / manual operation。
 
 兩者共用同一 Email / Delivery owner。
 
-Automation retry 不得造成同一正式 artifact 重複成功寄送。
+Automation retry 不得造成同一正式 artifact 重複成功寄送；RC-55（§A.39）以 private repository 的逐人交付紀錄
+防止同一期間對同一收件者再次交付，ATTEMPTED 與 SENT 皆擋下再次寄送。
 
 ## 14. Debug
 
@@ -607,5 +616,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-52 APPLIED (2026-11-03; RC-51 reverted; RC-53 measured, not adopted)
+CONTRACT_REVISION = RC-3..RC-55 APPLIED (2026-11-04; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 workflow wiring pending)
 ```

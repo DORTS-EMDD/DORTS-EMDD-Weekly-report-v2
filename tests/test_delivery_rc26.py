@@ -1,15 +1,17 @@
-"""RC-26: reporting period, readable subject and durable delivery record."""
+"""RC-26: reporting period, readable subject and exit code.
+
+The durable delivery record of RC-26 is replaced by the RC-55 handoff ledger
+(section A.39, tests/test_delivery_rc55.py); its composition is tested here.
+"""
 
 from __future__ import annotations
 
 from datetime import date
-import json
-from pathlib import Path
 from types import SimpleNamespace
 from unittest import TestCase
 from unittest.mock import patch
 
-from src.weekly_report.delivery import DeliveryLedger, DeliveryService, DeliveryStatus
+from src.weekly_report.delivery import DeliveryStatus
 from src.weekly_report.gmail_smtp import subject_for_artifact
 from src.weekly_report.production_runner import ProductionConfigurationError, _delivery_configuration
 from src.weekly_report.report_service import ReportService
@@ -49,72 +51,48 @@ class ReportPeriodTests(TestCase):
         self.assertEqual(subject_for_artifact(_artifact()), "捷運技術週報｜2026-10-14～2026-10-20｜1 則")
 
 
-class DeliveryLedgerTests(TestCase):
-    def setUp(self) -> None:
-        import tempfile
+class DeliveryCompositionTests(TestCase):
+    """RC-55: live email is composed only with the shared handoff ledger."""
 
-        self._directory = tempfile.TemporaryDirectory()
-        self.path = Path(self._directory.name) / "ledger" / "delivery.json"
+    LIVE = {
+        "LIVE_EMAIL_SEND": "1",
+        "DEFAULT_RECIPIENTS": "team@example.test",
+        "GMAIL_USER": "sender@example.test",
+        "GMAIL_APP_PASS": "app-secret",
+        "DELIVERY_LEDGER_REPOSITORY": "DORTS-EMDD/delivery-ledger",
+        "DELIVERY_LEDGER_TOKEN": "ledger-token",
+        "DELIVERY_LEDGER_KEY": "k" * 40,
+        # Every delivery setting is explicit, so no local .env value is read.
+        "DELIVERY_RELEASE_PERIOD": "",
+        "DELIVERY_RELEASE_CLAIMS": "",
+    }
 
-    def tearDown(self) -> None:
-        self._directory.cleanup()
-
-    def _service(self, calls):
-        return DeliveryService(
-            sender=lambda artifact, recipient: calls.append(artifact.artifact_id),
-            live_email_send=True,
-            ledger=DeliveryLedger(self.path),
-        )
-
-    def test_rerun_of_the_same_period_is_a_duplicate_even_with_a_new_artifact(self) -> None:
-        calls = []
-        first = self._service(calls).deliver(_artifact(), "team@example.test")
-        # A new process (automation rerun) rebuilds a different artifact.
-        rebuilt = _artifact(summary="事件摘要 Taiwan Metro 重新產生")
-        self.assertNotEqual(rebuilt.artifact_id, first.identity.artifact_id)
-        second = self._service(calls).deliver(rebuilt, "team@example.test")
-        self.assertEqual((first.status, second.status), (DeliveryStatus.SENT, DeliveryStatus.DUPLICATE))
-        self.assertEqual(len(calls), 1)
-
-    def test_other_recipient_or_period_is_not_blocked(self) -> None:
-        calls = []
-        self._service(calls).deliver(_artifact(), "team@example.test")
-        other_recipient = self._service(calls).deliver(_artifact(), "other@example.test")
-        next_week = self._service(calls).deliver(
-            _artifact(period=(date(2026, 10, 21), date(2026, 10, 27))), "team@example.test"
-        )
-        self.assertEqual((other_recipient.status, next_week.status), (DeliveryStatus.SENT, DeliveryStatus.SENT))
-
-    def test_failed_or_staged_sends_are_not_recorded_and_no_address_is_stored(self) -> None:
-        def fail(artifact, recipient):
-            raise RuntimeError("smtp down")
-
-        failed = DeliveryService(sender=fail, live_email_send=True, ledger=DeliveryLedger(self.path))
-        self.assertEqual(failed.deliver(_artifact(), "team@example.test").status, DeliveryStatus.FAILED)
-        staged = DeliveryService(live_email_send=False, ledger=DeliveryLedger(self.path))
-        self.assertEqual(staged.deliver(_artifact(), "team@example.test").status, DeliveryStatus.STAGED)
-        self.assertFalse(self.path.exists())
-        self._service([]).deliver(_artifact(), "team@example.test")
-        stored = self.path.read_text(encoding="utf-8")
-        self.assertNotIn("team@example.test", stored)
-        self.assertEqual(json.loads(stored)["sent"][0]["period"], "2026-10-14～2026-10-20")
-
-    def test_malformed_ledger_stops_live_composition(self) -> None:
-        self.path.parent.mkdir(parents=True)
-        self.path.write_text("{\"sent\": 3}", encoding="utf-8")
-        environ = {
-            "LIVE_EMAIL_SEND": "1",
-            "DEFAULT_RECIPIENTS": "team@example.test",
-            "GMAIL_USER": "sender@example.test",
-            "GMAIL_APP_PASS": "app-secret",
-            "DELIVERY_LEDGER_PATH": str(self.path),
-        }
+    def test_live_email_needs_every_ledger_setting(self) -> None:
+        for missing in ("DELIVERY_LEDGER_REPOSITORY", "DELIVERY_LEDGER_TOKEN", "DELIVERY_LEDGER_KEY"):
+            with self.subTest(missing), self.assertRaises(ProductionConfigurationError):
+                _delivery_configuration({**self.LIVE, missing: ""})
         with self.assertRaises(ProductionConfigurationError):
-            _delivery_configuration(environ)
-        self.path.unlink()
-        service, recipient = _delivery_configuration(environ)
+            _delivery_configuration({**self.LIVE, "DELIVERY_LEDGER_KEY": "too-short"})
+        service, recipient = _delivery_configuration(self.LIVE)
         self.assertEqual(recipient, "team@example.test")
-        self.assertIsNotNone(service._ledger)
+        self.assertTrue(service.live_email_send)
+
+    def test_staged_composition_needs_no_ledger(self) -> None:
+        service, _ = _delivery_configuration({"LIVE_EMAIL_SEND": "0", "DEFAULT_RECIPIENTS": "team@example.test"})
+        self.assertFalse(service.live_email_send)
+
+    def test_release_input_is_parsed_and_a_scheduled_run_never_releases(self) -> None:
+        release = {
+            "DELIVERY_RELEASE_PERIOD": "2026-10-27..2026-11-02",
+            "DELIVERY_RELEASE_CLAIMS": f"{'a' * 16}@run1",
+        }
+        manual, _ = _delivery_configuration({**self.LIVE, **release, "GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_ACTOR": "operator"})
+        scheduled, _ = _delivery_configuration({**self.LIVE, **release, "GITHUB_EVENT_NAME": "schedule"})
+        self.assertTrue(manual._release.manual)
+        self.assertEqual(manual._release.actor, "operator")
+        self.assertFalse(scheduled._release.manual)
+        with self.assertRaises(ProductionConfigurationError):
+            _delivery_configuration({**self.LIVE, "DELIVERY_RELEASE_PERIOD": "2026-10-27..2026-11-02", "DELIVERY_RELEASE_CLAIMS": "team@example.test"})
 
 
 class CliDeliveryExitTests(TestCase):

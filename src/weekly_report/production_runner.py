@@ -32,7 +32,8 @@ from .contracts import (
     SearchPlanItem,
     SearchTerminalStatus,
 )
-from .delivery import DeliveryLedger, DeliveryReceipt, DeliveryService
+from .delivery import DeliveryLedgerAccess, DeliveryReceipt, DeliveryService, ReleaseRequest
+from .delivery_ledger import GitHubContentsLedgerStore
 from .evidence_service import EvidenceService
 from .event_identity import EventIdentity
 from .maiagent_event_identity_provider import build_maiagent_event_identity_provider
@@ -107,15 +108,40 @@ def _delivery_configuration(
             sender = build_gmail_smtp_sender(values)
         except GmailSmtpConfigurationError as exc:
             raise ProductionConfigurationError("Gmail SMTP configuration unavailable") from exc
-        # RC-26: automation keeps a durable record of successful sends so a
-        # rerun of the same period never emails a second report.
-        raw_ledger = values.get("DELIVERY_LEDGER_PATH")
-        ledger_path = raw_ledger.strip() if isinstance(raw_ledger, str) and raw_ledger.strip() else None
+        # RC-55 (section A.39): live email needs the shared handoff ledger; no
+        # entry point sends without it.
+        process = os.environ if environ is None else environ
+        repository = str(values.get("DELIVERY_LEDGER_REPOSITORY") or "").strip()
+        token = str(values.get("DELIVERY_LEDGER_TOKEN") or "").strip()
+        secret = str(values.get("DELIVERY_LEDGER_KEY") or "")
         try:
-            ledger = DeliveryLedger(ledger_path) if ledger_path else None
-        except (OSError, ValueError) as exc:
-            raise ProductionConfigurationError("delivery ledger unavailable") from exc
-        return DeliveryService(sender=sender, live_email_send=True, ledger=ledger), recipient
+            ledger = DeliveryLedgerAccess(
+                GitHubContentsLedgerStore(repository, token), secret.encode("utf-8")
+            )
+        except (TypeError, ValueError) as exc:
+            raise ProductionConfigurationError("delivery ledger configuration unavailable") from exc
+        release = None
+        release_period = str(values.get("DELIVERY_RELEASE_PERIOD") or "").strip()
+        release_claims = str(values.get("DELIVERY_RELEASE_CLAIMS") or "").strip()
+        if release_period or release_claims:
+            try:
+                release = ReleaseRequest.parse(
+                    release_period,
+                    release_claims,
+                    # A scheduled run never releases.
+                    manual=str(process.get("GITHUB_EVENT_NAME", "")).strip() != "schedule",
+                    actor=str(process.get("GITHUB_ACTOR", "") or "local"),
+                )
+            except ValueError as exc:
+                raise ProductionConfigurationError("delivery release input is malformed") from exc
+        audit = {
+            "github_run_id": str(process.get("GITHUB_RUN_ID", "") or ""),
+            "github_run_attempt": str(process.get("GITHUB_RUN_ATTEMPT", "") or ""),
+        }
+        return (
+            DeliveryService(sender=sender, live_email_send=True, ledger=ledger, release=release, audit=audit),
+            recipient,
+        )
 
     # Missing Gmail credentials are intentionally irrelevant while staged.
     return DeliveryService(live_email_send=False), recipient
@@ -457,6 +483,14 @@ class ProductionRunResult:
             if self.delivery_result.failure_signature:
                 # RC-54: where the failed send stopped (phase, type, code).
                 parts.append(f"delivery_failure={self.delivery_result.failure_signature}")
+            if self.delivery_result.diagnostic:
+                parts.append(f"delivery_diagnostic={self.delivery_result.diagnostic}")
+            if self.delivery_result.recipient_counts:
+                # RC-55: per-recipient counts and the period's ATTEMPTED claims
+                # (entry reference, claim run, age); never an address.
+                parts.append("delivery_recipients=" + _format_distribution(self.delivery_result.recipient_counts))
+            if self.delivery_result.attempted_claims:
+                parts.append("delivery_attempted=" + ";".join(self.delivery_result.attempted_claims))
         if self.failure_stage:
             parts.append(f"failure_stage={self.failure_stage}")
         if self.failure_class:

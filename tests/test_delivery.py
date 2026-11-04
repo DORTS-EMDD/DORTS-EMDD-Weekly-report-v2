@@ -11,15 +11,16 @@ from test_report_service import _semantic_provider, _workflow_result
 
 
 class DeliveryServiceTests(TestCase):
-    def _artifact(self):
+    def _validation(self):
         result = _workflow_result()
-        service = ReportService()
-        metadata = service.project_formal_metadata((result,))
-        validation = Validator(semantic_provider=_semantic_provider).validate(
+        metadata = ReportService().project_formal_metadata((result,))
+        return Validator(semantic_provider=_semantic_provider).validate(
             (result,), metadata,
             (WriterReportBlock("E1", "事件標題", "事件摘要 Taiwan Metro", "可供臺北捷運評估規劃方向"),),
         )
-        return service.assemble_final_report(validation)
+
+    def _artifact(self):
+        return ReportService().assemble_final_report(self._validation())
 
     def test_default_delivery_is_staged_without_real_email(self) -> None:
         receipt = DeliveryService().deliver(self._artifact(), "staging@example.test")
@@ -27,23 +28,37 @@ class DeliveryServiceTests(TestCase):
         self.assertFalse(receipt.successful)
 
     def test_stable_identity_prevents_duplicate_success(self) -> None:
-        calls = []
-        service = DeliveryService(sender=lambda artifact, recipient: calls.append((artifact.artifact_id, recipient)), live_email_send=True)
-        artifact = self._artifact()
-        first = service.deliver(artifact, "a@example.test")
-        second = service.deliver(artifact, "a@example.test")
+        # RC-55: the shared handoff ledger, not process memory, stops a resend.
+        from datetime import date
+
+        from tests.delivery_fakes import Clock, FakeLedgerStore, FakeSender, service
+
+        store, clock = FakeLedgerStore(), Clock()
+        artifact = ReportService().assemble_final_report(
+            self._validation(), period=(date(2026, 10, 27), date(2026, 11, 2))
+        )
+        first_sender, second_sender = FakeSender(), FakeSender()
+        first = service(store, first_sender, clock, "run1").deliver(artifact, "a@example.test")
+        second = service(store, second_sender, clock, "run2").deliver(artifact, "a@example.test")
         self.assertEqual(first.status, DeliveryStatus.SENT)
         self.assertEqual(second.status, DeliveryStatus.DUPLICATE)
-        self.assertEqual(len(calls), 1)
+        self.assertEqual((first_sender.delivered, second_sender.delivered), (["a@example.test"], []))
         self.assertEqual(first.event_ids, ("E1",))
 
     def test_failed_delivery_does_not_change_artifact(self) -> None:
-        artifact = self._artifact()
-        service = DeliveryService(sender=lambda *_: (_ for _ in ()).throw(RuntimeError()), live_email_send=True)
-        receipt = service.deliver(artifact, "a@example.test")
-        self.assertEqual(receipt.status, DeliveryStatus.FAILED)
-        self.assertEqual(artifact.content, self._artifact().content)
+        from datetime import date
 
+        from tests.delivery_fakes import Clock, FakeLedgerStore, FakeSender, login_failure, service
+
+        artifact = ReportService().assemble_final_report(
+            self._validation(), period=(date(2026, 10, 27), date(2026, 11, 2))
+        )
+        content = artifact.content
+        receipt = service(FakeLedgerStore(), FakeSender(open_error=login_failure()), Clock(), "run1").deliver(
+            artifact, "a@example.test"
+        )
+        self.assertEqual(receipt.status, DeliveryStatus.FAILED)
+        self.assertEqual(artifact.content, content)
 
 if __name__ == "__main__":
     import unittest

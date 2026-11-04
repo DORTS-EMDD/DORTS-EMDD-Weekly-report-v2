@@ -715,7 +715,9 @@ left the CLI exit code green.
   identities travel in `X-Weekly-Report-Id` and `X-Weekly-Report-Artifact`
   headers. The body is the assembled content and the PDF is attached, as
   before. (Amended by section A.25: the body is a linked-headline index.)
-* **Durable delivery record.** When `DELIVERY_LEDGER_PATH` is configured, the
+* **Durable delivery record.** (Replaced by section A.39, RC-55: the
+  per-recipient handoff ledger in a private repository.) When
+  `DELIVERY_LEDGER_PATH` is configured, the
   sole `DeliveryService` reads a JSON record of earlier successful sends and
   returns `DUPLICATE` without sending when either the artifact identity key or
   the reporting-period-plus-recipient key is present. It records both keys,
@@ -727,13 +729,14 @@ left the CLI exit code green.
   `WEEKLY_REPORT_SCHEDULE` is `enabled`. Email is sent only on an explicit
   opt-in: the dispatch input `send_email`, or the repository variable
   `LIVE_EMAIL_SEND=1` for scheduled runs; otherwise `LIVE_EMAIL_SEND=0`. The
-  delivery record persists between runs through the Actions cache, production
+  delivery record persists between runs through the Actions cache (replaced by
+  section A.39), production
   runs never overlap (`concurrency`), and workflow inputs reach the shell only
   through environment variables.
 
 ```text
 REPORT_PERIOD_ON_ARTIFACT = YES
-DELIVERY_DUPLICATE_GUARD = ARTIFACT_KEY OR PERIOD_PLUS_RECIPIENT_KEY (durable, hashed)
+DELIVERY_DUPLICATE_GUARD = ARTIFACT_KEY OR PERIOD_PLUS_RECIPIENT_KEY (durable, hashed) (replaced by section A.39)
 EMAIL_OPT_IN = DISPATCH send_email OR vars.LIVE_EMAIL_SEND == '1' (schedule)
 SCHEDULE_OPT_IN = vars.WEEKLY_REPORT_SCHEDULE == 'enabled'
 ```
@@ -1990,6 +1993,130 @@ counts each procedure's gaps.
 
 ```text
 EVENT_IDENTITY_AGREEMENT = SAME FROM PROPOSALS ONLY WHEN >= 2 OF 3 INDEPENDENT PROPOSAL PROCEDURES CONFIRMED THE PAIR
+```
+
+### A.39 RC-55 Delivery handoff ledger (2026-11-04, user-approved)
+
+Finding: run 41585675879 (1d3d3f5) ended `delivery=FAILED` and wrote no
+record, while the sending account's Sent mail holds the message. The SMTP
+exchange was not recorded, and the Sent copy is not proof of a final 250
+reply, but a send that may have been handed off left nothing that could stop
+a second send. Section A.20 recorded a send only after a successful send and
+kept the record in the Actions cache, which evicts an entry after 7 days
+without access and is scoped by branch. Section R's requirement (no second
+successful send for the same period and recipient) could not be met; this
+replaces the A.20 record (section Y: proven contradiction). The approved text
+is revision 3 of the RC-55 review. No Domain owner is added and nothing
+upstream of Delivery changes.
+
+**Owner.** `DeliveryService` is the only owner of every delivery decision:
+what to send, which state to record, what to release, and the result. The
+ledger repository is storage and decides nothing. The SMTP sender reports
+facts (where an attempt stopped, whether the final reply to the message was
+observed) and decides nothing. Workflows and entry points only supply
+configuration and operator inputs. Run summaries and traces are observations
+(section S); no decision reads them.
+
+**Unit and meaning.** One message per (reporting period, recipient); each
+message names only its own recipient. `SENT` means the SMTP server returned
+its final positive reply (250) to that message; it never means the message
+reached a mailbox.
+
+**Recipient key.** `HMAC-SHA256(DELIVERY_LEDGER_KEY,
+"v1|<period_start>|<period_end>|<address>")` with the address stripped and
+case-folded. The ledger never stores an address, a name or an unkeyed hash.
+Each period file records the key's `key_id`. The entry reference is the
+first 16 hexadecimal characters of the key.
+
+**Claim.** `claim_id = <execution run_id>.<entry reference>`, where the run
+ID is the RunTrace identifier generated once per process (section S, also for
+CLI and Streamlit). GitHub run IDs and attempts are audit fields only. Only
+the execution that wrote a claim holds it.
+
+**States and transitions.** `ATTEMPTED` (claimed; no recorded outcome) and
+`SENT` block a send; `NOT_SENT` (provably not handed off) and `RELEASED` do
+not. A claim is written only over no entry, `NOT_SENT` or `RELEASED`. Only the
+holder writes `ATTEMPTED -> SENT` (final 250 observed) or `ATTEMPTED ->
+NOT_SENT` (`SMTPSenderRefused`, `SMTPRecipientsRefused`, a 4xx/5xx reply to
+`DATA`, or a transaction it never began). `ATTEMPTED -> RELEASED` only by an
+authorized release naming that claim. `SENT` is terminal. Any other transition
+is an invariant failure. No write infers an outcome from a summary, a log or a
+mailbox, and every transition appends to the entry's history.
+
+**Time is not evidence.** No transition is triggered by a claim's age; an
+`ATTEMPTED` entry never expires and never becomes claimable. The holder checks
+its own monotonic clock immediately before beginning a message's transaction
+and, after more than one hour since its claim, does not begin it and writes
+`NOT_SENT`. Once a transaction has begun, only its reply decides.
+
+**Order of work.** Messages are built and the session is opened and
+authenticated before the first claim; a failure there writes nothing. Then,
+per recipient: read; skip if blocked; claim by compare-and-swap; send; record
+the outcome by compare-and-swap. A disconnect, timeout or unknown exception
+leaves `ATTEMPTED`. A lost session leaves later recipients unclaimed; Delivery
+does not reconnect within a run. An error after the final 250 (for example at
+`QUIT`) is a diagnostic only.
+
+**Concurrency.** Every write is a compare-and-swap on the period file's blob
+SHA through the repository contents API (a stale SHA is rejected). After a
+rejection, a transient error or a lost response Delivery re-reads and
+reconciles by `claim_id`, at most three times per write; a claim not confirmed
+held is never acted on. These attempts never send a message again.
+
+**Fail closed.** An unreadable or malformed ledger, an unconfirmed claim, a
+failed outcome write (the entry stays `ATTEMPTED`), a crash after a claim, or
+a period file with another `key_id` (never re-keyed; releases refused for it):
+nothing more is sent for the recipients concerned and the run is `FAILED`.
+`LIVE_EMAIL_SEND=1` without the ledger repository, token and key is a
+configuration failure before the pipeline; no entry point sends live email
+without the ledger. Delivery never resends automatically.
+
+**Authorized release.** Only in a manually started run (never a scheduled
+one) whose input `release_attempted_period` equals its period exactly, naming
+`<entry reference>@<execution run_id>` claims in `release_claims`. Each must
+match exactly one `ATTEMPTED` entry holding that claim, at least 24 hours old;
+otherwise nothing is released and the run is `FAILED`. Released entries record
+the claim, the releasing run, the actor and the time. `SENT`, `NOT_SENT`,
+unnamed and younger entries never change. Resending to a `SENT` recipient is
+not a Delivery capability.
+
+**Receipt and summary.** Statuses stay `STAGED`, `SENT`, `DUPLICATE` and
+`FAILED` (`FAILED` exits non-zero). The run summary shows per-recipient counts
+and, for every `ATTEMPTED` entry of the period, its entry reference, claim run
+and age, and for this run's claims `HANDOFF_OBSERVED_UNRECORDED`,
+`HANDOFF_UNKNOWN`, `CLAIM_UNCONFIRMED` or `REFUSED_UNRECORDED`. It never shows
+an address, a full key, the HMAC key or the token.
+
+**Storage and credentials.** One private repository holds only the ledger,
+one JSON file per period (`periods/<start>_<end>.json`), reached with a
+fine-grained token limited to that repository (Contents read/write) and the
+HMAC key, both secrets. The production workflow's own token stays
+`contents: read`.
+
+**History.** No entry is created for sends before this revision; run
+41585675879 is not backfilled.
+
+Implementation: `src/weekly_report/delivery.py` (owner),
+`src/weekly_report/delivery_ledger.py` (model, transition table, keys,
+contents-API store), `gmail_smtp.py` (one message per recipient over one
+session), composition in `production_runner.py`; offline acceptance tests in
+`tests/test_delivery_rc55.py` (fake compare-and-swap store with failure
+injection). Pending: the private repository, token and key; the workflow
+wiring (ledger secrets, the two release inputs, removal of the Actions-cache
+steps); and the live checks L1-L3 (compare-and-swap rejection, token scope,
+one message to the operator), each separately approved. Until the wiring
+ships, a live send fails at composition.
+
+```text
+DELIVERY_UNIT = ONE MESSAGE PER (PERIOD, RECIPIENT)
+DELIVERY_SENT = FINAL SMTP 250 OBSERVED AND RECORDED (HANDOFF, NOT MAILBOX RECEIPT)
+DELIVERY_LEDGER = PRIVATE REPOSITORY, ONE FILE PER PERIOD, COMPARE-AND-SWAP WRITES RECONCILED BY CLAIM ID, KEYED HASHES ONLY
+DELIVERY_BLOCKING_STATES = ATTEMPTED, SENT
+DELIVERY_CLAIM_OWNER = THE EXECUTION THAT WROTE IT (RUNTRACE run_id)
+DELIVERY_CLAIM_AGE = NEVER EVIDENCE; ATTEMPTED NEVER EXPIRES
+DELIVERY_SEND_WINDOW = THE HOLDER BEGINS A TRANSACTION ONLY WITHIN 1 HOUR OF ITS OWN CLAIM
+DELIVERY_RELEASE = NAMED ATTEMPTED CLAIMS ONLY, SAME PERIOD, MANUAL DISPATCH, CLAIM AT LEAST 24 HOURS OLD, ALL OR NOTHING, AUDITED
+DELIVERY_FAILURE_MODE = FAIL CLOSED (NO CONFIRMED CLAIM, NO SEND)
 ```
 
 ## B. Authoritative Owners
@@ -5147,10 +5274,11 @@ Delivery 必須具 stable delivery identity，至少可追溯：
 
 * report identity
 * artifact identity / version
-* recipient target
+* recipient target（RC-55 起為每一位收件者，§A.39）
 
-Retry 不得造成同一 artifact 重複成功寄送。自動化以持久的寄送紀錄（RC-26，§A.20）
-防止同一報告期間對同一收件目標再次成功寄送。
+Retry 不得造成同一 artifact 重複成功寄送。持久的交付紀錄（RC-55，§A.39，取代 RC-26
+的 Actions cache 紀錄）防止同一報告期間對同一收件者再次交付；任何入口只能經由 Delivery
+owner 並在設定共用紀錄後才寄出正式郵件。
 
 Report Service 不得改寫 Validation 結果；Delivery Service 不得選題、分類、修正 Evidence 或執行其他 domain decision。
 

@@ -18,7 +18,7 @@ import smtplib
 import ssl
 from typing import Final
 
-from .delivery import DeliveryFailure, DeliveryFailurePhase
+from .delivery import DeliveryFailure, DeliveryFailurePhase, SendOutcome, failure_signature
 from .pdf_renderer import pdf_filename, render_report_pdf
 from .report_service import FinalReportArtifact
 
@@ -30,7 +30,12 @@ _DELIVERY_CONFIG_KEYS: Final = (
     "GMAIL_APP_PASS",
     "DEFAULT_RECIPIENTS",
     "LIVE_EMAIL_SEND",
-    "DELIVERY_LEDGER_PATH",
+    # RC-55 (section A.39): the shared handoff ledger and an operator release.
+    "DELIVERY_LEDGER_REPOSITORY",
+    "DELIVERY_LEDGER_TOKEN",
+    "DELIVERY_LEDGER_KEY",
+    "DELIVERY_RELEASE_PERIOD",
+    "DELIVERY_RELEASE_CLAIMS",
 )
 
 
@@ -201,7 +206,7 @@ def index_for_artifact(artifact: FinalReportArtifact) -> tuple[str, str]:
 
 @dataclass(frozen=True, slots=True)
 class GmailSmtpSender:
-    """One-shot ``DeliverySender`` using Gmail's SSL SMTP endpoint."""
+    """The Gmail ``DeliverySender``: one message per recipient over one SSL session."""
 
     config: GmailSmtpConfig
     timeout_seconds: float = 30.0
@@ -225,10 +230,11 @@ class GmailSmtpSender:
             timeout_seconds=timeout_seconds,
         )
 
-    def _message(self, artifact: FinalReportArtifact, recipients: tuple[str, ...]) -> EmailMessage:
+    def _message(self, artifact: FinalReportArtifact, address: str, pdf: bytes) -> str:
+        # RC-55: one message per recipient; no other recipient appears in it.
         message = EmailMessage()
         message["From"] = self.config.user
-        message["To"] = ", ".join(recipients)
+        message["To"] = address
         message["Subject"] = subject_for_artifact(artifact)
         message["X-Weekly-Report-Id"] = artifact.report_id
         message["X-Weekly-Report-Artifact"] = f"{artifact.artifact_id} {artifact.artifact_version}"
@@ -236,69 +242,95 @@ class GmailSmtpSender:
         message.set_content(text, charset="utf-8")
         message.add_alternative(html, subtype="html", charset="utf-8")
         # The PDF carries the full assembled report; a report that cannot be
-        # rendered is not sent (the sender raises, Delivery records FAILED).
-        message.add_attachment(
-            render_report_pdf(artifact),
-            maintype="application",
-            subtype="pdf",
-            filename=pdf_filename(artifact),
-        )
-        return message
+        # rendered is not sent (opening fails, Delivery records FAILED).
+        message.add_attachment(pdf, maintype="application", subtype="pdf", filename=pdf_filename(artifact))
+        return message.as_string()
 
-    def __call__(self, artifact: FinalReportArtifact, recipient_target: str) -> None:
+    def recipients(self, recipient_target: str) -> tuple[str, ...]:
+        return parse_recipient_target(recipient_target)
+
+    def open(self, artifact: FinalReportArtifact, addresses: tuple[str, ...]) -> "GmailSmtpSession":
+        """Build every message, then connect and log in; nothing is sent here."""
+
         if not isinstance(artifact, FinalReportArtifact):
             raise TypeError("Gmail SMTP requires FinalReportArtifact")
-        recipients = parse_recipient_target(recipient_target)
         try:
-            message = self._message(artifact, recipients)
+            pdf = render_report_pdf(artifact)
+            messages = {address: self._message(artifact, address, pdf) for address in addresses}
         except Exception as exc:
             raise GmailSmtpError(
                 "formal report PDF could not be rendered",
                 phase=DeliveryFailurePhase.MESSAGE,
                 failure_class=type(exc).__name__,
             ) from None
-        # RC-54: the phase reached when a failure occurs. Only the phase, the
-        # exception type and a numeric reply code are kept.
+        # RC-54: only the phase, the exception type and a numeric reply code
+        # are kept; never server text or credentials.
         phase = DeliveryFailurePhase.CONNECT
+        smtp = None
         try:
-            context = ssl.create_default_context()
-            with smtplib.SMTP_SSL(
+            smtp = smtplib.SMTP_SSL(
                 self.config.host,
                 self.config.port,
-                context=context,
+                context=ssl.create_default_context(),
                 timeout=self.timeout_seconds,
-            ) as smtp:
-                phase = DeliveryFailurePhase.LOGIN
-                smtp.login(self.config.user, self.config.app_password)
-                phase = DeliveryFailurePhase.SENDMAIL
-                refused = smtp.sendmail(
-                    self.config.user,
-                    list(recipients),
-                    message.as_string(),
-                )
-                if refused:
-                    # smtplib returns refusals only when some recipient was
-                    # accepted; the message went out to the others.
-                    phase = DeliveryFailurePhase.REFUSED
-                    raise GmailSmtpError(
-                        "Gmail SMTP refused one or more recipients",
-                        phase=phase,
-                        failure_class="RecipientsPartiallyRefused",
-                    )
-                # The server accepted the message; leaving the block sends QUIT.
-                phase = DeliveryFailurePhase.QUIT
-        except GmailSmtpError:
-            raise
+            )
+            phase = DeliveryFailurePhase.LOGIN
+            smtp.login(self.config.user, self.config.app_password)
         except Exception as exc:
-            # Keep server, credentials, and provider response details out of
-            # receipts and deployment logs. DeliveryService supplies the
-            # public FAILED status and safe error text.
+            if smtp is not None:
+                try:
+                    smtp.close()
+                except Exception:  # noqa: BLE001 - closing a failed session
+                    pass
             raise GmailSmtpError(
-                "Gmail SMTP send failed",
+                "Gmail SMTP session could not be opened",
                 phase=phase,
                 failure_class=type(exc).__name__,
                 smtp_code=_smtp_code(exc),
             ) from None
+        return GmailSmtpSession(smtp, self.config.user, messages)
+
+
+class GmailSmtpSession:
+    """One authenticated Gmail session; reports what each send observed."""
+
+    def __init__(self, smtp: smtplib.SMTP, sender: str, messages: Mapping[str, str]) -> None:
+        self._smtp = smtp
+        self._sender = sender
+        self._messages = dict(messages)
+
+    def send(self, address: str) -> SendOutcome:
+        try:
+            refused = self._smtp.sendmail(self._sender, [address], self._messages[address])
+        except Exception as exc:  # noqa: BLE001 - reported as facts, never raised
+            code = _smtp_code(exc)
+            explicit = isinstance(exc, (smtplib.SMTPSenderRefused, smtplib.SMTPRecipientsRefused, smtplib.SMTPDataError))
+            return SendOutcome(
+                False,
+                DeliveryFailurePhase.SENDMAIL,
+                type(exc).__name__,
+                code,
+                # smtplib keeps the session after an explicit refusal unless
+                # the server closed it (421); anything else ends the session.
+                session_usable=explicit and code != 421,
+            )
+        if refused:
+            # One recipient per message, so smtplib cannot return a partial
+            # refusal; treat one as unknown rather than as a handoff.
+            return SendOutcome(False, DeliveryFailurePhase.REFUSED, "RecipientsPartiallyRefused", session_usable=False)
+        return SendOutcome(True)
+
+    def close(self) -> str | None:
+        try:
+            self._smtp.quit()
+        except Exception as exc:  # noqa: BLE001 - after the handoff, only a diagnostic
+            return failure_signature(GmailSmtpError("quit", phase=DeliveryFailurePhase.QUIT, failure_class=type(exc).__name__, smtp_code=_smtp_code(exc)))
+        finally:
+            try:
+                self._smtp.close()
+            except Exception:  # noqa: BLE001
+                pass
+        return None
 
 
 def build_gmail_smtp_sender(
@@ -316,6 +348,7 @@ __all__ = [
     "GmailSmtpError",
     "GmailSmtpConfig",
     "GmailSmtpSender",
+    "GmailSmtpSession",
     "build_gmail_smtp_sender",
     "index_for_artifact",
     "load_delivery_values",
