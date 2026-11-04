@@ -2202,6 +2202,89 @@ SUBSCRIPTION_OWNER = EXTERNAL MAILING LIST; V2 KNOWS ONLY THE CONFIGURED DISTRIB
 GO_LIVE_GATE = SATISFIED 2026-11-04 (CONTROLLED CANARY RUN 41765559889); DEFAULT_RECIPIENTS = EXTERNAL MAILING LIST
 ```
 
+### A.41 RC-57 Active discovery of normative and standard changes (2026-11-04, user-approved Domain Rule)
+
+**Requirement (user, 2026-11-04).** V2 must actively search for changes of the
+kinds the existing `NORMATIVE_CHANGE` definition (section L) describes. An
+event that passes Evidence, Scope, Temporal, Event Identity, Category,
+Taxonomy, Reportability and Validation appears in that week's formal report in
+the existing 「規範及標準動態」 section (section R, RC-41) and is delivered with
+the rest of the report. This is neither a second report nor a separate
+notification service.
+
+**Root cause.** Baseline v0.5 fixed four discovery intents, one for each of the
+four original Category families. Commit 4fdcd1b (2026-09-23) added
+`NORMATIVE_CHANGE` to section L without a discovery intent. RC-12 (section A.6)
+then removed the `operations` policy terms (including `regulation`), the only
+remaining incidental normative vocabulary. The `search-discovery-v7` plan (122
+requests) contained no normative term, so a normative event reached the report
+only when another intent found it by chance. V1's opt-in 「規範更新」 watchlist
+(27 hard-coded standards, a keyword-and-URL rule) is not ported (section V): it
+never produced an item in any of the 39 saved V1 runs that enabled it.
+
+**Decision.** A fifth discovery intent `normative` is owned by SearchPlanner and
+configured in RegionRegistry like the other four. Every one of the 13 profiles
+has governed `urban_rail_terms` and `normative_terms`
+(`docs/SEARCH_LANGUAGE_PROFILES.md` section 5). These are generic
+normative-action phrases in each language: new or revised standard, technical
+or safety standard, new or amended regulation, technical specification, formal
+guidance, and draft standard or regulation. They name no standard number,
+standards body, regulator, website or publication. `urban_rail_or_groups` uses
+`normative_terms` under the same title mode-term rule as every intent (RC-12).
+`rail_trade_press` stays technology-only: a trade-press probe with normative
+terms over 2026-09-01..11-01 found no normative article. Selected and global
+plans become 155 requests (`normative` 33). Every supported market edition has
+at least one `normative` request; Denmark remains a configuration coverage gap.
+
+**Unchanged.**
+* Search intent is not Category. A `normative` result enters the same
+  Candidate, Evidence, Scope, Temporal, Event Identity, Category, Taxonomy,
+  Reportability, Writer and Validation chain as every other result.
+  `CanonicalCandidate.discovery_intent` stays a non-authoritative projection read
+  only by the selection audit. A result from another intent can still be
+  `NORMATIVE_CHANGE`.
+* The Classifier is the only `NORMATIVE_CHANGE` owner and section L is unchanged:
+  citing an existing standard, a researcher's recommendation, a single
+  procurement specification, a rumoured future rule and ordinary advice remain
+  excluded (Golden G75-G78, G10). Reportability's "substantive normative action
+  or formal guidance" path (section N), the low-value statement and commentary
+  rules (RC-25, RC-27) and region eligibility (RC-28) are unchanged.
+* ReportService shows 「規範及標準動態」 only when it holds events.
+  Delivery (RC-55) sends one message per recipient per period: there is no
+  second message, no standards-only message and no "no update" message. The
+  subscription (RC-56), the schedule and the reporting week are unchanged.
+* No persistent standards state: a normative change is an event of the period
+  like any other; TemporalRule owns date validity, and Event Identity owns
+  same-week duplicates. There is no version registry, last-seen store or
+  cross-week ledger.
+* Nothing else is added: no watchlist, standards-body list, separate service,
+  schedule, workflow or provider, and MaiAgent does not search.
+
+**Search-only probe (2026-11-04; Google News RSS only; no publisher page,
+MaiAgent call or email).** The 33 frozen `normative` requests ran for the week
+2026-10-26..11-01: 33 attempted, 0 technical failures, 3 with results, 13 raw
+results. Over 2026-09-01..11-01 they returned 50 raw results (36 distinct
+titles) from 9 requests. Among them were source-reported normative actions, for
+example Seoul council ordinance amendments against platform-gap accidents, and
+Mexico City Metro's new vendor regulation (outside the designated regions,
+RC-28). There was also noise: a person named "Tram", a legislator's call for
+standards, and a tram project controversy. Downstream owners judge these like
+any other Candidate. General news carries few normative changes, so recall is
+modest. Tuning the vocabulary is measured coverage optimisation (section F,
+Phase 3), never a per-standard or per-site special case. Cost: 33 more Search
+requests per run; the probe week added 13 raw results before Evidence.
+
+The six health-check probe ordinals move to the 155-request plan.
+
+```text
+SEARCH_CONFIGURATION_VERSION = search-discovery-v8
+DISCOVERY_INTENTS = technology, major_incident, operations, procurement, normative
+NORMATIVE_DISCOVERY_OWNER = SearchPlanner (RegionRegistry configuration)
+NORMATIVE_CATEGORY_OWNER = Classifier (section L unchanged)
+NORMATIVE_REPORT_SECTION = 規範及標準動態 (ReportService; omitted when empty)
+NORMATIVE_NOTIFICATION = THE WEEKLY REPORT VIA RC-55 DELIVERY; NO SEPARATE MESSAGE, STATE OR SCHEDULE
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -2369,7 +2452,7 @@ HIDDEN_TRANSPORT_RETRY = FORBIDDEN
 REDIRECT_FOLLOW_COUNT = 0
 PAGINATION = ONE_PROVIDER_REQUEST_PAGE_ONLY
 EXECUTION_CONCURRENCY = SEQUENTIAL
-SEARCH_CONFIGURATION_VERSION = search-discovery-v7
+SEARCH_CONFIGURATION_VERSION = search-discovery-v8
 PROVIDER_PROFILE_ELIGIBILITY_OWNER = RegionRegistry
 ```
 
@@ -2455,7 +2538,7 @@ count/percentage, per-market, per-market/profile, per-market/profile/intent,
 per-intent success requirement, article count, or Candidate count is authorized.
 In particular, a whole market or enabled intent having no successful response
 is disclosed as unavailable runtime coverage; it is not an additional gate.
-All four intents remain required to be planned and attempted under §F.
+All five intents (four until RC-57, §A.41) remain required to be planned and attempted under §F.
 
 The rule applies to Search provider technical availability regardless of HTTP
 status, timeout/network failure, provider, market, language, intent, or ordinal.
@@ -2597,13 +2680,15 @@ TAIWAN_SELECTED_SEARCH_PLAN_ITEMS = ALLOWED
 TAIWAN_GLOBAL_SEARCH_PLAN_ITEMS = ALLOWED
 ```
 
-四個 discovery intent 使用一個 canonical typed machine representation：
+五個 discovery intent（RC-57，§A.41 新增 `normative`）使用一個 canonical typed
+machine representation：
 
 ```text
 technology
 major_incident
 operations
 procurement
+normative
 ```
 
 Provider capability is part of the same materialized RegionRegistry contract.
@@ -2629,7 +2714,7 @@ not invalidate executable planning for other markets. It remains configured and
 cannot be substituted or silently removed.
 
 Every enabled intent must retain at least one executable SearchPlanItem. Formal
-production planning retains all four required intents. A plan with no
+production planning retains all five required intents. A plan with no
 executable items fails before execution; it is not a successful zero-result
 Search.
 
@@ -2661,25 +2746,28 @@ RegionRegistry/source-of-truth owner. SearchExecutor and downstream workflow
 consume the frozen plan only.
 
 其中 `major_incident` 是 canonical machine ID，`major incident` 是同一
-semantic intent 的 human-readable display label。四組 ID/label 如下：
+semantic intent 的 human-readable display label。五組 ID/label 如下：
 
 ```text
 technology     -> technology
 major_incident -> major incident
 operations     -> operations
 procurement    -> procurement
+normative      -> normative
 ```
 
 不得以 whitespace replacement、case conversion 或各層自行 normalization
 取代 canonical mapping。Search intent 不等於 Category；`procurement` intent
-不得推導 `Category = PROCUREMENT`。
+不得推導 `Category = PROCUREMENT`，`normative` intent 不得推導
+`Category = NORMATIVE_CHANGE`。
 
-四種 discovery intent：
+五種 discovery intent：
 
 * technology
 * major incident
 * operations
 * procurement
+* normative（RC-57，§A.41：主動搜尋符合 §L `NORMATIVE_CHANGE` 定義的規範／標準變動）
 
 每個啟用 intent 至少：
 

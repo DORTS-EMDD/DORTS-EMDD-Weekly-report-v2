@@ -1453,6 +1453,9 @@ class DiscoveryIntent(StrEnum):
     MAJOR_INCIDENT = "major_incident"
     OPERATIONS = "operations"
     PROCUREMENT = "procurement"
+    # RC-57 (section A.41): active discovery of normative/standard changes.
+    # A discovery lane only; it never derives Category NORMATIVE_CHANGE.
+    NORMATIVE = "normative"
 
     @property
     def display_label(self) -> str:
@@ -1465,6 +1468,7 @@ _DISCOVERY_INTENT_DISPLAY_LABELS = MappingProxyType(
         DiscoveryIntent.MAJOR_INCIDENT: "major incident",
         DiscoveryIntent.OPERATIONS: "operations",
         DiscoveryIntent.PROCUREMENT: "procurement",
+        DiscoveryIntent.NORMATIVE: "normative",
     }
 )
 

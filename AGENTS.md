@@ -70,12 +70,13 @@ Search 只負責 discovery。
 
 Search 不得正式決定 Evidence Ready、Scope、Date validity、Category 或 Reportability。
 
-正式執行必須涵蓋四種 discovery intent：
+正式執行必須涵蓋五種 discovery intent：
 
 * technology
 * major incident
 * operations
 * procurement
+* normative（RC-57：主動搜尋符合 `NORMATIVE_CHANGE` 定義的規範／標準變動）
 
 每個啟用 intent 都必須至少 `PLANNED + ATTEMPTED`。
 
@@ -83,7 +84,7 @@ Search 不得正式決定 Evidence Ready、Scope、Date validity、Category 或 
 
 > 新技術、新材料、新方式。
 
-Search intent 不等於正式 Category。
+Search intent 不等於正式 Category；`normative` intent 不得推導 `NORMATIVE_CHANGE`。
 
 ## 6. Evidence First
 
@@ -237,7 +238,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-56 修訂（2026-10-20～11-04）
+### RC-3～RC-57 修訂（2026-10-20～11-04）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.38、§N 與 §R。
 
@@ -477,6 +478,14 @@ Transport retry 與 semantic correction 必須分開計算。
   附件未被標記後，才改寄清單；公務信箱須經使用者明確授權才屬受控地址；不補寄 Run 41585675879。閘門已於
   2026-11-04 滿足：Run 41765559889 經使用者授權寄至其公務信箱（SENT），使用者確認收到、PDF 可下載開啟且無附件
   警告；正式部署已改寄外部郵件清單，並啟用 WEEKLY_REPORT_SCHEDULE 與 LIVE_EMAIL_SEND。
+* RC-57（§A.41，使用者核定 Domain Rule）：V2 必須主動搜尋符合既有 `NORMATIVE_CHANGE`（§L）定義的規範／標準
+  變動。根因：基線的四個 discovery intent 對應原本四個 Category，4fdcd1b 新增 `NORMATIVE_CHANGE` 時未同時新增
+  discovery intent，RC-12 又移除 operations 的 policy 詞，v7 計畫的 122 次查詢沒有任何規範詞。修正：由 SearchPlanner／
+  RegionRegistry 新增第五個 discovery intent `normative`，13 個語言 profile 各有一般性的規範行動詞（新／修訂標準、
+  法規修正、技術規格、正式指引、草案），不列任何標準編號、標準組織、主管機關或網站；計畫 122 → 155 次（normative
+  33）。Search intent 不是 Category：結果照常走完 Evidence 至 Validation，Classifier 仍是唯一 Category owner，§L、
+  §N 不變；符合者進入當週週報既有「規範及標準動態」章節，沒有時省略該章節；不另寄信、不另設排程、不保存標準
+  版本狀態，Delivery（RC-55）、訂閱（RC-56）與報告週期不變；不搬 V1 watchlist。
 
 ## 13. Report / Delivery
 
@@ -627,5 +636,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-56 APPLIED (2026-11-04; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
+CONTRACT_REVISION = RC-3..RC-57 APPLIED (2026-11-04; RC-57 normative discovery intent; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```

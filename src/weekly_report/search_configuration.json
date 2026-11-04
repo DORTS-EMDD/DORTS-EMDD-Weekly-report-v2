@@ -1,5 +1,5 @@
 {
-  "configuration_version": "search-discovery-v7",
+  "configuration_version": "search-discovery-v8",
   "region_modes": [
     "selected",
     "global"
@@ -559,6 +559,28 @@
             "modernization contract",
             "delivery milestones"
           ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "metro line",
+            "metro station",
+            "subway line",
+            "light rail",
+            "tram"
+          ],
+          "normative_terms": [
+            "new standard",
+            "revised standard",
+            "standard revision",
+            "technical standard",
+            "safety standard",
+            "new regulations",
+            "amended regulations",
+            "technical specification",
+            "design guidelines",
+            "draft standard",
+            "draft regulations"
+          ]
         }
       },
       "enabled": true
@@ -724,6 +746,27 @@
             "框架協議/框架协议",
             "現代化合約/现代化合同"
           ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "地鐵",
+            "地铁",
+            "捷運",
+            "MRT",
+            "輕軌",
+            "轻轨",
+            "電車"
+          ],
+          "normative_terms": [
+            "標準修訂/标准修订",
+            "新標準/新标准",
+            "技術規範/技术规范",
+            "安全規範/安全规范",
+            "法規修正/法规修正",
+            "規範草案/规范草案",
+            "修正草案",
+            "技術指引/技术指引"
+          ]
         }
       },
       "enabled": true
@@ -873,6 +916,27 @@
             "更新契約",
             "納入計画"
           ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "地下鉄",
+            "メトロ",
+            "路面電車",
+            "都市鉄道"
+          ],
+          "normative_terms": [
+            "基準改正",
+            "新基準",
+            "技術基準",
+            "安全基準",
+            "規格改定",
+            "新規格",
+            "省令改正",
+            "規則改正",
+            "指針改定",
+            "ガイドライン策定",
+            "改正案"
+          ]
         }
       },
       "enabled": true
@@ -1021,6 +1085,27 @@
             "현대화 계약",
             "납품 일정"
           ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "지하철",
+            "도시철도",
+            "경전철",
+            "트램"
+          ],
+          "normative_terms": [
+            "기준 개정",
+            "신규 기준",
+            "기술기준",
+            "안전기준",
+            "표준 개정",
+            "규정 개정",
+            "시행규칙 개정",
+            "지침 개정",
+            "가이드라인 제정",
+            "개정안",
+            "행정예고"
+          ]
         }
       },
       "enabled": true
@@ -1168,6 +1253,26 @@
             "Modernisierungsvertrag",
             "Lieferplan"
           ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "U-Bahn",
+            "Stadtbahn",
+            "Straßenbahn",
+            "Tram"
+          ],
+          "normative_terms": [
+            "neue Norm",
+            "Normänderung",
+            "technische Norm",
+            "Sicherheitsnorm",
+            "neue Verordnung",
+            "Verordnungsänderung",
+            "technische Vorschrift",
+            "technische Spezifikation",
+            "Normentwurf",
+            "Verordnungsentwurf"
+          ]
         }
       },
       "enabled": true
@@ -1311,6 +1416,26 @@
             "contrat de modernisation",
             "calendrier de livraison"
           ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "métro",
+            "tramway",
+            "transport urbain sur rail"
+          ],
+          "normative_terms": [
+            "nouvelle norme",
+            "norme révisée",
+            "révision de la norme",
+            "norme technique",
+            "norme de sécurité",
+            "nouvelle réglementation",
+            "spécification technique",
+            "guide technique",
+            "projet de norme",
+            "projet de décret",
+            "projet d'arrêté"
+          ]
         }
       },
       "enabled": true
@@ -1452,6 +1577,26 @@
             "contrato",
             "contrato de modernización",
             "calendario de entrega"
+          ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "metro",
+            "tranvía",
+            "tren ligero"
+          ],
+          "normative_terms": [
+            "nueva norma",
+            "norma revisada",
+            "revisión de la norma",
+            "norma técnica",
+            "norma de seguridad",
+            "nuevo reglamento",
+            "reglamento técnico",
+            "especificación técnica",
+            "guía técnica",
+            "proyecto de norma",
+            "proyecto de reglamento"
           ]
         }
       },
@@ -1599,6 +1744,26 @@
             "contratto di ammodernamento",
             "programma di consegna"
           ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "metro",
+            "metropolitana",
+            "tram",
+            "ferrovia urbana"
+          ],
+          "normative_terms": [
+            "nuova norma",
+            "norma revisionata",
+            "revisione della norma",
+            "norma tecnica",
+            "norma di sicurezza",
+            "nuovo regolamento",
+            "specifica tecnica",
+            "linee guida tecniche",
+            "progetto di norma",
+            "schema di decreto"
+          ]
         }
       },
       "enabled": true
@@ -1745,6 +1910,26 @@
             "contrato de modernização",
             "calendário de entrega"
           ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "metro",
+            "metropolitana",
+            "tram",
+            "transporte ferroviário urbano"
+          ],
+          "normative_terms": [
+            "nova norma",
+            "norma revista",
+            "revisão da norma",
+            "norma técnica",
+            "norma de segurança",
+            "novo regulamento",
+            "especificação técnica",
+            "guia técnico",
+            "projeto de norma",
+            "projeto de regulamento"
+          ]
         }
       },
       "enabled": true
@@ -1888,6 +2073,25 @@
             "moderniseringscontract",
             "leveringsplanning"
           ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "metro",
+            "tram",
+            "lightrail"
+          ],
+          "normative_terms": [
+            "nieuwe norm",
+            "herziene norm",
+            "normherziening",
+            "technische norm",
+            "veiligheidsnorm",
+            "nieuwe regelgeving",
+            "technische specificatie",
+            "technische richtlijn",
+            "ontwerpnorm",
+            "ontwerpbesluit"
+          ]
         }
       },
       "enabled": true
@@ -2029,6 +2233,24 @@
             "avtal",
             "moderniseringsavtal",
             "leveransplan"
+          ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "tunnelbana",
+            "spårväg",
+            "lättbana"
+          ],
+          "normative_terms": [
+            "ny standard",
+            "reviderad standard",
+            "teknisk standard",
+            "säkerhetsstandard",
+            "nya föreskrifter",
+            "ändrade föreskrifter",
+            "teknisk specifikation",
+            "tekniska riktlinjer",
+            "förslag till föreskrifter"
           ]
         }
       },
@@ -2175,6 +2397,26 @@
             "moderniseringskontrakt",
             "leveringsplan"
           ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "metro",
+            "letbane",
+            "sporvogn",
+            "bybane"
+          ],
+          "normative_terms": [
+            "ny standard",
+            "revideret standard",
+            "teknisk standard",
+            "sikkerhedsstandard",
+            "ny bekendtgørelse",
+            "ændret bekendtgørelse",
+            "teknisk specifikation",
+            "tekniske retningslinjer",
+            "udkast til bekendtgørelse",
+            "høring"
+          ]
         }
       },
       "enabled": true
@@ -2317,6 +2559,25 @@
             "moderniseringskontrakt",
             "leveringsplan"
           ]
+        },
+        "normative": {
+          "urban_rail_terms": [
+            "T-bane",
+            "trikk",
+            "bybane"
+          ],
+          "normative_terms": [
+            "ny standard",
+            "revidert standard",
+            "teknisk standard",
+            "sikkerhetsstandard",
+            "ny forskrift",
+            "forskriftsendring",
+            "teknisk spesifikasjon",
+            "tekniske retningslinjer",
+            "forskriftsutkast",
+            "høring"
+          ]
         }
       },
       "enabled": true
@@ -2338,6 +2599,10 @@
     {
       "id": "procurement",
       "display_label": "procurement"
+    },
+    {
+      "id": "normative",
+      "display_label": "normative"
     }
   ],
   "provider_profile_bindings": [
@@ -2390,7 +2655,8 @@
         "technology": ["technology_terms", "new_material_terms"],
         "major_incident": ["accident_terms", "technical_failure_terms"],
         "operations": ["opening_service_terms"],
-        "procurement": ["award_terms", "tender_terms"]
+        "procurement": ["award_terms", "tender_terms"],
+        "normative": ["normative_terms"]
       },
       "provider_target": "google_news_rss",
       "mode_terms_in_title": true
@@ -2406,7 +2672,8 @@
         "technology": ["new_method_terms"],
         "major_incident": ["accident_terms"],
         "operations": ["opening_service_terms"],
-        "procurement": ["award_terms"]
+        "procurement": ["award_terms"],
+        "normative": ["normative_terms"]
       },
       "provider_target": "google_news_rss",
       "market_ids": ["united_kingdom"],

@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.weekly_report.contracts import SearchProviderId  # noqa: E402
+from src.weekly_report.contracts import DiscoveryIntent, SearchProviderId  # noqa: E402
 from src.weekly_report.region_registry import CONFIGURATION_PATH, RegionRegistry  # noqa: E402
 
 
@@ -98,8 +98,9 @@ def _extract_governed_vocabulary(language: str) -> dict[str, dict[str, dict[str,
         if not groups:
             raise ValueError(f"missing governed vocabulary groups in {current_profile}/{intent}")
         profiles[current_profile][intent] = groups
-    if not profiles or any(set(intents) != {"technology", "major_incident", "operations", "procurement"} for intents in profiles.values()):
-        raise ValueError("governance vocabulary must expose all four intents for every profile")
+    required = {intent.value for intent in DiscoveryIntent}
+    if not profiles or any(set(intents) != required for intents in profiles.values()):
+        raise ValueError("governance vocabulary must expose every discovery intent for every profile")
     return profiles
 
 
@@ -142,7 +143,7 @@ def _validate_governance_documents(registry: RegionRegistry) -> None:
         r"REDIRECT_FOLLOW_COUNT\s*=\s*0",
         r"PAGINATION\s*=\s*ONE_PROVIDER_REQUEST_PAGE_ONLY",
         r"EXECUTION_CONCURRENCY\s*=\s*SEQUENTIAL",
-        r"SEARCH_CONFIGURATION_VERSION\s*=\s*search-discovery-v7",
+        r"SEARCH_CONFIGURATION_VERSION\s*=\s*search-discovery-v8",
         r"PROVIDER_PROFILE_ELIGIBILITY_OWNER\s*=\s*RegionRegistry",
     ):
         if re.search(marker, architecture) is None:
@@ -166,7 +167,7 @@ def _validate_governance_documents(registry: RegionRegistry) -> None:
     if registry.selected_profile_ids != governed_profile_ids:
         raise ValueError("runtime selected profiles do not match governance content")
 
-    intent_block = language.split("The four discovery intents use one canonical machine-ID mapping:", 1)[-1]
+    intent_block = language.split("The five discovery intents use one canonical machine-ID mapping:", 1)[-1]
     intent_block = intent_block.split("`major_incident` is", 1)[0]
     governed_intents = tuple(re.findall(r"(?m)^([a-z_]+)\s+->\s+(.+)$", intent_block))
     runtime_intents = tuple(

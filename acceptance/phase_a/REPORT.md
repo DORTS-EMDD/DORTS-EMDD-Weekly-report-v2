@@ -2400,3 +2400,27 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - 不再以提示詞或其他機制處理此案。
   - Event Identity 維持 RC-52 與提示詞 v10。
   - merge main 仍需另行授權。
+
+
+## 60. RC-57：主動搜尋規範／標準變動（§A.41，使用者核定 Domain Rule，2026-11-04）
+
+- 需求：V2 必須主動搜尋符合既有 `NORMATIVE_CHANGE`（§L）定義的事件；通過全部正式 owner 者進入當週週報既有「規範及標準動態」章節，隨週報一起寄送；沒有時省略章節，不另寄信。
+- 根因：基線四個 discovery intent 對應原四個 Category；4fdcd1b 新增 `NORMATIVE_CHANGE` 時沒有對應 intent；RC-12 移除 operations 的 policy 詞。v7 計畫 122 次查詢沒有任何規範詞（離線檢查：0 筆）。
+- 修改（`search-discovery-v8`）：
+  - SearchPlanner／RegionRegistry 新增第五個 discovery intent `normative`。
+  - 13 個語言 profile 各有一般性規範行動詞，不含標準編號、標準組織、主管機關或網站。
+  - 計畫 122 → 155 次（normative 33），21 個支援版本都有 normative 查詢；丹麥仍為設定性缺口。
+  - Classifier、Reportability、ReportService、Delivery、排程、訂閱、報告週期皆未修改。
+- 僅搜尋的實測（Google News RSS；未抓出版者頁面、未呼叫 MaiAgent、未寄信）：
+
+| 期間 | normative 查詢 | 技術失敗 | 有結果的查詢 | 原始結果 |
+| --- | --- | --- | --- | --- |
+| 2026-10-26～11-01 | 33 | 0 | 3 | 13 |
+| 2026-09-01～11-01 | 33 | 0 | 9 | 50（36 個不同標題） |
+
+  - 找到的規範行動，例如首爾市議員提出的月臺間隙事故預防條例修正案、墨西哥市地鐵攤商新規（不在指定地區，RC-28 會排除）。
+  - 雜訊，例如名為 Tram 的人物、要求制定標準的議員發言、輕軌計畫爭議。這些都交由下游 owner 依一般規則判定。
+  - 一般新聞中的規範變動本來就少，召回有限；詞彙調整屬 §F Phase 3 的量測式優化。
+  - 專業軌道媒體加規範詞的兩次試查詢只得到 1 筆非規範文章，因此 `rail_trade_press` 不變。
+- 測試：新增 `tests/test_rc57_normative_discovery.py`（12 項）。乾淨匯出（HEAD＋本次檔案）1401 passed；Golden contract 21 passed；搜尋設定一致性檢查 `--check` 通過。
+- 未做：Live 正式執行。本次為本機 commit，未 push；main 經使用者授權 fast-forward 後，每週排程才會使用新計畫。
