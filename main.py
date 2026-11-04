@@ -74,22 +74,57 @@ def _write_outputs(directory: Path, result) -> bool:
 
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "run_summary.txt").write_text(result.summary() + chr(10), encoding="utf-8")
+    written = {"run_summary": "run_summary.txt"}
     audit = getattr(result, "selection_audit", None)
     if audit is not None:
         # Observer-only projection of every candidate's path (RC-31).
         (directory / "selection_audit.json").write_text(
             json.dumps(audit, ensure_ascii=False, indent=1, sort_keys=False) + chr(10), encoding="utf-8"
         )
+        written["selection_audit"] = "selection_audit.json"
+    pdf_ok = True
     artifact = result.final_report
-    if artifact is None:
-        return True
-    (directory / f"{artifact.report_id}.md").write_text(artifact.content, encoding="utf-8")
+    if artifact is not None:
+        (directory / f"{artifact.report_id}.md").write_text(artifact.content, encoding="utf-8")
+        written["report_markdown"] = f"{artifact.report_id}.md"
+        try:
+            (directory / pdf_filename(artifact)).write_bytes(render_report_pdf(artifact))
+            written["report_pdf"] = pdf_filename(artifact)
+        except Exception as exc:
+            print(f"pdf=FAILED failure_class={type(exc).__name__}")
+            pdf_ok = False
+    _write_debug_artifacts(directory, result, written)
+    return pdf_ok
+
+
+def _write_debug_artifacts(directory: Path, result, written: dict[str, str]) -> None:
+    """Section S: Developer Debug and Engineering Summary, observation only.
+
+    Both come from the same result and RunTrace; a failure to build them is
+    recorded in the file and never changes the run's outcome or exit code.
+    """
+
+    from weekly_report.debug_service import (
+        DEBUG_ARTIFACT_VERSION,
+        build_developer_debug,
+        build_engineering_summary,
+        debug_artifact_names,
+    )
+
     try:
-        (directory / pdf_filename(artifact)).write_bytes(render_report_pdf(artifact))
-    except Exception as exc:
-        print(f"pdf=FAILED failure_class={type(exc).__name__}")
-        return False
-    return True
+        debug_name, summary_name = debug_artifact_names(result.period_end)
+    except Exception as exc:  # noqa: BLE001 - observation must not change the outcome
+        print(f"debug_artifacts=UNAVAILABLE failure_class={type(exc).__name__}")
+        return
+    files = {**written, "developer_debug": debug_name, "engineering_summary": summary_name}
+    for name, build in ((debug_name, build_developer_debug), (summary_name, build_engineering_summary)):
+        try:
+            content = build(result, files=files)
+        except Exception as exc:  # noqa: BLE001 - observation must not change the outcome
+            content = {"version": DEBUG_ARTIFACT_VERSION, "unavailable": type(exc).__name__}
+        (directory / name).write_text(
+            json.dumps(content, ensure_ascii=False, indent=1, sort_keys=False) + chr(10), encoding="utf-8"
+        )
 
 
 if __name__ == "__main__":

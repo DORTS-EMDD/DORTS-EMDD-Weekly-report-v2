@@ -355,6 +355,179 @@ def current_run_id() -> str | None:
     return None if active is None else active.run_id
 
 
+# Section S: the Developer Debug and Engineering Summary artifacts. Both are
+# projections of one run's already-produced result and its RunTrace identity;
+# no production decision reads them, and they recompute no Domain decision.
+DEBUG_ARTIFACT_VERSION = "debug-artifacts-v1"
+REPORT_TYPE = "weekly"
+
+
+def debug_artifact_names(period_end: Any) -> tuple[str, str]:
+    """``developer_debug_<report_type>_<date>.json`` and ``engineering_summary_...`` (section S)."""
+
+    day = period_end.isoformat()
+    return f"developer_debug_{REPORT_TYPE}_{day}.json", f"engineering_summary_{REPORT_TYPE}_{day}.json"
+
+
+def _plain(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {str(key): _plain(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(item) for item in value]
+    if isinstance(value, Enum):
+        return value.value
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    if hasattr(value, "__slots__") and not isinstance(value, (str, int, float, bool)):
+        return {name: _plain(getattr(value, name)) for name in value.__slots__}
+    return value
+
+
+def _top(distribution: Mapping[str, int], limit: int = 5) -> list[dict[str, Any]]:
+    ranked = sorted(dict(distribution).items(), key=lambda item: (-item[1], item[0]))
+    return [{"reason": key, "count": count} for key, count in ranked[:limit]]
+
+
+def _run_identity(result: Any) -> dict[str, Any]:
+    active = _ACTIVE.get()
+    report = getattr(result, "final_report", None)
+    github = dict(active._github) if active is not None else {"github_run_id": None, "github_run_attempt": None}
+    return {
+        "run_id": None if active is None else active.run_id,
+        "report_id": None if report is None else report.report_id,
+        **github,
+    }
+
+
+def _delivery(result: Any) -> dict[str, Any] | None:
+    receipt = getattr(result, "delivery_result", None)
+    if receipt is None:
+        return None
+    # The receipt's identity holds the recipient target; it is never copied.
+    return {
+        "status": _enum(receipt.status),
+        "failure_signature": receipt.failure_signature,
+        "diagnostic": getattr(receipt, "diagnostic", None),
+        "recipient_counts": dict(getattr(receipt, "recipient_counts", {}) or {}),
+        "attempted_claims": list(getattr(receipt, "attempted_claims", ()) or ()),
+    }
+
+
+_DEBUG_EXCLUDED = frozenset({"final_report", "delivery_result", "selection_audit", "stage_counts"})
+
+
+def build_developer_debug(result: Any, *, files: Mapping[str, str]) -> dict[str, Any]:
+    """Full Debug (section S): every observation the run already projected, safe fields only."""
+
+    observed = {
+        name: _plain(getattr(result, name))
+        for name in getattr(type(result), "__slots__", ())
+        if name not in _DEBUG_EXCLUDED
+    }
+    audit = getattr(result, "selection_audit", None) or {}
+    return {
+        "artifact": "developer_debug",
+        "version": DEBUG_ARTIFACT_VERSION,
+        "run": _run_identity(result),
+        "stage_counts": dict(getattr(result, "stage_counts", {}) or {}),
+        "observations": observed,
+        "delivery": _delivery(result),
+        # The candidate forensic trace is the selection audit (RC-31); it is
+        # referenced, not copied.
+        "candidate_forensic_trace": {
+            "file": files.get("selection_audit"),
+            "audit_version": audit.get("audit_version") if isinstance(audit, Mapping) else None,
+        },
+        "files": dict(files),
+    }
+
+
+def build_engineering_summary(result: Any, *, files: Mapping[str, str]) -> dict[str, Any]:
+    """The section S Engineering Summary, from the same result and RunTrace identity."""
+
+    counts = dict(getattr(result, "stage_counts", {}) or {})
+    report = getattr(result, "final_report", None)
+    search_failures = getattr(result, "search_failure_count", None)
+    return {
+        "artifact": "engineering_summary",
+        "version": DEBUG_ARTIFACT_VERSION,
+        "run": {
+            **_run_identity(result),
+            "status": _enum(result.status),
+            "failure_stage": result.failure_stage,
+            "failure_class": result.failure_class,
+        },
+        "config": {
+            "report_type": REPORT_TYPE,
+            "region_mode": _enum(result.region_mode),
+            "period_start": result.period_start.isoformat(),
+            "period_end": result.period_end.isoformat(),
+        },
+        "search_coverage": {
+            "planned": counts.get("search_plan"),
+            "attempted": counts.get("search_attempts"),
+            "unattempted": counts.get("search_unattempted"),
+            "technical_failures": search_failures,
+            "degraded": bool(search_failures),
+            "failure_classes": dict(result.search_failure_class_distribution),
+            "failure_reasons": dict(result.search_failure_reason_distribution),
+        },
+        # Candidate counts and Event counts stay separate (section S).
+        "candidate_counts": {
+            "discovered": counts["evidence_results"] + counts.get("technical_gaps_evidence", 0)
+            if "evidence_results" in counts
+            else None,
+            "evidence_ready": result.evidence_ready_count,
+            "evidence_rejected": result.evidence_rejected_count,
+            "in_scope": counts.get("temporal_results"),
+            "date_valid": counts.get("event_identity_records"),
+        },
+        "dedup": {
+            "records": counts.get("event_identity_records"),
+            "events": counts["category_results"] + counts.get("technical_gaps_category", 0)
+            if "category_results" in counts
+            else None,
+            "diagnostics": dict(result.event_identity_diagnostic_distribution),
+            "unconfirmed": dict(result.event_identity_unconfirmed_distribution),
+            "confirmed_pairs": dict(result.event_identity_confirmed_pairs),
+        },
+        "event_counts": {
+            "categorized": counts.get("category_results"),
+            "reportable": counts.get("ordered_results"),
+            "formal_metadata": counts.get("formal_metadata"),
+            "metadata_exclusions": counts.get("metadata_exclusions"),
+            "generated": counts.get("writer_blocks"),
+            "validated": counts.get("validation_passed"),
+            "final_report_events": counts.get("final_report_events"),
+        },
+        "top_rejection_reasons": {
+            "evidence_reasons": _top(result.evidence_reject_reason_distribution),
+            "evidence_gates": _top(result.evidence_rejection_gate_distribution),
+        },
+        "provider_failures": {
+            "technical_gaps": counts.get("technical_gaps", 0),
+            "technical_gap_signatures": dict(result.technical_gap_signature_distribution),
+            "search_failure_classes": dict(result.search_failure_class_distribution),
+        },
+        "validation_failures": {"count": counts.get("validation_failed")},
+        "final_events": {
+            "count": None if report is None else report.event_count,
+            "event_ids": [] if report is None else [event.event_id for event in report.events],
+            "sections": {} if report is None else {section.category: len(section.events) for section in report.sections},
+        },
+        "delivery": _delivery(result),
+        "artifacts": {
+            "report_id": None if report is None else report.report_id,
+            "artifact_id": None if report is None else report.artifact_id,
+            "files": dict(files),
+        },
+        # Section P: the platform role is external configuration and no
+        # reference version is declared yet, so none is claimed.
+        "declared_maiagent_role_version": None,
+        "declared_maiagent_role_status": "NOT_DECLARED",
+    }
+
+
 def observe_progress(stage: str, values: Any) -> None:
     observation = _STAGE.get()
     if observation is not None and observation.stage == stage:

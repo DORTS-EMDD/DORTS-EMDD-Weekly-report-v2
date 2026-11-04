@@ -107,8 +107,10 @@ def test_the_cli_writes_the_audit_beside_the_report(tmp_path):
         assert main._write_outputs(tmp_path, result)
     audit = json.loads((tmp_path / "selection_audit.json").read_text(encoding="utf-8"))
     assert audit["report_id"] == result.final_report.report_id
+    # Section S (F4): the Developer Debug and Engineering Summary files sit beside it.
     assert {path.name for path in tmp_path.iterdir()} == {
-        "run_summary.txt", "selection_audit.json", f"{result.final_report.report_id}.md", f"{result.final_report.report_id}.pdf"
+        "run_summary.txt", "selection_audit.json", f"{result.final_report.report_id}.md", f"{result.final_report.report_id}.pdf",
+        "developer_debug_weekly_2026-09-18.json", "engineering_summary_weekly_2026-09-18.json",
     }
 
 
