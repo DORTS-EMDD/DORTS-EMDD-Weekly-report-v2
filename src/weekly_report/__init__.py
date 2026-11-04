@@ -40,16 +40,12 @@ from .classifier import (
     Classifier,
 )
 from .category_semantic_provider import (
-    CATEGORY_SEMANTIC_HELPER_VERSION,
     CATEGORY_SEMANTIC_PROMPT_VERSION,
     CATEGORY_SEMANTIC_SCHEMA_VERSION,
     MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION,
     MaiAgentCategorySemanticProvider,
     MaiAgentCategorySemanticProviderConfig,
-    CategorySemanticProvider,
-    CategorySemanticProviderConfig,
     build_maiagent_category_classifier,
-    build_category_classifier,
 )
 from .evidence_service import EvidenceService
 from .scope_classifier import (
@@ -84,14 +80,11 @@ __all__ = [
     "CategoryResult",
     "CategorySemanticHelper",
     "CategorySemanticHelperResult",
-    "CategorySemanticProvider",
-    "CategorySemanticProviderConfig",
     "CategorySemanticRequest",
     "CategorySemanticResponse",
     "CategoryState",
     "EventDecisionRecord",
     "Classifier",
-    "CATEGORY_SEMANTIC_HELPER_VERSION",
     "CATEGORY_SEMANTIC_PROMPT_VERSION",
     "CATEGORY_SEMANTIC_SCHEMA_VERSION",
     "MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION",
@@ -141,5 +134,4 @@ __all__ = [
     "TaxonomySemanticRequest",
     "TaxonomyStageFailure",
     "build_maiagent_category_classifier",
-    "build_category_classifier",
 ]

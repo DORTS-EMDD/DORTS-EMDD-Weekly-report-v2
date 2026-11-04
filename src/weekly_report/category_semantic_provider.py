@@ -1,4 +1,4 @@
-"""Configured Responses API adapter for the Classifier's semantic helper.
+"""MaiAgent Structured Helper adapter for the Classifier's Category proposal.
 
 The adapter has no Category authority. It sends only CategorySemanticRequest,
 returns a strict structured proposal, and records non-decision provenance.
@@ -10,10 +10,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 import json
 import os
-from typing import Any, Protocol
-from urllib.error import HTTPError, URLError
+from typing import Any
 from urllib.parse import quote, urlsplit
-from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from .classifier import (
     CategorySemanticHelperResult,
@@ -37,13 +35,9 @@ from .maiagent_transport import (
 
 CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v3"
 CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v5"
-CATEGORY_SEMANTIC_HELPER_VERSION = "responses-adapter-v1"
 MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION = "maiagent-chatbot-adapter-v2"
 MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER = "maiagent-chatbot-completions"
 MAIAGENT_CATEGORY_MESSAGE_VERSION = "category-full-response-contract-v2"
-_ENV_ENDPOINT = "CATEGORY_SEMANTIC_API_URL"
-_ENV_MODEL = "CATEGORY_SEMANTIC_MODEL"
-_ENV_API_KEY = "CATEGORY_SEMANTIC_API_KEY"
 _MAIAGENT_ENV_API_BASE = "MAIAGENT_API_BASE"
 _MAIAGENT_ENV_API_KEY = "MAIAGENT_API_KEY"
 _MAIAGENT_ENV_STRUCTURED_HELPER_CHATBOT_ID = "MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID"
@@ -52,11 +46,6 @@ _MAIAGENT_CONFIG_KEYS = (
     _MAIAGENT_ENV_API_KEY,
     _MAIAGENT_ENV_STRUCTURED_HELPER_CHATBOT_ID,
 )
-
-
-_SYSTEM_PROMPT = """You are a constrained semantic advisor to Classifier, the sole authoritative Category decision owner.
-Use only the supplied JSON input and its guidance. Do not browse, search, retrieve external information, or infer from discovery metadata. Do not prefer a source by order, publisher, canonical status, popularity, or priority. Preserve each source's claims separately. Return citations as a supplied source_ref plus the sentence_ids of that source that support the proposal; never copy or retype source text or identifiers. Citations support the proposal as a whole; do not label citations as support or conflict and do not calculate offsets.
-Return only the requested structured JSON proposal, with no surrounding prose. Classifier validates the proposal and owns the terminal decision. Do not change Event Groups or decide taxonomy or reportability."""
 
 
 _CITATION_SCHEMA: dict[str, Any] = {
@@ -203,204 +192,6 @@ def build_maiagent_category_model_input(
             "json_schema": _CATEGORY_RESPONSE_SCHEMA,
         },
     }
-
-
-@dataclass(frozen=True, slots=True)
-class CategorySemanticProviderConfig:
-    endpoint: str
-    model_identifier: str
-    api_key: str
-    timeout_seconds: float = MAIAGENT_HELPER_TIMEOUT_SECONDS
-    provider_identifier: str = "responses-api-compatible"
-
-    def __post_init__(self) -> None:
-        parsed = urlsplit(self.endpoint)
-        if not parsed.scheme or not parsed.netloc or parsed.query or parsed.fragment:
-            raise ValueError("Category semantic endpoint must be an absolute URL without query or fragment")
-        if parsed.scheme != "https" and parsed.hostname not in {"localhost", "127.0.0.1"}:
-            raise ValueError("Category semantic endpoint must use HTTPS")
-        if not self.model_identifier.strip() or not self.api_key.strip():
-            raise ValueError("Category semantic model and API key are required")
-        if self.timeout_seconds <= 0:
-            raise ValueError("timeout_seconds must be positive")
-
-    @classmethod
-    def from_environment(
-        cls,
-        environ: Mapping[str, str] | None = None,
-    ) -> "CategorySemanticProviderConfig | None":
-        values = os.environ if environ is None else environ
-        endpoint = values.get(_ENV_ENDPOINT, "").strip()
-        model = values.get(_ENV_MODEL, "").strip()
-        api_key = values.get(_ENV_API_KEY, "").strip()
-        if not (endpoint and model and api_key):
-            return None
-        return cls(endpoint=endpoint, model_identifier=model, api_key=api_key)
-
-
-class JsonHttpTransport(Protocol):
-    def __call__(
-        self,
-        endpoint: str,
-        *,
-        headers: Mapping[str, str],
-        body: bytes,
-        timeout_seconds: float,
-    ) -> bytes:
-        """Make one JSON HTTP request and return its response body."""
-
-
-class _NoRedirect(HTTPRedirectHandler):
-    def redirect_request(self, req: Request, fp: Any, code: int, msg: str, headers: Any, newurl: str):
-        return None
-
-
-class UrllibJsonTransport:
-    """Minimal HTTPS JSON transport. It performs one request and no retries."""
-
-    def __call__(
-        self,
-        endpoint: str,
-        *,
-        headers: Mapping[str, str],
-        body: bytes,
-        timeout_seconds: float,
-    ) -> bytes:
-        request = Request(endpoint, data=body, headers=dict(headers), method="POST")
-        opener = build_opener(_NoRedirect)
-        try:
-            with opener.open(request, timeout=timeout_seconds) as response:
-                return response.read()
-        except (HTTPError, URLError, TimeoutError, OSError) as exc:
-            raise RuntimeError("Category semantic provider transport failed") from exc
-
-
-class CategorySemanticProvider:
-    """Call one configured structured-output model and return its proposal."""
-
-    def __init__(
-        self,
-        config: CategorySemanticProviderConfig,
-        *,
-        transport: JsonHttpTransport | None = None,
-    ) -> None:
-        self._config = config
-        self._transport = transport or UrllibJsonTransport()
-
-    def __call__(self, request: CategorySemanticRequest) -> CategorySemanticHelperResult:
-        if not isinstance(request, CategorySemanticRequest):
-            raise TypeError("CategorySemanticProvider accepts only CategorySemanticRequest")
-        body = json.dumps(
-            {
-                "model": self._config.model_identifier,
-                "instructions": _SYSTEM_PROMPT,
-                "input": json.dumps(request.as_payload(), ensure_ascii=False, separators=(",", ":")),
-                "text": {
-                    "format": {
-                        "type": "json_schema",
-                        "name": "category_semantic_proposal",
-                        "strict": True,
-                        "schema": _CATEGORY_RESPONSE_SCHEMA,
-                    }
-                },
-                "store": False,
-            },
-            ensure_ascii=False,
-            separators=(",", ":"),
-        ).encode("utf-8")
-        provenance = self._provenance()
-        try:
-            response_bytes = self._transport(
-                self._config.endpoint,
-                headers={
-                    "Authorization": f"Bearer {self._config.api_key}",
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                },
-                body=body,
-                timeout_seconds=self._config.timeout_seconds,
-            )
-        except Exception as exc:
-            raise CategorySemanticProviderFailure(provenance) from exc
-        try:
-            proposal = _parse_provider_response(response_bytes)
-        except InvalidCategorySemanticResponse as exc:
-            raise InvalidCategorySemanticResponse(str(exc), provenance=provenance) from exc
-        return CategorySemanticHelperResult(
-            proposal=proposal,
-            provenance=provenance,
-        )
-
-    def _provenance(self) -> dict[str, str]:
-        return {
-            "provider_identifier": self._config.provider_identifier,
-            "model_identifier": self._config.model_identifier,
-            "prompt_version": CATEGORY_SEMANTIC_PROMPT_VERSION,
-            "schema_version": CATEGORY_SEMANTIC_SCHEMA_VERSION,
-            "helper_version": CATEGORY_SEMANTIC_HELPER_VERSION,
-        }
-
-
-class CategorySemanticProviderFailure(RuntimeError):
-    """Transport/provider failure with redacted non-decision provenance."""
-
-    def __init__(self, provenance: Mapping[str, str]) -> None:
-        super().__init__("Category semantic provider request failed")
-        self.provenance = dict(provenance)
-
-
-def _parse_provider_response(response_bytes: bytes) -> dict[str, Any]:
-    if not response_bytes:
-        raise InvalidCategorySemanticResponse("provider returned an empty response")
-    try:
-        envelope = json.loads(response_bytes)
-    except (UnicodeDecodeError, TypeError, ValueError) as exc:
-        raise InvalidCategorySemanticResponse("provider response envelope is invalid JSON") from exc
-    if not isinstance(envelope, Mapping):
-        raise InvalidCategorySemanticResponse("provider response envelope must be an object")
-    if envelope.get("status") != "completed" or envelope.get("error"):
-        raise InvalidCategorySemanticResponse("provider response is not completed or contains an error")
-
-    output = envelope.get("output")
-    if not isinstance(output, list):
-        raise InvalidCategorySemanticResponse("provider response has no structured output")
-    text_parts: list[str] = []
-    for item in output:
-        if not isinstance(item, Mapping):
-            continue
-        for content in item.get("content", ()) if isinstance(item.get("content"), list) else ():
-            if not isinstance(content, Mapping):
-                continue
-            if content.get("type") == "refusal":
-                raise InvalidCategorySemanticResponse("provider refused the Category proposal")
-            if content.get("type") == "output_text" and isinstance(content.get("text"), str):
-                text_parts.append(content["text"])
-    if len(text_parts) != 1 or not text_parts[0].strip():
-        raise InvalidCategorySemanticResponse("provider returned no single structured proposal")
-    try:
-        proposal = json.loads(text_parts[0])
-    except (TypeError, ValueError) as exc:
-        raise InvalidCategorySemanticResponse("provider proposal is invalid JSON") from exc
-    if not isinstance(proposal, dict):
-        raise InvalidCategorySemanticResponse("provider proposal must be a JSON object")
-    return proposal
-
-
-def build_category_classifier(
-    config: CategorySemanticProviderConfig | None = None,
-    *,
-    transport: JsonHttpTransport | None = None,
-) -> Classifier:
-    """Build the reusable production Category component from explicit config.
-
-    Missing configuration produces the existing fail-closed Classifier path.
-    This is the composition seam; it intentionally does not create a pipeline.
-    """
-
-    resolved = config if config is not None else CategorySemanticProviderConfig.from_environment()
-    if resolved is None:
-        return Classifier()
-    return Classifier(CategorySemanticProvider(resolved, transport=transport))
 
 
 @dataclass(frozen=True, slots=True)

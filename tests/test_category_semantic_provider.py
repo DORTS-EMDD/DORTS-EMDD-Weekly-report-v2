@@ -20,14 +20,11 @@ from src.weekly_report.contracts import (
 import src.weekly_report.classifier as classifier_module
 
 from src.weekly_report.category_semantic_provider import (
-    CATEGORY_SEMANTIC_HELPER_VERSION,
     CATEGORY_SEMANTIC_PROMPT_VERSION,
     CATEGORY_SEMANTIC_SCHEMA_VERSION,
     MAIAGENT_CATEGORY_MESSAGE_VERSION,
     MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER,
     MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION,
-    CategorySemanticProvider,
-    CategorySemanticProviderConfig,
     MaiAgentCategorySemanticProvider,
     MaiAgentCategorySemanticProviderConfig,
     MaiAgentHttpResponse,
@@ -35,7 +32,6 @@ from src.weekly_report.category_semantic_provider import (
     _MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
     build_maiagent_category_schema,
     build_maiagent_category_model_input,
-    build_category_classifier,
     build_maiagent_category_classifier,
 )
 from src.weekly_report.classifier import CategoryProposalViolation, CategorySemanticRequest, Classifier
@@ -54,19 +50,6 @@ from src.weekly_report.contracts import (
 )
 
 
-class _RecordedTransport:
-    def __init__(self, response: bytes | None = None, error: Exception | None = None):
-        self.response = response
-        self.error = error
-        self.calls = []
-
-    def __call__(self, endpoint, *, headers, body, timeout_seconds):
-        self.calls.append((endpoint, dict(headers), body, timeout_seconds))
-        if self.error:
-            raise self.error
-        return self.response if self.response is not None else b""
-
-
 class _RecordedMaiAgentTransport:
     def __init__(self, response=None, error: Exception | None = None):
         self.response = response
@@ -78,14 +61,6 @@ class _RecordedMaiAgentTransport:
         if self.error:
             raise self.error
         return self.response
-
-
-def _config():
-    return CategorySemanticProviderConfig(
-        endpoint="https://provider.example/v1/responses",
-        model_identifier="configured-category-model",
-        api_key="test-secret",
-    )
 
 
 def _record(candidate_id="source-1", body="The operator began a signalling pilot."):
@@ -148,23 +123,6 @@ def _proposal(record, *, state=CategoryState.CATEGORY_ASSIGNED, category_id=Cate
         "category_resolution_reason": CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION.value,
         "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
     }
-
-
-_MISSING = object()
-
-
-def _envelope(proposal, *, status="completed"):
-    envelope = {
-        "output": [
-            {
-                "type": "message",
-                "content": [{"type": "output_text", "text": json.dumps(proposal)}],
-            }
-        ],
-    }
-    if status is not _MISSING:
-        envelope["status"] = status
-    return json.dumps(envelope).encode()
 
 
 def _top_level_assignment_count(module, name):
@@ -299,9 +257,7 @@ class CategorySemanticProviderTests(unittest.TestCase):
                 self.assertFalse(validator.is_valid(proposal))
                 result = _classify(
                     Classifier(
-                        CategorySemanticProvider(
-                            _config(), transport=_RecordedTransport(_envelope(proposal))
-                        )
+                        MaiAgentCategorySemanticProvider(_maiagent_config(), transport=_maiagent_transport(proposal))
                     ),
                     _group(record),
                     (record,),
@@ -355,9 +311,7 @@ class CategorySemanticProviderTests(unittest.TestCase):
         # The capability projection omits minItems; the authoritative Classifier rejects it.
         result = _classify(
             Classifier(
-                CategorySemanticProvider(
-                    _config(),
-                    transport=_RecordedTransport(_envelope(dict(assigned, citations=[]))),
+                MaiAgentCategorySemanticProvider(_maiagent_config(), transport=_maiagent_transport(dict(assigned, citations=[])),
                 )
             ),
             _group(record),
@@ -424,21 +378,6 @@ class CategorySemanticProviderTests(unittest.TestCase):
             1,
         )
 
-    def test_assigned_structured_response_is_validated_by_classifier(self):
-        record = _record()
-        transport = _RecordedTransport(_envelope(_proposal(record)))
-        classifier = build_category_classifier(_config(), transport=transport)
-        result = classifier.classify(_group(record), (record,))
-
-        self.assertEqual(result.category_state, CategoryState.CATEGORY_ASSIGNED)
-        self.assertEqual(result.primary_category_id, CategoryId.TECHNICAL_DEVELOPMENT)
-        self.assertEqual(result.provenance["provider_identifier"], "responses-api-compatible")
-        self.assertEqual(result.provenance["model_identifier"], "configured-category-model")
-        self.assertEqual(result.provenance["prompt_version"], CATEGORY_SEMANTIC_PROMPT_VERSION)
-        self.assertEqual(result.provenance["schema_version"], CATEGORY_SEMANTIC_SCHEMA_VERSION)
-        self.assertEqual(result.provenance["helper_version"], CATEGORY_SEMANTIC_HELPER_VERSION)
-        self.assertEqual(len(transport.calls), 1)
-
     def test_empty_citations_fail_closed_without_provider_backfill(self):
         record = _record()
         for state in (CategoryState.CATEGORY_ASSIGNED, CategoryState.CATEGORY_UNRESOLVED):
@@ -446,12 +385,7 @@ class CategorySemanticProviderTests(unittest.TestCase):
                 proposal = _proposal(record, state=state)
                 proposal["citations"] = []
                 result = _classify(
-                    Classifier(
-                        CategorySemanticProvider(
-                            _config(),
-                            transport=_RecordedTransport(_envelope(proposal)),
-                        )
-                    ),
+                    Classifier(MaiAgentCategorySemanticProvider(_maiagent_config(), transport=_maiagent_transport(proposal))),
                     _group(record),
                     (record,),
                 )
@@ -459,12 +393,10 @@ class CategorySemanticProviderTests(unittest.TestCase):
 
     def test_unresolved_proposal_remains_terminal_in_classifier(self):
         record = _record(body="A system name appears without an announced action.")
-        transport = _RecordedTransport(
-            _envelope(_proposal(record, state=CategoryState.CATEGORY_UNRESOLVED))
-        )
-        result = build_category_classifier(_config(), transport=transport).classify(
-            _group(record), (record,)
-        )
+        result = build_maiagent_category_classifier(
+            _maiagent_config(),
+            transport=_maiagent_transport(_proposal(record, state=CategoryState.CATEGORY_UNRESOLVED)),
+        ).classify(_group(record), (record,))
         self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
         self.assertIsNone(result.primary_category_id)
         self.assertEqual(
@@ -472,134 +404,34 @@ class CategorySemanticProviderTests(unittest.TestCase):
             CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
         )
 
-    def test_request_uses_only_approved_input_and_strict_schema(self):
+    def test_request_carries_no_candidate_metadata(self):
         record = _record()
-        transport = _RecordedTransport(_envelope(_proposal(record)))
-        provider = CategorySemanticProvider(_config(), transport=transport)
-        # Obtain the request through the public owner without exposing Candidate metadata.
-        class Capture:
-            value = None
-            def __call__(self, captured):
-                self.value = captured
-                return _proposal(record)
-        capture = Capture()
-        helper_request = Classifier(capture)
-        helper_request.classify(_group(record), (record,))
-        semantic_request = capture.value
-        self.assertIsInstance(semantic_request, CategorySemanticRequest)
-        provider(semantic_request)
-
-        endpoint, headers, raw_body, _ = transport.calls[0]
-        body = json.loads(raw_body)
-        submitted = json.dumps(body, ensure_ascii=False)
-        submitted_input = json.loads(body["input"])
-        self.assertEqual(submitted_input["guidance"], semantic_request.as_payload()["guidance"])
-        self.assertTrue(
-            any("at least one citation" in item for item in submitted_input["guidance"])
-        )
-        category_ids = {item.value for item in CategoryId}
-        self.assertFalse(any(category_id in body["instructions"] for category_id in category_ids))
-        self.assertEqual(endpoint, _config().endpoint)
-        self.assertEqual(headers["Authorization"], "Bearer test-secret")
-        for forbidden in ("PRIVATE_TITLE", "PRIVATE_QUERY", "PRIVATE_INTENT", "PRIVATE_SNIPPET", "PRIVATE_PUBLISHER", "PRIVATE_DATE", "expected_category", "GOLDEN_CASE"):
+        transport = _maiagent_transport(_proposal(record))
+        MaiAgentCategorySemanticProvider(_maiagent_config(), transport=transport)(_category_request(record))
+        submitted = transport.calls[0][2].decode("utf-8")
+        for forbidden in ("PRIVATE_TITLE", "PRIVATE_QUERY", "PRIVATE_INTENT", "PRIVATE_SNIPPET",
+                          "PRIVATE_PUBLISHER", "PRIVATE_DATE", "expected_category", "GOLDEN_CASE"):
             self.assertNotIn(forbidden, submitted)
         self.assertIn("signalling pilot", submitted)
-        self.assertNotIn("tools", body)
-        schema = body["text"]["format"]
-        self.assertEqual(schema["type"], "json_schema")
-        self.assertTrue(schema["strict"])
-        self.assertEqual(schema["schema"], _CATEGORY_RESPONSE_SCHEMA)
-        self.assertEqual(set(schema["schema"]["properties"]), {
-            "category_state", "primary_category_id", "subtype",
-            "category_resolution_reason", "citations",
-        })
-        self.assertEqual(schema["schema"]["properties"]["citations"]["minItems"], 1)
-        self.assertNotIn("NOT_EVALUATED", json.dumps(schema))
-
-    def test_only_completed_provider_status_accepts_valid_output(self):
-        record = _record()
-        cases = (
-            ("completed", CategoryState.CATEGORY_ASSIGNED, None),
-            ("failed", _VIOLATION, None),
-            ("incomplete", _VIOLATION, None),
-            ("cancelled", _VIOLATION, None),
-            ("queued", _VIOLATION, None),
-            ("in_progress", _VIOLATION, None),
-            ("unknown", _VIOLATION, None),
-            (_MISSING, _VIOLATION, None),
-        )
-        for status, expected_state, expected_reason in cases:
-            with self.subTest(status="missing" if status is _MISSING else status):
-                envelope = _envelope(_proposal(record), status=status)
-                result = _classify(
-                    Classifier(CategorySemanticProvider(_config(), transport=_RecordedTransport(envelope))),
-                    _group(record),
-                    (record,),
-                )
-                if expected_state is _VIOLATION:
-                    self.assertEqual(result, _VIOLATION)
-                    continue
-                self.assertEqual(result.category_state, expected_state)
-                self.assertEqual(result.category_resolution_reason, expected_reason)
 
     def test_invalid_schema_unknown_category_and_bad_citation_fail_closed(self):
         record = _record()
         valid = _proposal(record)
-        mutations = []
         missing = dict(valid)
         missing.pop("subtype")
-        mutations.append(missing)
-        unknown = dict(valid, primary_category_id="UNKNOWN_CATEGORY")
-        mutations.append(unknown)
-        bad_citation = dict(
-            valid,
-            citations=[{"source_ref": "M9", "sentence_ids": ["S1"]}],
-        )
-        mutations.append(bad_citation)
+        mutations = [
+            missing,
+            dict(valid, primary_category_id="UNKNOWN_CATEGORY"),
+            dict(valid, citations=[{"source_ref": "M9", "sentence_ids": ["S1"]}]),
+        ]
         for proposal in mutations:
             with self.subTest(proposal=proposal):
                 result = _classify(
-                    Classifier(CategorySemanticProvider(_config(), transport=_RecordedTransport(_envelope(proposal)))),
+                    Classifier(MaiAgentCategorySemanticProvider(_maiagent_config(), transport=_maiagent_transport(proposal))),
                     _group(record),
                     (record,),
                 )
                 self.assertEqual(result, _VIOLATION)
-
-    def test_provider_failure_and_empty_response_fail_closed(self):
-        record = _record()
-        cases = (
-            (_RecordedTransport(error=RuntimeError("transport down")), CategoryResolutionReason.SEMANTIC_HELPER_FAILURE),
-            (_RecordedTransport(b""), _VIOLATION),
-        )
-        for transport, reason in cases:
-            with self.subTest(reason=reason):
-                result = _classify(
-                    Classifier(CategorySemanticProvider(_config(), transport=transport)),
-                    _group(record),
-                    (record,),
-                )
-                if reason is _VIOLATION:
-                    self.assertEqual(result, _VIOLATION)
-                    continue
-                self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
-                self.assertEqual(result.category_resolution_reason, reason)
-                self.assertEqual(result.provenance["model_identifier"], "configured-category-model")
-
-    def test_unavailable_configuration_builds_existing_fail_closed_classifier(self):
-        self.assertIsNone(CategorySemanticProviderConfig.from_environment({}))
-        self.assertIsNone(
-            CategorySemanticProviderConfig.from_environment(
-                {"CATEGORY_SEMANTIC_API_URL": "https://provider.example/v1/responses"}
-            )
-        )
-        record = _record()
-        with patch.dict(os.environ, {}, clear=True):
-            result = build_category_classifier().classify(_group(record), (record,))
-        self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
-        self.assertEqual(
-            result.category_resolution_reason,
-            CategoryResolutionReason.SEMANTIC_HELPER_UNAVAILABLE,
-        )
 
 
 def _maiagent_config():
@@ -625,6 +457,10 @@ def _category_request(record):
 
 def _maiagent_body(proposal):
     return json.dumps({"content": json.dumps(proposal)}).encode("utf-8")
+
+
+def _maiagent_transport(proposal):
+    return _RecordedMaiAgentTransport(MaiAgentHttpResponse(200, _maiagent_body(proposal)))
 
 
 def _dotenv_module(values):
@@ -851,27 +687,29 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
         self.assertEqual(result.provenance["schema_version"], CATEGORY_SEMANTIC_SCHEMA_VERSION)
         self.assertEqual(len(transport.calls), 1)
 
-    def test_existing_responses_provider_and_schema_projection_remain_separate(self):
+    def test_maiagent_schema_projection_is_derived_from_the_authoritative_schema(self):
         self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v5")
         self.assertEqual(
             _MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
             build_maiagent_category_schema(_CATEGORY_RESPONSE_SCHEMA),
         )
-        record = _record()
-        transport = _RecordedTransport(_envelope(_proposal(record)))
-        result = build_category_classifier(_config(), transport=transport).classify(
-            _group(record), (record,)
-        )
 
-        self.assertEqual(result.category_state, CategoryState.CATEGORY_ASSIGNED)
-        self.assertEqual(result.provenance["provider_identifier"], "responses-api-compatible")
-        self.assertEqual(len(transport.calls), 1)
-        request_body = json.loads(transport.calls[0][2])
-        self.assertEqual(
-            request_body["text"]["format"]["schema"],
-            _CATEGORY_RESPONSE_SCHEMA,
-        )
 
+class SingleCategoryProviderTests(unittest.TestCase):
+    """F5: the MaiAgent Structured Helper is the only Category provider (AGENTS section 11)."""
+
+    def test_no_second_category_provider_is_shipped(self):
+        for name in ("CategorySemanticProvider", "CategorySemanticProviderConfig", "build_category_classifier",
+                     "UrllibJsonTransport", "JsonHttpTransport"):
+            self.assertFalse(hasattr(category_semantic_provider_module, name), name)
+        source_root = Path(category_semantic_provider_module.__file__).parent
+        for source in source_root.glob("*.py"):
+            text = source.read_text(encoding="utf-8")
+            self.assertNotIn("CATEGORY_SEMANTIC_API_URL", text, source.name)
+
+    def test_production_composes_the_maiagent_category_classifier(self):
+        runner = Path(category_semantic_provider_module.__file__).with_name("production_runner.py").read_text(encoding="utf-8")
+        self.assertIn("build_maiagent_category_classifier(", runner)
 
 if __name__ == "__main__":
     unittest.main()
