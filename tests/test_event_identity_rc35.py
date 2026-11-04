@@ -115,9 +115,12 @@ def test_an_omitted_record_stays_undecided_when_other_occurrences_are_confirmed(
         _Scripted(_BATCH, _confirm("LAUNCH1", "LAUNCH2", also=[("RIDE1", "RIDE2")]))  # COUNCIL left out
     ).evaluate(_records())
     assert _groups(run) == [("COUNCIL",), ("LAUNCH1", "LAUNCH2"), ("RIDE1", "RIDE2")]
-    assert [gap.failure_class for gap in run.technical_gaps] == ["CONFIRMATION_INCOMPLETE"]
+    # F2 (section A.32): the omission or failure decided nothing, so the second
+    # nomination's confirmation asks again; a consistent helper answers the same.
+    # Only COUNCIL's four pairs are asked again; the separated pairs were decided.
+    assert [gap.failure_class for gap in run.technical_gaps] == ["CONFIRMATION_INCOMPLETE"] * 2
     unconfirmed = event_identity_projection(run)["event_identity_unconfirmed_distribution"]
-    assert unconfirmed == {"OMITTED": 4, "SEPARATED": 4}
+    assert unconfirmed == {"OMITTED": 8, "SEPARATED": 4}
 
 
 def test_one_group_holding_records_of_two_occurrences_is_the_helpers_error_not_masked():

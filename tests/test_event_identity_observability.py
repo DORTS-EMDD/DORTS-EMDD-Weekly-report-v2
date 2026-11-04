@@ -98,11 +98,13 @@ def test_an_incomplete_confirmation_is_observed_at_confirmation_level():
     advisor = _Scripted({"groups": [{"members": [_member("JA"), _member("EN")]}]}, {"groups": []})
     run = EventIdentity(advisor).evaluate(_station_reports())
     assert _groups(run) == [("EN",), ("JA",), ("OTHER",)]
+    # F2 (section A.32): the first confirmation decided nothing, so the second
+    # nomination's confirmation asks again and is observed the same way.
     projection = event_identity_projection(run)
     assert projection["event_identity_gap_distribution"] == {
-        "EventIdentity:CONFIRMATION:PROPOSAL_CONTRACT_VIOLATION:CONFIRMATION_INCOMPLETE": 1
+        "EventIdentity:CONFIRMATION:PROPOSAL_CONTRACT_VIOLATION:CONFIRMATION_INCOMPLETE": 2
     }
-    assert projection["event_identity_diagnostic_distribution"]["PROPOSAL_NOT_CONFIRMED"] == 1
+    assert projection["event_identity_diagnostic_distribution"]["PROPOSAL_NOT_CONFIRMED"] == 2
 
 
 def test_an_invalid_confirmation_group_is_observed_at_confirmation_group_level():
@@ -112,8 +114,10 @@ def test_an_invalid_confirmation_group_is_observed_at_confirmation_group_level()
     )
     run = EventIdentity(advisor).evaluate(_station_reports())
     assert _groups(run) == [("EN",), ("JA",), ("OTHER",)]
+    # F2 (section A.32): the first confirmation decided nothing, so the second
+    # nomination's confirmation asks again and is observed the same way.
     assert event_identity_projection(run)["event_identity_gap_distribution"] == {
-        "EventIdentity:CONFIRMATION_GROUP:PROPOSAL_CONTRACT_VIOLATION:DUPLICATE_MEMBERSHIP": 1
+        "EventIdentity:CONFIRMATION_GROUP:PROPOSAL_CONTRACT_VIOLATION:DUPLICATE_MEMBERSHIP": 2
     }
 
 

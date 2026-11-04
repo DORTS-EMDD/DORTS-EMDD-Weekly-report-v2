@@ -86,6 +86,13 @@ class _Scripted:
         return response
 
     def _answer(self, request):
+        # F2 (section A.32): a pair that an earlier confirmation left undecided
+        # is asked again after the second nomination; unless a test scripts that
+        # confirmation, a consistent helper answers it as it answered the first.
+        mirrored = request.batch_id.replace(f"{SECOND_NOMINATION_SUFFIX}:", ":", 1)
+        if request.confirmation and mirrored != request.batch_id and not self.responses and mirrored in self.answered:
+            response = self.answered[mirrored]
+            return response if isinstance(response, BaseException) else copy.deepcopy(response)
         if request.batch_id.endswith(SECOND_NOMINATION_SUFFIX):
             response = self.first_batch if self.second is None else self.second
             response = response if isinstance(response, BaseException) else copy.deepcopy(response)
@@ -269,7 +276,10 @@ class GroupingProposalTests(unittest.TestCase):
         self.assertEqual(len(result.groups), 3)
         self.assertEqual(
             [(gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
-            [("event-identity-batch-1:group-1:confirmation", "UNKNOWN_RECORD")],
+            # F2 (section A.32): the confirmation decided nothing, so the second
+            # nomination asks again; a consistent helper fails the same way.
+            [("event-identity-batch-1:group-1:confirmation", "UNKNOWN_RECORD"),
+             ("event-identity-batch-1-n2:group-1:confirmation", "UNKNOWN_RECORD")],
         )
 
     def test_confirmation_separating_every_record_merges_nothing(self):
@@ -291,13 +301,16 @@ class GroupingProposalTests(unittest.TestCase):
         self.assertEqual(sorted(group.member_candidate_ids for group in result.groups), [("EN", "JA"), ("OTHER",)])
         self.assertEqual(
             [(gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
-            [("event-identity-batch-1:group-1:confirmation", "CONFIRMATION_INCOMPLETE")],
+            # F2 (section A.32): the confirmation decided nothing, so the second
+            # nomination asks again; a consistent helper fails the same way.
+            [("event-identity-batch-1:group-1:confirmation", "CONFIRMATION_INCOMPLETE"),
+             ("event-identity-batch-1-n2:group-1:confirmation", "CONFIRMATION_INCOMPLETE")],
         )
         empty = EventIdentity(_Scripted(
             {"groups": [{"members": [_member("EN"), _member("JA")]}]}, {"groups": []}
         )).evaluate(_three_records())
         self.assertEqual(len(empty.groups), 3)
-        self.assertEqual([gap.failure_class for gap in empty.technical_gaps], ["CONFIRMATION_INCOMPLETE"])
+        self.assertEqual([gap.failure_class for gap in empty.technical_gaps], ["CONFIRMATION_INCOMPLETE"] * 2)
 
     def test_failed_confirmation_is_a_gap_and_merges_nothing(self):
         def batch():
@@ -308,13 +321,19 @@ class GroupingProposalTests(unittest.TestCase):
         self.assertEqual(len(result.groups), 3)
         self.assertEqual(
             [(gap.subject_id, gap.failure_class) for gap in result.technical_gaps],
-            [("event-identity-batch-1:group-1:confirmation", "TIMEOUT")],
+            # F2 (section A.32): the confirmation decided nothing, so the second
+            # nomination asks again; a consistent helper fails the same way.
+            [("event-identity-batch-1:group-1:confirmation", "TIMEOUT"),
+             ("event-identity-batch-1-n2:group-1:confirmation", "TIMEOUT")],
         )
         invalid = EventIdentity(_Scripted(batch(), {"groups": [], "reason": "x"})).evaluate(_three_records())
         self.assertEqual(len(invalid.groups), 3)
         self.assertEqual(
             [(gap.subject_id, gap.failure_class) for gap in invalid.technical_gaps],
-            [("event-identity-batch-1:group-1:confirmation", "SCHEMA_INVALID")],
+            # F2 (section A.32): the confirmation decided nothing, so the second
+            # nomination asks again; a consistent helper fails the same way.
+            [("event-identity-batch-1:group-1:confirmation", "SCHEMA_INVALID"),
+             ("event-identity-batch-1-n2:group-1:confirmation", "SCHEMA_INVALID")],
         )
         with self.assertRaises(SemanticProviderConfigurationFailure):
             EventIdentity(_Scripted(batch(), SemanticProviderConfigurationFailure("HTTP_401"))).evaluate(

@@ -174,10 +174,12 @@ def test_an_omitted_record_stays_unmerged_and_the_omission_is_observed():
     )
     run = EventIdentity(advisor).evaluate(records)
     assert _groups(run) == [("OPEN",), ("TEST1", "TEST2")]  # fail-closed: omission is never agreement
-    assert [gap.failure_class for gap in run.technical_gaps] == ["CONFIRMATION_INCOMPLETE"]
-    assert _unconfirmed(run) == {"OMITTED": 2}
+    # F2 (section A.32): the omission or failure decided nothing, so the second
+    # nomination's confirmation asks again; a consistent helper answers the same.
+    assert [gap.failure_class for gap in run.technical_gaps] == ["CONFIRMATION_INCOMPLETE"] * 2
+    assert _unconfirmed(run) == {"OMITTED": 4}
     details = sorted(item.detail for item in run.diagnostics if item.reason == "PROPOSAL_NOT_CONFIRMED")
-    assert details == ["event-identity-batch-1:group-1|size=3|OMITTED"] * 2
+    assert details == ["event-identity-batch-1-n2:group-1|size=3|OMITTED"] * 2 + ["event-identity-batch-1:group-1|size=3|OMITTED"] * 2
 
 
 def test_an_omitted_record_never_falls_back_to_the_initial_proposal():
@@ -189,8 +191,10 @@ def test_an_omitted_record_never_falls_back_to_the_initial_proposal():
         _Scripted({"groups": [{"members": [_member("A"), _member("B")]}]}, {"groups": [{"members": [_member("A")]}]})
     ).evaluate(records)
     assert _groups(run) == [("A",), ("B",)]
-    assert [gap.failure_class for gap in run.technical_gaps] == ["CONFIRMATION_INCOMPLETE"]
-    assert _unconfirmed(run) == {"OMITTED": 1}
+    # F2 (section A.32): the omission or failure decided nothing, so the second
+    # nomination's confirmation asks again; a consistent helper answers the same.
+    assert [gap.failure_class for gap in run.technical_gaps] == ["CONFIRMATION_INCOMPLETE"] * 2
+    assert _unconfirmed(run) == {"OMITTED": 2}
 
 
 def test_a_failed_confirmation_is_observed_as_such_and_merges_nothing():
@@ -203,7 +207,9 @@ def test_a_failed_confirmation_is_observed_as_such_and_merges_nothing():
     failure = SemanticProviderTechnicalFailure("HTTP_502", attempts=2, transient=True)
     run = EventIdentity(_Scripted({"groups": [{"members": [_member("A"), _member("B")]}]}, failure)).evaluate(records)
     assert _groups(run) == [("A",), ("B",)]
-    assert _unconfirmed(run) == {"CONFIRMATION_FAILED": 1}
+    # F2 (section A.32): the omission or failure decided nothing, so the second
+    # nomination's confirmation asks again; a consistent helper answers the same.
+    assert _unconfirmed(run) == {"CONFIRMATION_FAILED": 2}
 
 
 def test_a_topic_group_across_regions_is_not_over_merged():

@@ -353,13 +353,16 @@ class EventIdentity:
         # records in reverse order; a pair either nomination proposes goes to
         # confirmation. A pair's verdict from an earlier nomination stands: a
         # later nomination only sends pairs no earlier confirmation decided.
+        # A confirmation decides a pair only when it placed both records
+        # (section A.32, RC-25): a failed confirmation, an omitted record or a
+        # rejected member decides nothing, so a later nomination may ask again.
         decided: set[tuple[str, str]] = set()
-        sent: set[tuple[str, str]] = set()
+        decided_now: set[tuple[str, str]] = set()
         confirmed_pairs: set[tuple[str, str]] = set()
         nominations = [nomination for request in requests for nomination in (request, _second_nomination(request))]
         for request in nominations:
-            decided |= sent
-            sent = set()
+            decided |= decided_now
+            decided_now = set()
             try:
                 _, proposal = self._ask(request, exchanges)
             except EVENT_TECHNICAL_FAILURES as failure:
@@ -391,7 +394,6 @@ class EventIdentity:
                             pairs.append(pair)
                 if not pairs:
                     continue
-                sent.update(pairs)
                 confirmed, placement = self._confirmed_pairs(
                     [by_id[candidate_id] for candidate_id in outcome],
                     f"{group_subject}:confirmation",
@@ -399,6 +401,10 @@ class EventIdentity:
                     diagnostics,
                     exchanges,
                 )
+                if placement is not None:
+                    decided_now.update(
+                        pair for pair in pairs if all(placement[candidate_id] == "PLACED" for candidate_id in pair)
+                    )
                 for pair in pairs:
                     if pair not in confirmed:
                         # Observation only (RC-31): why the pair stayed apart.
