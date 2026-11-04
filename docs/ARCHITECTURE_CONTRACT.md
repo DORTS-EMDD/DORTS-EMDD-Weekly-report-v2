@@ -725,7 +725,8 @@ left the CLI exit code green.
   malformed record stops a live composition as a configuration failure.
 * **Exit code.** A `FAILED` delivery makes the CLI exit non-zero.
 * **Automation (GitHub Actions).** A weekly schedule (Mondays 01:00 UTC, the
-  preceding Monday-Sunday) runs only when the repository variable
+  preceding Monday-Sunday; amended by section A.40 to Mondays 06:30
+  Asia/Taipei and the Asia/Taipei week) runs only when the repository variable
   `WEEKLY_REPORT_SCHEDULE` is `enabled`. Email is sent only on an explicit
   opt-in: the dispatch input `send_email`, or the repository variable
   `LIVE_EMAIL_SEND=1` for scheduled runs; otherwise `LIVE_EMAIL_SEND=0`. The
@@ -2107,8 +2108,9 @@ manual-only `delivery-check` job runs `scripts/delivery_ledger_checks.py` for
 the live checks L1-L2 (compare-and-swap rejection and the owner's
 reconciliation on the real provider; token scope) and L3 (one message, through
 the Delivery owner, to the sending account; a second invocation must be
-`DUPLICATE`). Pending: the private repository, token and key, and running
-L1-L3. Until the secrets exist, a live send fails at composition.
+`DUPLICATE`). The private ledger repository `DORTS-EMDD/weekly-report-delivery-ledger`,
+its token and key exist, and L1-L3 passed on 2026-11-04 (L3: GitHub Actions run
+41758040505: first SENT, second DUPLICATE, exactly one message).
 
 ```text
 DELIVERY_UNIT = ONE MESSAGE PER (PERIOD, RECIPIENT)
@@ -2120,6 +2122,71 @@ DELIVERY_CLAIM_AGE = NEVER EVIDENCE; ATTEMPTED NEVER EXPIRES
 DELIVERY_SEND_WINDOW = THE HOLDER BEGINS A TRANSACTION ONLY WITHIN 1 HOUR OF ITS OWN CLAIM
 DELIVERY_RELEASE = NAMED ATTEMPTED CLAIMS ONLY, SAME PERIOD, MANUAL DISPATCH, CLAIM AT LEAST 24 HOURS OLD, ALL OR NOTHING, AUDITED
 DELIVERY_FAILURE_MODE = FAIL CLOSED (NO CONFIRMED CLAIM, NO SEND)
+```
+
+### A.40 RC-56 Reporting week, weekly schedule and subscription (2026-11-04, user-directed)
+
+Finding: the default reporting week was taken from the machine's local date
+(`date.today()`). A GitHub runner's clock is UTC, where Monday 06:30 Taipei is
+still Sunday 22:30, so a run at that time selected the week before last
+(2026-10-26..11-01 instead of 2026-11-02..11-08). The same happens today to any
+manual dispatch on a Monday before 08:00 Taipei. Streamlit kept its own copy of
+the arithmetic. Run 41585675879 used a hand-entered Tuesday-to-Tuesday period
+(2026-10-27..11-03), the overlapping reading of 「上一周星期一到本周星期一」.
+
+**Reporting week.** The reporting week is the half-open range
+[Monday 00:00, next Monday 00:00) in Asia/Taipei (UTC+8, no daylight saving).
+It is shown and passed on as the inclusive dates Monday..Sunday. The user's
+「上一周星期一到本周星期一」 is read as this half-open range: Monday belongs to the
+week it starts, so consecutive reports neither overlap nor leave a gap. An
+article dated Monday, including one published before Monday's run, belongs to
+the new week and appears in the next report.
+
+**Owner.** `production_runner.default_period` is the only owner of the default
+week: the most recent complete week by the Asia/Taipei calendar date of the run
+instant. Every entry point (CLI, Actions, Streamlit) uses it; an explicit
+manual period still wins and is validated by TemporalRule. A run delayed to any
+later day of the following week still reports the same week. The workflow only
+says when a run starts; it never computes a period.
+
+**Unchanged downstream.** Search uses the same dates (RC-11/RC-12: provider
+operators `after:start before:end+1`, RSS publication filter with one day of
+slack); TemporalRule compares each source's own calendar date with the
+inclusive dates; Delivery's period identity (RC-55) is the same dates.
+
+**Schedule.** `cron: "30 6 * * 1"` with `timezone: "Asia/Taipei"`: Mondays 06:30
+Taipei, off the top of the hour. A run takes about an hour, so the report
+normally arrives before 08:00. Still gated by `WEEKLY_REPORT_SCHEDULE`
+(schedule) and `LIVE_EMAIL_SEND` (scheduled email), both repository variables.
+
+**Subscription.** Membership is owned by an external mailing list with
+self-service join and leave (for this deployment a Google Group that accepts
+posts only from the sending account and shows its member list to managers
+only). `DEFAULT_RECIPIENTS` (a secret) holds the list address and any operator
+addresses. V2 never stores, receives or logs a member address and keeps no
+subscriber registry. RC-55 applies to each configured address: the list
+receives each week's report at most once, and an uncertain handoff blocks a
+resend. Fan-out to members, joins and leaves are outside Delivery, like mailbox
+receipt. A membership change needs no deploy; someone who joins mid-week gets
+the next report, with no backfill.
+
+**Go-live gate (operations, not code).** Until a report produced by the current
+code has been delivered to a controlled address and its PDF attachment is not
+flagged by the mail provider, `DEFAULT_RECIPIENTS` stays a controlled address:
+no list, no government mailbox. Run 41585675879 is not resent and has no ledger
+entry.
+
+**Residual risks (disclosed).** GitHub may delay or drop scheduled runs under
+load; scheduled workflows in a public repository are disabled after 60 days
+without repository activity and must be re-enabled by hand. The time zone of
+Google News date operators is undocumented, so an item published between local
+and UTC midnight at a week boundary may be outside both weeks' discovery.
+
+```text
+REPORTING_WEEK = [MONDAY 00:00, NEXT MONDAY 00:00) ASIA/TAIPEI, SHOWN AS MONDAY..SUNDAY
+REPORTING_WEEK_OWNER = production_runner.default_period (ASIA/TAIPEI DATE OF THE RUN INSTANT)
+WEEKLY_SCHEDULE = MONDAY 06:30 ASIA/TAIPEI (cron "30 6 * * 1", timezone "Asia/Taipei")
+SUBSCRIPTION_OWNER = EXTERNAL MAILING LIST; V2 KNOWS ONLY THE CONFIGURED DISTRIBUTION ADDRESSES
 ```
 
 ## B. Authoritative Owners

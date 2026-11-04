@@ -1,18 +1,22 @@
 name: Weekly-report V2 production
 
 on:
-  # Mondays 01:00 UTC (09:00 Taipei) for the preceding Monday-Sunday week.
-  # Inert until the repository variable WEEKLY_REPORT_SCHEDULE is "enabled".
+  # RC-56: Mondays 06:30 Asia/Taipei, so the report normally arrives before
+  # 08:00. Off the top of the hour, where GitHub delays scheduled runs most.
+  # Only the start time lives here: the reporting week is decided once, in
+  # Python (production_runner.default_period, Asia/Taipei). Inert until the
+  # repository variable WEEKLY_REPORT_SCHEDULE is "enabled".
   schedule:
-    - cron: "0 1 * * 1"
+    - cron: "30 6 * * 1"
+      timezone: "Asia/Taipei"
   workflow_dispatch:
     inputs:
       period_start:
-        description: "Report period start (YYYY-MM-DD); empty = preceding Monday"
+        description: "Report period start (YYYY-MM-DD); empty = Monday of the last complete Asia/Taipei week"
         required: false
         type: string
       period_end:
-        description: "Report period end (YYYY-MM-DD); empty = preceding Sunday"
+        description: "Report period end (YYYY-MM-DD); empty = Sunday of the last complete Asia/Taipei week"
         required: false
         type: string
       region_mode:

@@ -237,7 +237,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-55 修訂（2026-10-20～11-04）
+### RC-3～RC-56 修訂（2026-10-20～11-04）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.38、§N 與 §R。
 
@@ -466,7 +466,15 @@ Transport retry 與 semantic correction 必須分開計算。
   手動執行中指名同期間、至少 24 小時前的 ATTEMPTED claim，全有或全無並留稽核；排程執行不得解除。無法讀寫紀錄、
   claim 未確認或寫入失敗時一律 fail-closed；未設定紀錄不得寄正式郵件。workflow 已接線（移除 Actions cache、
   傳入三個紀錄 secret 與兩個解除輸入，另有僅能手動執行的 `delivery-check` job 執行 L1～L3）；紀錄
-  repository／token／金鑰的建立與 live 驗證 L1～L3 待執行。
+  repository／token／金鑰已建立，live 驗證 L1～L3 已通過（L3：Run 41758040505）。
+* RC-56（§A.40，使用者指示）：報告週期為 Asia/Taipei 的［週一 00:00，下週一 00:00），以週一至週日的日期顯示與
+  傳遞；「上一周星期一到本周星期一」依此半開區間解讀，相鄰兩期不重疊也不漏日，週一（含排程前發布者）屬新的一週。
+  唯一 owner 為 `production_runner.default_period`，依執行當下的臺北日期決定（原本用機器本地日期，GitHub runner
+  為 UTC，週一 06:30 臺北仍是週日，會選到上上週）；所有入口共用，手動指定期間仍優先。排程為每週一 06:30
+  Asia/Taipei（cron 加 timezone），仍由 WEEKLY_REPORT_SCHEDULE 與 LIVE_EMAIL_SEND 變數把關。訂閱名單由外部郵件
+  清單（Google Group）擁有並自助加入、退出；V2 只知道 DEFAULT_RECIPIENTS 中設定的發送地址，不保存任何訂閱者
+  地址；RC-55 對每個設定地址保證每期至多交付一次。上線閘門：目前程式產生的報告先寄給受控地址且附件未被
+  標記後，才改寄清單；不寄政府信箱、不補寄 Run 41585675879。
 
 ## 13. Report / Delivery
 
@@ -617,5 +625,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-55 APPLIED (2026-11-04; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired, ledger repository/secrets and L1-L3 pending)
+CONTRACT_REVISION = RC-3..RC-56 APPLIED (2026-11-04; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied)
 ```

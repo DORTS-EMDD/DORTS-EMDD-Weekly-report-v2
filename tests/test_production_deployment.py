@@ -549,7 +549,7 @@ class ShellIntegrationTests(unittest.TestCase):
     def test_email_is_opt_in_and_delivery_uses_the_rc55_ledger(self):
         workflow = (ROOT / ".github" / "workflows" / "weekly-report.yml").read_text(encoding="utf-8")
         production = workflow.split("\n  production:\n", 1)[1].split("\n  delivery-check:\n", 1)[0]
-        self.assertIn('cron: "0 1 * * 1"', workflow)
+        self.assertIn('cron: "30 6 * * 1"\n      timezone: "Asia/Taipei"', workflow)
         self.assertIn("vars.WEEKLY_REPORT_SCHEDULE == 'enabled'", production)
         self.assertIn(
             "LIVE_EMAIL_SEND: ${{ ((github.event_name == 'workflow_dispatch' && inputs.send_email == true) || "

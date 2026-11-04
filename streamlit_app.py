@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
 import json
 from pathlib import Path
 import sys
@@ -14,7 +13,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from weekly_report.contracts import RegionMode  # noqa: E402
-from weekly_report.production_runner import ProductionRunner  # noqa: E402
+from weekly_report.production_runner import ProductionRunner, default_period  # noqa: E402
 
 
 def render_app(runner_factory: Callable[[], ProductionRunner] = ProductionRunner.from_environment) -> None:
@@ -23,9 +22,8 @@ def render_app(runner_factory: Callable[[], ProductionRunner] = ProductionRunner
     import streamlit as st
 
     st.title("Weekly-report V2")
-    today = date.today()
-    default_end = today - timedelta(days=today.weekday() + 1)
-    default_start = default_end - timedelta(days=6)
+    # RC-56: the one reporting-week rule (Asia/Taipei), never a local copy.
+    default_start, default_end = default_period()
     st.caption("V2 production execution")
     region_mode = st.selectbox(
         "Region mode", tuple(mode.value for mode in RegionMode), index=0

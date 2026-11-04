@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from enum import StrEnum
 import os
 from types import MappingProxyType
@@ -595,11 +595,28 @@ class RunnerApplication(Protocol):
         ...
 
 
-def default_period(today: date | None = None) -> tuple[date, date]:
-    """Return the preceding Monday-through-Sunday reporting period."""
+# RC-56 (contract section A.40): the reporting week is a Monday-Sunday week
+# in the report's own time zone, Asia/Taipei. Taiwan keeps UTC+8 all year (no
+# daylight saving), so a fixed offset is exact and needs no tz database.
+REPORT_TIMEZONE_NAME = "Asia/Taipei"
+REPORT_TIMEZONE = timezone(timedelta(hours=8), REPORT_TIMEZONE_NAME)
 
-    current = today or date.today()
-    end = current - timedelta(days=current.weekday() + 1)
+
+def default_period(now: datetime | None = None) -> tuple[date, date]:
+    """The most recent complete Monday-Sunday week in Asia/Taipei.
+
+    The week is [Monday 00:00, next Monday 00:00) Taipei time, shown as the
+    inclusive dates Monday..Sunday. It follows from the Taipei calendar date of
+    ``now`` (the current instant by default), never the machine's local date:
+    a GitHub runner's clock is UTC, where Monday 06:30 Taipei is still Sunday.
+    Consecutive weeks tile without overlap or gap.
+    """
+
+    instant = datetime.now(timezone.utc) if now is None else now
+    if instant.tzinfo is None:
+        raise ValueError("default_period requires a time-zone-aware instant")
+    today = instant.astimezone(REPORT_TIMEZONE).date()
+    end = today - timedelta(days=today.weekday() + 1)
     return end - timedelta(days=6), end
 
 
@@ -1029,5 +1046,7 @@ __all__ = [
     "ProductionRunStatus",
     "ProductionRunner",
     "SearchFailureDiagnostic",
+    "REPORT_TIMEZONE",
+    "REPORT_TIMEZONE_NAME",
     "default_period",
 ]
