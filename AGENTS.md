@@ -464,8 +464,9 @@ Transport retry 與 semantic correction 必須分開計算。
   明確拒收或從未開始的交易記 NOT_SENT；ATTEMPTED 與 SENT 擋下再次寄送，ATTEMPTED 不會因時間過期。claim 屬於寫入
   它的那次執行（RunTrace run_id）；寫入衝突時重讀並依 claim ID 對帳。紀錄只存 HMAC 雜湊，不存地址。人工解除只能在
   手動執行中指名同期間、至少 24 小時前的 ATTEMPTED claim，全有或全無並留稽核；排程執行不得解除。無法讀寫紀錄、
-  claim 未確認或寫入失敗時一律 fail-closed；未設定紀錄不得寄正式郵件。workflow 接線、紀錄 repository／token 與
-  live 驗證 L1～L3 待另行核准。
+  claim 未確認或寫入失敗時一律 fail-closed；未設定紀錄不得寄正式郵件。workflow 已接線（移除 Actions cache、
+  傳入三個紀錄 secret 與兩個解除輸入，另有僅能手動執行的 `delivery-check` job 執行 L1～L3）；紀錄
+  repository／token／金鑰的建立與 live 驗證 L1～L3 待執行。
 
 ## 13. Report / Delivery
 
@@ -616,5 +617,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-55 APPLIED (2026-11-04; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 workflow wiring pending)
+CONTRACT_REVISION = RC-3..RC-55 APPLIED (2026-11-04; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired, ledger repository/secrets and L1-L3 pending)
 ```

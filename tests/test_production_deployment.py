@@ -546,9 +546,9 @@ class ShellIntegrationTests(unittest.TestCase):
         self.assertNotIn("pacing", workflow.lower())
         self.assertNotIn("fallback", workflow.lower())
 
-    def test_email_is_opt_in_and_the_delivery_record_survives_runs(self):
+    def test_email_is_opt_in_and_delivery_uses_the_rc55_ledger(self):
         workflow = (ROOT / ".github" / "workflows" / "weekly-report.yml").read_text(encoding="utf-8")
-        production = workflow.split("\n  production:\n", 1)[1]
+        production = workflow.split("\n  production:\n", 1)[1].split("\n  delivery-check:\n", 1)[0]
         self.assertIn('cron: "0 1 * * 1"', workflow)
         self.assertIn("vars.WEEKLY_REPORT_SCHEDULE == 'enabled'", production)
         self.assertIn(
@@ -556,12 +556,32 @@ class ShellIntegrationTests(unittest.TestCase):
             "(github.event_name == 'schedule' && vars.LIVE_EMAIL_SEND == '1')) && '1' || '0' }}",
             production,
         )
-        self.assertIn("DELIVERY_LEDGER_PATH: .delivery/ledger.json", production)
-        self.assertLess(production.index("actions/cache/restore@v4"), production.index("python main.py"))
-        self.assertLess(production.index("python main.py"), production.index("actions/cache/save@v4"))
+        # RC-55 (section A.39): the private-repository ledger replaces the
+        # Actions-cache record of RC-26.
+        for name in ("DELIVERY_LEDGER_REPOSITORY", "DELIVERY_LEDGER_TOKEN", "DELIVERY_LEDGER_KEY"):
+            self.assertIn(f"{name}: ${{{{ secrets.{name} }}}}", production)
+        self.assertIn("DELIVERY_RELEASE_PERIOD: ${{ inputs.release_attempted_period }}", production)
+        self.assertIn("DELIVERY_RELEASE_CLAIMS: ${{ inputs.release_claims }}", production)
+        self.assertNotIn("actions/cache", workflow)
+        self.assertNotIn("DELIVERY_LEDGER_PATH", workflow)
+        self.assertNotIn("path: .delivery", workflow)
+        self.assertNotIn(".delivery/ledger.json", workflow)
+        self.assertIn("contents: read", workflow)
         self.assertIn("cancel-in-progress: false", workflow)
         # Workflow inputs reach the shell only through environment variables.
         self.assertNotIn("${{ inputs.period_start }}\"", production)
+
+    def test_the_rc55_live_checks_are_manual_only(self):
+        workflow = (ROOT / ".github" / "workflows" / "weekly-report.yml").read_text(encoding="utf-8")
+        check = workflow.split("\n  delivery-check:\n", 1)[1]
+        self.assertIn("needs: offline-regression", check)
+        self.assertIn("if: ${{ github.event_name == 'workflow_dispatch' && inputs.delivery_check != 'none' }}", check)
+        self.assertIn('python -m scripts.delivery_ledger_checks "$DELIVERY_CHECK"', check)
+        self.assertNotIn("DEFAULT_RECIPIENTS", check)
+        self.assertNotIn("MAIAGENT", check)
+        self.assertNotIn("main.py", check)
+        inputs = workflow.split("delivery_check:", 1)[1].split("\npermissions:", 1)[0]
+        self.assertIn("default: none", inputs)
 
     def test_gapped_success_is_a_warning_and_failures_still_fail(self):
         # Every real week has disclosed gaps (exit 2); the job must not look

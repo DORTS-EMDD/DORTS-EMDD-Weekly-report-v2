@@ -33,12 +33,29 @@ on:
         required: true
         default: false
         type: boolean
+      release_attempted_period:
+        description: "RC-55 release: the run's exact period YYYY-MM-DD..YYYY-MM-DD (empty = no release)"
+        required: false
+        type: string
+      release_claims:
+        description: "RC-55 release: <entry reference>@<run_id> claims from a run summary, comma separated"
+        required: false
+        type: string
+      delivery_check:
+        description: "RC-55 live check instead of a report: l1-l2 (ledger), l3 (one email to the sending account)"
+        required: true
+        default: none
+        type: choice
+        options:
+          - none
+          - l1-l2
+          - l3
 
 permissions:
   contents: read
 
-# One production run at a time; a second run waits instead of racing the
-# delivery record.
+# One production run at a time. RC-55: the delivery ledger (a private
+# repository written by compare-and-swap) does not rely on this.
 concurrency:
   group: weekly-report-production
   cancel-in-progress: false
@@ -73,14 +90,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y fonts-wqy-zenhei
       - name: Google News RSS six-probe health check
         run: python -m scripts.google_news_health_check
-      - name: Restore the delivery record
-        # Hashed keys of earlier successful sends; a later run for the same
-        # period and recipient is recorded as DUPLICATE instead of emailing.
-        uses: actions/cache/restore@v4
-        with:
-          path: .delivery
-          key: delivery-record-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: delivery-record-
       - name: Run shared production CLI
         id: cli
         run: |
@@ -115,13 +124,15 @@ jobs:
           # Email only on an explicit opt-in: the dispatch input, or the
           # repository variable LIVE_EMAIL_SEND=1 for scheduled runs.
           LIVE_EMAIL_SEND: ${{ ((github.event_name == 'workflow_dispatch' && inputs.send_email == true) || (github.event_name == 'schedule' && vars.LIVE_EMAIL_SEND == '1')) && '1' || '0' }}
-          DELIVERY_LEDGER_PATH: .delivery/ledger.json
-      - name: Save the delivery record
-        if: ${{ !cancelled() && steps.cli.outcome != 'skipped' && hashFiles('.delivery/ledger.json') != '' }}
-        uses: actions/cache/save@v4
-        with:
-          path: .delivery
-          key: delivery-record-${{ github.run_id }}-${{ github.run_attempt }}
+          # RC-55 (contract section A.39): the per-recipient handoff ledger in
+          # the private repository. Live email fails closed without all three.
+          DELIVERY_LEDGER_REPOSITORY: ${{ secrets.DELIVERY_LEDGER_REPOSITORY }}
+          DELIVERY_LEDGER_TOKEN: ${{ secrets.DELIVERY_LEDGER_TOKEN }}
+          DELIVERY_LEDGER_KEY: ${{ secrets.DELIVERY_LEDGER_KEY }}
+          # An authorized release of named ATTEMPTED claims; manual runs only
+          # (Delivery refuses a release on a scheduled run).
+          DELIVERY_RELEASE_PERIOD: ${{ inputs.release_attempted_period }}
+          DELIVERY_RELEASE_CLAIMS: ${{ inputs.release_claims }}
       - name: Keep the formal report, run summary and selection audit
         # Only after the CLI actually ran: never after a failed health gate.
         if: ${{ !cancelled() && steps.cli.outcome != 'skipped' }}
@@ -131,3 +142,29 @@ jobs:
           path: report-output/
           if-no-files-found: warn
           retention-days: 90
+
+  delivery-check:
+    # RC-55 live checks (L1-L3): manual only, never on the schedule, and never
+    # a weekly report. l1-l2 writes synthetic entries to the ledger; l3 sends
+    # one message to the sending account and only through the Delivery owner.
+    needs: offline-regression
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.delivery_check != 'none' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install project dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Install the embedded PDF font
+        run: sudo apt-get update && sudo apt-get install -y fonts-wqy-zenhei
+      - name: RC-55 live check
+        run: python -m scripts.delivery_ledger_checks "$DELIVERY_CHECK"
+        env:
+          DELIVERY_CHECK: ${{ inputs.delivery_check }}
+          DELIVERY_LEDGER_REPOSITORY: ${{ secrets.DELIVERY_LEDGER_REPOSITORY }}
+          DELIVERY_LEDGER_TOKEN: ${{ secrets.DELIVERY_LEDGER_TOKEN }}
+          DELIVERY_LEDGER_KEY: ${{ secrets.DELIVERY_LEDGER_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}

@@ -2101,11 +2101,14 @@ Implementation: `src/weekly_report/delivery.py` (owner),
 contents-API store), `gmail_smtp.py` (one message per recipient over one
 session), composition in `production_runner.py`; offline acceptance tests in
 `tests/test_delivery_rc55.py` (fake compare-and-swap store with failure
-injection). Pending: the private repository, token and key; the workflow
-wiring (ledger secrets, the two release inputs, removal of the Actions-cache
-steps); and the live checks L1-L3 (compare-and-swap rejection, token scope,
-one message to the operator), each separately approved. Until the wiring
-ships, a live send fails at composition.
+injection). Workflow wiring: the production job receives the three ledger
+secrets and the two release inputs, and the Actions-cache steps are removed; a
+manual-only `delivery-check` job runs `scripts/delivery_ledger_checks.py` for
+the live checks L1-L2 (compare-and-swap rejection and the owner's
+reconciliation on the real provider; token scope) and L3 (one message, through
+the Delivery owner, to the sending account; a second invocation must be
+`DUPLICATE`). Pending: the private repository, token and key, and running
+L1-L3. Until the secrets exist, a live send fails at composition.
 
 ```text
 DELIVERY_UNIT = ONE MESSAGE PER (PERIOD, RECIPIENT)
