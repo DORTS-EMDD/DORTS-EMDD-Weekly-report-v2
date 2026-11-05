@@ -41,6 +41,7 @@ from .event_identity import EventIdentity
 from .region_registry import RegionRegistry
 from .search_executor import SearchExecutor
 from .search_planner import SearchPlanner
+from .monitored_standards import monitored_check_month
 from .scope_classifier import ScopeClassifier
 from .temporal_rule import TemporalRule
 from .ordering import Ordering
@@ -630,8 +631,13 @@ class ReportApplication:
         period_end: date | str,
     ) -> ReportApplicationResult:
         window_start, window_end = self._temporal_rule.validate_period(period_start, period_end)
+        # RC-59 (section A.43): the report period alone decides whether this run
+        # carries the monthly monitored-standards check, and for which month.
+        monitored_check = monitored_check_month(window_start, window_end)
         with observe_stage("Search") as observation:
-            plan = self._planner.plan(mode, intents=intents, window=SearchWindow(window_start, window_end))
+            plan = self._planner.plan(
+                mode, intents=intents, window=SearchWindow(window_start, window_end), monitored_check=monitored_check
+            )
             observation.input_count = len(plan.items)
             execution = self._executor.execute(plan)
             observation.observe(execution, final=True)
@@ -700,6 +706,7 @@ class ReportApplication:
                     scope = self._scope_classifier.classify(
                         evidence,
                         candidate_title=normalized_candidate.candidate.title,
+                        monitored_check=monitored_check,
                     )
                 except (SemanticProviderTechnicalFailure, ProposalContractViolation) as failure:
                     # RC-9: a proposal the owner cannot validate is a disclosed

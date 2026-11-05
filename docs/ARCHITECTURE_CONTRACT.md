@@ -881,6 +881,11 @@ NON_DESIGNATED_REGION = EVENT_LEVEL_EXCLUSION (not disclosed in prose)
 REGION_NOT_ESTABLISHED = EVENT_LEVEL_EXCLUSION (disclosed)
 ```
 
+RC-59 (section A.43): the only exception is an event whose
+`ReportabilityResult.monitored_standard` is set (a reported formal lifecycle
+change of a monitored standard), because a standard has no event location.
+Every other event is unchanged.
+
 ### A.23 RC-29 Numeric grounding (2026-10-28)
 
 Run 40623936647 published an L&T order for Dhaka Metro Line 1 as
@@ -2293,6 +2298,13 @@ NORMATIVE_NOTIFICATION = THE WEEKLY REPORT VIA RC-55 DELIVERY; NO SEPARATE MESSA
 
 ### A.42 RC-58 Monitored standards: the scope of standards-update monitoring (2026-11-04, user-approved Domain Rule)
 
+**Amended by RC-59 (section A.43).** The list, its single source of truth, the
+identifier discovery lane and the lifecycle-change test below still apply. Who
+decides changes: the lifecycle question moves from Reportability to
+ScopeClassifier, and Reportability consumes that Scope fact. Two further
+changes: the check runs once per calendar month, and the open Scope and
+region decision recorded below is resolved.
+
 **Requirement (user, 2026-11-04).** Standards-update monitoring covers only the
 standards on the V1 monitored list. Only an event that Authoritative Evidence
 shows to be a formal lifecycle change of one of those standards is a standards
@@ -2418,11 +2430,131 @@ needs the user's decision.
 ```text
 MONITORED_STANDARDS_SOURCE_OF_TRUTH = src/weekly_report/monitored_standards.json (monitored-standards-v1, 27 identifiers, V1 literal)
 MONITORED_STANDARDS_DISCOVERY_OWNER = SearchPlanner (intent monitored_standards; family monitored_standard_identifiers)
-MONITORED_STANDARD_UPDATE_OWNER = Reportability (NORMATIVE_CHANGE events only)
+MONITORED_STANDARD_UPDATE_OWNER = Reportability (NORMATIVE_CHANGE events only; RC-59: ScopeClassifier owns the lifecycle fact)
 REPORTABILITY_REASONS = LOW_REPORTABILITY_VALUE, OUTSIDE_MONITORED_STANDARDS
 NORMATIVE_CHANGE_CATEGORY = UNCHANGED (section L)
 SEARCH_CONFIGURATION_VERSION = search-discovery-v9
-MONITORED_STANDARD_SCOPE_AND_REGION = BLOCKED_DOMAIN_RULE (existing Scope and RC-28 apply)
+MONITORED_STANDARD_SCOPE_AND_REGION = RESOLVED BY RC-59 (section A.43)
+```
+
+### A.43 RC-59 Monthly monitored-standards check; narrow Scope and region basis (2026-11-05, user-approved Domain Rules)
+
+**Requirements (user, 2026-11-05).**
+1. The weekly news report runs every week. The 27 monitored standards are
+   checked once per calendar month, not in every weekly run.
+2. A Candidate that Authoritative Evidence shows to be a formal lifecycle change
+   of a monitored standard itself is not excluded for want of an urban-rail
+   mention (Scope), nor for want of a location in one of the 20 designated
+   regions (RC-28). The rule is narrow: MONITORED_STANDARD plus a
+   PROVEN_FORMAL_LIFECYCLE_CHANGE. It covers no other standard, regulation,
+   ordinance, procurement specification, citation, recommendation or
+   commentary.
+
+Results still go into the one weekly report. A month with no qualifying update
+produces no standards event, no section and no message.
+
+**Root cause.** RC-58 put the identifier lane into every weekly plan, so the
+standards were checked weekly. It also left monitored-standard updates subject
+to the urban-rail Scope rule and to RC-28. A publication notice for a
+cross-industry or railway-wide standard rarely names a metro or a designated
+location, so the very events the list exists for were excluded (for example the
+NFPA 70 interim amendment found by the RC-58 probe).
+
+**Cadence owner.** `monitored_standards.monitored_check_month(period)` is the
+only owner. A report period carries the check of calendar month M when the
+period contains M's last day. The check covers the whole of M.
+* A Monday-to-Sunday week contains at most one month end, and every month end
+  lies in exactly one such week. Each month is therefore checked exactly once,
+  and consecutive checks tile the calendar.
+* The answer depends only on the period. The period comes from
+  `production_runner.default_period` (RC-56), so a delayed run, a retry or a
+  manual rerun of the same week gets the same answer, and RC-55 still prevents
+  a second delivery.
+* Examples: the week 2026-11-30..12-06 (run on 2026-12-07) checks November
+  2026. The week 2026-12-28..2027-01-03 (run on 2027-01-04) checks December
+  2026. The weeks in between check nothing.
+* No persistent state is needed. Calendar arithmetic on the period gives the
+  month, and the period already identifies the run for Delivery.
+
+**Discovery.** `SearchPlanner.plan` receives the check month. Only then does it
+plan the `monitored_standards` intent, with its 63 identifier requests bounded
+to the whole month. Every other request keeps the weekly window. A weekly plan
+without a check has the 122 v7 requests only. "Every enabled intent is planned
+and attempted" applies: the monitored lane is enabled exactly in check runs.
+The plan is frozen as before; the health check uses the weekly plan.
+
+**Scope (the narrow basis).** ScopeClassifier, the only Scope owner, receives
+the check month.
+1. In a check run, when Python finds monitored identifiers in a Candidate's
+   principal content, one `scope_semantic_proposal` request of a second kind
+   (prompt `scope-monitored-standard-v1`, schema
+   `scope-monitored-standard-proposal-v1`) asks which supplied identifier, if
+   any, the document reports as itself formally changed: new edition or
+   revision (including formal national adoption), amendment, corrigendum,
+   withdrawal, supersession, or formal draft or consultation. The answer cites
+   sentence IDs.
+2. Python accepts only a supplied identifier whose cited sentences contain it.
+3. An accepted answer makes the Candidate `IN_SCOPE` with a typed
+   `MonitoredStandardChange` (identifier, action, sentence IDs, check month).
+   The cited sentences become its event focus (RC-20).
+4. A null answer leaves the ordinary Scope rule to decide, unchanged. A contract
+   violation is a disclosed Candidate technical gap (RC-9).
+5. Outside check runs, and for Candidates naming no monitored identifier, Scope
+   is exactly as before.
+
+Citing, applying, requiring or recommending a standard is never a lifecycle
+change. A regulation, ordinance or other standard cannot reach this basis,
+because it is not on the list or it does not change the listed standard
+itself.
+
+**Temporal.** TemporalRule, the only date owner, dates a monitored-basis
+Candidate against its check month instead of the week. A change dated in the
+next month waits for that month's check. Every other Candidate is unchanged.
+
+**Reportability.** Reportability no longer asks a lifecycle question; it reads
+the Scope fact of the event's members.
+* A `NORMATIVE_CHANGE` event is `REPORTABLE` only when a member carries a
+  monitored-standard change and the unchanged value-path request supports it.
+  Otherwise the result is `OUTSIDE_MONITORED_STANDARDS`.
+* An event whose members are all in scope only on the monitored basis but whose
+  Category is not `NORMATIVE_CHANGE` is `OUTSIDE_MONITORED_STANDARDS`, so the
+  basis admits nothing but the standards section.
+* A reported monitored update carries `monitored_standard` on its
+  `ReportabilityResult`.
+
+**Region (RC-28).** ReportService does not apply the designated-region rule to
+an event whose `ReportabilityResult.monitored_standard` is set: a standard has
+no event location. Every other event, including every other normative change,
+is unchanged.
+
+**Report and Delivery.** Unchanged. Monitored updates of month M appear in
+「規範及標準動態」 of the weekly report that carries M's check and travel with it
+through RC-55 to the same mailing list. There is no second report, message,
+list, ledger, schedule or state.
+
+**Golden.** `golden/monitored_standards_cases.json` v2 (MS01 to MS15) runs Scope,
+Temporal and Reportability through the production owners. The cases cover:
+* monitored new edition, draft, national amendment, an amendment with no
+  urban-rail wording, and a publication outside the designated regions;
+* a procurement citation, a mention in guidance, a regulation making
+  compliance mandatory, another standard's revision, and city ordinances with
+  and without an urban-rail tie;
+* a deployment tested to a standard, and an article that only mentions a
+  standard;
+* the same notice in an ordinary week, and a next-month change in this month's
+  check.
+
+The region exemption is executed on the RC-28 region fixtures. G69 to G74 are
+unchanged from RC-58.
+
+```text
+MONITORED_STANDARDS_CHECK = ONCE PER CALENDAR MONTH (report period containing the month's last day; covers that month)
+MONITORED_STANDARDS_CADENCE_OWNER = monitored_standards.monitored_check_month (pure function of the report period)
+MONITORED_STANDARD_LIFECYCLE_OWNER = ScopeClassifier (scope_semantic_proposal, second request kind)
+MONITORED_STANDARD_SCOPE_BASIS = MONITORED_STANDARD + PROVEN_FORMAL_LIFECYCLE_CHANGE ONLY
+MONITORED_STANDARD_DATE_WINDOW = CHECK MONTH (TemporalRule)
+MONITORED_STANDARD_REGION_RULE = NOT APPLIED (ReportService, only when ReportabilityResult.monitored_standard is set)
+MONITORED_STANDARDS_STATE = NONE
 ```
 
 ## B. Authoritative Owners
@@ -2907,7 +3039,7 @@ monitored_standards -> monitored standards
 * major incident
 * operations
 * procurement
-* monitored_standards（RC-58，§A.42：以監控清單的標準編號搜尋該批標準的動態）
+* monitored_standards（RC-58，§A.42：以監控清單的標準編號搜尋該批標準的動態；RC-59，§A.43：只在每月檢查的那一期規劃，搜尋整個月份）
 
 每個啟用 intent 至少：
 
@@ -3797,6 +3929,9 @@ reinterpretation, or reparsing. A missing or invalid canonical date remains a
 formal-run technical failure. This paragraph only defines downstream display
 projection and does not modify `docs/TEMPORAL_CONTRACT.md` or any Temporal rule.
 
+RC-59（§A.43）：以 `MONITORED_STANDARD` 依據 IN_SCOPE 的候選，日期有效範圍是該次每月檢查的月份，而不是週報期間；
+其他候選不變。
+
 ## J. Scope
 
 正式範圍包括：
@@ -3814,6 +3949,9 @@ projection and does not modify `docs/TEMPORAL_CONTRACT.md` or any Temporal rule.
 一般鐵路、高鐵、公車、航空、旅遊不屬正式 scope。
 
 Scope 只由 Scope Classifier 判。
+
+RC-59（§A.43）唯一的窄例外：每月檢查的那一期中，Evidence 證明為監控標準清單中某一標準本身的正式 lifecycle
+變動者，以 `MONITORED_STANDARD` 依據 IN_SCOPE，不需都市軌道關係；其他候選、其他標準、法規與條例皆依上列規則。
 
 Eligible mode family、boundary mode、mixed-mode、diagnostic 與 constrained
 semantic helper 的詳細規則，以 `docs/SCOPE_CONTRACT.md` 為 authoritative
@@ -4613,7 +4751,9 @@ Reportability successfully evaluated the complete EventGroup, but the
 supplied authoritative evidence does not positively support such value. Its
 domain reason is `LOW_REPORTABILITY_VALUE`; since RC-58 (section A.42) a
 `NORMATIVE_CHANGE` event that is not a formal lifecycle change of a monitored
-standard is `NOT_REPORTABLE` with `OUTSIDE_MONITORED_STANDARDS`. This is a semantic result,
+standard is `NOT_REPORTABLE` with `OUTSIDE_MONITORED_STANDARDS`. Since RC-59
+(section A.43) that fact is ScopeClassifier's `MonitoredStandardChange` on the
+members, which Reportability reads and never re-derives. This is a semantic result,
 not a technical failure or a claim that the event has no value in every
 context.
 

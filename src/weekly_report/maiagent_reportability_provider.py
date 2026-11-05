@@ -15,7 +15,7 @@ import os
 from typing import Any
 from urllib.parse import quote, urlsplit
 
-from .contracts import MonitoredStandardRequest, ReportabilitySemanticRequest, StandardLifecycleAction
+from .contracts import ReportabilitySemanticRequest
 from .maiagent_transport import (
     MaiAgentHttpResponse,
     MaiAgentJsonHttpTransport,
@@ -124,64 +124,6 @@ MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA: dict[str, Any] = {
     ],
 }
 
-# RC-58 (section A.42): the second request kind of the same task. Sent only for
-# NORMATIVE_CHANGE events whose Evidence names a monitored standard. The helper
-# says which supplied identifier, if any, the Evidence reports as itself
-# formally changed; Python owns the list, the membership and the citation check.
-MONITORED_STANDARD_PROMPT_VERSION = "reportability-monitored-standard-v1"
-MONITORED_STANDARD_SCHEMA_VERSION = "reportability-monitored-standard-proposal-v1"
-
-MONITORED_STANDARD_INSTRUCTIONS = (
-    "You are a stateless proposal-only semantic helper for the Python Reportability owner.",
-    "Use only the supplied member sentences in the current request. Each member has a source_ref (M1, M2, ...) and each sentence a sentence_id, both assigned by Python.",
-    "monitored_identifiers lists standard identifiers that Python found in the evidence. Decide whether the evidence reports a formal lifecycle change of one of these standards itself.",
-    "A formal lifecycle change is: publication of a new edition or revision, including its formal national adoption; an amendment; a corrigendum or erratum; withdrawal; supersession or replacement by another document; or a formal draft or formal public consultation on the standard. The evidence must state that the change was made, published, approved, opened or proposed by the body responsible for the standard or by a body formally adopting it.",
-    "It is not a change of the standard when the evidence only cites, applies, requires or discusses it: a project, product, procurement, contract, design, test or certification that complies with it; a regulation, guideline or contract that requires compliance with it; a recommendation or call by a researcher, official or commentator; a description, history or review of an existing edition; or a rumoured or expected future revision without a formal draft or consultation.",
-    "changed_standard is exactly one identifier copied unchanged from monitored_identifiers, or null when the evidence reports no formal lifecycle change of any of them.",
-    "When changed_standard is not null, lifecycle_action names the change: NEW_EDITION_OR_REVISION, AMENDMENT, CORRIGENDUM, WITHDRAWAL, SUPERSESSION or DRAFT_OR_CONSULTATION, and citations name the source_ref and sentence_ids that state the change; at least one cited sentence must contain the identifier. When changed_standard is null, lifecycle_action is null and citations is empty.",
-    "If several monitored standards change, name the one the evidence reports as its principal news.",
-    "examined_source_refs must list every supplied source_ref exactly once.",
-    "Never copy or retype source text; cite sentence_ids only.",
-    "Do not search, browse, use tools, RAG, or outside knowledge about standards, editions or dates.",
-    "Do not decide Category, Taxonomy, Reportability, Ordering, or write the formal report.",
-    "Return JSON only with no Markdown, prose outside JSON, or extra fields.",
-)
-
-MONITORED_STANDARD_RESPONSE_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "additionalProperties": False,
-    "properties": {
-        "event_id": {"type": "string"},
-        "examined_source_refs": {"type": "array", "items": {"type": "string"}},
-        "changed_standard": {"type": ["string", "null"]},
-        "lifecycle_action": {
-            "type": ["string", "null"],
-            "enum": [action.value for action in StandardLifecycleAction] + [None],
-        },
-        "citations": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "additionalProperties": False,
-                "properties": {
-                    "source_ref": {"type": "string"},
-                    "sentence_ids": {"type": "array", "items": {"type": "string"}},
-                },
-                "required": ["source_ref", "sentence_ids"],
-            },
-        },
-        "rationale": {"type": "string"},
-    },
-    "required": [
-        "event_id",
-        "examined_source_refs",
-        "changed_standard",
-        "lifecycle_action",
-        "citations",
-        "rationale",
-    ],
-}
-
 # Descriptive aliases keep one schema object discoverable for focused callers.
 REPORTABILITY_RESPONSE_SCHEMA = MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA
 _MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA = MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA
@@ -265,23 +207,10 @@ class MaiAgentReportabilityProviderConfig:
 
 
 def build_maiagent_reportability_model_input(
-    request: ReportabilitySemanticRequest | MonitoredStandardRequest,
+    request: ReportabilitySemanticRequest,
 ) -> dict[str, Any]:
     """Build one complete, bounded, stateless task input."""
 
-    if isinstance(request, MonitoredStandardRequest):
-        return {
-            "task_identity": TASK_IDENTITY,
-            "prompt_version": MONITORED_STANDARD_PROMPT_VERSION,
-            "schema_version": MONITORED_STANDARD_SCHEMA_VERSION,
-            "helper_version": HELPER_VERSION,
-            "instructions": list(MONITORED_STANDARD_INSTRUCTIONS),
-            "monitored_standard_request": request.as_payload(),
-            "authoritative_response_contract": {
-                "schema_version": MONITORED_STANDARD_SCHEMA_VERSION,
-                "json_schema": MONITORED_STANDARD_RESPONSE_SCHEMA,
-            },
-        }
     if not isinstance(request, ReportabilitySemanticRequest):
         raise TypeError("MaiAgent Reportability input requires ReportabilitySemanticRequest")
     return {
@@ -318,8 +247,8 @@ class MaiAgentReportabilityProposalProvider:
         self._config = config
         self._transport = transport if transport is not None else UrllibMaiAgentJsonTransport()
 
-    def __call__(self, request: ReportabilitySemanticRequest | MonitoredStandardRequest) -> object:
-        if not isinstance(request, (ReportabilitySemanticRequest, MonitoredStandardRequest)):
+    def __call__(self, request: ReportabilitySemanticRequest) -> object:
+        if not isinstance(request, ReportabilitySemanticRequest):
             raise TypeError(
                 "MaiAgent Reportability provider accepts only ReportabilitySemanticRequest"
             )
@@ -388,10 +317,6 @@ __all__ = [
     "HELPER_VERSION",
     "MAIAGENT_REPORTABILITY_PROVIDER_IDENTIFIER",
     "MAIAGENT_REPORTABILITY_RESPONSE_SCHEMA",
-    "MONITORED_STANDARD_INSTRUCTIONS",
-    "MONITORED_STANDARD_PROMPT_VERSION",
-    "MONITORED_STANDARD_RESPONSE_SCHEMA",
-    "MONITORED_STANDARD_SCHEMA_VERSION",
     "MaiAgentReportabilityAdapter",
     "MaiAgentReportabilityFailure",
     "MaiAgentReportabilityProposalProvider",

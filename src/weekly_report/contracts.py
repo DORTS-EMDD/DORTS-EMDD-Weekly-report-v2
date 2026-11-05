@@ -525,6 +525,59 @@ class SourceDateFact:
         )
 
 
+class StandardLifecycleAction(StrEnum):
+    """RC-58: the formal lifecycle change a monitored standard itself undergoes."""
+
+    NEW_EDITION_OR_REVISION = "NEW_EDITION_OR_REVISION"
+    AMENDMENT = "AMENDMENT"
+    CORRIGENDUM = "CORRIGENDUM"
+    WITHDRAWAL = "WITHDRAWAL"
+    SUPERSESSION = "SUPERSESSION"
+    DRAFT_OR_CONSULTATION = "DRAFT_OR_CONSULTATION"
+
+
+@dataclass(frozen=True, slots=True)
+class MonitoredCheckMonth:
+    """RC-59: the calendar month a monthly monitored-standards check covers."""
+
+    start: date
+    end: date
+
+    def __post_init__(self) -> None:
+        if type(self.start) is not date or type(self.end) is not date:
+            raise TypeError("MonitoredCheckMonth requires calendar dates")
+        if self.start.day != 1 or self.end < self.start or (self.end.year, self.end.month) != (self.start.year, self.start.month):
+            raise ValueError("MonitoredCheckMonth must start on day 1 and end in the same month")
+        following = date(self.end.year + (self.end.month == 12), self.end.month % 12 + 1, 1)
+        if (following - self.end).days != 1:
+            raise ValueError("MonitoredCheckMonth must end on the last day of its month")
+
+    @property
+    def label(self) -> str:
+        return f"{self.start.year:04d}-{self.start.month:02d}"
+
+
+@dataclass(frozen=True, slots=True)
+class MonitoredStandardChange:
+    """RC-59: a proven formal lifecycle change of a monitored standard (Scope basis)."""
+
+    identifier: str
+    lifecycle_action: StandardLifecycleAction
+    sentence_ids: tuple[str, ...]
+    check_month: MonitoredCheckMonth
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.identifier, str) or not self.identifier.strip():
+            raise ValueError("MonitoredStandardChange requires an identifier")
+        object.__setattr__(self, "lifecycle_action", StandardLifecycleAction(self.lifecycle_action))
+        ids = tuple(self.sentence_ids)
+        if not ids or any(not isinstance(value, str) or not value for value in ids):
+            raise ValueError("MonitoredStandardChange requires cited sentence IDs")
+        object.__setattr__(self, "sentence_ids", ids)
+        if not isinstance(self.check_month, MonitoredCheckMonth):
+            raise TypeError("MonitoredStandardChange requires a MonitoredCheckMonth")
+
+
 @dataclass(frozen=True, slots=True)
 class ScopeResult:
     """Immutable authoritative result returned by ScopeClassifier."""
@@ -533,12 +586,20 @@ class ScopeResult:
     state: ScopeState
     diagnostic: ScopeDiagnostic = ScopeDiagnostic.NONE
     provenance: Mapping[str, Any] = field(default_factory=dict)
+    # RC-59 (section A.43): set only when the Candidate is IN_SCOPE because it
+    # is a proven formal lifecycle change of a monitored standard.
+    monitored_standard: MonitoredStandardChange | None = None
 
     def __post_init__(self) -> None:
         if self.state not in {ScopeState.IN_SCOPE, ScopeState.OUT_OF_SCOPE}:
             raise ValueError("ScopeResult requires an authoritative ScopeState")
         if self.state is ScopeState.IN_SCOPE and self.diagnostic is not ScopeDiagnostic.NONE:
             raise ValueError("IN_SCOPE cannot carry an exclusion diagnostic")
+        if self.monitored_standard is not None:
+            if not isinstance(self.monitored_standard, MonitoredStandardChange):
+                raise TypeError("monitored_standard must be a MonitoredStandardChange")
+            if self.state is not ScopeState.IN_SCOPE:
+                raise ValueError("only IN_SCOPE can carry a monitored-standard basis")
 
 
 class TemporalDiagnostic(StrEnum):
@@ -1101,17 +1162,6 @@ class ReportabilityReason(StrEnum):
     OUTSIDE_MONITORED_STANDARDS = "OUTSIDE_MONITORED_STANDARDS"
 
 
-class StandardLifecycleAction(StrEnum):
-    """RC-58: the formal lifecycle change a monitored standard itself undergoes."""
-
-    NEW_EDITION_OR_REVISION = "NEW_EDITION_OR_REVISION"
-    AMENDMENT = "AMENDMENT"
-    CORRIGENDUM = "CORRIGENDUM"
-    WITHDRAWAL = "WITHDRAWAL"
-    SUPERSESSION = "SUPERSESSION"
-    DRAFT_OR_CONSULTATION = "DRAFT_OR_CONSULTATION"
-
-
 class ReportabilityOccurrence(StrEnum):
     """RC-27: the principal occurrence the Evidence reports, named by the helper.
 
@@ -1210,10 +1260,18 @@ class ReportabilityResult:
     reportability_state: ReportabilityState
     reportability_reason: ReportabilityReason | None
     provenance: ReportabilityEvidenceProvenance
+    # RC-59: the monitored standard when the event is REPORTABLE as a monitored
+    # standard update. ReportService consumes it for the region rule (RC-28).
+    monitored_standard: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.event_id, str) or not self.event_id.strip():
             raise ValueError("ReportabilityResult requires event_id")
+        if self.monitored_standard is not None and (
+            not isinstance(self.monitored_standard, str) or not self.monitored_standard.strip()
+            or ReportabilityState(self.reportability_state) is not ReportabilityState.REPORTABLE
+        ):
+            raise ValueError("only a REPORTABLE result can name a monitored standard")
         try:
             state = ReportabilityState(self.reportability_state)
         except (TypeError, ValueError) as exc:
@@ -1384,90 +1442,6 @@ class ReportabilitySemanticProposal:
             raise ValueError("REPORTABLE proposal requires support citations")
         if state is ReportabilityState.NOT_REPORTABLE and citations:
             raise ValueError("NOT_REPORTABLE proposal cannot carry support citations")
-
-
-@dataclass(frozen=True, slots=True)
-class MonitoredStandardRequest:
-    """RC-58: ask which monitored standard, if any, the Evidence reports as itself changed.
-
-    Sent only for NORMATIVE_CHANGE events whose Evidence mentions at least one
-    monitored identifier. ``monitored_identifiers`` are the identifiers Python
-    found; the helper may answer only one of them or null.
-    """
-
-    event_id: str
-    members: tuple[ReportabilitySemanticMember, ...]
-    monitored_identifiers: tuple[str, ...]
-
-    def __post_init__(self) -> None:
-        base = ReportabilitySemanticRequest(self.event_id, self.members)
-        object.__setattr__(self, "members", base.members)
-        if isinstance(self.monitored_identifiers, (str, bytes, bytearray)):
-            raise TypeError("monitored_identifiers must be a sequence")
-        identifiers = tuple(self.monitored_identifiers)
-        if not identifiers or any(not isinstance(value, str) or not value.strip() for value in identifiers):
-            raise ValueError("MonitoredStandardRequest requires monitored identifiers")
-        if len(identifiers) != len(set(identifiers)):
-            raise ValueError("monitored identifiers must be unique")
-        object.__setattr__(self, "monitored_identifiers", identifiers)
-
-    @property
-    def member_candidate_ids(self) -> tuple[str, ...]:
-        return tuple(member.candidate_id for member in self.members)
-
-    @property
-    def source_refs(self) -> dict[str, str]:
-        from .source_refs import source_refs
-
-        return source_refs(self.member_candidate_ids)
-
-    def as_payload(self) -> dict[str, Any]:
-        payload = ReportabilitySemanticRequest(self.event_id, self.members).as_payload()
-        payload["monitored_identifiers"] = list(self.monitored_identifiers)
-        return payload
-
-
-@dataclass(frozen=True, slots=True)
-class MonitoredStandardProposal:
-    """Untrusted answer to a :class:`MonitoredStandardRequest`."""
-
-    event_id: str
-    examined_source_refs: tuple[str, ...]
-    changed_standard: str | None
-    lifecycle_action: StandardLifecycleAction | None
-    citations: tuple[ReportabilitySemanticCitation, ...]
-    rationale: str
-
-    def __post_init__(self) -> None:
-        if not isinstance(self.event_id, str) or not self.event_id.strip():
-            raise ValueError("monitored standard proposal requires event_id")
-        if isinstance(self.examined_source_refs, (str, bytes, bytearray)):
-            raise TypeError("examined_source_refs must be a sequence")
-        refs = tuple(self.examined_source_refs)
-        if not refs or any(not isinstance(ref, str) or not ref.strip() for ref in refs) or len(refs) != len(set(refs)):
-            raise ValueError("monitored standard proposal requires unique examined source references")
-        object.__setattr__(self, "examined_source_refs", refs)
-        if isinstance(self.citations, (str, bytes, bytearray)):
-            raise TypeError("citations must contain ReportabilitySemanticCitation values")
-        citations = tuple(self.citations)
-        if any(not isinstance(citation, ReportabilitySemanticCitation) for citation in citations):
-            raise TypeError("citations must contain ReportabilitySemanticCitation values")
-        object.__setattr__(self, "citations", citations)
-        if not isinstance(self.rationale, str) or not self.rationale.strip():
-            raise ValueError("monitored standard proposal requires rationale")
-        if self.changed_standard is None:
-            if self.lifecycle_action is not None or citations:
-                raise ValueError("a null changed_standard carries no lifecycle action or citations")
-            return
-        if not isinstance(self.changed_standard, str) or not self.changed_standard.strip():
-            raise ValueError("changed_standard must be an identifier or null")
-        try:
-            action = StandardLifecycleAction(self.lifecycle_action)
-        except (TypeError, ValueError) as exc:
-            raise ValueError("changed_standard requires a valid lifecycle_action") from exc
-        object.__setattr__(self, "lifecycle_action", action)
-        if not citations:
-            raise ValueError("changed_standard requires citations")
 
 
 class ReportabilitySemanticProposalProvider(Protocol):

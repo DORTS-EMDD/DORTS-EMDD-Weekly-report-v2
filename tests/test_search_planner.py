@@ -45,7 +45,10 @@ class SearchPlannerTests(unittest.TestCase):
         self.assertEqual(tuple(item.plan_item_id for item in first.items), tuple(item.plan_item_id for item in second.items))
         keys = [(item.market_id, item.intent.value, item.language_profile, item.query_family_id, item.provider_target, item.query) for item in first.items]
         self.assertEqual(keys, sorted(keys))
-        self.assertEqual({item.intent for item in first.items}, set(DiscoveryIntent))
+        # RC-59: the monitored-standards lane is planned only in the monthly check.
+        self.assertEqual(
+            {item.intent for item in first.items}, set(DiscoveryIntent) - {DiscoveryIntent.MONITORED_STANDARDS}
+        )
         with self.assertRaises(FrozenInstanceError):
             first.items += (first.items[0],)
 

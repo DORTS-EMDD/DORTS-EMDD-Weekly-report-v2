@@ -2443,3 +2443,23 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - 測試與 Golden：新增 `tests/test_rc58_monitored_standards.py`、`golden/monitored_standards_cases.json`（MS01–MS09）；G69–G74 改為 NOT_REPORTABLE（`OUTSIDE_MONITORED_STANDARDS`）。
 - 突變測試：6 個突變中 5 個被測試抓到。存活的 1 個是「只接受已提供編號」檢查；引用句必須含該編號的檢查已涵蓋它，屬重複防護。
 - 未決 Domain 決定（未實作）：監控標準的公告若未提及都市軌道系統或指定地區，仍依既有 Scope 與 RC-28 被排除。上述 NFPA 70 文章即屬此類，需要使用者決定是否以「列入監控清單」本身作為 Scope 與地區的依據。
+
+## 62. RC-59：監控標準每月檢查一次；狹義 Scope 與地區依據（§A.43，使用者核定 Domain Rule，2026-11-05）
+
+- 需求：週報每週執行，27 項監控標準每月檢查一次。清單中標準本身的正式 lifecycle 變動，不因來源未提及捷運或不在 20 個地區而被排除；此例外只適用監控標準加上已證明的正式變動。
+- RC-58 的問題：
+  - 編號查詢放進每週計畫，等於每週檢查。
+  - Scope 與 RC-28 會排除未提及都市軌道或地點的標準公告，例如 probe 找到的 NFPA 70 暫行修正。
+- 修正：
+  - 頻率：`monitored_check_month` 以報告期間判定，包含某月最後一天的那一期檢查整個該月。例如 11-30～12-06 檢查 11 月，12-28～01-03 檢查 12 月。
+  - 搜尋：只有該期加入 63 次編號查詢（整月期間），一般週仍為 122 次。
+  - 判定：Scope 以第二種請求確認「哪一個標準本身變動」，Python 驗證編號與引用句；成立者以 `MONITORED_STANDARD` 依據 IN_SCOPE。
+  - 日期與地區：TemporalRule 以檢查月份判斷日期；ReportService 對 Reportability 標明的監控更新不套用 RC-28。
+  - Reportability 只讀取 Scope 事實。
+- 驗證：
+  - Golden MS01–MS15 經過 Scope、Temporal、Reportability。
+  - 地區例外以 RC-28 的 R03、R04、R05 fixture 執行。
+  - 延遲、重跑與跨月以 `default_period` 測試。
+  - 13 個突變中 11 個被抓到；2 個存活者為等價或重複防護（見 commit 說明）。
+  - 全部測試 1451 passed。
+- 未做：Live 正式執行。第一次實際檢查是 2026-11-30～12-06 那一期（12-07 執行，檢查 11 月），且須先合併入 main。

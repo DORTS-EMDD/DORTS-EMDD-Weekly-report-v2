@@ -709,10 +709,15 @@ class ReportService:
 
         self._validate_upstream_result(result)
         country, country_basis, region_id = self._resolve_country(event_id, records)
-        if self._formal_region_ids is not None:
+        reportability_result = result.reportability_result
+        monitored_update = reportability_result is not None and reportability_result.monitored_standard is not None
+        if self._formal_region_ids is not None and not monitored_update:
             # RC-28: a formal event must be established, from its members'
             # Evidence, to lie in a designated region. Search market,
             # publisher, URL and model knowledge are never used.
+            # RC-59 (section A.43): the one exception is an event Reportability
+            # reported as a monitored-standard update: a standard has no event
+            # location, so the region rule does not apply to it.
             if region_id is None:
                 self._fail(FormalMetadataFailureReason.REGION_NOT_ESTABLISHED, event_id, member_ids)
             if region_id not in self._formal_region_ids:

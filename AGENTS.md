@@ -76,7 +76,7 @@ Search 不得正式決定 Evidence Ready、Scope、Date validity、Category 或 
 * major incident
 * operations
 * procurement
-* monitored_standards（RC-58：以監控標準清單的編號搜尋該批標準的動態）
+* monitored_standards（RC-58：以監控標準清單的編號搜尋該批標準的動態；RC-59：只在每月檢查的那一期規劃）
 
 每個啟用 intent 都必須至少 `PLANNED + ATTEMPTED`。
 
@@ -159,6 +159,7 @@ DETERMINISTIC ORDERING
 
 `NORMATIVE_CHANGE` 事件只有在 Evidence 證明為監控標準清單（`src/weekly_report/monitored_standards.json`）
 中某一標準本身的正式變動時才 REPORTABLE（RC-58）；其他規範變動為 NOT_REPORTABLE（`OUTSIDE_MONITORED_STANDARDS`）。
+該事實由 ScopeClassifier 在每月檢查中判定，Reportability 只讀取（RC-59）。
 
 Ordering 採可解釋 deterministic / lexicographic rules，不使用不透明總分。
 
@@ -241,7 +242,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-58 修訂（2026-10-20～11-04）
+### RC-3～RC-59 修訂（2026-10-20～11-05）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.38、§N 與 §R。
 
@@ -499,7 +500,20 @@ Transport retry 與 semantic correction 必須分開計算。
   helper task 的第二種請求問「哪一個標準本身變動」，Python 只接受有出現在引用句中的已提供編號，再走原本的價值判斷；引用、
   遵循、採購要求、建議、回顧都不算。G69–G74 的 Reportability 改為 NOT_REPORTABLE；新增 Golden MS01–MS09。Scope、RC-28、
   Delivery、訂閱、排程、報告週期不變，不新增狀態。未決 Domain 決定：監控標準的公告若未提及都市軌道或指定地區，仍會被 Scope
-  或 RC-28 排除（BLOCKED_DOMAIN_RULE）。
+  或 RC-28 排除（BLOCKED_DOMAIN_RULE；已由 RC-59 解決）。
+* RC-59（§A.43，使用者核定 Domain Rule）：
+  * 週報每週執行；27 項監控標準每個日曆月檢查一次。唯一 owner 是 `monitored_standards.monitored_check_month`：
+    報告期間（週一至週日）包含某月最後一天的那一期，檢查整個該月份；每個月恰好一期，只由期間決定，延遲、重試、
+    手動重跑同一期答案相同，RC-55 仍擋下重寄，不需任何狀態。
+    例：2026-11-30～12-06（12-07 寄出）檢查 11 月，2026-12-28～2027-01-03 檢查 12 月，其餘週不檢查。
+  * 只有該期的 Search 計畫加入 63 次編號查詢，期間為整個月份，其他查詢仍為週期間；一般週計畫為 122 次。
+  * 窄例外由 ScopeClassifier（唯一 Scope owner）負責：該期候選本文出現監控編號時，以 Scope helper 的第二種請求問
+    「哪一個標準本身正式變動」；Python 只接受已提供且出現在引用句中的編號。成立者以 `MONITORED_STANDARD` 依據
+    IN_SCOPE，不需都市軌道關係；TemporalRule 以檢查月份判斷日期；ReportService 對 Reportability 標明
+    `monitored_standard` 的事件不套用 RC-28 地區規則。其他標準、法規、條例、採購規格、引用、建議與評論都不適用；
+    此依據也只能進「規範及標準動態」。
+  * Reportability 不再自行詢問，只讀取 Scope 事實。
+  * Golden MS01–MS15。Delivery、訂閱、排程、報告週期不變；不新增第二封信或任何狀態。
 
 ## 13. Report / Delivery
 
@@ -650,5 +664,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-58 APPLIED (2026-11-04; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
+CONTRACT_REVISION = RC-3..RC-59 APPLIED (2026-11-05; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```

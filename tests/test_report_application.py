@@ -111,7 +111,7 @@ class FixturePlanner(SearchPlanner):
         super().__init__(registry)
         self._plan = plan
 
-    def plan(self, mode, intents=None, *, window=None):
+    def plan(self, mode, intents=None, *, window=None, monitored_check=None):
         return self._plan
 
 
@@ -309,7 +309,7 @@ class RecordingScopeClassifier(ScopeClassifier):
         self.error = error
         self.invalid = invalid
 
-    def classify(self, evidence, *, candidate_title=""):
+    def classify(self, evidence, *, candidate_title="", monitored_check=None):
         self.calls.append((evidence, candidate_title))
         if self.error is not None:
             raise self.error
@@ -1971,7 +1971,7 @@ class ReportApplicationTests(TestCase):
                 super().__init__()
                 self.successful_results = []
 
-            def classify(self, evidence, *, candidate_title=""):
+            def classify(self, evidence, *, candidate_title="", monitored_check=None):
                 if len(self.calls) == 0:
                     result = super().classify(evidence, candidate_title=candidate_title)
                     self.successful_results.append(result)
@@ -2323,7 +2323,7 @@ class TechnicalGapIsolationTests(TestCase):
                 super().__init__()
                 self.violations = 0
 
-            def classify(self, evidence, *, candidate_title=""):
+            def classify(self, evidence, *, candidate_title="", monitored_check=None):
                 if self.violations == 0:
                     self.violations += 1
                     raise ScopeProposalViolation("CITATION_INVALID")

@@ -3,9 +3,10 @@
 ``monitored_standards.json`` is the only source of truth for which standards
 the standards-update monitoring covers. It is the V1 list, approved by the user
 as the product scope. This module loads it and locates identifier mentions in
-text. It decides nothing: SearchPlanner uses the identifiers as discovery
-terms (through the materialized Search configuration), and Reportability
-alone decides whether an event is a formal change of a monitored standard.
+text, and ``monitored_check_month`` is the only owner of the monthly cadence
+(RC-59). Neither decides an event: SearchPlanner uses the identifiers as
+discovery terms in the monthly check, and ScopeClassifier alone decides whether
+a Candidate is a proven formal lifecycle change of a monitored standard.
 
 Matching is mechanical. An entry matches when the text contains its body
 prefix and number as one token; an optional "Std" (IEEE usage) and optional
@@ -19,6 +20,7 @@ NFKC-normalized first, so full-width digits match.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date, timedelta
 from functools import lru_cache
 import hashlib
 import json
@@ -26,6 +28,8 @@ from pathlib import Path
 import re
 import unicodedata
 from typing import Any, Mapping
+
+from .contracts import MonitoredCheckMonth
 
 
 REFERENCE_PATH = Path(__file__).with_name("monitored_standards.json")
@@ -90,6 +94,28 @@ def _pattern(identifier: str) -> re.Pattern[str]:
     )
 
 
+def monitored_check_month(period_start: date, period_end: date) -> MonitoredCheckMonth | None:
+    """RC-59: the calendar month whose monthly check belongs to this report period.
+
+    The monitored standards are checked once per calendar month, in the weekly
+    report whose period contains that month's last day; the check covers the
+    whole month. A week can contain at most one month end, and every month end
+    lies in exactly one Monday-to-Sunday week, so each month is checked by
+    exactly one report period. The answer depends only on the period: a
+    delayed or repeated run for the same period gives the same answer.
+    """
+
+    if type(period_start) is not date or type(period_end) is not date or period_end < period_start:
+        raise ValueError("monitored_check_month requires a valid report period")
+    day = period_start
+    while day <= period_end:
+        following = day + timedelta(days=1)
+        if following.month != day.month:
+            return MonitoredCheckMonth(day.replace(day=1), day)
+        day = following
+    return None
+
+
 def load_monitored_standards_data(path: str | Path = REFERENCE_PATH) -> Mapping[str, Any]:
     with Path(path).open("r", encoding="utf-8") as handle:
         value = json.load(handle)
@@ -108,5 +134,6 @@ __all__ = [
     "MonitoredStandards",
     "REFERENCE_PATH",
     "load_monitored_standards_data",
+    "monitored_check_month",
     "monitored_standards",
 ]

@@ -25,9 +25,11 @@ from .maiagent_transport import (
     MAIAGENT_HELPER_TIMEOUT_SECONDS,
     request_maiagent_proposal,
 )
+from .contracts import StandardLifecycleAction
 from .scope_classifier import (
     SCOPE_PROPOSAL_SCHEMA_VERSION,
     SCOPE_SEMANTIC_RESPONSE_SCHEMA,
+    MonitoredStandardScopeRequest,
     ScopeSemanticRequest,
 )
 
@@ -120,7 +122,59 @@ class MaiAgentScopeProviderConfig:
         return cls(api_base.strip(), api_key.strip(), chatbot_id.strip(), timeout_seconds)
 
 
-def build_maiagent_scope_model_input(request: ScopeSemanticRequest) -> dict[str, Any]:
+# RC-59 (section A.43): the second request kind of the same task, sent only in
+# the monthly monitored-standards check for a Candidate whose principal content
+# names a monitored standard. The helper says which supplied identifier, if any,
+# the document reports as itself formally changed; Python owns the list, the
+# membership, the citation check and the Scope decision.
+MONITORED_STANDARD_PROMPT_VERSION = "scope-monitored-standard-v1"
+MONITORED_STANDARD_SCHEMA_VERSION = "scope-monitored-standard-proposal-v1"
+
+MONITORED_STANDARD_INSTRUCTIONS = (
+    "You are a stateless proposal-only semantic helper for the Python ScopeClassifier.",
+    "Use only the supplied principal_sentences. Each sentence has a sentence_id assigned by Python. Cite only sentence_ids; never copy or retype source text.",
+    "monitored_identifiers lists standard identifiers that Python found in this document. Decide whether the document reports, as its own news, a formal lifecycle change of one of these standards itself.",
+    "A formal lifecycle change is: publication of a new edition or revision, including its formal national adoption; an amendment; a corrigendum or erratum; withdrawal; supersession or replacement by another document; or a formal draft or formal public consultation on the standard. The document must state that the change was made, published, approved, opened or proposed by the body responsible for the standard or by a body formally adopting it.",
+    "It is not a change of the standard when the document only cites, applies, requires or discusses it: a project, product, procurement, contract, design, test or certification that complies with it; a regulation, ordinance, guideline or contract that requires compliance with it; a recommendation, demand or comment by a researcher, official or commentator; a description, history or review of an existing edition; or a rumoured or expected future revision without a formal draft or consultation.",
+    "changed_standard is exactly one identifier copied unchanged from monitored_identifiers, or null when the document reports no formal lifecycle change of any of them. If several change, name the one the document reports as its principal news.",
+    "When changed_standard is not null, lifecycle_action is NEW_EDITION_OR_REVISION, AMENDMENT, CORRIGENDUM, WITHDRAWAL, SUPERSESSION or DRAFT_OR_CONSULTATION, and sentence_ids are the sentences that state the change; at least one of them must contain the identifier. When changed_standard is null, lifecycle_action is null and sentence_ids is empty.",
+    "Whether the standard concerns urban rail, and where the change happened, are not part of this question.",
+    "Do not search, browse, use tools, RAG, or outside knowledge about standards, editions or dates.",
+    "Do not decide Scope, Category, Taxonomy, Reportability, or write the formal report.",
+    "Return JSON only with no Markdown, prose outside JSON, or extra fields.",
+)
+
+MONITORED_STANDARD_RESPONSE_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "candidate_id": {"type": "string"},
+        "changed_standard": {"type": ["string", "null"]},
+        "lifecycle_action": {
+            "type": ["string", "null"],
+            "enum": [action.value for action in StandardLifecycleAction] + [None],
+        },
+        "sentence_ids": {"type": "array", "items": {"type": "string"}},
+        "rationale": {"type": "string"},
+    },
+    "required": ["candidate_id", "changed_standard", "lifecycle_action", "sentence_ids", "rationale"],
+}
+
+
+def build_maiagent_scope_model_input(request: ScopeSemanticRequest | MonitoredStandardScopeRequest) -> dict[str, Any]:
+    if isinstance(request, MonitoredStandardScopeRequest):
+        return {
+            "task_identity": TASK_IDENTITY,
+            "prompt_version": MONITORED_STANDARD_PROMPT_VERSION,
+            "schema_version": MONITORED_STANDARD_SCHEMA_VERSION,
+            "helper_version": HELPER_VERSION,
+            "instructions": list(MONITORED_STANDARD_INSTRUCTIONS),
+            "monitored_standard_request": request.as_payload(),
+            "authoritative_response_contract": {
+                "schema_version": MONITORED_STANDARD_SCHEMA_VERSION,
+                "json_schema": MONITORED_STANDARD_RESPONSE_SCHEMA,
+            },
+        }
     if not isinstance(request, ScopeSemanticRequest):
         raise TypeError("MaiAgent Scope input requires ScopeSemanticRequest")
     return {
@@ -149,8 +203,8 @@ class MaiAgentScopeProposalProvider:
         self._config = config
         self._transport = transport if transport is not None else UrllibMaiAgentJsonTransport()
 
-    def __call__(self, request: ScopeSemanticRequest) -> object:
-        if not isinstance(request, ScopeSemanticRequest):
+    def __call__(self, request: ScopeSemanticRequest | MonitoredStandardScopeRequest) -> object:
+        if not isinstance(request, (ScopeSemanticRequest, MonitoredStandardScopeRequest)):
             raise TypeError("MaiAgent Scope provider accepts only ScopeSemanticRequest")
         request_content = json.dumps(build_maiagent_scope_model_input(request), ensure_ascii=False, separators=(",", ":"))
         body = json.dumps({"message": {"role": "user", "content": request_content}, "conversation": None, "attachments": [], "is_streaming": False}, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -183,5 +237,5 @@ def build_maiagent_scope_provider(config: MaiAgentScopeProviderConfig | None = N
 build_maiagent_scope_proposal_provider = build_maiagent_scope_provider
 
 __all__ = [
-    "HELPER_VERSION", "MAIAGENT_SCOPE_PROVIDER_IDENTIFIER", "MAIAGENT_SCOPE_RESPONSE_SCHEMA", "MaiAgentScopeAdapter", "MaiAgentScopeFailure", "MaiAgentScopeProposalProvider", "MaiAgentScopeProvider", "MaiAgentScopeProviderConfig", "MaiAgentScopeProviderFailure", "PROMPT_VERSION", "PROVIDER_IDENTIFIER", "SCHEMA_VERSION", "SCOPE_HELPER_VERSION", "SCOPE_PROMPT_VERSION", "SCOPE_RESPONSE_SCHEMA", "SCOPE_SCHEMA_VERSION", "SCOPE_SEMANTIC_INSTRUCTIONS", "SCOPE_TASK_IDENTITY", "TASK_IDENTITY", "build_maiagent_scope_model_input", "build_maiagent_scope_proposal_provider", "build_maiagent_scope_provider",
+    "HELPER_VERSION", "MAIAGENT_SCOPE_PROVIDER_IDENTIFIER", "MONITORED_STANDARD_INSTRUCTIONS", "MONITORED_STANDARD_PROMPT_VERSION", "MONITORED_STANDARD_RESPONSE_SCHEMA", "MONITORED_STANDARD_SCHEMA_VERSION", "MAIAGENT_SCOPE_RESPONSE_SCHEMA", "MaiAgentScopeAdapter", "MaiAgentScopeFailure", "MaiAgentScopeProposalProvider", "MaiAgentScopeProvider", "MaiAgentScopeProviderConfig", "MaiAgentScopeProviderFailure", "PROMPT_VERSION", "PROVIDER_IDENTIFIER", "SCHEMA_VERSION", "SCOPE_HELPER_VERSION", "SCOPE_PROMPT_VERSION", "SCOPE_RESPONSE_SCHEMA", "SCOPE_SCHEMA_VERSION", "SCOPE_SEMANTIC_INSTRUCTIONS", "SCOPE_TASK_IDENTITY", "TASK_IDENTITY", "build_maiagent_scope_model_input", "build_maiagent_scope_proposal_provider", "build_maiagent_scope_provider",
 ]

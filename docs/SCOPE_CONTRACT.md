@@ -124,6 +124,25 @@ sufficient.
 substantive action or event to at least one eligible family. Merely mentioning
 an eligible family somewhere in a mixed document is insufficient.
 
+### 5.1 Monitored-standard lifecycle basis (RC-59, ARCHITECTURE_CONTRACT §A.43)
+
+One basis is not a mode family and is deliberately narrow. In the monthly
+monitored-standards check, a Candidate whose principal content names an
+identifier of `src/weekly_report/monitored_standards.json` is asked one bounded
+question (`scope-monitored-standard-v1`): does the document report a formal
+lifecycle change of that standard itself? A formal lifecycle change is a new
+edition or revision (including formal national adoption), amendment,
+corrigendum, withdrawal, supersession, or formal draft or consultation. Python
+accepts only a supplied identifier that occurs in the cited sentences. An
+accepted answer is `IN_SCOPE` on the `MONITORED_STANDARD` basis without an
+eligible mode family. A null answer leaves the rules of this document to decide.
+
+The basis never applies to another standard, a regulation, an ordinance, a
+procurement specification, a project or product that complies with a standard,
+a recommendation, or commentary. It never applies outside the monthly check.
+Downstream it licenses only the 「規範及標準動態」 section (Reportability) and
+is dated against the check month (TemporalRule).
+
 ## 6. Boundary-mode rules
 
 ### 6.1 Streetcar

@@ -10,13 +10,17 @@ from typing import Any, Callable, Protocol
 from .contracts import (
     EvidenceResult,
     EvidenceState,
+    MonitoredCheckMonth,
+    MonitoredStandardChange,
     ProposalContractViolation,
+    StandardLifecycleAction,
     ScopeDiagnostic,
     ScopeResult,
     ScopeState,
     SemanticProviderConfigurationFailure,
     SemanticProviderTechnicalFailure,
 )
+from .monitored_standards import monitored_standards
 from .evidence_sentences import (
     EvidenceSentence,
     cited_text,
@@ -56,6 +60,72 @@ class ScopeSemanticRequest:
             "principal_sentences": [sentence.as_mapping() for sentence in self.principal_sentences],
             "source_metadata": dict(self.source_metadata),
         }
+
+
+@dataclass(frozen=True, slots=True)
+class MonitoredStandardScopeRequest:
+    """RC-59: the monthly check's question for one Candidate naming a monitored standard.
+
+    ``monitored_identifiers`` are the identifiers Python found in the
+    principal content; the helper may answer only one of them or null. The
+    helper is not given the list and decides nothing.
+    """
+
+    candidate_id: str
+    principal_content: str
+    monitored_identifiers: tuple[str, ...]
+    principal_sentences: tuple[EvidenceSentence, ...] = field(init=False)
+
+    def __post_init__(self) -> None:
+        identifiers = tuple(self.monitored_identifiers)
+        if not identifiers or len(identifiers) != len(set(identifiers)):
+            raise ValueError("MonitoredStandardScopeRequest requires unique monitored identifiers")
+        object.__setattr__(self, "monitored_identifiers", identifiers)
+        object.__setattr__(self, "principal_sentences", segment_evidence_sentences(self.principal_content))
+
+    def as_payload(self) -> dict[str, Any]:
+        return {
+            "candidate_id": self.candidate_id,
+            "principal_sentences": [sentence.as_mapping() for sentence in self.principal_sentences],
+            "monitored_identifiers": list(self.monitored_identifiers),
+        }
+
+
+MONITORED_STANDARD_PROPOSAL_FIELDS = frozenset(
+    {"candidate_id", "changed_standard", "lifecycle_action", "sentence_ids", "rationale"}
+)
+
+
+def _monitored_change(
+    value: object, request: MonitoredStandardScopeRequest, check_month: MonitoredCheckMonth
+) -> MonitoredStandardChange | None:
+    """Validate the helper's answer; Python owns list membership and citation (RC-59)."""
+
+    if not isinstance(value, Mapping) or frozenset(value) != MONITORED_STANDARD_PROPOSAL_FIELDS:
+        raise _Violation("MONITORED_STANDARD_SHAPE")
+    if value["candidate_id"] != request.candidate_id:
+        raise _Violation("MONITORED_STANDARD_CANDIDATE")
+    if not isinstance(value["rationale"], str) or not value["rationale"].strip():
+        raise _Violation("MONITORED_STANDARD_SHAPE")
+    changed, action, sentence_ids = value["changed_standard"], value["lifecycle_action"], value["sentence_ids"]
+    if not isinstance(sentence_ids, list):
+        raise _Violation("MONITORED_STANDARD_SHAPE")
+    if changed is None:
+        if action is not None or sentence_ids:
+            raise _Violation("MONITORED_STANDARD_SHAPE")
+        return None
+    if changed not in request.monitored_identifiers:
+        raise _Violation("MONITORED_STANDARD_NOT_SUPPLIED")
+    try:
+        action = StandardLifecycleAction(action)
+    except (TypeError, ValueError):
+        raise _Violation("MONITORED_STANDARD_ACTION") from None
+    cited = resolve_sentence_ids(request.principal_sentences, sentence_ids)
+    if not sentence_ids or cited is None:
+        raise _Violation("MONITORED_STANDARD_CITATION")
+    if not any(changed in monitored_standards().identifiers_in(sentence.text) for sentence in cited):
+        raise _Violation("MONITORED_STANDARD_NOT_IN_CITATION")
+    return MonitoredStandardChange(changed, action, tuple(sentence.sentence_id for sentence in cited), check_month)
 
 
 @dataclass(frozen=True, slots=True)
@@ -383,6 +453,7 @@ class ScopeClassifier:
         *,
         candidate_title: str = "",
         observation_hook: Callable[[ScopeValidationObservation], None] | None = None,
+        monitored_check: MonitoredCheckMonth | None = None,
     ) -> ScopeResult:
         def observe(result: ScopeResult | None, first_rejection: str | None, response_status: str) -> None:
             if observation_hook is None:
@@ -410,6 +481,43 @@ class ScopeClassifier:
             result = self._out_of_scope(evidence.candidate_id, ScopeDiagnostic.SCOPE_NOT_ESTABLISHED, {"decision_basis": "scope_semantic_proposal", "helper": "not_configured"})
             observe(result, "HELPER_NOT_CONFIGURED", "NOT_CALLED")
             return result
+        if monitored_check is not None:
+            # RC-59 (section A.43): in the monthly check, a Candidate that is a
+            # proven formal lifecycle change of a monitored standard is in
+            # scope on that basis alone. Nothing else changes the rule below.
+            identifiers = monitored_standards().identifiers_in(evidence.substantive_content)
+            if identifiers:
+                monitored_request = MonitoredStandardScopeRequest(
+                    evidence.candidate_id, evidence.substantive_content, identifiers
+                )
+                try:
+                    raw = self._semantic_helper(monitored_request)
+                except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure):
+                    raise
+                except Exception:
+                    raise violation("PROVIDER_FAILURE") from None
+                try:
+                    change = _monitored_change(raw, monitored_request, monitored_check)
+                except _Violation as rejected:
+                    raise violation(rejected.predicate) from None
+                if change is not None:
+                    by_id = {sentence.sentence_id: sentence for sentence in monitored_request.principal_sentences}
+                    focus = [{"start": by_id[sid].start, "end": by_id[sid].end} for sid in change.sentence_ids]
+                    result = ScopeResult(
+                        candidate_id=evidence.candidate_id,
+                        state=ScopeState.IN_SCOPE,
+                        provenance={
+                            "decision_basis": "monitored_standard_lifecycle_change",
+                            "monitored_standard": change.identifier,
+                            "lifecycle_action": change.lifecycle_action.value,
+                            "check_month": change.check_month.label,
+                            # The lifecycle sentences are the Candidate event (RC-20).
+                            "candidate_event_focus": focus,
+                        },
+                        monitored_standard=change,
+                    )
+                    observe(result, None, "OWNER_VALIDATED")
+                    return result
         request = ScopeSemanticRequest(
             evidence.candidate_id,
             candidate_title,
@@ -445,4 +553,4 @@ class ScopeClassifier:
         return ScopeResult(candidate_id=candidate_id, state=ScopeState.OUT_OF_SCOPE, diagnostic=diagnostic, provenance=dict(provenance))
 
 
-__all__ = ["SCOPE_PROPOSAL_SCHEMA_VERSION", "SCOPE_SEMANTIC_RESPONSE_SCHEMA", "SUPPORTED_SCOPE_MODE_FAMILIES", "ScopeClassifier", "ScopeProposalViolation", "ScopeSemanticHelper", "ScopeSemanticRequest", "ScopeSemanticResponse", "ScopeSemanticSupport", "ScopeSupportSpan", "ScopeValidationObservation"]
+__all__ = ["MONITORED_STANDARD_PROPOSAL_FIELDS", "MonitoredStandardScopeRequest", "SCOPE_PROPOSAL_SCHEMA_VERSION", "SCOPE_SEMANTIC_RESPONSE_SCHEMA", "SUPPORTED_SCOPE_MODE_FAMILIES", "ScopeClassifier", "ScopeProposalViolation", "ScopeSemanticHelper", "ScopeSemanticRequest", "ScopeSemanticResponse", "ScopeSemanticSupport", "ScopeSupportSpan", "ScopeValidationObservation"]

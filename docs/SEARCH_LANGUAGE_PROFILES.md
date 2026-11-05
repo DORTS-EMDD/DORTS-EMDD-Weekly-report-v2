@@ -201,7 +201,10 @@ which standards are monitored, and validates parity with it. The identifiers
 are language-independent, so every profile uses the same list, and no
 lifecycle, mode or other word is added. RC-57's generic `normative_terms` are
 withdrawn. The identifiers are discovery vocabulary only: a result is not a
-standard update until Reportability decides so on Authoritative Evidence.
+standard update until ScopeClassifier and Reportability decide so on
+Authoritative Evidence. RC-59 (§A.43): the intent is planned only in the
+monthly check, the report period that contains a month's last day, and its
+requests search that whole month.
 
 ### `en` — English
 

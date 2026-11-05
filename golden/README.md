@@ -50,7 +50,8 @@ Category definitions and boundaries have one authority: `docs/ARCHITECTURE_CONTR
 
 RC-58（ARCHITECTURE_CONTRACT §A.42）：G69–G74 的 Category 維持 `NORMATIVE_CHANGE`，但都沒有提到監控標準清單中的標準，
 因此 Reportability 為 `NOT_REPORTABLE`（`OUTSIDE_MONITORED_STANDARDS`）。監控標準的 Domain outcome 另列於
-`monitored_standards_cases.json`（MS01–MS09），不加入已封存的 Category population。
+`monitored_standards_cases.json`（RC-59 起為 v2，MS01–MS15，依序執行 Scope、Temporal、Reportability），不加入已封存的
+Category population。
 
 每個 fixture 的 `expected.category_state` 必須明確為 `NOT_EVALUATED`、`CATEGORY_ASSIGNED` 或 `CATEGORY_UNRESOLVED`。Assigned case 同時鎖定 `primary_category_id`、display label、subtype 與 `classification_reason`。`NOT_EVALUATED` 保留 upstream stage 沒有到達 Category 的事實。`CATEGORY_UNRESOLVED` 是有效 terminal outcome：`primary_category_id`、display label 及 subtype 為 null，Taxonomy 與 Reportability 為 `NOT_EVALUATED`，且不記為 rejection。85 個 Category case 中有 52 個到達 Category（46 assigned、6 unresolved）；其餘 33 個在 upstream boundary 停止或被 Evidence 拒絕。E&M extension cases 不改變這個 sealed Category population。
 

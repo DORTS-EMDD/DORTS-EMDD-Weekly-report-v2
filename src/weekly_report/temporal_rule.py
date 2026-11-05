@@ -112,6 +112,11 @@ class TemporalRule:
         if scope_result is not None and scope_result.state is not ScopeState.IN_SCOPE:
             raise ValueError("TemporalRule requires an IN_SCOPE ScopeResult")
         start, end = self.validate_period(period_start, period_end)
+        if scope_result is not None and scope_result.monitored_standard is not None:
+            # RC-59 (section A.43): a monitored-standard lifecycle change found by
+            # the monthly check is dated against its check month, not the week.
+            start = scope_result.monitored_standard.check_month.start
+            end = scope_result.monitored_standard.check_month.end
 
         facts = tuple(_coerce_fact(value) for value in source_date_facts)
         if not facts:

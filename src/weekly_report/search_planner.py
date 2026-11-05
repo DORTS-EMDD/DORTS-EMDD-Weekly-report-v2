@@ -9,6 +9,7 @@ from typing import Iterable
 from .contracts import (
     SearchWindow,
     DiscoveryIntent,
+    MonitoredCheckMonth,
     ProviderProfileEligibility,
     QueryFamilyConfig,
     RegionMode,
@@ -59,11 +60,19 @@ class SearchPlanner:
         intents: Iterable[DiscoveryIntent | str] | None = None,
         *,
         window: SearchWindow | None = None,
+        monitored_check: MonitoredCheckMonth | None = None,
     ) -> SearchPlan:
         mode = RegionMode(mode)
         if window is not None and not isinstance(window, SearchWindow):
             raise TypeError("SearchPlanner window must be a SearchWindow")
-        selected_intents = self._canonical_intents(intents)
+        if monitored_check is not None and not isinstance(monitored_check, MonitoredCheckMonth):
+            raise TypeError("SearchPlanner monitored_check must be a MonitoredCheckMonth")
+        selected_intents = self._canonical_intents(intents, monitored_check is not None)
+        # RC-59 (section A.43): the monitored-standards lane exists only in the
+        # monthly check, and searches that whole calendar month.
+        monitored_window = (
+            None if monitored_check is None else SearchWindow(monitored_check.start, monitored_check.end)
+        )
         items: list[SearchPlanItem] = []
         configured_markets = self._registry.markets_for(mode)
         configured_market_ids = tuple(market.market_id for market in configured_markets)
@@ -91,6 +100,7 @@ class SearchPlanner:
                         if encoding is None:
                             raise ValueError("supported provider profile binding has no encoding")
                         concrete = self._concrete_queries(market, profile_id, intent, family)
+                        item_window = monitored_window if intent is DiscoveryIntent.MONITORED_STANDARDS else window
                         for query in concrete:
                             payload = {
                                 "configuration_version": self._registry.configuration_version,
@@ -108,8 +118,8 @@ class SearchPlanner:
                                     "ceid": encoding.ceid,
                                 },
                             }
-                            if window is not None:
-                                payload["search_window"] = window.as_mapping()
+                            if item_window is not None:
+                                payload["search_window"] = item_window.as_mapping()
                             items.append(
                                 SearchPlanItem(
                                     plan_item_id=f"search_{_stable_digest(payload)}",
@@ -122,7 +132,7 @@ class SearchPlanner:
                                     query=query,
                                     locale=self._registry.profile(profile_id).locale,
                                     provider_encoding=encoding,
-                                    search_window=window,
+                                    search_window=item_window,
                                 )
                             )
                             intent_item_counts[intent] += 1
@@ -190,14 +200,21 @@ class SearchPlanner:
         )
 
     @staticmethod
-    def _canonical_intents(intents: Iterable[DiscoveryIntent | str] | None) -> tuple[DiscoveryIntent, ...]:
+    def _canonical_intents(
+        intents: Iterable[DiscoveryIntent | str] | None, monitored_check_due: bool = False
+    ) -> tuple[DiscoveryIntent, ...]:
         if intents is None:
-            return tuple(DiscoveryIntent)
+            return tuple(
+                intent for intent in DiscoveryIntent
+                if monitored_check_due or intent is not DiscoveryIntent.MONITORED_STANDARDS
+            )
         values = tuple(DiscoveryIntent(intent) for intent in intents)
         if not values:
             raise ValueError("SearchPlanner requires at least one discovery intent")
         if len(values) != len(set(values)):
             raise ValueError("SearchPlanner intents must be unique")
+        if DiscoveryIntent.MONITORED_STANDARDS in values and not monitored_check_due:
+            raise ValueError("the monitored-standards intent runs only in a monthly check")
         return tuple(intent for intent in DiscoveryIntent if intent in values)
 
     def _concrete_queries(self, market, profile_id: str, intent: DiscoveryIntent, family: QueryFamilyConfig) -> tuple[str, ...]:
