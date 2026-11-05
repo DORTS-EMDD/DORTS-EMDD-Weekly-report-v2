@@ -1,5 +1,5 @@
 {
-  "configuration_version": "search-discovery-v9",
+  "configuration_version": "search-discovery-v10",
   "region_modes": [
     "selected",
     "global"
@@ -433,7 +433,13 @@
             "platform screen doors",
             "predictive maintenance",
             "digital twin",
-            "automation"
+            "automation",
+            "automatic train operation",
+            "driverless train",
+            "conductor rail",
+            "switches and crossings",
+            "track switch",
+            "condition monitoring"
           ],
           "new_material_terms": [
             "advanced material",
@@ -621,7 +627,14 @@
             "自動收費",
             "月臺門/站台门",
             "數位孿生/数字孪生",
-            "預測維護/预测维护"
+            "預測維護/预测维护",
+            "CBTC",
+            "ATO",
+            "無人駕駛列車/无人驾驶列车",
+            "第三軌/第三轨",
+            "道岔",
+            "狀態監測/状态监测",
+            "預測性維修/预测性维修"
           ],
           "new_material_terms": [
             "新材料",
@@ -812,7 +825,13 @@
             "CBTC",
             "自動運転",
             "予測保全",
-            "デジタルツイン"
+            "デジタルツイン",
+            "ATO",
+            "無人運転",
+            "第三軌条",
+            "分岐器",
+            "状態監視",
+            "予知保全"
           ],
           "new_material_terms": [
             "新材料",
@@ -992,7 +1011,13 @@
             "CBTC",
             "자동운전",
             "예지정비",
-            "디지털 트윈"
+            "디지털 트윈",
+            "ATO",
+            "무인운전",
+            "제3궤조",
+            "분기기",
+            "상태감시",
+            "예측정비"
           ],
           "new_material_terms": [
             "신소재",
@@ -1169,7 +1194,12 @@
             "Energieversorgung",
             "CBTC",
             "Zustandsüberwachung",
-            "Digitalisierung"
+            "Digitalisierung",
+            "automatisierter Fahrbetrieb",
+            "fahrerlos",
+            "Stromschiene",
+            "Weiche",
+            "vorausschauende Instandhaltung"
           ],
           "new_material_terms": [
             "neuer Werkstoff",
@@ -1347,7 +1377,12 @@
             "alimentation électrique",
             "CBTC",
             "maintenance prédictive",
-            "jumeau numérique"
+            "jumeau numérique",
+            "pilotage automatique",
+            "sans conducteur",
+            "troisième rail",
+            "aiguillage",
+            "surveillance conditionnelle"
           ],
           "new_material_terms": [
             "nouveau matériau",
@@ -1521,7 +1556,12 @@
             "energía de tracción",
             "CBTC",
             "mantenimiento predictivo",
-            "gemelo digital"
+            "gemelo digital",
+            "conducción automática",
+            "sin conductor",
+            "tercer carril",
+            "cambio de agujas",
+            "monitorización de estado"
           ],
           "new_material_terms": [
             "nuevo material",
@@ -1694,7 +1734,12 @@
             "alimentazione",
             "CBTC",
             "manutenzione predittiva",
-            "gemello digitale"
+            "gemello digitale",
+            "guida automatica",
+            "senza conducente",
+            "terza rotaia",
+            "deviatoio",
+            "monitoraggio delle condizioni"
           ],
           "new_material_terms": [
             "nuovo materiale",
@@ -1871,7 +1916,12 @@
             "energia de tração",
             "CBTC",
             "manutenção preditiva",
-            "gémeo digital"
+            "gémeo digital",
+            "condução automática",
+            "sem condutor",
+            "terceiro carril",
+            "aparelho de mudança de via",
+            "monitorização do estado"
           ],
           "new_material_terms": [
             "novo material",
@@ -2047,7 +2097,12 @@
             "tractie-energie",
             "CBTC",
             "voorspellend onderhoud",
-            "digitale tweeling"
+            "digitale tweeling",
+            "automatische treinbesturing",
+            "zonder bestuurder",
+            "derde rail",
+            "wissels",
+            "conditiemonitoring"
           ],
           "new_material_terms": [
             "nieuw materiaal",
@@ -2221,7 +2276,12 @@
             "dragkraft",
             "CBTC",
             "tillståndsövervakning",
-            "digital tvilling"
+            "digital tvilling",
+            "automatisk tågdrift",
+            "förarlös",
+            "strömskena",
+            "spårväxel",
+            "prediktivt underhåll"
           ],
           "new_material_terms": [
             "nytt material",
@@ -2394,7 +2454,13 @@
             "traktionsenergi",
             "CBTC",
             "tilstandsbaseret vedligehold",
-            "digital tvilling"
+            "digital tvilling",
+            "automatisk togdrift",
+            "førerløs",
+            "strømskinne",
+            "sporskifte",
+            "tilstandsovervågning",
+            "prædiktiv vedligeholdelse"
           ],
           "new_material_terms": [
             "nyt materiale",
@@ -2570,7 +2636,13 @@
             "trekkraft",
             "CBTC",
             "tilstandsbasert vedlikehold",
-            "digital tvilling"
+            "digital tvilling",
+            "automatisk togdrift",
+            "førerløs",
+            "strømskinne",
+            "sporveksel",
+            "tilstandsovervåking",
+            "prediktivt vedlikehold"
           ],
           "new_material_terms": [
             "nytt materiale",

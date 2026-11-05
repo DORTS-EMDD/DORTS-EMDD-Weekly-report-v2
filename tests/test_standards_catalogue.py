@@ -213,7 +213,7 @@ def test_catalogue_items_exist_only_in_the_monthly_check_and_cover_the_month():
     catalogue = [i for i in monthly.items if i.provider_target is SearchProviderId.STANDARDS_CATALOGUE]
     assert len(catalogue) == 10 and {i.search_window for i in catalogue} == {SearchWindow(JULY.start, JULY.end)}
     assert all(i.intent is DiscoveryIntent.MONITORED_STANDARDS and i.provider_encoding is None for i in catalogue)
-    assert len([i for i in monthly.items if i.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]) == 185
+    assert len([i for i in monthly.items if i.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]) == 140 + 63
 
 
 # --- Evidence: an official record is Authoritative Evidence from its own fields -------------

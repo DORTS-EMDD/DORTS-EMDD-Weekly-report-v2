@@ -2509,3 +2509,40 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - 新增 `tests/test_standards_catalogue.py`（20 項）。
   - 4 個突變全部被抓到。
   - 全部測試 1471 passed。
+
+## 65. 一般週報 technology 搜尋詞擴充 7 個概念（`search-discovery-v10`，使用者核准，2026-11-05）
+
+本節只記錄觀察與驗證結果，不參與任何 production 決策。
+
+- 變更：
+  - 唯一 owner 為 SearchPlanner／RegionRegistry。
+  - 唯一來源為 `docs/SEARCH_LANGUAGE_PROFILES.md` §5，materialize 至 `search_configuration.json`，parity 檢查通過。
+  - 13 個 language profile 的 `technology_terms` 各加入 CBTC、ATO、無人駕駛、第三軌、道岔、狀態監測、預測性維修。
+  - 既有詞全部保留、順序不變。
+  - 其他 intent、市場、profile、監控標準與 RC-60 都不變。
+- 請求數（selected 與 global 相同）：
+  - 每週 122 → 140；technology 49 → 67，其他 intent 的查詢逐字相同。
+  - 每月檢查的 Google News 185 → 203；監控標準編號 63 次與官方目錄 10 筆不變。
+  - 各版本以 32 字上限打包，因此是依字數而不是依詞數增加。ja、ko、nl 由既有請求的剩餘空間吸收，未增加請求。
+  - da 沒有 Google News 版本，不在 runtime 規劃中。
+- `LIVE_GOOGLE_NEWS_NOISE_PROBE = UNAVAILABLE`：
+  - 本機對 Google News RSS 送出 71 次單詞探測，全部回傳 HTTP 503 automated-traffic 頁面（"Sorry..."）；約 10 分鐘後重試仍是 503。
+  - 未繞過、未改用其他來源，此項不是 PASS。
+- 確定性雜訊評估（僅檢視查詢）：
+  - Repository 的 trace 只有階段計數，沒有歷史搜尋結果標題，因此無法離線重放。
+  - 每個新詞都與該版本的都市軌道運具詞 AND，多字詞以引號作精確詞組。
+  - 12 個 runtime profile 中有 11 個的運具詞全為 intitle；en 有一半只需出現在內文。
+  - 已避開的歧義詞：
+    - en 的 driverless、third rail、turnout、ATO；
+    - it、es、pt 的 ATO；
+    - zh 的 無人駕駛（intitle:電車 在臺灣也指電動車）；
+    - de 的 Weichen（慣用語）。
+  - 殘餘風險只能由 live 觀察確認：
+    - zh、ja、ko 的裸 ATO；
+    - nl 的 wissels；
+    - fr 的 aiguillage。
+  - 雜訊只會增加 Evidence 擷取與 helper 呼叫，不改變任何下游決策。
+- 測試：
+  - 新增 `tests/test_technology_vocabulary.py`（7 項：概念×profile 覆蓋、v9 詞保留、歧義詞不在詞表、parity、每個新詞進入每個支援版本、請求數）。
+  - `test_monitored_standards.py` 與 `test_standards_catalogue.py` 中目前 production 計畫數的 pin 由 122／185 更新為 140／203。
+  - 全部測試與 clean export 皆 1478 passed，含 IEC 61373:2026 與 RC-60 回歸。
