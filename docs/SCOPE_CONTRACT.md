@@ -136,7 +136,10 @@ is a new edition or revision, amendment, corrigendum, withdrawal, supersession,
 or formal draft or consultation. A national or regional adoption by another
 body (for example BS EN, DIN EN, or EN IEC adopting an IEC standard) is not a
 change of it (ARCHITECTURE_CONTRACT §A.45). Python
-accepts only a supplied identifier that occurs in the cited sentences. An
+supplies and accepts only the identifier that owns a publication named in the
+cited sentences: a listed identifier owns exactly its own number, and a parent
+owns only the numbered parts its configured family coverage lists
+(ARCHITECTURE_CONTRACT §A.46). An
 accepted answer is `IN_SCOPE` on the `MONITORED_STANDARD` basis without an
 eligible mode family. A null answer leaves the rules of this document to decide.
 

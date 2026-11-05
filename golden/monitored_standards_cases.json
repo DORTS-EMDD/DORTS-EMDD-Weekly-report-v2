@@ -1,6 +1,6 @@
 {
-  "golden_version": "monitored-standards-golden-v3",
-  "contract": "docs/ARCHITECTURE_CONTRACT.md sections A.42 (RC-58), A.43 (RC-59) and A.45 (RC-61)",
+  "golden_version": "monitored-standards-golden-v4",
+  "contract": "docs/ARCHITECTURE_CONTRACT.md sections A.42 (RC-58), A.43 (RC-59), A.45 (RC-61) and A.46 (RC-62)",
   "origin_type": "SYNTHETIC_CONTRACT_CASE",
   "notes": [
     "Each case is one Evidence-ready Candidate forming one EventGroup. report_period decides, through the production cadence owner, whether the run carries the monthly monitored-standards check.",
@@ -274,6 +274,36 @@
       "source_content": "CENELEC published EN IEC 61373:2026, the European adoption of IEC 61373:2026 on shock and vibration tests for railway rolling stock equipment.",
       "helper_answers": {
         "monitored_standard": {"changed_standard": null, "lifecycle_action": null, "sentence_ids": []},
+        "ordinary_scope": "OUT_OF_SCOPE",
+        "value_path": "NOT_CALLED"
+      },
+      "expected": {"scope": "OUT_OF_SCOPE", "scope_basis": null, "date_valid": null, "monitored_standard": null,
+                   "reportability": null, "reportability_reason": null, "report_section": null}
+    },
+    {
+      "case_id": "MS19",
+      "scenario": "monthly check: IEC changes a numbered part of a monitored series that no family coverage lists (RC-62: numbering alone is not monitoring)",
+      "report_period": ["2026-11-30", "2026-12-06"],
+      "source_date": "2026-11-17",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "The IEC published the fourth edition of IEC 60076-5, which specifies the ability of power transformers to withstand short circuit.",
+      "helper_answers": {
+        "monitored_standard": "NOT_CALLED",
+        "ordinary_scope": "OUT_OF_SCOPE",
+        "value_path": "NOT_CALLED"
+      },
+      "expected": {"scope": "OUT_OF_SCOPE", "scope_basis": null, "date_valid": null, "monitored_standard": null,
+                   "reportability": null, "reportability_reason": null, "report_section": null}
+    },
+    {
+      "case_id": "MS20",
+      "scenario": "monthly check: IEC changes a numbered part of a withdrawn monitored identifier that no family coverage lists (RC-62)",
+      "report_period": ["2026-11-30", "2026-12-06"],
+      "source_date": "2026-11-24",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "The IEC published an amendment to IEC 60332-1-2, the test procedure for vertical flame propagation of a single insulated cable.",
+      "helper_answers": {
+        "monitored_standard": "NOT_CALLED",
         "ordinary_scope": "OUT_OF_SCOPE",
         "value_path": "NOT_CALLED"
       },

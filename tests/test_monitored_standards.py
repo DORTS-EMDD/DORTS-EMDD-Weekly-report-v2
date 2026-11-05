@@ -16,6 +16,7 @@ from datetime import date, datetime, timedelta, timezone
 import json
 from pathlib import Path
 import re
+import unicodedata
 
 import pytest
 
@@ -117,8 +118,25 @@ def test_the_list_rejects_duplicates_and_malformed_identifiers():
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
-        ("CENELEC published EN 50126-1:2025", ("EN 50126",)),
-        ("BS EN 50122-2:2010 amendment A1", ("EN 50122", "EN 50122-2")),
+        # RC-62 (section A.46): ownership is exact; numbering alone never makes a part monitored.
+        ("CENELEC published EN 50126-1:2025", ()),
+        ("BS EN 50122-2:2010 amendment A1", ("EN 50122-2",)),
+        ("EN 50122-2:2010/A1:2026", ("EN 50122-2",)),
+        ("IEC 60076-11:2018", ("IEC 60076-11",)),
+        ("IEC 60076-5:2026", ()),
+        ("IEC 60332-1-2:2025", ()),
+        ("IEC 62271-100:2021+AMD1", ("IEC 62271-100",)),
+        ("ASTM E662-21ae01", ("ASTM E662",)),
+        ("UIC 860-0", ("UIC 860-0",)),
+        ("UIC 860", ()),
+        # User decision (section A.46): a final -YYYY may be the edition year; the explicit publication comes first.
+        ("IEC 61373-2010", ("IEC 61373",)),
+        ("EN 50129-2018", ("EN 50129",)),
+        ("IEC 60076-11-2018", ("IEC 60076-11",)),
+        ("EN 50122-2-2022/A1", ("EN 50122-2",)),
+        ("EN 50126-1-2017", ()),  # the year is removed; the part still needs its own owner
+        ("IEC 61373-2100", ("IEC 61373",)),  # no date range is set
+        ("UIC 860-0-2010", ("UIC 860-0",)),  # no body condition is set
         ("IEEE Std 1474.1-2025", ("IEEE 1474.1",)),
         ("NFPA 70® 2026 edition", ("NFPA 70",)),
         ("ASTM E 119-24", ("ASTM E119",)),
@@ -132,6 +150,101 @@ def test_the_list_rejects_duplicates_and_malformed_identifiers():
 )
 def test_identifier_matching_is_mechanical(text, expected):
     assert monitored_standards().identifiers_in(text) == expected
+
+
+def _with_families(families):
+    data = json.loads(json.dumps(load_monitored_standards_data()))
+    data["family_coverage"] = {"note": "test", "families": families}
+    return MonitoredStandards(data)
+
+
+def test_no_family_is_defined_until_the_user_decides_its_coverage():
+    data = load_monitored_standards_data()
+    assert data["family_coverage"]["families"] == {}
+    assert monitored_standards().family_coverage == {}
+
+
+def test_a_configured_family_part_is_owned_by_its_parent_and_nothing_else_is():
+    standards = _with_families({"IEC 60076": ["IEC 60076-5"]})
+    assert standards.identifiers_in("IEC published IEC 60076-5:2026") == ("IEC 60076",)
+    assert standards.identifiers_in("IEC 60076-11:2018 Amendment 1") == ("IEC 60076-11",)
+    assert standards.identifiers_in("IEC 60076-2:2026") == ()
+
+
+@pytest.mark.parametrize(
+    "families",
+    [
+        {"IEC 60076": ["IEC 60076-11"]},  # an explicit child owns itself
+        {"EN 50122": ["EN 50122-2"]},
+        {"IEC 60076": ["IEC 60076-5"], "IEC 60076-11": ["IEC 60076-5"]},  # owned twice
+        {"IEC 60076": ["IEC 60076-5", "IEC 60076-5"]},  # listed twice in one family
+        {"IEC 60076": ["IEC 60076"]},  # the parent itself
+        {"IEC 60077": ["IEC 60077-1"]},  # parent not listed
+        {"IEEE 1474.1": ["IEEE 1474-2"]},  # cannot be located as itself, so never owned
+        {"IEC 60076": ["IEC60076-5"]},  # malformed
+    ],
+)
+def test_family_coverage_rejects_any_second_owner_or_derived_part(families):
+    with pytest.raises(ValueError):
+        _with_families(families)
+
+
+def test_family_membership_is_whatever_the_configuration_defines():
+    # D1 sets no numbering or body condition on a family: only single, explicit ownership.
+    standards = _with_families({"IEEE 1474.1": ["IEEE 1474.3"], "IEC 60076": ["IEC 61378-1"]})
+    assert standards.identifiers_in("IEEE Std 1474.3-2008") == ("IEEE 1474.1",)
+    assert standards.identifiers_in("IEC 61378-1:2011") == ("IEC 60076",)
+
+
+# The pre-RC-62 matcher (RC-58, contract section A.42), kept here only as the
+# reference for recall: every form it accepted for an identifier itself, other
+# than a further numbered part, must still resolve to that identifier.
+def _pre_rc62_pattern(identifier):
+    prefix, letter, number = re.match(r"^([A-Z]{2,5}) ([A-Z]?)(\d+(?:\.\d+)?(?:-\d+)*)$", identifier).groups()
+    number_pattern = re.escape(letter) + r"\s?" + re.escape(number) if letter else re.escape(number)
+    return re.compile(r"(?<![A-Za-z0-9])" + re.escape(prefix) + r"(?:\s*Std\.?)?[\s-]*" + number_pattern
+                      + r"(?![0-9A-Za-z])(?!\.[0-9])")
+
+
+EDITION_SUFFIXES = ("", ":2026", ":2010/COR1:2011", ":2010/A1:2026", ":2021+AMD1:2024 CSV", "/AC:2019",
+                    "-2010", "-2026", " Ed. 3", " (2026)", " edition 2026", "\u00ae", ", 2026")
+
+
+def test_every_identifier_keeps_its_pre_rc62_recall_for_edition_and_year_forms():
+    standards = monitored_standards()
+    checked = 0
+    for identifier in standards.identifiers:
+        written = [identifier, unicodedata.normalize("NFKC", identifier)]
+        if identifier.startswith("IEEE "):
+            written.append(identifier.replace("IEEE ", "IEEE Std "))
+        if identifier.startswith("ASTM E"):
+            written.append(identifier.replace("ASTM E", "ASTM E "))
+        for form in written:
+            for suffix in EDITION_SUFFIXES:
+                text = f"The publication {form}{suffix} was issued."
+                assert _pre_rc62_pattern(identifier).search(text), text  # a form the old matcher accepted
+                assert identifier in standards.identifiers_in(text), text
+                checked += 1
+    assert checked >= 27 * len(EDITION_SUFFIXES)
+
+
+def test_a_configured_publication_ending_in_a_year_shaped_segment_keeps_its_number():
+    standards = _with_families({"IEC 60076": ["IEC 60076-2010"]})
+    assert standards.identifiers_in("IEC 60076-2010") == ("IEC 60076",)
+    assert standards.identifiers_in("IEC 61373-2010") == ("IEC 61373",)
+
+
+def test_a_listed_identifier_that_cannot_be_located_as_itself_fails_closed():
+    data = json.loads(json.dumps(load_monitored_standards_data()))
+    data["groups"][0]["standards"].append("IEEE 1474-2")
+    data.pop("catalogue_records")
+    with pytest.raises(ValueError):
+        MonitoredStandards(data)
+
+
+def test_the_monitored_question_never_offers_a_parent_for_an_explicit_child():
+    evidence = _evidence(_ms("MS16"))
+    assert monitored_standards().identifiers_in(evidence.substantive_content) == ("EN 50122-2",)
 
 
 def test_only_the_list_module_holds_identifiers_and_only_scope_judges_them():

@@ -60,6 +60,10 @@
       ]
     }
   ],
+  "family_coverage": {
+    "note": "RC-62 (contract section A.46): the parts a listed parent identifier owns, defined only here. A listed identifier owns exactly its own number; numbering alone never makes a part monitored, and an explicitly listed child (IEC 60076-11, EN 50122-2) owns itself and can never be a family member. No family is defined yet: the coverage of IEC 60076, IEC 60332-1, EN 50122 and EN 50126 awaits the user's decision.",
+    "families": {}
+  },
   "catalogue_records": {
     "note": "RC-60: official catalogue record per monitored standard (phase 1, 10 of 27). The locator is the record a monthly check reads; the 27-standard list above is unchanged and remains the only scope.",
     "records": [

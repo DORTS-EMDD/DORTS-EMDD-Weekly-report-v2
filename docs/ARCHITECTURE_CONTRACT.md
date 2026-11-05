@@ -2345,7 +2345,9 @@ IEC 60076-11.
 
 `monitored_standards.py` loads the list and locates identifiers mechanically.
 A match needs the body prefix and number as one token. An optional "Std" and a
-space or hyphen are allowed, and a part, edition or year may follow. A longer
+space or hyphen are allowed, and an edition or year may follow (RC-62, section
+A.46: a further numbered part is another publication, owned only by an explicit
+entry or a configured family; it is never derived from numbering). A longer
 number, a letter or a decimal does not match ("NFPA 70E", "IEEE 1474.10").
 Text is NFKC-normalised first. The module decides nothing.
 
@@ -2750,6 +2752,118 @@ Scope rules, as any null answer is.
 MONITORED_STANDARD_CHANGE_BODY = THE IDENTIFIED STANDARD'S OWN ISSUING BODY
 NATIONAL_OR_REGIONAL_ADOPTION = NOT A CHANGE OF THE MONITORED STANDARD
 SCOPE_MONITORED_STANDARD_PROMPT = scope-monitored-standard-v2
+```
+
+### A.46 RC-62 Exact ownership of monitored identifiers; explicit family coverage (2026-11-05, user-approved Domain Rule)
+
+**Requirement (user, D1).**
+* A series-level monitored identifier does not automatically cover all of its
+  numbered parts.
+* It represents a monitored family. Which numbered parts the family contains
+  is defined only by the authoritative monitored-standards configuration. It
+  is never derived from a prefix, a numbering pattern or the matcher.
+* A numbered part that is listed as its own monitored identifier owns itself,
+  and its parent must not also own it:
+  * IEC 60076-11 is owned by IEC 60076-11, never by IEC 60076;
+  * EN 50122-2 is owned by EN 50122-2, never by EN 50122.
+* A numbered part that the parent's coverage does not include, and that is not
+  listed itself, is not a monitored lifecycle update just because its number
+  begins with the parent's.
+* Whether IEC 60332-1 covers -1-1, -1-2 and -1-3 is likewise defined only by
+  its family coverage.
+
+**Root cause addressed.** Section A.42 let "a part, edition or year" follow an
+identifier, so the matcher derived coverage from numbering. ScopeClassifier
+uses that matcher for both monitored decisions:
+* the identifiers it supplies to the helper;
+* the citation check.
+
+So in the live news lane:
+* "EN 50122-2 A1" offered both EN 50122 and EN 50122-2, leaving attribution
+  to the helper;
+* "IEC 60076-5" or "EN 50126-1" would have been accepted as an update of the
+  parent, although no coverage was ever defined.
+
+**Owner and change.**
+* `monitored_standards.json` remains the single source of truth. It gains
+  `family_coverage.families`, a mapping from a listed parent to the parts it
+  owns.
+* Validation enforces only single, explicit ownership. D1 sets no body or
+  numbering condition on family membership.
+  * A parent is a listed identifier.
+  * A member is a well-formed identifier.
+  * A member is not itself listed, because an explicit child owns itself.
+  * A member belongs to one family only.
+  * Every listed identifier and every member must read back as itself
+    through the locator grammar below. Otherwise the configuration fails
+    closed, because the publication could never be owned.
+* No family is defined yet. The coverage of IEC 60076, IEC 60332-1, EN 50122
+  and EN 50126 awaits the user's decision. Until then these entries own only
+  their bare numbers, which have no current publication, so they report
+  nothing.
+* `monitored_standards.py` locates publication tokens and returns their
+  owners:
+  * a listed identifier owns exactly its own number;
+  * a family part is owned by its parent;
+  * nothing else is owned.
+* Locator grammar: how a token's full publication number is read. It decides
+  no coverage.
+  * For the IEC, EN and UIC prefixes, every "-<digits>" segment belongs to the
+    number.
+  * For every other prefix, a hyphen after the number starts an edition or
+    year ("ASTM E119-24", "IEEE 1474.1-2025").
+  * An edition, year, amendment or corrigendum after the full number does not
+    change the publication ("EN 50122-2:2010/A1").
+* Basis for the grammar:
+  * The official catalogue records in the RC-60 fixtures write the year after
+    a colon for IEC ("IEC 61373:2010/COR1:2011") and after a hyphen for IEEE
+    ("IEEE 1474.1-2025").
+  * For EN, UIC, ASTM and NFPA the grammar is assumed, not evidenced in this
+    repository.
+* Hyphen year (user decision, 2026-11-06): a final "-YYYY" (four digits) may
+  be the edition year.
+  * The full number is tried first, so an explicitly configured publication
+    keeps its own number.
+  * Only when the full number has no owner is the final "-YYYY" read as a
+    year. So "IEC 61373-2010" is IEC 61373, "EN 50129-2018" is EN 50129, and
+    "IEC 60076-11-2018" is IEC 60076-11.
+  * Removing the year never creates coverage. A part before it still needs its
+    own owner, so "EN 50126-1-2017" stays unowned until EN 50126's family
+    lists EN 50126-1.
+  * No date range or body condition is set. For prefixes without hyphenated
+    parts the hyphen already starts an edition or year.
+  * Disclosed residual: an unconfigured four-digit part directly under a listed
+    identifier would be read as that identifier's year. None is known for the
+    27 identifiers, and no range is added to prevent it.
+* ScopeClassifier's two call sites are unchanged and now receive owners, so
+  a parent is never offered for an explicit child.
+
+**Unchanged.**
+* The 27-standard list and its V1 digest.
+* Search: the identifier queries still discover freely, because a search hit
+  decides nothing. The 10 catalogue records are also unchanged.
+* The Scope prompt and schema, RC-61, Temporal, Category, Taxonomy,
+  Reportability, the region rule, Report and Delivery.
+* Event Dedup is not asked to resolve overlap. Each publication has at most
+  one owner before Scope.
+
+**Golden** (`golden/monitored_standards_cases.json` v4).
+* MS19: IEC publishes a new edition of IEC 60076-5. No family coverage lists
+  it, so it is not a monitored change, and the monitored question is not
+  asked.
+* MS20: IEC amends IEC 60332-1-2. The outcome is the same.
+* MS16 now also locks that only EN 50122-2 is supplied for its Evidence.
+* The two matcher-mechanism tests that encoded the superseded prefix rule are
+  updated: "EN 50126-1:2025" now resolves to no owner, and
+  "BS EN 50122-2:2010 A1" resolves to EN 50122-2 only.
+
+```text
+MONITORED_IDENTIFIER_OWNERSHIP = EXACT PUBLICATION NUMBER, PLUS CONFIGURED FAMILY PARTS
+FAMILY_MEMBERSHIP_CONDITIONS = SINGLE EXPLICIT OWNER ONLY (no body or numbering condition)
+HYPHEN_YEAR_NOTATION = A FINAL -YYYY MAY BE THE EDITION YEAR; EXPLICIT PUBLICATION FIRST (user decision; no range or body condition)
+FAMILY_COVERAGE_SOURCE = monitored_standards.json family_coverage (user decision; none defined yet)
+EXPLICIT_CHILD = OWNS ITSELF; NEVER A FAMILY MEMBER
+NUMBERING_DERIVED_COVERAGE = FORBIDDEN
 ```
 
 ## B. Authoritative Owners
