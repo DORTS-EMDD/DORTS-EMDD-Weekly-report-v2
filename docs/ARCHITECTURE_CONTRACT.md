@@ -2547,6 +2547,35 @@ Temporal and Reportability through the production owners. The cases cover:
 The region exemption is executed on the RC-28 region fixtures. G69 to G74 are
 unchanged from RC-58.
 
+**Known discovery limit (2026-11-05 replay of July 2026; observation, no rule
+change).** Replay run 41942587859 (period 2026-07-27..08-02, main 261d7d5)
+correctly planned and attempted the July check: 63 identifier requests bounded
+to 2026-07-01..07-31, with 0 failures. It found no candidate for IEC 61373:2026
+(edition 3, released 2026-07-17, replacing the 2010 edition). The earliest
+failure stage is Search provider retrieval, and the evidence is as follows.
+* Re-running the production requests for July returns no item naming
+  IEC 61373.
+* Narrower queries (`"IEC 61373"`, `"IEC 61373:2026"`, `"61373"`) also return
+  0 for July.
+* Without a date bound, Google News holds only product articles that cite the
+  standard.
+
+The publication is recorded in standards catalogues (the issuing body's store
+and listing, distributors, national bodies), which a news index does not carry.
+This applies to all 27 standards: a formal lifecycle change reaches discovery
+only when news or trade press covers it. Closing the gap needs a second,
+non-news discovery source for standards catalogues. No compliant keyless,
+cross-body source was found:
+* a keyless web-search RSS forbids this use in its terms;
+* HTML search scraping was ruled out;
+* IEC's monthly "Just Published" listing is rendered client-side and covers
+  IEC only.
+
+Adding a source would amend the provider vocabulary (section C, Phase 2B-A) and
+the Evidence rules for catalogue records. It needs the user's choice of source
+and any licence or credentials, so it is recorded as
+MONITORED_STANDARDS_CATALOGUE_SOURCE = BLOCKED_EXTERNAL_DECISION.
+
 ```text
 MONITORED_STANDARDS_CHECK = ONCE PER CALENDAR MONTH (report period containing the month's last day; covers that month)
 MONITORED_STANDARDS_CADENCE_OWNER = monitored_standards.monitored_check_month (pure function of the report period)
@@ -2555,6 +2584,7 @@ MONITORED_STANDARD_SCOPE_BASIS = MONITORED_STANDARD + PROVEN_FORMAL_LIFECYCLE_CH
 MONITORED_STANDARD_DATE_WINDOW = CHECK MONTH (TemporalRule)
 MONITORED_STANDARD_REGION_RULE = NOT APPLIED (ReportService, only when ReportabilityResult.monitored_standard is set)
 MONITORED_STANDARDS_STATE = NONE
+MONITORED_STANDARDS_CATALOGUE_SOURCE = BLOCKED_EXTERNAL_DECISION (news-only discovery misses catalogue-only publications)
 ```
 
 ## B. Authoritative Owners

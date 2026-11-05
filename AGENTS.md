@@ -514,6 +514,10 @@ Transport retry 與 semantic correction 必須分開計算。
     此依據也只能進「規範及標準動態」。
   * Reportability 不再自行詢問，只讀取 Scope 事實。
   * Golden MS01–MS15。Delivery、訂閱、排程、報告週期不變；不新增第二封信或任何狀態。
+  * 已知限制（2026-11-05，7 月回放 Run 41942587859）：月檢已正確執行（63 次、整月、0 失敗），但 IEC 61373:2026
+    （2026-07-17 發行）未成為候選。最早失敗點是 Search 取回：Google News 在 7 月沒有任何提及 IEC 61373 的項目，
+    標準發行只出現在標準組織或經銷商目錄。此限制適用全部 27 項；需另選非新聞的標準目錄來源（可能需授權或憑證），
+    待使用者決定（BLOCKED_EXTERNAL_DECISION），程式未修改。
 
 ## 13. Report / Delivery
 
