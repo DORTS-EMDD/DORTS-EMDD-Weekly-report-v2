@@ -1574,6 +1574,10 @@ class SearchProviderId(StrEnum):
     """Canonical executable provider IDs governed by the Search contract."""
 
     GOOGLE_NEWS_RSS = "google_news_rss"
+    # RC-60 (section A.44): official standards catalogue records, read only in
+    # the monthly monitored-standards check. A second discovery provider, not
+    # a fallback for the first.
+    STANDARDS_CATALOGUE = "standards_catalogue"
 
 
 class ProviderProfileEligibility(StrEnum):
@@ -1942,7 +1946,7 @@ class SearchPlanItem:
     query_family_id: str
     provider_target: SearchProviderId | str
     query: str
-    provider_encoding: GoogleNewsRssEncoding
+    provider_encoding: GoogleNewsRssEncoding | None
     locale: str = ""
     search_window: "SearchWindow | None" = None
 
@@ -1971,6 +1975,8 @@ class SearchPlanItem:
         object.__setattr__(self, "provider_target", provider_target)
         if provider_target is SearchProviderId.GOOGLE_NEWS_RSS and not isinstance(self.provider_encoding, GoogleNewsRssEncoding):
             raise ValueError("SearchPlanItem requires provider_encoding for google_news_rss")
+        if provider_target is not SearchProviderId.GOOGLE_NEWS_RSS and self.provider_encoding is not None:
+            raise ValueError("only google_news_rss items carry a Google News encoding")
 
     @property
     def request(self) -> str:
@@ -2021,7 +2027,13 @@ class SearchPlan:
             )
         if not isinstance(coverage, SearchCoverageProjection):
             raise TypeError("SearchPlan coverage must be a SearchCoverageProjection")
-        if any(item.market_id not in coverage.configured_market_ids for item in items):
+        # RC-60: catalogue items are not tied to a news market, so only
+        # market-bound (Google News) items must lie in the market coverage.
+        if any(
+            item.provider_target is SearchProviderId.GOOGLE_NEWS_RSS
+            and item.market_id not in coverage.configured_market_ids
+            for item in items
+        ):
             raise ValueError("SearchPlan items must use configured coverage market IDs")
         object.__setattr__(self, "coverage", coverage)
 
@@ -2041,7 +2053,7 @@ class SearchPlan:
                     "provider_target": item.provider_target,
                     "query": item.query,
                     "locale": item.locale,
-                    "provider_encoding": {
+                    "provider_encoding": None if item.provider_encoding is None else {
                         "hl": item.provider_encoding.hl,
                         "gl": item.provider_encoding.gl,
                         "ceid": item.provider_encoding.ceid,

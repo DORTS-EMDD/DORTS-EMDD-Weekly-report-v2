@@ -18,7 +18,9 @@ from .contracts import (
     SearchCoverageProjection,
     SearchPlan,
     SearchPlanItem,
+    SearchProviderId,
 )
+from .monitored_standards import monitored_standards
 from .region_registry import RegionRegistry
 
 
@@ -28,6 +30,16 @@ def _stable_digest(value: object) -> str:
 
 
 _MODE_GROUP = "urban_rail_terms"
+# RC-60: catalogue items are not tied to a news market or language edition.
+CATALOGUE_MARKET_ID = "standards_catalogue"
+CATALOGUE_PROFILE_ID = "catalogue"
+CATALOGUE_FAMILY_ID = "monitored_standard_catalogue"
+CATALOGUE_LOCALE = "und"
+
+
+def _encoding_key(item: SearchPlanItem) -> tuple[str, str, str]:
+    encoding = item.provider_encoding
+    return ("", "", "") if encoding is None else (encoding.hl, encoding.gl, encoding.ceid)
 # Google ignores words beyond 32 per query; OR operators are counted too.
 _MAX_QUERY_WORDS = 32
 
@@ -147,6 +159,40 @@ class SearchPlanner:
                         SearchCoverageGapReason.KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY,
                     )
                 )
+        if monitored_window is not None and DiscoveryIntent.MONITORED_STANDARDS in intent_item_counts:
+            # RC-60 (section A.44): in the monthly check, each monitored standard
+            # with a configured official catalogue record is read once, bounded to
+            # the check month. A parallel discovery provider; it decides nothing.
+            for record in monitored_standards().catalogue_records:
+                payload = {
+                    "configuration_version": self._registry.configuration_version,
+                    "region_mode": mode.value,
+                    "market_id": CATALOGUE_MARKET_ID,
+                    "intent": DiscoveryIntent.MONITORED_STANDARDS.value,
+                    "language_profile": CATALOGUE_PROFILE_ID,
+                    "query_family_id": CATALOGUE_FAMILY_ID,
+                    "provider_target": SearchProviderId.STANDARDS_CATALOGUE.value,
+                    "query": f"{record.source}:{record.locator}",
+                    "locale": CATALOGUE_LOCALE,
+                    "provider_encoding": None,
+                    "search_window": monitored_window.as_mapping(),
+                }
+                items.append(
+                    SearchPlanItem(
+                        plan_item_id=f"search_{_stable_digest(payload)}",
+                        market_id=CATALOGUE_MARKET_ID,
+                        region_mode=mode,
+                        intent=DiscoveryIntent.MONITORED_STANDARDS,
+                        language_profile=CATALOGUE_PROFILE_ID,
+                        query_family_id=CATALOGUE_FAMILY_ID,
+                        provider_target=SearchProviderId.STANDARDS_CATALOGUE,
+                        query=payload["query"],
+                        locale=CATALOGUE_LOCALE,
+                        provider_encoding=None,
+                        search_window=monitored_window,
+                    )
+                )
+                intent_item_counts[DiscoveryIntent.MONITORED_STANDARDS] += 1
         if any(count == 0 for count in intent_item_counts.values()):
             raise ValueError("Search plan has an enabled intent with no executable provider coverage")
         if not items:
@@ -156,8 +202,7 @@ class SearchPlanner:
         # an explicit final canonical order and cannot depend on hash iteration.
         items.sort(key=lambda item: (item.market_id, item.intent.value, item.language_profile,
                                      item.query_family_id, item.provider_target, item.query,
-                                     item.provider_encoding.hl, item.provider_encoding.gl,
-                                     item.provider_encoding.ceid))
+                                     *_encoding_key(item)))
         plan_payload = {
             "configuration_version": self._registry.configuration_version,
             "region_mode": mode.value,
@@ -176,7 +221,7 @@ class SearchPlanner:
                     "provider_target": item.provider_target,
                     "query": item.query,
                     "locale": item.locale,
-                    "provider_encoding": {
+                    "provider_encoding": None if item.provider_encoding is None else {
                         "hl": item.provider_encoding.hl,
                         "gl": item.provider_encoding.gl,
                         "ceid": item.provider_encoding.ceid,

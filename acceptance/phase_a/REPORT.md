@@ -2484,3 +2484,28 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - IEC webstore 沒有公開搜尋端點。
   - IEC「Just Published」（每月一次）是前端渲染頁、且只涵蓋 IEC 標準（27 項中 11 項）。
 - 結論：沒有在現行契約內、合規且能涵蓋 27 項的修法。補上需要新增非新聞的標準目錄來源，連帶修訂 provider 契約（§C Phase 2B-A）與目錄紀錄作為 Evidence 的規則，並可能需要授權或憑證。這需要使用者選擇來源，程式未修改（BLOCKED_EXTERNAL_DECISION）。
+
+## 64. RC-60：官方標準目錄第一階段（§A.44，使用者核准，2026-11-05）
+
+- 實作：
+  - Search 新增 `standards_catalogue` provider，只在每月檢查規劃，每個已設定紀錄一次請求。
+  - EvidenceService 以官方紀錄自身欄位建立 Evidence。
+  - 其他 owner 都不變；27 項清單不變。
+- 可行性判斷的兩處錯誤（未硬做）：
+  - IEC 60076 是約 20 部分的系列；IEC 60332-1 於 2004 年撤回並拆成三部分。單一紀錄無法代表，屬待決的 Domain 問題。
+  - ASTM 的 CDN 對 production client（誠實 user-agent）回 HTTP 403；先前可行性檢查只因使用瀏覽器 user-agent 才成功。production 不模擬瀏覽器，因此 ASTM 不設定。
+- 實際覆蓋 10／27 項：IEC 9 項、IEEE 1 項。其餘 17 項仍只靠新聞，原因記於 `monitored_standards.json` 的 `not_configured`。
+- 7 月盲測：透過 `ProductionRunner` 執行，已移除 Delivery、僅 MAIAGENT 設定；執行 production 計畫中的 catalogue 項目，當時有 12 項，含 2 項 ASTM。
+  - Search：10 項成功，ASTM 2 項技術失敗（403）。
+  - 只有 IEC webstore 紀錄 68999 成為 Candidate。
+  - Evidence：READY。
+  - Scope：IN_SCOPE，監控依據，新版，檢查月份 2026-07。
+  - Temporal：2026-07-17 有效。
+  - Category：規範變動；Taxonomy：電聯車；Reportability：REPORTABLE（IEC 61373）。
+  - 報告：「規範及標準動態」一則。
+  - 6 次付費 helper 呼叫，未寄信。
+- 誤報檢查：10 個紀錄各抓一次，離線重放 2025-08～2026-10 每個月；總共只產生 1 筆 Candidate，即 2026-07 的 IEC 61373:2026。
+- 測試：
+  - 新增 `tests/test_standards_catalogue.py`（20 項）。
+  - 4 個突變全部被抓到。
+  - 全部測試 1471 passed。

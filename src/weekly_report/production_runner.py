@@ -722,7 +722,14 @@ class ProductionRunner:
         # Search providers are keyed by the canonical enum, not an adapter-owned name.
         from .contracts import SearchProviderId
 
-        executor = SearchExecutor({SearchProviderId.GOOGLE_NEWS_RSS: provider})
+        # RC-60: official standards catalogue records, a second discovery
+        # provider used only by the monthly monitored-standards check.
+        from .standards_catalogue_provider import StandardsCatalogueProvider
+
+        executor = SearchExecutor({
+            SearchProviderId.GOOGLE_NEWS_RSS: provider,
+            SearchProviderId.STANDARDS_CATALOGUE: StandardsCatalogueProvider(),
+        })
 
         judge = build_maiagent_semantic_judge(
             model_identifier=PRODUCTION_METADATA_MODEL,

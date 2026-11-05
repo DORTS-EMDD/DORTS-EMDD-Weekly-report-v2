@@ -2584,7 +2584,103 @@ MONITORED_STANDARD_SCOPE_BASIS = MONITORED_STANDARD + PROVEN_FORMAL_LIFECYCLE_CH
 MONITORED_STANDARD_DATE_WINDOW = CHECK MONTH (TemporalRule)
 MONITORED_STANDARD_REGION_RULE = NOT APPLIED (ReportService, only when ReportabilityResult.monitored_standard is set)
 MONITORED_STANDARDS_STATE = NONE
-MONITORED_STANDARDS_CATALOGUE_SOURCE = BLOCKED_EXTERNAL_DECISION (news-only discovery misses catalogue-only publications)
+MONITORED_STANDARDS_CATALOGUE_SOURCE = PHASE 1 BY RC-60 (section A.44): 10 of 27 read from official catalogues; the other 17 remain news-only
+```
+
+### A.44 RC-60 Official standards catalogue records, phase 1 (2026-11-05, user-approved)
+
+**Requirement (user, 2026-11-05).** The monthly check must find formal
+lifecycle changes of the monitored standards from their issuing bodies'
+official catalogues, not only from news. Phase 1 covers the standards whose
+official record can be read lawfully and automatically. The 27-standard list
+stays the only scope: nothing is removed, replaced or added. NFPA 258, EN 50128
+(revised by EN 50716:2023), UIC 860-0, IEC 60076 and IEC 60332-1 stay on the
+list as open Domain findings.
+
+**Root cause addressed.** In the July 2026 replay (section A.43, REPORT section
+63) the check ran correctly, but IEC 61373:2026 (2026-07-17) never became a
+Candidate: Google News carries no item about it. The earliest failure was the
+discovery source, which was news only.
+
+**Owners.**
+* **Search (discovery only).** `SearchProviderId.STANDARDS_CATALOGUE` is a
+  second provider beside `google_news_rss`. It is a parallel discovery lane,
+  not a fallback for news.
+  * In a monthly check, SearchPlanner adds one plan item per configured record,
+    bounded to the check month.
+  * `StandardsCatalogueProvider` makes one request per item and follows
+    redirects only within that source's own hosts, at most 3. It identifies
+    itself honestly (`Weekly-report-v2-Search/1.0`) and never imitates a
+    browser.
+  * It returns as discovery results the record's lifecycle entries dated inside
+    the window, plus an undated superseding edition the record names.
+  * A refusal, a changed layout or an unreadable record is a disclosed
+    technical failure, never a result.
+  * Catalogue items are not tied to a news market, so the plan's market
+    coverage applies only to Google News items. Weekly plans contain no
+    catalogue item.
+* **Data.** `monitored_standards.json` gains `catalogue_records`, which gives
+  each configured standard's source and locator. Each of the 27 is either
+  configured or listed under `not_configured` with its reason, exactly once.
+  The list itself, its V1 digest and the identifier lane are unchanged.
+* **Evidence (EvidenceService, the only owner).** A Candidate whose URL is an
+  official record page of a configured source is assessed from that record's
+  own fields, not as a news article. The four `EVIDENCE_READY` conditions hold
+  or fail closed:
+  * Source Resolved: the record page itself.
+  * Source-to-Candidate Match: the Candidate is that exact record, and the
+    fetched URL must equal it, otherwise `SOURCE_PAGE_MISMATCH`.
+  * Substantive Content and Factual Substance: the record's reference, title,
+    dated lifecycle entry, edition, status and the issuing body's description,
+    written with the page's own labels; an unreadable record is
+    `INSUFFICIENT_SUBSTANCE` (gate `CATALOGUE_RECORD`).
+
+  The source type is `official_standards_catalogue`. The record's date is its
+  `ORIGINAL_PUBLICATION` fact (IEC "Publication date", IEEE "Published"). The
+  region is `NOT_STATED`, because a catalogue record states no event
+  location. No helper call is made at this stage.
+* **Unchanged.** ScopeClassifier (RC-59 monitored basis), TemporalRule (check
+  month), Event Identity, Classifier, Taxonomy, Reportability, the region rule,
+  Writer, Validator, ReportService, Delivery, the schedule and the
+  subscription. The catalogue modules import none of these owners. No state is
+  kept: every entry carries its own date.
+
+**Phase 1 coverage, as verified live with the production client on
+2026-11-05.**
+* Configured (10): IEC 61373, 62271-100, 62271-102, 60947-1, 60850, 60754-1,
+  60754-2, 60076-11 and 62695 (IEC webstore), and IEEE 1474.1 (IEEE SA).
+* Not configured (17):
+  * EN 9: the CEN-CENELEC robots.txt disallows automated access.
+  * ASTM E119 and E662: ASTM's CDN refuses the production client with HTTP
+    403. The feasibility probe had succeeded only with a browser user-agent,
+    which production must not imitate.
+  * NFPA 70 and 130: the records state edition years without dates.
+  * NFPA 258: withdrawn in 2006.
+  * UIC 860-0: no locatable record.
+  * IEC 60076: a series of about 20 parts.
+  * IEC 60332-1: withdrawn in 2004 and split into three parts.
+
+These 17 remain news-only.
+
+**Acceptance.**
+* Blind replay of the July 2026 check through `ProductionRunner` with no
+  Delivery, executing the production plan's 12 catalogue items as they were
+  before ASTM was removed (two ASTM technical failures). It ran Search,
+  Candidate (the IEC record 68999), Evidence (READY), Scope (IN_SCOPE, monitored
+  basis, new edition), Temporal (2026-07-17 valid), Category (規範變動),
+  Taxonomy (電聯車) and Reportability (REPORTABLE, monitored standard
+  IEC 61373), and produced one event in 「規範及標準動態」. It used 6 paid
+  helper calls.
+* False positives: the 10 records fetched once each and replayed for every
+  month from 2025-08 to 2026-10 produce exactly one Candidate, IEC 61373:2026
+  in July.
+
+```text
+SEARCH_PROVIDERS = google_news_rss (weekly and monthly), standards_catalogue (monthly check only)
+STANDARDS_CATALOGUE_SOURCES = iec_webstore, ieee_sa
+STANDARDS_CATALOGUE_COVERAGE = 10 of 27 (phase 1)
+CATALOGUE_EVIDENCE_OWNER = EvidenceService (official record fields; no helper)
+CATALOGUE_CLIENT = HONEST USER-AGENT; NO BROWSER IMITATION; SAME-SOURCE REDIRECTS ONLY (<= 3)
 ```
 
 ## B. Authoritative Owners
@@ -2739,11 +2835,16 @@ attempt observations。它不得改寫 plan、選擇 query/market/language/provi
 fallback、rescue、backfill、normalize Candidate，或決定 Evidence、Category、
 Reportability。
 
-Search 的唯一 executable provider vocabulary 為：
+Search 的 executable provider vocabulary 為（RC-60，§A.44 新增第二個 provider；兩者是平行的 discovery
+provider，不是互相補救的 fallback）：
 
 ```text
 google_news_rss
+standards_catalogue
 ```
+
+`standards_catalogue` 只在每月監控標準檢查中使用。它每個 plan item 只送一次請求，只在該來源自身的
+網域內追隨轉址（最多 3 次），不適用下方的 Google News 轉址規則。
 
 ```text
 PHASE_2B_REFERENCE_PROVIDER = Google News RSS
@@ -3333,6 +3434,7 @@ MaiAgent 不得猜匯率。
 Formal Evidence 可為：
 
 * article body
+* official standards catalogue record（RC-60，§A.44：發行單位官方目錄頁的結構化欄位）
 * official press release
 * government/operator notice
 * procurement / award notice

@@ -76,7 +76,7 @@ Search 不得正式決定 Evidence Ready、Scope、Date validity、Category 或 
 * major incident
 * operations
 * procurement
-* monitored_standards（RC-58：以監控標準清單的編號搜尋該批標準的動態；RC-59：只在每月檢查的那一期規劃）
+* monitored_standards（RC-58：以監控標準清單的編號搜尋該批標準的動態；RC-59：只在每月檢查的那一期規劃；RC-60：另以官方標準目錄 provider 讀取已設定的目錄紀錄）
 
 每個啟用 intent 都必須至少 `PLANNED + ATTEMPTED`。
 
@@ -242,7 +242,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-59 修訂（2026-10-20～11-05）
+### RC-3～RC-60 修訂（2026-10-20～11-05）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.38、§N 與 §R。
 
@@ -517,7 +517,20 @@ Transport retry 與 semantic correction 必須分開計算。
   * 已知限制（2026-11-05，7 月回放 Run 41942587859）：月檢已正確執行（63 次、整月、0 失敗），但 IEC 61373:2026
     （2026-07-17 發行）未成為候選。最早失敗點是 Search 取回：Google News 在 7 月沒有任何提及 IEC 61373 的項目，
     標準發行只出現在標準組織或經銷商目錄。此限制適用全部 27 項；需另選非新聞的標準目錄來源（可能需授權或憑證），
-    待使用者決定（BLOCKED_EXTERNAL_DECISION），程式未修改。
+    待使用者決定（BLOCKED_EXTERNAL_DECISION），程式未修改。（第一階段已由 RC-60 處理。）
+* RC-60（§A.44，使用者核准）：每月檢查另以官方標準目錄讀取監控標準的正式紀錄。
+  * Search：新增第二個 provider `standards_catalogue`，與 Google News 平行、互不補救；只負責產生 Candidate。
+    每個已設定的紀錄每月一次請求，只在該來源網域內轉址，使用誠實的 user-agent，不模擬瀏覽器。
+  * Evidence：由 EvidenceService 以官方紀錄自身欄位（編號、標題、日期、版次、狀態、說明）建立 Authoritative
+    Evidence；source type 為 `official_standards_catalogue`，地區為「來源未載明」。
+  * Scope、Temporal、Category、Taxonomy、Reportability、Delivery 都不變；不新增狀態。
+  * 第一階段 10／27 項：IEC 9 項（61373、62271-100、62271-102、60947-1、60850、60754-1、60754-2、60076-11、62695）
+    與 IEEE 1474.1。其餘 17 項仍只靠新聞：EN 9 項（官方 robots 禁止）、ASTM 2 項（CDN 對正式 client 回 403）、
+    NFPA 70／130（無日期）、NFPA 258（2006 年撤回）、UIC 860-0（找不到紀錄）、IEC 60076（系列）、
+    IEC 60332-1（2004 年拆分）。27 項清單不變。
+  * 7 月盲測：IEC 61373:2026 由正式 production 自行發現並走完 Search→Evidence→Scope→Temporal→Category→
+    Taxonomy→Reportability，進入「規範及標準動態」（6 次付費呼叫）。
+  * 15 個月離線重放只產生這一筆。
 
 ## 13. Report / Delivery
 
@@ -668,5 +681,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-59 APPLIED (2026-11-05; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
+CONTRACT_REVISION = RC-3..RC-60 APPLIED (2026-11-05; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```

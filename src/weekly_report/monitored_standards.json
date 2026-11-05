@@ -14,19 +14,124 @@
   "groups": [
     {
       "label": "碰撞/出軌類",
-      "standards": ["EN 50126", "EN 50128", "EN 50129", "IEEE 1474.1", "EN 13674-1", "UIC 860-0", "IEC 61373"]
+      "standards": [
+        "EN 50126",
+        "EN 50128",
+        "EN 50129",
+        "IEEE 1474.1",
+        "EN 13674-1",
+        "UIC 860-0",
+        "IEC 61373"
+      ]
     },
     {
       "label": "觸電/電弧爆炸類",
-      "standards": ["EN 50122", "EN 50122-2", "EN 50327", "EN 50328", "EN 50329", "IEC 62271-100", "IEC 62271-102", "IEC 60947-1", "IEC 60850"]
+      "standards": [
+        "EN 50122",
+        "EN 50122-2",
+        "EN 50327",
+        "EN 50328",
+        "EN 50329",
+        "IEC 62271-100",
+        "IEC 62271-102",
+        "IEC 60947-1",
+        "IEC 60850"
+      ]
     },
     {
       "label": "火災/中毒類",
-      "standards": ["NFPA 130", "ASTM E119", "IEC 60754-1", "IEC 60754-2", "IEC 60332-1", "ASTM E662", "NFPA 258", "NFPA 70"]
+      "standards": [
+        "NFPA 130",
+        "ASTM E119",
+        "IEC 60754-1",
+        "IEC 60754-2",
+        "IEC 60332-1",
+        "ASTM E662",
+        "NFPA 258",
+        "NFPA 70"
+      ]
     },
     {
       "label": "結構性/爆炸性設備失效類",
-      "standards": ["IEC 60076", "IEC 60076-11", "IEC 62695"]
+      "standards": [
+        "IEC 60076",
+        "IEC 60076-11",
+        "IEC 62695"
+      ]
     }
-  ]
+  ],
+  "catalogue_records": {
+    "note": "RC-60: official catalogue record per monitored standard (phase 1, 10 of 27). The locator is the record a monthly check reads; the 27-standard list above is unchanged and remains the only scope.",
+    "records": [
+      {
+        "identifier": "IEC 61373",
+        "source": "iec_webstore",
+        "locator": "68999"
+      },
+      {
+        "identifier": "IEC 62271-100",
+        "source": "iec_webstore",
+        "locator": "62785"
+      },
+      {
+        "identifier": "IEC 62271-102",
+        "source": "iec_webstore",
+        "locator": "27712"
+      },
+      {
+        "identifier": "IEC 60947-1",
+        "source": "iec_webstore",
+        "locator": "26973"
+      },
+      {
+        "identifier": "IEC 60850",
+        "source": "iec_webstore",
+        "locator": "3685"
+      },
+      {
+        "identifier": "IEC 60754-1",
+        "source": "iec_webstore",
+        "locator": "3401"
+      },
+      {
+        "identifier": "IEC 60754-2",
+        "source": "iec_webstore",
+        "locator": "3403"
+      },
+      {
+        "identifier": "IEC 60076-11",
+        "source": "iec_webstore",
+        "locator": "29711"
+      },
+      {
+        "identifier": "IEC 62695",
+        "source": "iec_webstore",
+        "locator": "7373"
+      },
+      {
+        "identifier": "IEEE 1474.1",
+        "source": "ieee_sa",
+        "locator": "1474.1/6959"
+      }
+    ],
+    "not_configured": {
+      "IEC 60076": "a series of about 20 parts; whether the V1 entry means the series or one part is an open Domain question",
+      "IEC 60332-1": "withdrawn in 2004 and split into IEC 60332-1-1/-1-2/-1-3; following the successors is an open Domain question",
+      "EN 50126": "CEN-CENELEC robots.txt disallows automated access",
+      "EN 50128": "CEN-CENELEC robots.txt disallows automated access; revised by EN 50716:2023 (open Domain question)",
+      "EN 50129": "CEN-CENELEC robots.txt disallows automated access",
+      "EN 50122": "CEN-CENELEC robots.txt disallows automated access",
+      "EN 50122-2": "CEN-CENELEC robots.txt disallows automated access",
+      "EN 50327": "CEN-CENELEC robots.txt disallows automated access",
+      "EN 50328": "CEN-CENELEC robots.txt disallows automated access",
+      "EN 50329": "CEN-CENELEC robots.txt disallows automated access",
+      "EN 13674-1": "CEN-CENELEC robots.txt disallows automated access",
+      "NFPA 70": "the official record states edition years but no dates",
+      "NFPA 130": "the official record states edition years but no dates",
+      "NFPA 258": "withdrawn in 2006 (open Domain question; kept on the list)",
+      "UIC 860-0": "no locatable official record (open Domain question)",
+      "ASTM E119": "ASTM's CDN refuses the production client (HTTP 403, 2026-11-05); not configured rather than imitating a browser",
+      "ASTM E662": "ASTM's CDN refuses the production client (HTTP 403, 2026-11-05); not configured rather than imitating a browser"
+    }
+  }
 }

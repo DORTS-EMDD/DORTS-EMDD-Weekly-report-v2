@@ -69,6 +69,7 @@ class MonitoredStandards:
         self.standards = tuple(standards)
         self.identifiers = tuple(identifiers)
         self._patterns = tuple((identifier, _pattern(identifier)) for identifier in identifiers)
+        self.catalogue_records = _catalogue_records(data.get("catalogue_records"), self.identifiers)
 
     def identifiers_in(self, text: str) -> tuple[str, ...]:
         """Monitored identifiers mentioned in ``text``, in list order."""
@@ -83,6 +84,42 @@ class MonitoredStandards:
 
         literal = {group["label"]: list(group["standards"]) for group in data["groups"]}
         return hashlib.sha256(json.dumps(literal, ensure_ascii=False).encode("utf-8")).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class CatalogueRecordRef:
+    """RC-60: where the monthly check reads one monitored standard's official record."""
+
+    identifier: str
+    source: str
+    locator: str
+
+
+def _catalogue_records(value: Any, identifiers: tuple[str, ...]) -> tuple[CatalogueRecordRef, ...]:
+    """Validate the record table: each listed standard is configured or explained, once."""
+
+    if value is None:
+        return ()
+    from .standards_catalogue import CatalogueSource, request_url
+
+    if not isinstance(value, Mapping) or not isinstance(value.get("records"), list):
+        raise ValueError("catalogue_records requires a records list")
+    explained = value.get("not_configured", {})
+    if not isinstance(explained, Mapping) or any(not isinstance(text, str) or not text.strip() for text in explained.values()):
+        raise ValueError("catalogue_records.not_configured must give a reason per standard")
+    records: list[CatalogueRecordRef] = []
+    for item in value["records"]:
+        if not isinstance(item, Mapping) or set(item) != {"identifier", "source", "locator"}:
+            raise ValueError("each catalogue record has exactly identifier, source and locator")
+        source = CatalogueSource(item["source"]).value
+        request_url(source, item["locator"])  # validates the locator format
+        records.append(CatalogueRecordRef(item["identifier"], source, item["locator"]))
+    configured = [record.identifier for record in records]
+    covered = configured + list(explained)
+    if len(covered) != len(set(covered)) or set(covered) != set(identifiers):
+        raise ValueError("every monitored standard must be configured or explained exactly once, and nothing else")
+    order = {identifier: index for index, identifier in enumerate(identifiers)}
+    return tuple(sorted(records, key=lambda record: order[record.identifier]))
 
 
 def _pattern(identifier: str) -> re.Pattern[str]:
@@ -130,6 +167,7 @@ def monitored_standards() -> MonitoredStandards:
 
 
 __all__ = [
+    "CatalogueRecordRef",
     "MonitoredStandard",
     "MonitoredStandards",
     "REFERENCE_PATH",

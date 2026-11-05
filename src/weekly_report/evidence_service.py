@@ -31,6 +31,8 @@ from .contracts import (
     FetchedSource,
     IdentityMetadataSupport,
     RejectReason,
+    SourceDateFact,
+    SourceDateKind,
 )
 from .evidence_metadata import (
     EvidenceMetadataExtraction,
@@ -52,6 +54,7 @@ from .semantic_judge import (
 )
 from .evidence_document import DocumentSegment, PrincipalDocumentStatus, assess_document
 from .geographic_reference import GeographicMatchKind, GeographicReference, default_geographic_reference
+from .standards_catalogue import CatalogueRecordError, parse_record as parse_catalogue_record, record_source
 from .google_news_links import (
     GoogleNewsLinkResolver,
     LinkResolutionError,
@@ -568,6 +571,11 @@ class EvidenceService:
                 {},
                 evidence_rejection_gate="URL_VALIDATION",
             )
+        catalogue_source = record_source(input_url)
+        if catalogue_source is not None:
+            # RC-60 (section A.44): an official standards catalogue record is
+            # assessed from its own structured fields, not as a news article.
+            return self._evaluate_catalogue_record(item, input_url, catalogue_source)
         if not is_google_news_article_url(input_url):
             return self._evaluate_source(item, input_url)
 
@@ -608,6 +616,77 @@ class EvidenceService:
             )
         result = self._evaluate_source(item, publisher_url)
         return replace(result, provenance={**dict(result.provenance), **link})
+
+    def _evaluate_catalogue_record(self, item: CanonicalCandidate, input_url: str, source) -> EvidenceResult:
+        """RC-60: Authoritative Evidence from an issuing body's official catalogue record.
+
+        The four EVIDENCE_READY conditions hold by construction or fail closed:
+        the source is the issuing body's record page (Source Resolved); the
+        Candidate is that exact record (Source-to-Candidate Match); the
+        record's own structured fields give the reference, the dated lifecycle
+        entry and the issuing body's text (Substantive Content, Factual
+        Substance). Nothing outside the page is added.
+        """
+
+        fetch_started = perf_counter()
+        try:
+            fetched = _coerce_source(self._fetcher(input_url), input_url)
+        except Exception as exc:
+            provenance = _acquisition_observation(input_url, int((perf_counter() - fetch_started) * 1000), error=exc)
+            provenance["transport_error"] = "HTTPError" if isinstance(exc, (HTTPError, _EvidenceFetchError)) else type(exc).__name__
+            status = getattr(exc, "status_code", None) or getattr(exc, "code", None)
+            if isinstance(status, int):
+                provenance["status_code"] = status
+            return self._rejected(item, RejectReason.CONTENT_UNAVAILABLE, provenance, evidence_rejection_gate="FETCH_TRANSPORT")
+        observation = _acquisition_observation(input_url, int((perf_counter() - fetch_started) * 1000), fetched=fetched)
+        resolved_url = _normalise_url(fetched.url) or input_url
+        if fetched.status_code >= 400:
+            return self._rejected(item, RejectReason.CONTENT_UNAVAILABLE,
+                                  {**observation, "resolved_url": resolved_url, "status_code": fetched.status_code},
+                                  evidence_rejection_gate="HTTP_STATUS", canonical_source_url=resolved_url)
+        if resolved_url != input_url or record_source(resolved_url) is not source:
+            return self._rejected(item, RejectReason.SOURCE_PAGE_MISMATCH,
+                                  {**observation, "resolved_url": resolved_url, "source_provenance": False,
+                                   "source_provenance_mismatch_reason": "CATALOGUE_RECORD_MISMATCH"},
+                                  evidence_rejection_gate="SOURCE_PROVENANCE", canonical_source_url=resolved_url)
+        try:
+            record = parse_catalogue_record(source, fetched.content, resolved_url)
+        except CatalogueRecordError:
+            return self._rejected(item, RejectReason.INSUFFICIENT_SUBSTANCE,
+                                  {**observation, "resolved_url": resolved_url, "content_kind": "official_catalogue_record"},
+                                  evidence_rejection_gate="CATALOGUE_RECORD", canonical_source_url=resolved_url)
+        label = record.date_label.casefold().replace(" ", "_")
+        return EvidenceResult(
+            candidate_id=item.candidate_id,
+            state=EvidenceState.READY,
+            canonical_source_url=resolved_url,
+            source_type="official_standards_catalogue",
+            substantive_content=record.as_evidence_text(),
+            provenance={
+                **observation,
+                "candidate_url": input_url,
+                "resolved_url": resolved_url,
+                "content_type": fetched.content_type,
+                "content_kind": "official_catalogue_record",
+                "catalogue_source": source.value,
+                "catalogue_reference": record.reference,
+                "source_provenance": True,
+                "source_to_candidate_match": True,
+                "factual_substance": True,
+                "principal_source_headlines": [record.reference],
+                "EvidenceService_final_decision": EvidenceState.READY.value,
+            },
+            source_date_facts=(
+                SourceDateFact(
+                    raw_date_value=record.publication_date.isoformat(),
+                    date_kind=SourceDateKind.ORIGINAL_PUBLICATION,
+                    principal_document_association=item.candidate_id,
+                    source_node_or_field_provenance=f"official_catalogue.{source.value}.{label}",
+                ),
+            ),
+            # A catalogue record states no event location: the region is not stated.
+            identity_facts=EventIdentityFacts(region_resolution=RegionResolution(RegionResolutionBasis.NOT_STATED)),
+        )
 
     def _evaluate_source(self, item: CanonicalCandidate, input_url: str, *, amp_url: str = "") -> EvidenceResult:
         """Acquire and assess the source page at ``input_url``."""
@@ -1205,6 +1284,8 @@ class EvidenceService:
             "BODY_AVAILABILITY",
             "FACTUAL_SUBSTANCE",
             "SEMANTIC_MATCH",
+            # RC-60: an official catalogue record whose fields cannot be read.
+            "CATALOGUE_RECORD",
         }
         if evidence_rejection_gate not in allowed_gates:
             raise ValueError("unknown Evidence rejection gate")

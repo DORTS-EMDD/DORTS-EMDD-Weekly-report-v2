@@ -224,9 +224,11 @@ def test_the_monthly_plan_searches_every_identifier_over_the_whole_month(registr
     week = SearchWindow(date(2026, 11, 30), date(2026, 12, 6))
     plan = SearchPlanner(registry).plan(mode, window=week, monitored_check=NOVEMBER)
     markets = registry.selected_markets if mode == "selected" else registry.markets_for(mode)
-    monitored = [item for item in plan.items if item.intent is DiscoveryIntent.MONITORED_STANDARDS]
+    monitored = [item for item in plan.items if item.intent is DiscoveryIntent.MONITORED_STANDARDS
+                 and item.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]
+    catalogue = [item for item in plan.items if item.provider_target is SearchProviderId.STANDARDS_CATALOGUE]
     others = [item for item in plan.items if item.intent is not DiscoveryIntent.MONITORED_STANDARDS]
-    assert len(others) == 122 and len(monitored) == 63
+    assert len(others) == 122 and len(monitored) == 63 and len(catalogue) == 10  # RC-60: one per configured record
     assert {(item.market_id, item.language_profile) for item in monitored} == _supported(registry, markets)
     assert {item.search_window for item in monitored} == {SearchWindow(date(2026, 11, 1), date(2026, 11, 30))}
     assert {item.search_window for item in others} == {week}
@@ -255,7 +257,8 @@ def test_every_monthly_request_is_planned_and_attempted_once(registry):
 
     plan = SearchPlanner(registry).plan("selected", window=SearchWindow(date(2026, 11, 30), date(2026, 12, 6)),
                                         monitored_check=NOVEMBER)
-    result = SearchExecutor({SearchProviderId.GOOGLE_NEWS_RSS: _ZeroResults()}).execute(plan)
+    result = SearchExecutor({SearchProviderId.GOOGLE_NEWS_RSS: _ZeroResults(),
+                             SearchProviderId.STANDARDS_CATALOGUE: _ZeroResults()}).execute(plan)
     assert result.execution_complete and not result.unattempted_items
     assert sorted(calls) == sorted(item.plan_item_id for item in plan.items)
 
