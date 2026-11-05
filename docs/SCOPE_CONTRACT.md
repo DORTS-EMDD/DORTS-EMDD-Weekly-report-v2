@@ -129,10 +129,13 @@ an eligible family somewhere in a mixed document is insufficient.
 One basis is not a mode family and is deliberately narrow. In the monthly
 monitored-standards check, a Candidate whose principal content names an
 identifier of `src/weekly_report/monitored_standards.json` is asked one bounded
-question (`scope-monitored-standard-v1`): does the document report a formal
-lifecycle change of that standard itself? A formal lifecycle change is a new
-edition or revision (including formal national adoption), amendment,
-corrigendum, withdrawal, supersession, or formal draft or consultation. Python
+question (`scope-monitored-standard-v2`, RC-61): does the document report a
+formal lifecycle change of that standard itself, made by its own issuing body
+(IEC, CEN or CENELEC for EN, NFPA, ASTM, IEEE or UIC)? A formal lifecycle change
+is a new edition or revision, amendment, corrigendum, withdrawal, supersession,
+or formal draft or consultation. A national or regional adoption by another
+body (for example BS EN, DIN EN, or EN IEC adopting an IEC standard) is not a
+change of it (ARCHITECTURE_CONTRACT §A.45). Python
 accepts only a supplied identifier that occurs in the cited sentences. An
 accepted answer is `IN_SCOPE` on the `MONITORED_STANDARD` basis without an
 eligible mode family. A null answer leaves the rules of this document to decide.

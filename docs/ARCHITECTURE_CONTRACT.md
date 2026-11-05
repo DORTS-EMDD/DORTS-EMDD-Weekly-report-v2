@@ -2373,8 +2373,8 @@ Text is NFKC-normalised first. The module decides nothing.
      request kind with its own prompt (`reportability-monitored-standard-v1`)
      and schema (`reportability-monitored-standard-proposal-v1`), asks which
      supplied identifier, if any, the Evidence reports as itself formally
-     changed. The lifecycle actions are: new edition or revision (including
-     formal national adoption), amendment, corrigendum, withdrawal,
+     changed. The lifecycle actions are: new edition or revision (RC-61,
+     section A.45: an adoption by another body is not a change), amendment, corrigendum, withdrawal,
      supersession, and formal draft or consultation. The answer cites sentence
      IDs. Citing, applying, requiring or recommending a standard is not a
      change, nor is reviewing an existing edition or rumouring a revision.
@@ -2487,10 +2487,11 @@ The plan is frozen as before; the health check uses the weekly plan.
 the check month.
 1. In a check run, when Python finds monitored identifiers in a Candidate's
    principal content, one `scope_semantic_proposal` request of a second kind
-   (prompt `scope-monitored-standard-v1`, schema
+   (prompt `scope-monitored-standard-v1`, `-v2` since RC-61; schema
    `scope-monitored-standard-proposal-v1`) asks which supplied identifier, if
-   any, the document reports as itself formally changed: new edition or
-   revision (including formal national adoption), amendment, corrigendum,
+   any, the document reports as itself formally changed by its own issuing
+   body (RC-61, section A.45: a national or regional adoption by another body
+   is not a change): new edition or revision, amendment, corrigendum,
    withdrawal, supersession, or formal draft or consultation. The answer cites
    sentence IDs.
 2. Python accepts only a supplied identifier whose cited sentences contain it.
@@ -2534,7 +2535,8 @@ list, ledger, schedule or state.
 
 **Golden.** `golden/monitored_standards_cases.json` v2 (MS01 to MS15) runs Scope,
 Temporal and Reportability through the production owners. The cases cover:
-* monitored new edition, draft, national amendment, an amendment with no
+* monitored new edition, draft, national amendment (RC-61: no longer a
+  monitored change), an amendment with no
   urban-rail wording, and a publication outside the designated regions;
 * a procurement citation, a mention in guidance, a regulation making
   compliance mandatory, another standard's revision, and city ordinances with
@@ -2681,6 +2683,73 @@ STANDARDS_CATALOGUE_SOURCES = iec_webstore, ieee_sa
 STANDARDS_CATALOGUE_COVERAGE = 10 of 27 (phase 1)
 CATALOGUE_EVIDENCE_OWNER = EvidenceService (official record fields; no helper)
 CATALOGUE_CLIENT = HONEST USER-AGENT; NO BROWSER IMITATION; SAME-SOURCE REDIRECTS ONLY (<= 3)
+```
+
+### A.45 RC-61 Adoption by another body is not a change of a monitored standard (2026-11-05, user-approved Domain Rule)
+
+**Requirement (user).**
+* A monitored standard changes only when its own issuing body changes it:
+  IEC for an IEC identifier, CEN or CENELEC for an EN identifier, and NFPA,
+  ASTM, IEEE or UIC for theirs.
+* Another standards body publishing its adoption of the standard is not a
+  change of it, and is not a second update of the same standard:
+  * a national adoption, such as BS EN, DIN EN or NF EN;
+  * a regional adoption, such as CENELEC publishing EN IEC 61373 as its
+    adoption of IEC 61373.
+* This holds even when the adoption has its own number, date, amendment or
+  corrigendum.
+* An EN identifier still changes when CEN or CENELEC itself changes it.
+
+**Root cause addressed.** The user decided this on 2026-11-05 (Q3 of the
+catalogue source review), but the decision was recorded only in the
+non-binding draft `docs/MONITORED_STANDARDS_SOURCE_OPTIONS_DRAFT.md`. The
+binding text kept the opposite rule:
+* section A.42 step 2 and section A.43 Scope step 1 ("new edition or revision
+  (including formal national adoption)");
+* `docs/SCOPE_CONTRACT.md` section 5.1;
+* the production Scope prompt `scope-monitored-standard-v1`;
+* Golden MS09.
+
+As a result, a report of BS EN IEC 61373:2026 (BSI, 2026-09-30) would have
+been reported as a second IEC 61373 update.
+
+**Owner and change.** ScopeClassifier stays the only owner of the
+monitored-standard lifecycle fact (section A.43).
+* Prompt `scope-monitored-standard-v2` drops "including its formal national
+  adoption" and "or by a body formally adopting it".
+* It names the issuing body for each identifier prefix and states that a
+  national or regional adoption is not a change.
+* The schema, the request, the Python citation check and the basis are
+  unchanged.
+* Python adds no issuer rule or prefix list. As before, the helper proposes
+  the lifecycle fact and Python validates the citation.
+
+**Unchanged.** The 27-standard list, Search (including the catalogue lane,
+which reads only the issuing body's own records), Evidence, Temporal,
+Category, Taxonomy, Reportability, the region rule, Report and Delivery. An
+adoption that the monitored basis does not accept is left to the ordinary
+Scope rules, as any null answer is.
+
+**Golden** (`golden/monitored_standards_cases.json` v3).
+* MS09 keeps its Evidence, a BSI amendment to BS EN 50122-2. Its expected
+  outcome follows this Domain Rule: it is not a monitored change, ordinary
+  Scope decides (out of scope), and it is not in 「規範及標準動態」.
+* MS11 keeps its Evidence, CENELEC in Brussels making a new IEC 60076-11
+  edition available. CENELEC is not IEC's issuing body, so this is not a
+  monitored change, and ordinary Scope decides (out of scope).
+* MS16: CENELEC in Brussels itself publishes amendment A1 to EN 50122-2. This
+  is a monitored change and REPORTABLE. It now carries the criterion that MS11
+  carried: an issuing body outside the 20 designated regions is still
+  reported.
+* MS17: BSI publishes the UK adoption BS EN IEC 61373:2026. This is not a
+  change.
+* MS18: CENELEC publishes EN IEC 61373:2026, the regional adoption. This is
+  not a change.
+
+```text
+MONITORED_STANDARD_CHANGE_BODY = THE IDENTIFIED STANDARD'S OWN ISSUING BODY
+NATIONAL_OR_REGIONAL_ADOPTION = NOT A CHANGE OF THE MONITORED STANDARD
+SCOPE_MONITORED_STANDARD_PROMPT = scope-monitored-standard-v2
 ```
 
 ## B. Authoritative Owners

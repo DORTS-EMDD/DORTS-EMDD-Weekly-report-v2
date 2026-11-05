@@ -1,6 +1,6 @@
 {
-  "golden_version": "monitored-standards-golden-v2",
-  "contract": "docs/ARCHITECTURE_CONTRACT.md sections A.42 (RC-58) and A.43 (RC-59)",
+  "golden_version": "monitored-standards-golden-v3",
+  "contract": "docs/ARCHITECTURE_CONTRACT.md sections A.42 (RC-58), A.43 (RC-59) and A.45 (RC-61)",
   "origin_type": "SYNTHETIC_CONTRACT_CASE",
   "notes": [
     "Each case is one Evidence-ready Candidate forming one EventGroup. report_period decides, through the production cadence owner, whether the run carries the monthly monitored-standards check.",
@@ -132,18 +132,18 @@
     },
     {
       "case_id": "MS09",
-      "scenario": "monthly check: a national adoption publishes an amendment to a monitored part",
+      "scenario": "monthly check: a national body publishes its adoption of an amendment to a monitored part (RC-61: not a change of the standard)",
       "report_period": ["2026-11-30", "2026-12-06"],
       "source_date": "2026-11-20",
       "category_id": "NORMATIVE_CHANGE",
       "source_content": "BSI published amendment A1 to BS EN 50122-2:2010, which revises the stray-current limits for DC traction systems.",
       "helper_answers": {
-        "monitored_standard": {"changed_standard": "EN 50122-2", "lifecycle_action": "AMENDMENT", "sentence_ids": ["S1"]},
-        "ordinary_scope": "NOT_CALLED",
-        "value_path": {"proposed_state": "REPORTABLE", "principal_occurrence": "DECISION_OR_APPROVAL", "sentence_ids": ["S1"]}
+        "monitored_standard": {"changed_standard": null, "lifecycle_action": null, "sentence_ids": []},
+        "ordinary_scope": "OUT_OF_SCOPE",
+        "value_path": "NOT_CALLED"
       },
-      "expected": {"scope": "IN_SCOPE", "scope_basis": "MONITORED_STANDARD", "date_valid": true, "monitored_standard": "EN 50122-2",
-                   "reportability": "REPORTABLE", "reportability_reason": null, "report_section": "規範及標準動態"}
+      "expected": {"scope": "OUT_OF_SCOPE", "scope_basis": null, "date_valid": null, "monitored_standard": null,
+                   "reportability": null, "reportability_reason": null, "report_section": null}
     },
     {
       "case_id": "MS10",
@@ -162,18 +162,18 @@
     },
     {
       "case_id": "MS11",
-      "scenario": "monthly check: a monitored transformer standard is published by a body outside the designated regions",
+      "scenario": "monthly check: a regional body outside the designated regions makes a monitored IEC edition available (RC-61: not IEC's own change)",
       "report_period": ["2026-11-30", "2026-12-06"],
       "source_date": "2026-11-25",
       "category_id": "NORMATIVE_CHANGE",
       "source_content": "CENELEC in Brussels made available a new edition of IEC 60076-11 for dry-type power transformers. The new edition supersedes the 2018 edition.",
       "helper_answers": {
-        "monitored_standard": {"changed_standard": "IEC 60076-11", "lifecycle_action": "NEW_EDITION_OR_REVISION", "sentence_ids": ["S1", "S2"]},
-        "ordinary_scope": "NOT_CALLED",
-        "value_path": {"proposed_state": "REPORTABLE", "principal_occurrence": "DECISION_OR_APPROVAL", "sentence_ids": ["S1", "S2"]}
+        "monitored_standard": {"changed_standard": null, "lifecycle_action": null, "sentence_ids": []},
+        "ordinary_scope": "OUT_OF_SCOPE",
+        "value_path": "NOT_CALLED"
       },
-      "expected": {"scope": "IN_SCOPE", "scope_basis": "MONITORED_STANDARD", "date_valid": true, "monitored_standard": "IEC 60076-11",
-                   "reportability": "REPORTABLE", "reportability_reason": null, "report_section": "規範及標準動態"}
+      "expected": {"scope": "OUT_OF_SCOPE", "scope_basis": null, "date_valid": null, "monitored_standard": null,
+                   "reportability": null, "reportability_reason": null, "report_section": null}
     },
     {
       "case_id": "MS12",
@@ -229,6 +229,51 @@
       "source_content": "The city council amended its building ordinance to require sprinklers in new parking garages. The amendment takes effect next year.",
       "helper_answers": {
         "monitored_standard": "NOT_CALLED",
+        "ordinary_scope": "OUT_OF_SCOPE",
+        "value_path": "NOT_CALLED"
+      },
+      "expected": {"scope": "OUT_OF_SCOPE", "scope_basis": null, "date_valid": null, "monitored_standard": null,
+                   "reportability": null, "reportability_reason": null, "report_section": null}
+    },
+    {
+      "case_id": "MS16",
+      "scenario": "monthly check: the issuing body outside the designated regions amends a monitored EN part (RC-61)",
+      "report_period": ["2026-11-30", "2026-12-06"],
+      "source_date": "2026-11-19",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "CENELEC in Brussels published amendment A1 to EN 50122-2, which revises the stray-current limits for DC traction systems.",
+      "helper_answers": {
+        "monitored_standard": {"changed_standard": "EN 50122-2", "lifecycle_action": "AMENDMENT", "sentence_ids": ["S1"]},
+        "ordinary_scope": "NOT_CALLED",
+        "value_path": {"proposed_state": "REPORTABLE", "principal_occurrence": "DECISION_OR_APPROVAL", "sentence_ids": ["S1"]}
+      },
+      "expected": {"scope": "IN_SCOPE", "scope_basis": "MONITORED_STANDARD", "date_valid": true, "monitored_standard": "EN 50122-2",
+                   "reportability": "REPORTABLE", "reportability_reason": null, "report_section": "規範及標準動態"}
+    },
+    {
+      "case_id": "MS17",
+      "scenario": "monthly check: a national body publishes its adoption of a monitored IEC edition (RC-61: not a second update)",
+      "report_period": ["2026-11-30", "2026-12-06"],
+      "source_date": "2026-11-16",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "BSI published BS EN IEC 61373:2026, the UK adoption of IEC 61373:2026 on shock and vibration tests for railway rolling stock equipment.",
+      "helper_answers": {
+        "monitored_standard": {"changed_standard": null, "lifecycle_action": null, "sentence_ids": []},
+        "ordinary_scope": "OUT_OF_SCOPE",
+        "value_path": "NOT_CALLED"
+      },
+      "expected": {"scope": "OUT_OF_SCOPE", "scope_basis": null, "date_valid": null, "monitored_standard": null,
+                   "reportability": null, "reportability_reason": null, "report_section": null}
+    },
+    {
+      "case_id": "MS18",
+      "scenario": "monthly check: a regional body publishes its adoption of a monitored IEC edition (RC-61: not a second update)",
+      "report_period": ["2026-11-30", "2026-12-06"],
+      "source_date": "2026-11-23",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "CENELEC published EN IEC 61373:2026, the European adoption of IEC 61373:2026 on shock and vibration tests for railway rolling stock equipment.",
+      "helper_answers": {
+        "monitored_standard": {"changed_standard": null, "lifecycle_action": null, "sentence_ids": []},
         "ordinary_scope": "OUT_OF_SCOPE",
         "value_path": "NOT_CALLED"
       },

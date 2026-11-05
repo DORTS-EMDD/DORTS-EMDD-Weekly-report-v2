@@ -242,7 +242,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-60 修訂（2026-10-20～11-05）
+### RC-3～RC-61 修訂（2026-10-20～11-05）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.38、§N 與 §R。
 
@@ -531,6 +531,14 @@ Transport retry 與 semantic correction 必須分開計算。
   * 7 月盲測：IEC 61373:2026 由正式 production 自行發現並走完 Search→Evidence→Scope→Temporal→Category→
     Taxonomy→Reportability，進入「規範及標準動態」（6 次付費呼叫）。
   * 15 個月離線重放只產生這一筆。
+* RC-61（§A.45，使用者核定 Domain Rule）：監控標準只有其發行單位本身的變動才算更新：
+  * 發行單位：IEC 編號為 IEC；EN 編號為 CEN／CENELEC；NFPA、ASTM、IEEE、UIC 各自。
+  * 其他標準組織發布的採用版都不算該標準的變動，也不算第二次更新；即使採用版有自己的編號、日期、修正或勘誤也一樣：
+    * 國家採用，如 BS EN、DIN EN；
+    * 區域採用，如 CENELEC 以 EN IEC 61373 採用 IEC 61373。
+  * 根因：使用者 2026-11-05 的決定（Q3）只記在未生效的草案，契約、Scope 提示詞與 Golden MS09 仍寫「含國家採用」。
+  * 修正：Scope 提示詞改為 v2，schema、Python 檢查與其他 owner 都不變。
+  * Golden：MS09 的預期改為不是監控變動；新增 MS16（CENELEC 修正 EN 50122-2，成報）、MS17（BSI 採用版）、MS18（CENELEC 區域採用版）。
 
 ## 13. Report / Delivery
 
@@ -681,5 +689,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-60 APPLIED (2026-11-05; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
+CONTRACT_REVISION = RC-3..RC-61 APPLIED (2026-11-05; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```

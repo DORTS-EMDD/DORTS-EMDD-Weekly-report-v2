@@ -50,6 +50,7 @@ from src.weekly_report.contracts import (
 from src.weekly_report.delivery import DeliveryStatus
 from src.weekly_report.gmail_smtp import index_for_artifact
 from src.weekly_report.maiagent_scope_provider import (
+    MONITORED_STANDARD_INSTRUCTIONS,
     MONITORED_STANDARD_PROMPT_VERSION,
     MONITORED_STANDARD_SCHEMA_VERSION,
     PROMPT_VERSION as SCOPE_PROMPT_VERSION,
@@ -411,7 +412,12 @@ def test_the_golden_covers_every_required_scenario():
     by_id = {case["case_id"]: case for case in GOLDEN["cases"]}
     assert by_id["MS10"]["expected"]["scope_basis"] == "MONITORED_STANDARD"  # no metro wording (criterion 6)
     assert "metro" not in by_id["MS10"]["source_content"].lower()
-    assert by_id["MS11"]["expected"]["report_section"] == SECTION  # body outside the 20 regions (criterion 7)
+    assert by_id["MS16"]["expected"]["report_section"] == SECTION  # issuing body outside the 20 regions (criterion 7)
+    assert "Brussels" in by_id["MS16"]["source_content"]
+    # RC-61 (section A.45): only the identified standard's own issuing body changes it.
+    for case_id in ("MS09", "MS11", "MS17", "MS18"):  # national, regional and other-body adoptions
+        assert by_id[case_id]["expected"]["monitored_standard"] is None, case_id
+        assert by_id[case_id]["expected"]["report_section"] is None, case_id
     assert by_id["MS06"]["expected"]["reportability_reason"] == "OUTSIDE_MONITORED_STANDARDS"  # other standard (8)
     assert by_id["MS15"]["expected"]["scope"] == "OUT_OF_SCOPE"  # ordinance cannot use the basis (9)
     assert by_id["MS14"]["expected"]["scope"] == "OUT_OF_SCOPE"  # mention only, no urban rail (10)
@@ -487,6 +493,16 @@ def test_the_monitored_question_is_a_second_request_kind_of_the_scope_task():
     assert "monitored_identifiers" not in json.dumps(build_maiagent_scope_model_input(
         ScopeSemanticRequest("C1", "Title", "A metro line opened.", {})))
     assert SCOPE_PROMPT_VERSION == "scope-event-target-system-v12"
+
+
+def test_only_the_issuing_body_changes_a_monitored_standard():
+    # RC-61 (section A.45): a national or regional adoption by another body is not a change.
+    assert MONITORED_STANDARD_PROMPT_VERSION == "scope-monitored-standard-v2"
+    text = " ".join(MONITORED_STANDARD_INSTRUCTIONS)
+    assert "national adoption" in text and "regional adoption" in text and "is not a change of it" in text
+    assert "including its formal national adoption" not in text
+    assert "or by a body formally adopting it" not in text
+    assert "body that issues the identified standard itself" in text
 
 
 # --- RC-28: the region rule is lifted only for a reported monitored update ------------------

@@ -2546,3 +2546,20 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - 新增 `tests/test_technology_vocabulary.py`（7 項：概念×profile 覆蓋、v9 詞保留、歧義詞不在詞表、parity、每個新詞進入每個支援版本、請求數）。
   - `test_monitored_standards.py` 與 `test_standards_catalogue.py` 中目前 production 計畫數的 pin 由 122／185 更新為 140／203。
   - 全部測試與 clean export 皆 1478 passed，含 IEC 61373:2026 與 RC-60 回歸。
+
+## 66. RC-61：其他機構的採用版不算監控標準的變動（§A.45，使用者核定 Domain Rule，2026-11-05）
+
+- 根因：
+  - 使用者 2026-11-05 已決定「國家採用不算第二次更新」（Q3），但只記在未生效的草案。
+  - 契約 §A.42、§A.43、`SCOPE_CONTRACT.md` §5.1、production Scope 提示詞 v1 與 Golden MS09 仍寫「含國家採用」。
+  - 因此 BS EN IEC 61373:2026（BSI，2026-09-30）會被報成 IEC 61373 的第二次更新。
+- 使用者決定：
+  - 只有該標準的發行單位本身的變動才算。
+  - 國家採用（BS EN、DIN EN）與區域採用（CENELEC 的 EN IEC）都不算。
+  - MS09、MS11 的 Evidence 不變，預期依新規則改為不是監控變動。
+  - 新增 MS16（CENELEC 修正 EN 50122-2，成報；改由它負責「發行單位位於指定地區外」的準則）、MS17（BSI 採用版）、MS18（CENELEC 區域採用版）。
+- 修改：
+  - Scope 提示詞 `scope-monitored-standard-v2`。
+  - Schema、Python 引用檢查、請求、其他 owner、27 項清單、Search 與 Delivery 都不變。
+- 測試：全部測試與 clean export 皆 1482 passed（新增 3 個 Golden 與 1 個提示詞測試）。
+- 未驗證：Golden 使用腳本化的 helper 回答，只證明 Python 的處理；live helper 是否遵守 v2 尚未量測，未做付費呼叫。

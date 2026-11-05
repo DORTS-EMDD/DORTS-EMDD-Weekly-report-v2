@@ -126,15 +126,18 @@ class MaiAgentScopeProviderConfig:
 # the monthly monitored-standards check for a Candidate whose principal content
 # names a monitored standard. The helper says which supplied identifier, if any,
 # the document reports as itself formally changed; Python owns the list, the
-# membership, the citation check and the Scope decision.
-MONITORED_STANDARD_PROMPT_VERSION = "scope-monitored-standard-v1"
+# membership, the citation check and the Scope decision. RC-61 (section A.45):
+# only the identified standard's own issuing body changes it; a national or
+# regional adoption by another body is not a change of it.
+MONITORED_STANDARD_PROMPT_VERSION = "scope-monitored-standard-v2"
 MONITORED_STANDARD_SCHEMA_VERSION = "scope-monitored-standard-proposal-v1"
 
 MONITORED_STANDARD_INSTRUCTIONS = (
     "You are a stateless proposal-only semantic helper for the Python ScopeClassifier.",
     "Use only the supplied principal_sentences. Each sentence has a sentence_id assigned by Python. Cite only sentence_ids; never copy or retype source text.",
     "monitored_identifiers lists standard identifiers that Python found in this document. Decide whether the document reports, as its own news, a formal lifecycle change of one of these standards itself.",
-    "A formal lifecycle change is: publication of a new edition or revision, including its formal national adoption; an amendment; a corrigendum or erratum; withdrawal; supersession or replacement by another document; or a formal draft or formal public consultation on the standard. The document must state that the change was made, published, approved, opened or proposed by the body responsible for the standard or by a body formally adopting it.",
+    "A formal lifecycle change is: publication of a new edition or revision; an amendment; a corrigendum or erratum; withdrawal; supersession or replacement by another document; or a formal draft or formal public consultation on the standard. The document must state that the change was made, published, approved, opened or proposed by the body that issues the identified standard itself: IEC for an IEC identifier, CEN or CENELEC for an EN identifier, and NFPA, ASTM, IEEE or UIC for theirs.",
+    "Another standards body publishing its own adoption of the standard is not a change of it. This covers a national adoption (for example BS EN, DIN EN or NF EN) and a regional adoption (for example CENELEC publishing EN IEC 61373 as its adoption of IEC 61373), even when the adoption has its own number, date, amendment or corrigendum.",
     "It is not a change of the standard when the document only cites, applies, requires or discusses it: a project, product, procurement, contract, design, test or certification that complies with it; a regulation, ordinance, guideline or contract that requires compliance with it; a recommendation, demand or comment by a researcher, official or commentator; a description, history or review of an existing edition; or a rumoured or expected future revision without a formal draft or consultation.",
     "changed_standard is exactly one identifier copied unchanged from monitored_identifiers, or null when the document reports no formal lifecycle change of any of them. If several change, name the one the document reports as its principal news.",
     "When changed_standard is not null, lifecycle_action is NEW_EDITION_OR_REVISION, AMENDMENT, CORRIGENDUM, WITHDRAWAL, SUPERSESSION or DRAFT_OR_CONSULTATION, and sentence_ids are the sentences that state the change; at least one of them must contain the identifier. When changed_standard is null, lifecycle_action is null and sentence_ids is empty.",
