@@ -1,5 +1,5 @@
 {
-  "golden_version": "monitored-standards-golden-v4",
+  "golden_version": "monitored-standards-golden-v5",
   "contract": "docs/ARCHITECTURE_CONTRACT.md sections A.42 (RC-58), A.43 (RC-59), A.45 (RC-61) and A.46 (RC-62)",
   "origin_type": "SYNTHETIC_CONTRACT_CASE",
   "notes": [
@@ -302,6 +302,36 @@
       "source_date": "2026-11-24",
       "category_id": "NORMATIVE_CHANGE",
       "source_content": "The IEC published an amendment to IEC 60332-1-2, the test procedure for vertical flame propagation of a single insulated cable.",
+      "helper_answers": {
+        "monitored_standard": "NOT_CALLED",
+        "ordinary_scope": "OUT_OF_SCOPE",
+        "value_path": "NOT_CALLED"
+      },
+      "expected": {"scope": "OUT_OF_SCOPE", "scope_basis": null, "date_valid": null, "monitored_standard": null,
+                   "reportability": null, "reportability_reason": null, "report_section": null}
+    },
+    {
+      "case_id": "MS21",
+      "scenario": "monthly check: CENELEC revises a part that succeeded a withdrawn monitored identifier; no family coverage lists it (RC-62: a split is not coverage)",
+      "report_period": ["2026-11-30", "2026-12-06"],
+      "source_date": "2026-11-13",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "CENELEC published a new edition of EN 50126-1, the generic RAMS process for railway applications.",
+      "helper_answers": {
+        "monitored_standard": "NOT_CALLED",
+        "ordinary_scope": "OUT_OF_SCOPE",
+        "value_path": "NOT_CALLED"
+      },
+      "expected": {"scope": "OUT_OF_SCOPE", "scope_basis": null, "date_valid": null, "monitored_standard": null,
+                   "reportability": null, "reportability_reason": null, "report_section": null}
+    },
+    {
+      "case_id": "MS22",
+      "scenario": "monthly check: CENELEC amends a sibling part of an explicitly listed child; no family coverage lists it (RC-62)",
+      "report_period": ["2026-11-30", "2026-12-06"],
+      "source_date": "2026-11-26",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "CENELEC published amendment A1 to EN 50122-1, which revises the protective provisions against electric shock for fixed traction installations.",
       "helper_answers": {
         "monitored_standard": "NOT_CALLED",
         "ordinary_scope": "OUT_OF_SCOPE",

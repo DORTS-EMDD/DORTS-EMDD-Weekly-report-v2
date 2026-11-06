@@ -2857,11 +2857,63 @@ So in the live news lane:
   updated: "EN 50126-1:2025" now resolves to no owner, and
   "BS EN 50122-2:2010 A1" resolves to EN 50122-2 only.
 
+**Family coverage status (2026-11-06; documentation, not production state).**
+No family can be defined from authoritative evidence.
+
+The production state is unchanged: `family_coverage.families` stays empty.
+All four series entries own only their own numbers and fail closed. That
+outcome needs no further mechanism; this paragraph only records why the
+Domain decisions remain open.
+
+The only possible bases are each issuing body's structure for the number:
+* IEC 60076: about 20 parts and an all-parts SER pack;
+* IEC 60332-1: withdrawn in 2004 and split into -1-1, -1-2 and -1-3;
+* EN 50122: parts -1, -2 and -3;
+* EN 50126: EN 50126:1999 replaced by -1 and -2 in 2017.
+
+D1 excludes each of these as coverage: a series by default, numbering, and a
+split or successor. Neither the repository nor the V1 literal, which is a frozen
+reference holding identifiers only, records which parts were meant.
+
+Earliest root cause, the same for all four: the monitored list states no
+product scope for these series entries, so only the list owner can define it.
+
+| Entry | Final state | Earliest root cause | Also limited by |
+| --- | --- | --- | --- |
+| IEC 60076 | empty family; owns "IEC 60076" only | which parts are monitored is an undecided product-scope decision | open contract question below (SER pack) |
+| IEC 60332-1 | empty family; owns the publication withdrawn in 2004, so it can no longer change | following the split parts is an undecided Domain decision | none |
+| EN 50122 | empty family; EN 50122-2 owns itself | whether -1 and/or -3 are monitored is undecided | CEN-CENELEC catalogue robots-blocked (RC-60); news only |
+| EN 50126 | empty family; owns "EN 50126" only | following the 2017 successor parts is undecided | CEN-CENELEC catalogue robots-blocked (RC-60); news only |
+
+Golden v5 adds:
+* MS21: CENELEC revises EN 50126-1, which is not monitored.
+* MS22: CENELEC amends EN 50122-1, the sibling of the explicit child, which is
+  not monitored.
+
+These lock existing D1 outcomes and add no rule. With MS19 (IEC 60076-5) and
+MS20 (IEC 60332-1-2), every series entry's fail-closed outcome is locked.
+Defining a family later is a data-only change in `families`, and the user's
+decision must name its parts.
+
+**Open contract question (BLOCKED_DOMAIN_RULE): the IEC 60076 SER pack.** IEC
+also publishes an all-parts collection under the bare number ("IEC 60076:20xx
+SER"), and re-issues it when parts change.
+* Under exact ownership (this section) the pack's number is IEC 60076's own.
+* Under RC-61 IEC is its issuing body.
+
+So a report of a new SER edition could be accepted as a monitored update of
+IEC 60076. That would monitor every part indirectly, which D1 means to exclude.
+The contract does not say whether a collection pack published under a bare
+series number is a lifecycle change of that identifier. This is undecided, and
+no rule is added. No other listed identifier is affected: the IEC 60332 pack is
+numbered 60332, not 60332-1.
+
 ```text
 MONITORED_IDENTIFIER_OWNERSHIP = EXACT PUBLICATION NUMBER, PLUS CONFIGURED FAMILY PARTS
 FAMILY_MEMBERSHIP_CONDITIONS = SINGLE EXPLICIT OWNER ONLY (no body or numbering condition)
 HYPHEN_YEAR_NOTATION = A FINAL -YYYY MAY BE THE EDITION YEAR; EXPLICIT PUBLICATION FIRST (user decision; no range or body condition)
-FAMILY_COVERAGE_SOURCE = monitored_standards.json family_coverage (user decision; none defined yet)
+FAMILY_COVERAGE_SOURCE = monitored_standards.json family_coverage (user decision; none defined)
+IEC_60076_SER_PACK = OPEN CONTRACT QUESTION (BLOCKED_DOMAIN_RULE)
 EXPLICIT_CHILD = OWNS ITSELF; NEVER A FAMILY MEMBER
 NUMBERING_DERIVED_COVERAGE = FORBIDDEN
 ```

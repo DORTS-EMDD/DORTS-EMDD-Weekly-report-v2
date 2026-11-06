@@ -164,6 +164,28 @@ def test_no_family_is_defined_until_the_user_decides_its_coverage():
     assert monitored_standards().family_coverage == {}
 
 
+# Parts the issuing bodies publish under the four series entries. Under D1
+# (section A.46) structure, numbering and splits are not coverage, and no
+# family is defined, so none of these parts is monitored.
+UNCOVERED_SERIES_PARTS = {
+    "IEC 60076": ("IEC 60076-1:2011", "IEC 60076-2:2011", "IEC 60076-5:2006", "IEC 60076-7:2018", "IEC 60076-16:2018"),
+    "IEC 60332-1": ("IEC 60332-1-1:2004", "IEC 60332-1-2:2025", "IEC 60332-1-3:2004"),
+    "EN 50122": ("EN 50122-1:2022", "EN 50122-3:2022"),
+    "EN 50126": ("EN 50126-1:2017", "EN 50126-2:2017/A1:2024"),
+}
+
+
+@pytest.mark.parametrize("family", sorted(UNCOVERED_SERIES_PARTS))
+def test_the_four_series_families_stay_fail_closed_until_their_coverage_is_decided(family):
+    standards = monitored_standards()
+    assert family not in standards.family_coverage
+    for part in UNCOVERED_SERIES_PARTS[family]:
+        assert standards.identifiers_in(f"The body published {part}.") == (), part
+    assert standards.identifiers_in(f"The body published {family}.") == (family,)
+    assert standards.identifiers_in("IEC 60076-11:2018") == ("IEC 60076-11",)
+    assert standards.identifiers_in("EN 50122-2:2022") == ("EN 50122-2",)
+
+
 def test_a_configured_family_part_is_owned_by_its_parent_and_nothing_else_is():
     standards = _with_families({"IEC 60076": ["IEC 60076-5"]})
     assert standards.identifiers_in("IEC published IEC 60076-5:2026") == ("IEC 60076",)
@@ -528,6 +550,11 @@ def test_the_golden_covers_every_required_scenario():
     assert by_id["MS16"]["expected"]["report_section"] == SECTION  # issuing body outside the 20 regions (criterion 7)
     assert "Brussels" in by_id["MS16"]["source_content"]
     # RC-61 (section A.45): only the identified standard's own issuing body changes it.
+    # RC-62 (section A.46): each family without defined coverage stays fail-closed.
+    for case_id, family in (("MS19", "IEC 60076"), ("MS20", "IEC 60332-1"), ("MS21", "EN 50126"), ("MS22", "EN 50122")):
+        assert family not in monitored_standards().family_coverage, case_id
+        assert by_id[case_id]["expected"]["monitored_standard"] is None, case_id
+        assert by_id[case_id]["helper_answers"]["monitored_standard"] == "NOT_CALLED", case_id
     for case_id in ("MS09", "MS11", "MS17", "MS18"):  # national, regional and other-body adoptions
         assert by_id[case_id]["expected"]["monitored_standard"] is None, case_id
         assert by_id[case_id]["expected"]["report_section"] is None, case_id
