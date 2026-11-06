@@ -2880,7 +2880,7 @@ product scope for these series entries, so only the list owner can define it.
 
 | Entry | Final state | Earliest root cause | Also limited by |
 | --- | --- | --- | --- |
-| IEC 60076 | empty family; owns "IEC 60076" only | which parts are monitored is an undecided product-scope decision | open contract question below (SER pack) |
+| IEC 60076 | empty family; owns "IEC 60076" only, never its SER pack | which parts are monitored is an undecided product-scope decision | none |
 | IEC 60332-1 | empty family; owns the publication withdrawn in 2004, so it can no longer change | following the split parts is an undecided Domain decision | none |
 | EN 50122 | empty family; EN 50122-2 owns itself | whether -1 and/or -3 are monitored is undecided | CEN-CENELEC catalogue robots-blocked (RC-60); news only |
 | EN 50126 | empty family; owns "EN 50126" only | following the 2017 successor parts is undecided | CEN-CENELEC catalogue robots-blocked (RC-60); news only |
@@ -2895,25 +2895,58 @@ MS20 (IEC 60332-1-2), every series entry's fail-closed outcome is locked.
 Defining a family later is a data-only change in `families`, and the user's
 decision must name its parts.
 
-**Open contract question (BLOCKED_DOMAIN_RULE): the IEC 60076 SER pack.** IEC
-also publishes an all-parts collection under the bare number ("IEC 60076:20xx
-SER"), and re-issues it when parts change.
-* Under exact ownership (this section) the pack's number is IEC 60076's own.
-* Under RC-61 IEC is its issuing body.
+**Series packs (resolved 2026-11-06).** A new IEC SER pack is not a lifecycle
+change of the identifier its designation carries. A pack owns nothing; a part
+it contains is monitored only through that part's own owner.
 
-So a report of a new SER edition could be accepted as a monitored update of
-IEC 60076. That would monitor every part indirectly, which D1 means to exclude.
-The contract does not say whether a collection pack published under a bare
-series number is a lifecycle change of that identifier. This is undecided, and
-no rule is added. No other listed identifier is affected: the IEC 60332 pack is
-numbered 60332, not 60332-1.
+Evidence:
+* IEC defines SER on its value-added products page: "Series is a package which
+  contains all the official publications and VAPs within an IEC International
+  Standards (i.e. all of the parts)". It is sold at a discounted rate, and its
+  maintenance follows the addition, replacement and withdrawal of those
+  publications.
+* IEC's catalogue record "IEC 60332:2026 SER" ("ALL PARTS"; "This pack
+  contains the following:" the published parts) is one such pack. Its year
+  advanced because a part (IEC 60332-1-2:2025) changed.
+
+Reasoning from existing rules (no new Domain Rule):
+* A pack is a priced bundle of other publications, not a standard. A new pack
+  designation only reflects changes to its contents.
+* Section A.42 counts only a formal lifecycle change of a monitored standard
+  itself.
+* D1 forbids a series identifier from covering its parts by default.
+  Accepting a pack re-issue as an IEC 60076 update would monitor every part
+  indirectly.
+
+Owner: the locator in `monitored_standards.py`, which already decides which
+publication a text names. A designation followed by the designator "SER" names
+a Series package and gets no owner, so ScopeClassifier never asks the
+monitored question for it.
+* A part named in the same text is located as usual (Golden MS24).
+* Edition designators of a single publication (CSV, CMV, RLV) keep their
+  owner; the recall test covers them for all 27 identifiers.
+* The only listed identifier with packs under its own number is IEC 60076.
+  The IEC 60332 pack is numbered 60332, not 60332-1.
+* Only SER is a package designator. IEC's value-added products page does not
+  define "OC" (the only record found is the Standards Council of Canada's
+  listing of "IEC 60076:2015 OC" as an online subscription). So "OC" gets no
+  special handling: ordinary exact ownership applies, and the Scope question
+  decides it like any other text naming IEC 60076. IEC's PAC (two versions of
+  one publication) and CSV, CMV, RLV and EXV are versions of a single
+  publication and keep its owner.
+
+Golden v6 adds:
+* MS23: a new IEC 60076:2026 SER pack, which is not monitored.
+* MS24: IEC 60076-11 changes and the pack containing it is mentioned; it is
+  reported as IEC 60076-11.
 
 ```text
 MONITORED_IDENTIFIER_OWNERSHIP = EXACT PUBLICATION NUMBER, PLUS CONFIGURED FAMILY PARTS
 FAMILY_MEMBERSHIP_CONDITIONS = SINGLE EXPLICIT OWNER ONLY (no body or numbering condition)
 HYPHEN_YEAR_NOTATION = A FINAL -YYYY MAY BE THE EDITION YEAR; EXPLICIT PUBLICATION FIRST (user decision; no range or body condition)
 FAMILY_COVERAGE_SOURCE = monitored_standards.json family_coverage (user decision; none defined)
-IEC_60076_SER_PACK = OPEN CONTRACT QUESTION (BLOCKED_DOMAIN_RULE)
+SERIES_PACK_SER = OWNS NOTHING; NOT A LIFECYCLE CHANGE OF THE IDENTIFIER (sections A.42 and A.46; IEC value-added products definition)
+OC_DESIGNATOR = NO SPECIAL HANDLING (no IEC definition found)
 EXPLICIT_CHILD = OWNS ITSELF; NEVER A FAMILY MEMBER
 NUMBERING_DERIVED_COVERAGE = FORBIDDEN
 ```

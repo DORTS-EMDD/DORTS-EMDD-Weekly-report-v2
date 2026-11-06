@@ -2615,3 +2615,21 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - 未決契約問題（BLOCKED_DOMAIN_RULE）：IEC 以 IEC 60076 本身編號發行全分部 SER 套組。
   - 依精確擁有與 RC-61，其新版可能被當成 IEC 60076 的更新，等於間接監控全部分部。
   - 契約未決定套組是否算該編號的變動，未新增規則。
+
+## 69. IEC Series（SER）套組不是監控標準的變動（§A.46，2026-11-06）
+
+- 問題：IEC 以 IEC 60076 本身編號發行全分部套組（「IEC 60076:20xx SER」）。依精確擁有與 RC-61，套組新版可能被當成 IEC 60076 的更新，等於間接監控全部分部，違反 D1。
+- 證據：
+  - IEC 官方 value-added products 頁定義 SER：「Series is a package which contains all the official publications and VAPs within an IEC International Standards (i.e. all of the parts)」，以折扣價販售，並隨其中出版品的新增、替換、撤回維護。
+  - IEC 官方紀錄「IEC 60332:2026 SER」（ALL PARTS、內含清單）即為一例。其年份因 IEC 60332-1-2:2025 變動而更新。
+- 判定（依既有規則，未新增 Domain Rule）：
+  - 套組是其他出版品的付費組合，不是標準；§A.42 只算標準本身的正式變動，D1 不允許系列預設涵蓋全部分部。
+  - 因此套組新版不是該編號的變動。
+- 修改：
+  - `monitored_standards.py` 的比對中，帶 SER 的編號沒有擁有者，不會詢問監控問題。
+  - 同段文字中另外寫出的分部照常比對。CSV、CMV、RLV 是單一出版品的版次，擁有者不變。
+- Golden：MS23（IEC 60076:2026 SER，不是監控變動）、MS24（IEC 60076-11 變動並提及套組，以 IEC 60076-11 成報）。
+- 審查更正：第一版（0064324）也把 OC 視為套組。IEC 官方 value-added products 頁沒有 OC 的定義，唯一紀錄是加拿大標準委員會的列表，依據與 SER 不等價。
+  - 已移除；OC 依一般精確擁有處理。
+  - PAC、CSV、CMV、RLV、EXV 是單一出版品的版本，擁有者不變。
+- 四個系列的涵蓋仍待使用者決定（§A.46 表格），程式設定不變。

@@ -38,6 +38,14 @@ coverage: a part before it still needs its own owner. For prefixes without
 hyphenated parts the hyphen already starts an edition or year, so the rule
 only affects IEC, EN and UIC.
 
+Series packs (contract section A.46): a designation followed by IEC's
+designator "SER" names a Series, which IEC defines as a package containing all
+the official publications and value-added products of a standard (all of its
+parts). It owns nothing, so it is never a monitored lifecycle change ("IEC
+60076:2026 SER"). A part the text names itself is still located as usual.
+Designators of one publication (CSV, CMV, RLV) keep its owner. No other
+designator is treated as a package.
+
 Configuration consistency (fail closed): every listed identifier and every
 configured family part must read back as itself through this grammar.
 
@@ -74,6 +82,9 @@ _IDENTIFIER = re.compile(r"^([A-Z]{2,5}) ([A-Z]?)(\d+(?:\.\d+)?(?:-\d+)*)$")
 _HYPHEN_PART_BODIES = frozenset({"IEC", "EN", "UIC"})
 # User decision (section A.46): a final -YYYY may be the edition year.
 _HYPHEN_YEAR = re.compile(r"-\d{4}$")
+# Section A.46: an IEC Series pack ("IEC 60076:2026 SER") is a package of other
+# publications, not a publication of the identifier.
+_SERIES_DESIGNATOR = re.compile(r"\s*(?::\d{4})?\s*SER(?![A-Za-z0-9])")
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,6 +145,8 @@ class MonitoredStandards:
         found: set[str] = set()
         for prefix, pattern in self._token_patterns:
             for match in pattern.finditer(normalized):
+                if _SERIES_DESIGNATOR.match(normalized, match.end()):
+                    continue
                 letter, number = match.group("letter") or "", match.group("number")
                 owner = self._owners.get((prefix, letter, number))
                 if owner is None and _HYPHEN_YEAR.search(number):

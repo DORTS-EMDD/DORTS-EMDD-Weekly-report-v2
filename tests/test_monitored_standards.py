@@ -137,6 +137,13 @@ def test_the_list_rejects_duplicates_and_malformed_identifiers():
         ("EN 50126-1-2017", ()),  # the year is removed; the part still needs its own owner
         ("IEC 61373-2100", ("IEC 61373",)),  # no date range is set
         ("UIC 860-0-2010", ("UIC 860-0",)),  # no body condition is set
+        # Section A.46: an IEC Series pack contains all parts; it is not a standard.
+        ("IEC 60076:2026 SER", ()),
+        ("IEC 60076 SER", ()),
+        # No IEC definition of "OC" was found, so ordinary exact ownership applies.
+        ("IEC 60076:2015 OC", ("IEC 60076",)),
+        ("IEC 60076:2026 SER now contains IEC 60076-11:2026", ("IEC 60076-11",)),
+        ("IEC 60076 series", ("IEC 60076",)),  # a word, not the collection designator
         ("IEEE Std 1474.1-2025", ("IEEE 1474.1",)),
         ("NFPA 70® 2026 edition", ("NFPA 70",)),
         ("ASTM E 119-24", ("ASTM E119",)),
@@ -229,6 +236,7 @@ def _pre_rc62_pattern(identifier):
 
 
 EDITION_SUFFIXES = ("", ":2026", ":2010/COR1:2011", ":2010/A1:2026", ":2021+AMD1:2024 CSV", "/AC:2019",
+                    ":2015 CSV", ":2025 CMV", ":2018 RLV",
                     "-2010", "-2026", " Ed. 3", " (2026)", " edition 2026", "\u00ae", ", 2026")
 
 
@@ -551,6 +559,8 @@ def test_the_golden_covers_every_required_scenario():
     assert "Brussels" in by_id["MS16"]["source_content"]
     # RC-61 (section A.45): only the identified standard's own issuing body changes it.
     # RC-62 (section A.46): each family without defined coverage stays fail-closed.
+    assert by_id["MS23"]["expected"]["monitored_standard"] is None  # a SER pack is not IEC 60076 itself
+    assert by_id["MS24"]["expected"]["monitored_standard"] == "IEC 60076-11"  # the part keeps its owner
     for case_id, family in (("MS19", "IEC 60076"), ("MS20", "IEC 60332-1"), ("MS21", "EN 50126"), ("MS22", "EN 50122")):
         assert family not in monitored_standards().family_coverage, case_id
         assert by_id[case_id]["expected"]["monitored_standard"] is None, case_id

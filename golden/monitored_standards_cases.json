@@ -1,5 +1,5 @@
 {
-  "golden_version": "monitored-standards-golden-v5",
+  "golden_version": "monitored-standards-golden-v6",
   "contract": "docs/ARCHITECTURE_CONTRACT.md sections A.42 (RC-58), A.43 (RC-59), A.45 (RC-61) and A.46 (RC-62)",
   "origin_type": "SYNTHETIC_CONTRACT_CASE",
   "notes": [
@@ -339,6 +339,36 @@
       },
       "expected": {"scope": "OUT_OF_SCOPE", "scope_basis": null, "date_valid": null, "monitored_standard": null,
                    "reportability": null, "reportability_reason": null, "report_section": null}
+    },
+    {
+      "case_id": "MS23",
+      "scenario": "monthly check: IEC issues a new all-parts SER pack under a monitored series number (section A.46: a collection pack is not a standard)",
+      "report_period": ["2026-11-30", "2026-12-06"],
+      "source_date": "2026-11-20",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "The IEC released IEC 60076:2026 SER, a pack that contains all parts of the power transformer series at a discount.",
+      "helper_answers": {
+        "monitored_standard": "NOT_CALLED",
+        "ordinary_scope": "OUT_OF_SCOPE",
+        "value_path": "NOT_CALLED"
+      },
+      "expected": {"scope": "OUT_OF_SCOPE", "scope_basis": null, "date_valid": null, "monitored_standard": null,
+                   "reportability": null, "reportability_reason": null, "report_section": null}
+    },
+    {
+      "case_id": "MS24",
+      "scenario": "monthly check: an explicitly listed part changes and the SER pack that contains it is mentioned (the part keeps its own owner)",
+      "report_period": ["2026-11-30", "2026-12-06"],
+      "source_date": "2026-11-27",
+      "category_id": "NORMATIVE_CHANGE",
+      "source_content": "The IEC published the third edition of IEC 60076-11 for dry-type power transformers. The IEC 60076:2026 SER pack now contains the new edition.",
+      "helper_answers": {
+        "monitored_standard": {"changed_standard": "IEC 60076-11", "lifecycle_action": "NEW_EDITION_OR_REVISION", "sentence_ids": ["S1"]},
+        "ordinary_scope": "NOT_CALLED",
+        "value_path": {"proposed_state": "REPORTABLE", "principal_occurrence": "DECISION_OR_APPROVAL", "sentence_ids": ["S1"]}
+      },
+      "expected": {"scope": "IN_SCOPE", "scope_basis": "MONITORED_STANDARD", "date_valid": true, "monitored_standard": "IEC 60076-11",
+                   "reportability": "REPORTABLE", "reportability_reason": null, "report_section": "規範及標準動態"}
     }
   ]
 }
