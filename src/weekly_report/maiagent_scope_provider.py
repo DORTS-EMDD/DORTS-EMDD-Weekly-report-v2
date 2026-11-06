@@ -35,7 +35,7 @@ from .scope_classifier import (
 
 
 TASK_IDENTITY = "scope_semantic_proposal"
-PROMPT_VERSION = "scope-event-target-system-v12"
+PROMPT_VERSION = "scope-event-target-system-v13"
 SCHEMA_VERSION = SCOPE_PROPOSAL_SCHEMA_VERSION
 HELPER_VERSION = "maiagent-structured-helper-scope-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-scope"
@@ -62,6 +62,7 @@ SCOPE_SEMANTIC_INSTRUCTIONS = (
     "The sentences cited by action_target must contain both the action label and the target label. The sentences cited by target_system must contain the system label and either the target label or, when the source refers back to the target, the exact referring words in target_system.target_reference (such as 'The five lines', 'This', 'the line', '該線'). Omit target_reference when the target label itself appears there.",
     "The Candidate event is the occurrence the document reports as its own news, as its lead presents it, not an earlier occurrence the document recalls as background or context. When the news is a statement, call, question or meeting about an earlier occurrence (for example a lawmaker urging that a service launched earlier be extended), that statement is the Candidate event. When the document reports an occurrence through someone's announcement (for example an official announcing that installation has been completed), the occurrence is the Candidate event.",
     "event_focus cites the consecutive sentences describing the Candidate event; every sentence cited by a relation must lie within the range from the first to the last event_focus sentence. Do not borrow support from a separate event in the same document.",
+    "The event_focus range must include the sentence or sentences that state the occurrence itself: what happened, to or by which specific subject (line, system, station, vehicle or project), and, where the document states them, where and when. A lead summary, reactions, quotes or figures alone are not the event focus; extend the range to the sentence that states the occurrence.",
     "When the target phrase itself names its system or mode, such as 'five metro lines', 'tram Route 19', 'Chennai Metro's Yellow Line' or '電車', that phrase already states membership: cite the sentence containing it for target_system, with the system label equal to the target label or the system word inside it.",
     "A station, platform, track, train, depot or service of a named station, line or network of the system is PART_OF that system; for example 'a northbound E train platform at the 53rd Street subway station' is PART_OF the subway, and a tram that derailed is PART_OF the tram system.",
     "For contract, procurement, operation and maintenance, authorisation, funding or study events, the target is the work, service, equipment, line or project the action covers (for example 'the operation and maintenance of lines M1 to M4' or 'a 6.2 km underground line'), not the contract document itself. It FUNCTIONS_FOR or is PART_OF the system when the source identifies those lines, stations, trains or services as that system's own.",

@@ -642,7 +642,7 @@ def test_the_monitored_question_is_a_second_request_kind_of_the_scope_task():
     assert model_input["monitored_standard_request"]["monitored_identifiers"] == ["NFPA 70"]
     assert "monitored_identifiers" not in json.dumps(build_maiagent_scope_model_input(
         ScopeSemanticRequest("C1", "Title", "A metro line opened.", {})))
-    assert SCOPE_PROMPT_VERSION == "scope-event-target-system-v12"
+    assert SCOPE_PROMPT_VERSION == "scope-event-target-system-v13"
 
 
 def test_only_the_issuing_body_changes_a_monitored_standard():

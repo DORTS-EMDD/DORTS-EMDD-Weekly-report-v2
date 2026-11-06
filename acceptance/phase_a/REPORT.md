@@ -2633,3 +2633,51 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - 已移除；OC 依一般精確擁有處理。
   - PAC、CSV、CMV、RLV、EXV 是單一出版品的版本，擁有者不變。
 - 四個系列的涵蓋仍待使用者決定（§A.46 表格），程式設定不變。
+
+## 70. RC-63：正式週報品質檢討與 Category 邊界澄清（Run 42148605765，2026-11-06）
+
+- 原始週報（Run 42148605765，main 6ded7d1，2026-10-29～11-04，13 則）不能交付：
+  - 技術新知 4 則全是建設步驟：Bergamo T2 通車前軌道測試、桃園綠線市長出席與通車前測試、東灘都市鐵道開工儀式（重複兩則）。
+  - 馬賽 T3 拆遷安置計畫被分為採購；台北捷運運量紀錄與大阪地鐵車站診療亭被分為營運動態。
+  - 東灘與雪梨各重複一次。
+  - 22 個技術缺口，其中真正的技術新知（Docomo 東京地鐵 5G）因 Category 技術缺口遺失。
+- 最早根因：
+  - Category：分類提示詞只寫「pilots, experiments, applied technical tests」，未說明對象須是技術；也未說明建設步驟、統計與車站非運輸服務沒有分類行動。§L 本身在此處用字不夠明確。
+  - Event Identity：雪梨與東灘的配對都曾被提出，但在確認時被分開；摘錄顯示是同一發生事項，未發現 Python 缺陷。
+- 修正（RC-63，§L 邊界澄清，未新增類別）：
+  - 分類提示詞 v4（`_CATEGORY_GUIDANCE`）。
+  - 另立 Golden `category_boundary_manifest.json`（G92～G96），不動已鎖定的 Category 母體與封存驗收。
+  - Schema、Python 驗證與其他 owner 不變。
+- 驗證：
+  - 全部測試與 clean export 皆 1530 passed。
+  - 同期間本機重跑：不寄信，601 次付費呼叫（上限 1,500），9 則。
+    - 技術新知只剩 Docomo 5G（原本遺失的真技術新聞）。
+    - 所有建設步驟、拆遷計畫、運量紀錄與診療亭都已排除。
+    - 技術缺口 8 個（皆為 Scope）。
+- 仍未解決：
+  - 雪梨重複：兩次執行都在確認時分開 ABC。
+    - R7 量測（RC-64，使用者核准，40／300 次付費呼叫）推翻原先的推測：在 19 筆標註語料上，v10 與候選 v13 都從未把 ABC 與其他雪梨報導一起提出，v13 沒有任何效果，不採用（`acceptance/event_identity/rc64_r7_measurement.json`）。
+    - 更正（RC-65）：該語料取自 audit 的 highlights（ABC 的 S2、S3），不是 Event Identity 實際收到的 Scope 焦點（production 為 S2、S3、S5），因此「沒有寫雪梨」的結論錯誤。S5 寫「The Southwest Metro has finally opened to Sydney commuters」。
+    - 最早根因（RC-65）：Scope 選的焦點只有導言與反應，缺少陳述發生事項本身的 S6（「first 13-kilometre passenger service from Bankstown to Sydenham, which arrived at 4:31am」）。這一句與其他來源相同的具體細節正好在其中。Scope 提示詞 v13 要求焦點包含陳述發生事項的句子；R5、Event Identity 提示詞與摘錄規則都不變。
+  - 光州宣導小組：§L 的「營運性治理 action」未定義，helper 把通車前建設單位的宣導、公開進度當成營運治理。分類提示詞 v5 澄清：營運治理針對已營運的客運服務，通車前專案的報告、宣導、人事或管理屬專案步驟。Golden G97。
+  - 光州 2 號線宣導小組公開工程進度被分為營運動態（屬建設階段資訊，依 v4 應無分類行動；helper 未遵循）。
+  - 本機 PDF 因 Windows 字型 TypeError 失敗；production 使用 Ubuntu 字型，同一程式路徑在 Actions 正常。
+
+### 70.1 本機驗證三輪（同期間，不寄信，2026-11-06）
+
+| 輪次 | 程式 | 付費呼叫 | 則數 | 技術缺口 | 雪梨重複 | 分類問題 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | RC-63（分類 v4） | 601 | 9 | 8 | 有（確認時分開 ABC） | 光州宣導小組被分為營運動態 |
+| 2 | RC-65（Scope v13、分類 v5） | 562 | 9 | 12 | 沒有，但只因 ABC 在 Evidence 階段被拒，修正未被驗證 | 大田參與連帶的批評被分為採購（之後已修正，未再實測） |
+| 3 | RC-65＋大田修正 | 584 | 7 | 12 | 有 | 大邱交通公社電聯車技術交流會被分為技術新知；Docomo 5G 第二次因分類技術缺口遺失 |
+
+- 第 3 輪結論：FINAL_REPORT_QUALITY_VERDICT = FAIL。
+- 雪梨：
+  - Scope v13 已生效：ABC 焦點為 S2、S3、S5、S6、S7，含陳述發生事項的 S6，具相同的具體細節（4:31、13 公里、Bankstown、雪梨）。
+  - 但確認仍全部分開（6／6，SEPARATED）。最早的剩餘根因在 Event Identity 確認。
+  - 推測：R3 的「為標示里程碑而辦的活動自成一事件」被套用到 ABC 的「turned out to mark the opening」，對照 IndexBox 的 11 月 1 日正式開幕活動。
+  - 修改 Event Identity 提示詞須先以正確的焦點輸入做 R7 量測（RC-64 的語料取自 highlights，無效）。
+- 分類：
+  - 技術交流會屬會議或活動，不是技術發展；目前分類規則未列出會議、研討會、交流會。
+  - Docomo 5G 在 3 輪中有 2 輪因分類提議違約遺失，根因尚未調查。
+- 本機共 1,747 次付費呼叫（另有 Sydney 定向檢查與 RC-64 的 40 次）。

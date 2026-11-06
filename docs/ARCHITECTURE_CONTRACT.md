@@ -397,7 +397,7 @@ disclosed as a technical gap.
 ```text
 EVENT_HELPER_CITATION = SOURCE_REF + SENTENCE_ID (Category, Taxonomy, Reportability)
 CATEGORY_SCHEMA_VERSION = category-proposal-v5
-CATEGORY_PROMPT_VERSION = category-principal-action-v3
+CATEGORY_PROMPT_VERSION = category-principal-action-v5
 TAXONOMY_SCHEMA_VERSION = taxonomy-semantic-proposal-v2
 TAXONOMY_PROMPT_VERSION = taxonomy-principal-body-v3
 REPORTABILITY_SCHEMA_VERSION = reportability-semantic-proposal-v2
@@ -4548,6 +4548,79 @@ category-defining actions，且無唯一 principal action，必須回
 ```text
 SEVERITY_IS_CATEGORY_AUTHORITY = NO
 INNOVATION_CAN_OVERRIDE_PROCUREMENT = NO
+```
+
+**Boundary clarification (RC-63, 2026-11-06).** This applies the meanings
+above; it adds no Category.
+* **`TECHNICAL_DEVELOPMENT`:** the research, prototype, trial, test or
+  deployment must be of a technology, method or material itself (技術新知;
+  AGENTS section 5: new technology, new material, new method).
+  * The steps of building or opening a line, station or depot are not
+    technical development: groundbreaking, site preparation, construction
+    progress, track or equipment installation, pre-opening or trial test runs,
+    commissioning and acceptance tests, and inspections.
+  * A pilot or deployment of a technology on a line remains technical
+    development (G49, G64, G84).
+* **`OPERATIONAL_CHANGE`:** concerns the passenger transport service itself. A
+  station facility or service that is not transport service, such as a shop,
+  clinic or booth, is not one.
+  * Its "營運性治理 action" (operational governance) governs a passenger
+    service that is running.
+  * The reporting, publicity, staffing or management of a project before its
+    service opens is a project step (RC-65; Golden G97).
+* **`PROCUREMENT`:** requires a formal procurement action that has taken
+  place. A planned or expected future tender, selection or award is not one.
+* **No Category-defining action:** none of the five Categories covers project
+  steps and plans:
+  * approvals, route or land decisions, demolition and relocation;
+  * construction stages and test runs before opening;
+  * ridership counts or records, and rankings;
+  * announcements of expected future openings or tenders;
+  * statements, criticisms, demands or questions about an action. An earlier
+    action that such a document describes as background is not its current
+    action (RC-65; Golden G98).
+
+  These are `CATEGORY_UNRESOLVED` with `NO_CATEGORY_DEFINING_ACTION`, unless
+  the Evidence shows another listed principal action, for example a passenger
+  service opening, a formal tender or award, or a service change.
+
+Root cause (Run 42148605765, 2026-10-29..11-04):
+* The Classifier prompt listed "pilots, experiments, applied technical tests"
+  without saying they must be tests of a technology.
+* It did not say that project steps, statistics and non-transport station
+  services have no Category-defining action.
+
+As a result, all four 技術新知 items were project steps: a pre-opening
+track test, a mayor's visit about pre-opening tests, and a groundbreaking
+reported twice. A resident-relocation plan became 採購事件, and a ridership
+record and a station clinic booth became 營運動態.
+
+Golden G92 to G96 lock these boundaries: groundbreaking, pre-opening test
+runs, a ridership record, demolition and relocation planning, and a station
+clinic booth, all `CATEGORY_UNRESOLVED` (`NO_CATEGORY_DEFINING_ACTION`).
+
+**RC-65 (2026-11-06): the Scope event focus must contain the occurrence.**
+* Section A.14 makes the Scope candidate event focus the only text Event
+  Identity compares and the Writer writes from.
+* The Scope prompt defined the focus only as "the consecutive sentences
+  describing the Candidate event". It did not require the sentence that
+  states the occurrence itself: what happened, to which specific subject, and
+  where and when as stated.
+* In Run 42148605765 and its rerun, ABC's focus for the Sydney Southwest Metro
+  opening was the lead summary and reactions (S2, S3, S5). The focus left out
+  S6, "the first 13-kilometre passenger service from Bankstown to Sydenham,
+  which arrived at 4:31am", which carries the same specific details other
+  sources state. Confirmation therefore separated ABC in both runs.
+* Fix: Scope prompt `scope-event-target-system-v13` requires the focus range
+  to include the occurrence sentence.
+* This is the Scope owner's own definition. Unchanged: the Event Identity
+  prompt, R5, the excerpt rule, metadata and Python validation.
+
+```text
+CATEGORY_PROMPT_VERSION = category-principal-action-v5 (RC-63, RC-65)
+SCOPE_PROMPT_VERSION = scope-event-target-system-v13 (RC-65: focus includes the occurrence sentence)
+TECHNICAL_DEVELOPMENT_REQUIRES = A TECHNOLOGY, METHOD OR MATERIAL AS THE SUBJECT
+PROJECT_STEPS_AND_STATISTICS = NO CATEGORY-DEFINING ACTION
 ```
 
 事故後發布的新強制規則屬 `NORMATIVE_CHANGE`，不是原事故。只發布有實質調查

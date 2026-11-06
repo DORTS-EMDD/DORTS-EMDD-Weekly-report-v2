@@ -1,0 +1,59 @@
+{
+  "golden_version": "category-boundary-v1",
+  "contract": "docs/ARCHITECTURE_CONTRACT.md section L, RC-63 and RC-65 boundary clarifications",
+  "status": "EXTENSION",
+  "category_acceptance_population_excluded": true,
+  "note": "Category boundary extension (RC-63). Kept apart from the locked v2-category-lock manifest and its sealed acceptance population, as the taxonomy extension is. Each expected outcome is the section L domain outcome of the case's own Evidence.",
+  "case_count": 7,
+  "cases": [
+    {
+      "case_id": "G92",
+      "file": "cases/g92_construction_groundbreaking.json",
+      "case_class": "construction_groundbreaking",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G93",
+      "file": "cases/g93_pre_opening_test_runs.json",
+      "case_class": "pre_opening_test_runs",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G94",
+      "file": "cases/g94_ridership_record.json",
+      "case_class": "ridership_record",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G95",
+      "file": "cases/g95_demolition_and_relocation_plan.json",
+      "case_class": "demolition_and_relocation_plan",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G96",
+      "file": "cases/g96_station_clinic_booth.json",
+      "case_class": "station_clinic_booth",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G97",
+      "file": "cases/g97_project_progress_publicity.json",
+      "case_class": "project_progress_publicity",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G98",
+      "file": "cases/g98_criticism_of_earlier_selection.json",
+      "case_class": "criticism_of_earlier_selection",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    }
+  ]
+}

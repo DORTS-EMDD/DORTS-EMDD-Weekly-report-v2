@@ -1,0 +1,35 @@
+{
+ "description": "RC-64 R7 measurement (not adopted): Sydney-type split. Corpus: 19 opening/resumption records of the 2026-10-29..11-04 rerun, rebuilt from audit highlights (no publisher fetch), labelled by occurrence (5 labels). One EventIdentity evaluation (RC-52, three procedures) per prompt. IDs only.",
+ "cap": 300,
+ "paid_calls": 40,
+ "candidate": "event-identity-grouping-v13: one sentence added to R3, that people riding or celebrating when a service first carries passengers are part of the opening",
+ "runs": [
+  {
+   "tag": "openings-v10",
+   "prompt": "event-identity-grouping-v10",
+   "calls": 20,
+   "events": 12,
+   "same_total": 52,
+   "same_nominated": 50,
+   "same_merged": 13,
+   "diff_nominated": 0,
+   "diff_merged": [],
+   "gaps": []
+  },
+  {
+   "tag": "openings-v13",
+   "prompt": "event-identity-grouping-v13",
+   "calls": 20,
+   "events": 12,
+   "same_total": 52,
+   "same_nominated": 24,
+   "same_merged": 13,
+   "diff_nominated": 0,
+   "diff_merged": [],
+   "gaps": []
+  }
+ ],
+ "finding": "Superseded by the correction: the corpus did not reproduce the Event Identity input.",
+ "verdict": "NOT_ADOPTED; no safety runs (no candidate to adopt)",
+ "correction": "2026-11-06, RC-65: this measurement is invalid as evidence about the Sydney split. Its corpus was built from audit evidence_highlights (ABC S2, S3), not from the Event Identity input, which is the Scope focus (S2, S3, S5 in production). S5 says 'The Southwest Metro has finally opened to Sydney commuters'. So the 'no city' finding was wrong. The earliest root cause is the Scope focus, which omitted the occurrence sentence S6 ('the first 13-kilometre passenger service from Bankstown to Sydenham, which arrived at 4:31am'). See REPORT section 70."
+}
