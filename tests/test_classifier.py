@@ -504,6 +504,40 @@ class ClassifierTests(unittest.TestCase):
                     Classifier(_Helper(proposal)).classify(group, (record, other))
                 self.assertEqual(raised.exception.failure_class, "CITATION_INVALID")
 
+    def test_a_proposal_violation_names_its_failed_predicate(self):
+        # RC-66 (observation only): the TechnicalGap signature names the
+        # contract predicate that failed instead of a generic PROPOSAL_INVALID.
+        # The decision is unchanged: every case is a disclosed technical gap.
+        record = _record("C1", "A carrier deployed 5G equipment in the subway tunnels.")
+        group = _group((record,))
+
+        def assigned(request, **changes):
+            response = _assigned_response(request, CategoryId.TECHNICAL_DEVELOPMENT)
+            response.update(changes)
+            return response
+
+        cases = (
+            ("SUBTYPE_FORMAT", lambda request: assigned(request, subtype="5g_network_deployment")),
+            ("SUBTYPE_FORMAT", lambda request: assigned(request, subtype="Network Deployment")),
+            ("CATEGORY_ID", lambda request: assigned(request, primary_category_id="TECHNOLOGY")),
+            ("RESOLUTION_REASON", lambda request: assigned(request, category_resolution_reason="NO_CATEGORY_DEFINING_ACTION")),
+            ("RESPONSE_SHAPE", lambda request: {**assigned(request), "explanation": "extra"}),
+            ("CATEGORY_STATE", lambda request: assigned(request, category_state="NOT_EVALUATED")),
+            ("UNRESOLVED_ASSIGNMENT", lambda request: assigned(request, category_state="CATEGORY_UNRESOLVED", category_resolution_reason="NO_CATEGORY_DEFINING_ACTION")),
+            ("CITATION_INVALID", lambda request: assigned(request, citations=[])),
+        )
+        for predicate, helper in cases:
+            with self.subTest(predicate=predicate):
+                with self.assertRaises(CategoryProposalViolation) as raised:
+                    Classifier(_Helper(helper)).classify(group, (record,))
+                self.assertEqual(raised.exception.failure_class, predicate)
+                gap = TechnicalGap.from_failure("Category", group.event_id, raised.exception)
+                self.assertEqual(gap.kind, TechnicalGapKind.PROPOSAL_CONTRACT_VIOLATION)
+                self.assertEqual(gap.failure_class, predicate)
+
+        valid = Classifier(_Helper(lambda request: assigned(request, subtype="fifth_generation_network_deployment"))).classify(group, (record,))
+        self.assertEqual(valid.subtype, "fifth_generation_network_deployment")
+
     def test_each_cited_sentence_becomes_one_span(self):
         body = "First sentence here. Second sentence here."
         record = _record("C1", body)

@@ -1,0 +1,56 @@
+{
+  "case_id": "G100",
+  "name": "pre_opening_signalling_tests",
+  "description": "Synthetic Category contract case (RC-66): night signalling tests and switch works on a tram line before opening.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Future tram line runs night signalling tests before opening",
+      "url": "https://fixtures.invalid/g100-pre_opening_signalling_tests-1",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-15T10:00:00Z",
+      "discovery_intent": "technology",
+      "search_snippet": "Night tests of the signalling system took place on the future tram line, with new switch works.",
+      "source_content": "Night tests of the signalling system and new switch works took place this week on the future tram line, which is due to open next year. The tests check that position detection and the control system transmit correctly before passenger service starts.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-15T10:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_UNRESOLVED",
+    "primary_category_id": null,
+    "primary_category": null,
+    "subtype": null,
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "classification_reason": "CATEGORY_UNRESOLVED",
+    "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "Category follows the supported principal action in substantive source content.",
+    "Search intent, source title, technical novelty, taxonomy, and Reportability are not Category authorities.",
+    "RC-63: commissioning and pre-opening tests of a line's installed systems are project steps, not technical development, even when the tested equipment is signalling or control technology."
+  ]
+}

@@ -30,15 +30,16 @@ _CATEGORY_GUIDANCE = (
     "Choose exactly one canonical Category when one principal action is supported; otherwise return CATEGORY_UNRESOLVED.",
     "Every semantic proposal, whether CATEGORY_ASSIGNED or CATEGORY_UNRESOLVED, must include at least one citation grounded in supplied evidence.",
     "Each source has a source_ref (M1, M2, ...) and sentences with sentence_ids assigned by Python. Each citation names one supplied source_ref and the sentence_ids of that source that support the proposal. Citations support the proposal as a whole; do not label them support or conflict citations. Never copy or retype source text or identifiers into a citation.",
-    "TECHNICAL_DEVELOPMENT covers research results, prototypes, pilots, experiments, applied technical tests, technical deployments, and substantive technical development.",
+    "TECHNICAL_DEVELOPMENT covers research results, prototypes, pilots, experiments, applied tests, deployments and substantive development whose subject is a technology, method or material itself.",
     "INCIDENT covers an actual urban-rail accident, unexpected failure, safety incident, or cybersecurity incident. An actual passenger, staff, or public safety incident in an in-scope urban-rail context remains INCIDENT even when injury is minor or no train, system, evacuation, service, or project impact occurs.",
     "Severity and report value do not determine Category; they belong to downstream Reportability.",
     "OPERATIONAL_CHANGE covers actual passenger or revenue service openings, service or timetable or fare changes, operating-practice changes, evidenced operational disputes, and operational governance actions.",
     "PROCUREMENT covers formal tenders, bid invitations, supplier selections, awards, exercised options, and equivalent formal procurement actions, including innovative, first-of-kind, AI, CBTC, cybersecurity, and pilot-purpose procurements.",
     "NORMATIVE_CHANGE covers published or revised regulations, mandatory technical rules, standards, applicable formal guidance, operator-wide specifications, and formal draft or consultation procedures.",
     "A technology name, equipment mention, procurement object, supplier award, or delivery alone is not technical development.",
-    "TECHNICAL_DEVELOPMENT requires that the research, prototype, pilot, experiment, test or deployment is of a technology, method or material itself. The steps of building or opening a line, station or depot are not technical development: groundbreaking, site preparation, construction progress, track or equipment installation, pre-opening or trial test runs, commissioning and acceptance tests, and inspections.",
-    "OPERATIONAL_CHANGE concerns the passenger transport service itself. A facility or service at a station that is not transport service, such as a shop, clinic or booth, is not OPERATIONAL_CHANGE. Operational governance actions govern a passenger service that is running; the reporting, publicity, staffing or management of a project before its service opens is a project step, not OPERATIONAL_CHANGE.",
+    "TECHNICAL_DEVELOPMENT requires that the research, prototype, pilot, experiment, test or deployment is of a technology, method or material itself. The steps of building or opening a line, station or depot are not technical development: groundbreaking, site preparation, construction progress, track or equipment installation, pre-opening or trial test runs, commissioning and acceptance tests, and inspections. Testing the installed vehicles or systems of a line, station or depot before its opening or for its acceptance is such a step even when the tested system is signalling, train control, communication or power equipment.",
+    "OPERATIONAL_CHANGE concerns the passenger transport service itself. A facility or service at a station or on board a train that is not transport service, such as a shop, clinic or booth, is not OPERATIONAL_CHANGE. Operational governance actions govern a passenger service that is running; the reporting, publicity, staffing or management of a project before its service opens is a project step, not OPERATIONAL_CHANGE.",
+    "A Category applies only when the principal action is itself one of the actions its definition lists. An activity that uses, teaches, exercises, presents, exhibits, discusses or enforces a technology, a service, a procurement or a rule, but is not itself one of the listed actions, does not take that Category: a training session or drill that uses equipment, and a meeting, exchange or exhibition about a technology, are not TECHNICAL_DEVELOPMENT; a penalty or enforcement decision under an existing rule is not NORMATIVE_CHANGE.",
     "PROCUREMENT requires a formal procurement action that has taken place. A planned, expected or future tender, selection or award is not a procurement action.",
     "Project steps and plans have no Category-defining action under any Category: approvals, route or land decisions, demolition and relocation, construction stages, test runs before opening, ridership counts or records, rankings, announcements of expected future openings or tenders, and statements, criticisms, demands or questions about an action (an earlier action that such a document describes as background is not its current action). Return CATEGORY_UNRESOLVED with NO_CATEGORY_DEFINING_ACTION unless the evidence shows another listed principal action, such as a passenger service opening, a formal tender or award, or a service change.",
     "An ordinary passenger complaint, request, feedback record, or operator log does not by itself establish OPERATIONAL_CHANGE. Without evidenced operator adoption, a service change, a formal operational decision, or another Category-defining action, return CATEGORY_UNRESOLVED with NO_CATEGORY_DEFINING_ACTION.",
@@ -52,7 +53,7 @@ _CATEGORY_GUIDANCE = (
     "NO_UNIQUE_PRINCIPAL_ACTION applies when evidence consistently establishes multiple equal independent Category-defining actions but no unique principal action can be identified; sources need not contradict each other.",
     "Material disagreement about the category-defining action, or multiple equal independent actions without one principal action, requires CATEGORY_UNRESOLVED with the corresponding reason above.",
     "When CATEGORY_ASSIGNED, category_resolution_reason must be null.",
-    "Subtype is optional descriptive metadata, may be null when no useful subtype is needed, and never changes the primary Category.",
+    "Subtype is optional descriptive metadata, may be null when no useful subtype is needed, and never changes the primary Category. When present it matches the response schema pattern: lowercase snake_case that starts with a letter a-z, followed only by letters a-z, digits and underscores (spell out a leading number, for example fifth_generation_network_deployment, not 5g_network_deployment).",
     "Event identity is already decided. Do not merge or split Event Groups. Ignore discovery metadata, report period, taxonomy, and Reportability.",
 )
 
@@ -182,9 +183,18 @@ class CategorySemanticHelper(Protocol):
 class InvalidCategorySemanticResponse(ValueError):
     """Raised when a semantic proposal fails the Classifier response contract."""
 
-    def __init__(self, message: str, *, provenance: Mapping[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        provenance: Mapping[str, str] | None = None,
+        predicate: str | None = None,
+    ) -> None:
         super().__init__(message)
         self.provenance = MappingProxyType(dict(provenance or {}))
+        # Observation only (RC-66): the contract predicate that failed. It
+        # names the gap in the TechnicalGap signature and decides nothing.
+        self.predicate = predicate
 
 
 class CategoryProposalViolation(ProposalContractViolation):
@@ -194,9 +204,11 @@ class CategoryProposalViolation(ProposalContractViolation):
     ``CATEGORY_UNRESOLVED``, which is reserved for domain reasons.
     """
 
-    def __init__(self, message: str) -> None:
+    def __init__(self, message: str, predicate: str | None = None) -> None:
         super().__init__(message)
-        self.failure_class = "CITATION_INVALID" if "citation" in message else "PROPOSAL_INVALID"
+        if predicate is None:
+            predicate = "CITATION_INVALID" if "citation" in message else "PROPOSAL_INVALID"
+        self.failure_class = predicate
 
 
 @dataclass(frozen=True, slots=True)
@@ -283,16 +295,16 @@ def _validate_response(
     elif isinstance(raw_response, Mapping):
         payload = raw_response
     else:
-        raise InvalidCategorySemanticResponse("response must be an object")
+        raise InvalidCategorySemanticResponse("response must be an object", predicate="RESPONSE_SHAPE")
 
     if frozenset(payload) != _RESPONSE_FIELDS:
-        raise InvalidCategorySemanticResponse("response fields do not match schema")
+        raise InvalidCategorySemanticResponse("response fields do not match schema", predicate="RESPONSE_SHAPE")
     try:
         state = CategoryState(payload["category_state"])
     except (TypeError, ValueError) as exc:
-        raise InvalidCategorySemanticResponse("invalid category_state") from exc
+        raise InvalidCategorySemanticResponse("invalid category_state", predicate="CATEGORY_STATE") from exc
     if state not in {CategoryState.CATEGORY_ASSIGNED, CategoryState.CATEGORY_UNRESOLVED}:
-        raise InvalidCategorySemanticResponse("helper cannot return NOT_EVALUATED")
+        raise InvalidCategorySemanticResponse("helper cannot return NOT_EVALUATED", predicate="CATEGORY_STATE")
 
     raw_category_id = payload["primary_category_id"]
     if raw_category_id is None:
@@ -301,7 +313,7 @@ def _validate_response(
         try:
             category_id = CategoryId(raw_category_id)
         except (TypeError, ValueError) as exc:
-            raise InvalidCategorySemanticResponse("invalid primary_category_id") from exc
+            raise InvalidCategorySemanticResponse("invalid primary_category_id", predicate="CATEGORY_ID") from exc
 
     subtype = payload["subtype"]
     raw_reason = payload["category_resolution_reason"]
@@ -311,7 +323,7 @@ def _validate_response(
         try:
             resolution_reason = CategoryResolutionReason(raw_reason)
         except (TypeError, ValueError) as exc:
-            raise InvalidCategorySemanticResponse("invalid category_resolution_reason") from exc
+            raise InvalidCategorySemanticResponse("invalid category_resolution_reason", predicate="RESOLUTION_REASON") from exc
 
     citation_spans = _parse_citations(payload["citations"], request)
     if not citation_spans:
@@ -319,21 +331,22 @@ def _validate_response(
 
     if state is CategoryState.CATEGORY_ASSIGNED:
         if category_id is None:
-            raise InvalidCategorySemanticResponse("assigned response requires a Category ID")
+            raise InvalidCategorySemanticResponse("assigned response requires a Category ID", predicate="CATEGORY_ID")
         if subtype is not None and (
             not isinstance(subtype, str)
             or not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", subtype)
         ):
             raise InvalidCategorySemanticResponse(
-                "assigned response subtype must be snake_case when present"
+                "assigned response subtype must be snake_case when present",
+                predicate="SUBTYPE_FORMAT",
             )
         if resolution_reason is not None:
-            raise InvalidCategorySemanticResponse("assigned response cannot carry a resolution reason")
+            raise InvalidCategorySemanticResponse("assigned response cannot carry a resolution reason", predicate="RESOLUTION_REASON")
     else:
         if category_id is not None or subtype is not None:
-            raise InvalidCategorySemanticResponse("unresolved response cannot carry an assigned Category")
+            raise InvalidCategorySemanticResponse("unresolved response cannot carry an assigned Category", predicate="UNRESOLVED_ASSIGNMENT")
         if resolution_reason not in _DOMAIN_UNRESOLVED_REASONS:
-            raise InvalidCategorySemanticResponse("unresolved response requires a domain reason")
+            raise InvalidCategorySemanticResponse("unresolved response requires a domain reason", predicate="RESOLUTION_REASON")
     return _ValidatedCategoryResponse(
         category_state=state,
         primary_category_id=category_id,
@@ -467,7 +480,7 @@ class Classifier:
             # RC-6: never converted into CATEGORY_UNRESOLVED.
             raise
         except InvalidCategorySemanticResponse as exc:
-            violation = CategoryProposalViolation(str(exc))
+            violation = CategoryProposalViolation(str(exc), exc.predicate)
         except Exception as exc:
             return self._unresolved(
                 event_group,
@@ -493,7 +506,7 @@ class Classifier:
         try:
             response = _validate_response(raw_response, request)
         except InvalidCategorySemanticResponse as exc:
-            violation = CategoryProposalViolation(str(exc))
+            violation = CategoryProposalViolation(str(exc), exc.predicate)
         else:
             violation = None
         if violation is not None:
