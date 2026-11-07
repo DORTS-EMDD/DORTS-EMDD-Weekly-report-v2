@@ -2776,8 +2776,19 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - 「地點：広島市」「運輸系統：広島電鉄」是 EvidenceService 來源原值的投影，依契約正確。
 - 未修改：以確定性方式禁止日文字形，會與「無既定中文名時保留完整原文」衝突；要正確判定須新增名稱對照 owner（BLOCKED_ARCHITECTURE_EXPANSION），屬 minor。
 
-### 71.7 驗證與狀態
+### 71.7 次輪檢討（Temporal、正式 metadata）
 
-- 完整離線測試與 clean export：見本次 commit 紀錄。
+- Temporal：#34 通過 Scope 的 124 個候選中，16 個為 DATE_PROVENANCE_INVALID。其中包括奧克蘭首條地鐵通車、三菱重工盛港—榜鵝輕軌追加訂單、聖地牙哥 5 號線火災。
+  - 依 TEMPORAL_CONTRACT §11，只有搜尋日期（沒有來源日期）也屬此診斷，因此無法分辨是 EvidenceService 未擷取到日期，還是日期歸屬不符。
+  - 已加入觀測：selection audit 的 temporal 列出來源日期種類（不含值）。
+- 正式 metadata：REGION_NOT_ESTABLISHED 排除了真正的技術新知（MONOist：東京地鐵東西線新車，世界首創主電路系統，節能 20%～30%）、高知電車碰撞與克拉科夫通車。
+  - 已加入觀測：audit 的 region 顯示 EvidenceService 自身的診斷（UNRECOGNIZED_VALUE 等）。
+- 兩者的最早根因都須取得來源頁面才能判定（BLOCKED_MISSING_HISTORICAL_EVIDENCE）。規則與參照資料都未修改。
+
+### 71.8 驗證與狀態
+
+- 完整離線測試：1532 passed、5 skipped。
+- clean export（git archive HEAD）：結果相同。
+- Event Identity 重放：5 次執行差異為 0。
 - 任何修正都未經 Live 驗收。
 - RELEASE_READY = NO。

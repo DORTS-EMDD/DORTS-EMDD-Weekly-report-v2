@@ -2997,6 +2997,13 @@ GitHub. Detail: REPORT section 71.
   wanted).
 * **Invalid evidence.** The RC-64 R7 corpus (audit highlights) is marked
   `INVALID` in `rc64_r7_measurement.json`.
+* **Secondary review (observation only).** Two observer fields explain stage
+  losses that could not be traced:
+  * Temporal `DATE_PROVENANCE_INVALID`: 16 of 124 candidates in Run #34. The
+    selection audit now lists each candidate's source date-fact kinds.
+  * `REGION_NOT_ESTABLISHED`: it dropped a world-first technology item. The
+    audit now shows EvidenceService's resolution diagnostic.
+  * Rules and reference data are unchanged.
 
 ```text
 RC66_STATUS = OFFLINE_ONLY; LIVE_ACCEPTANCE = NOT_RUN; RELEASE_READY = NO
