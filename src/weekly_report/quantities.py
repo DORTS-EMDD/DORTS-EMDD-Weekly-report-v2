@@ -354,6 +354,19 @@ def _share_upper_bound(lower: _Reading, upper: _Reading) -> None:
             lower.currency = upper.currency
 
 
+# A middle dot between digit runs ("１２・７キロ", "1·2호선") is either a decimal
+# mark or a list of numbers; the text does not say which (RC-66).
+_MIDDLE_DOTS = frozenset("・·‧･")
+
+
+def _middle_dot_joined(text: str, start: int, end: int) -> bool:
+    """True when a middle dot joins this digit run to another digit run."""
+
+    after = end < len(text) - 1 and text[end] in _MIDDLE_DOTS and text[end + 1].isdigit()
+    before = start >= 2 and text[start - 1] in _MIDDLE_DOTS and text[start - 2].isdigit()
+    return after or before
+
+
 def stated_quantities(text: str, *, strict: bool = False) -> tuple[StatedQuantity, ...]:
     """Quantities stated in ``text``: magnitudes, ranges, measures and amounts."""
 
@@ -364,7 +377,12 @@ def stated_quantities(text: str, *, strict: bool = False) -> tuple[StatedQuantit
         number = _NUMBER_RE.search(text, position)
         if not number:
             break
-        readings.append(_read(text, number, notation))
+        reading = _read(text, number, notation)
+        if _middle_dot_joined(text, number.start(), number.end()):
+            # One reading or none (RC-29): an undetermined token grounds
+            # nothing, and in Writer prose it cannot be grounded.
+            reading.values = set()
+        readings.append(reading)
         position = readings[-1].end
     for lower, upper in zip(readings, readings[1:]):
         if _RANGE_GAP.fullmatch(text, lower.end, upper.start):

@@ -212,3 +212,23 @@ def test_grounded_amounts_pass_unchanged():
     block = WriterReportBlock("E1", "L&T取得達卡捷運訂單", "金額級距為500億至1,000億印度盧比，全長31公里。", "可供臺北捷運參考採購分類")
     outcome = Validator(semantic_provider=_semantic_provider).validate((result,), metadata, (block,))
     assert len(outcome.passed) == 1 and outcome.failed == ()
+
+
+# RC-66, from Run 42186338279 (2026-10-01..31): a Kyoto source writes the line
+# length as 「１２・７キロ」. A middle dot between digit runs is a decimal mark or a
+# list of numbers, and the text does not say which; the token had been read as
+# a standalone "7 km", which grounded a wrong 7 km and not the source's 12.7 km.
+MIDDLE_DOT_EVIDENCE = "京都市の地下鉄東西線（醍醐－二条間、１２・７キロ）が開業した。"
+
+
+def test_a_middle_dot_joined_number_has_no_reading_and_grounds_nothing():
+    assert _values(MIDDLE_DOT_EVIDENCE) == [[], []]
+    assert _grounded(MIDDLE_DOT_EVIDENCE, "全長7公里") == [False]
+    assert _grounded(MIDDLE_DOT_EVIDENCE, "全長12.7公里") == [False]
+    # Writer prose with the same token cannot be grounded either (fail closed).
+    assert _grounded("全長12.7公里", "全長１２・７公里") == [False]
+
+
+def test_a_middle_dot_list_of_line_numbers_does_not_affect_other_quantities():
+    evidence = "인천지하철 1·2호선 전 객차에 5G 와이파이를 설치하는 데 120억원이 들었다."
+    assert _grounded(evidence, "總經費120億韓元") == [True]
