@@ -94,10 +94,14 @@ def _region(evidence: Any) -> dict[str, Any] | None:
     resolution = getattr(evidence.identity_facts, "region_resolution", None)
     if resolution is None:
         return None
-    return {
+    entry = {
         "basis": _value(resolution.basis),
         "region_id": resolution.region_id if resolution.established else None,
     }
+    if not resolution.established and getattr(resolution, "diagnostic", ""):
+        # RC-66, observation only: why EvidenceService could not establish it.
+        entry["diagnostic"] = resolution.diagnostic
+    return entry
 
 
 _PAIR_PROPOSALS = frozenset({"PROPOSAL_NOT_CONFIRMED", "PROPOSAL_REGION_CONFLICT"})
@@ -338,6 +342,13 @@ def build_selection_audit(
                     if dated.controlling_calendar_date
                     else None,
                     "controlling_date_kind": _value(dated.controlling_date_kind),
+                    # RC-66, observation only: the kinds of the source date
+                    # facts EvidenceService supplied (no values). An empty
+                    # list under DATE_PROVENANCE_INVALID means a discovery-only
+                    # date; a non-empty one means facts without valid provenance.
+                    "source_date_fact_kinds": sorted(
+                        _value(fact.date_kind) for fact in (getattr(found, "source_date_facts", ()) or ())
+                    ),
                 }
                 if not dated.date_valid:
                     stop("TEMPORAL", str(_value(dated.diagnostic)))

@@ -161,3 +161,30 @@ def test_the_run_summary_and_audit_show_which_nomination_confirmed_each_merge():
     assert merged and all(entry["event_identity"]["proposal_confirmed_by"] == ["event-identity-batch-1:group-1"] for entry in merged)
     assert dict(result.event_identity_confirmed_pairs) == {"FIRST": 1}
     assert "event_identity_confirmed_pairs=FIRST=1" in result.summary()
+
+
+def test_the_temporal_entry_shows_which_date_fact_kinds_evidence_supplied():
+    # RC-66, observation only: DATE_PROVENANCE_INVALID covers both a
+    # discovery-only date (no source facts) and facts without valid provenance.
+    result = _result()
+    audit = build_selection_audit(result)
+    evidence = {item.candidate_id: item for item in result.evidence_results}
+    dated = [entry for entry in audit["candidates"] if "temporal" in entry]
+    assert dated
+    for entry in dated:
+        expected = sorted(getattr(fact.date_kind, "value", fact.date_kind) for fact in evidence[entry["candidate_id"]].source_date_facts)
+        assert entry["temporal"]["source_date_fact_kinds"] == expected
+        assert all(isinstance(kind, str) for kind in expected)
+
+
+def test_an_unestablished_region_shows_its_evidence_diagnostic_only():
+    # RC-66, observation only: REGION_NOT_ESTABLISHED losses become explainable.
+    from src.weekly_report.contracts import RegionResolution, RegionResolutionBasis
+    from src.weekly_report.selection_audit import _region
+
+    def evidence(resolution):
+        return SimpleNamespace(identity_facts=SimpleNamespace(region_resolution=resolution))
+
+    unresolved = RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="UNRECOGNIZED_VALUE")
+    assert _region(evidence(unresolved)) == {"basis": "UNRESOLVED", "region_id": None, "diagnostic": "UNRECOGNIZED_VALUE"}
+    assert _region(evidence(RegionResolution(RegionResolutionBasis.NOT_STATED))) == {"basis": "NOT_STATED", "region_id": None}
