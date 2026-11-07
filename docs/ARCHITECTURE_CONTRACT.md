@@ -959,6 +959,10 @@ carries the same risk.
     mark or a list ("１２・７キロ", "1·2호선"). The text does not say which, so
     neither run has a reading: it grounds nothing, and in Writer prose it is
     ungrounded. It is not read as a standalone "７キロ".
+    RC-66: a multiplier inside a CJK amount is part of its one reading:
+    3천296억 = 3,296억, and 217百萬 = 2.17億 in Writer prose. These are RC-29's
+    own factors (千, 百萬, 十萬, 千萬, 十億). Before, the reader took only 296억,
+    and a 百萬 amount was never checked.
 
   An ungrounded quantity is
   `factual_<field>_quantity_ungrounded`; it uses the event's one semantic

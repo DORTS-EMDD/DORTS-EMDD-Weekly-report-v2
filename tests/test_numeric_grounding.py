@@ -255,3 +255,24 @@ def test_the_writer_instruction_states_how_a_shared_cjk_dollar_word_is_written()
     text = "\n".join(line for line in vars(writer).values() if isinstance(line, tuple) for line in line if isinstance(line, str))
     assert "19억 달러 or 19億ドル = $19億" in text
     assert "write 美元 only when the evidence itself says US dollars" in text
+
+
+# RC-66, from run 40999869397 (Ulsan tram, "총사업비 3천296억원"): the reader took
+# only "296억원", so the correct 3,296億 was ungrounded and a wrong 296億 would
+# have been grounded. RC-29's own factors (thousand = 千, million = 百萬,
+# crore = 千萬, billion = 十億) were also unread in Writer prose, so a 百萬
+# amount was never checked at all.
+def test_a_cjk_multiplier_inside_an_amount_is_part_of_its_one_reading():
+    assert _values("총사업비 3천296억원") == [[329_600_000_000.0]]
+    assert _grounded("총사업비 3천296억원", "總經費3,296億韓元") == [True]
+    assert _grounded("총사업비 3천296억원", "總經費296億韓元") == [False]
+
+
+def test_writer_amounts_in_rc29_factors_are_read_and_checked():
+    assert [q.text for q in checked_quantities("經費217百萬歐元")] == ["217百萬歐元"]
+    assert _grounded("217 millones de euros", "經費217百萬歐元") == [True]
+    assert _grounded("217 millones de euros", "經費300百萬歐元") == [False]
+    assert _values("1千萬元", strict=True) == [[10_000_000.0]]
+    # Existing compositions keep their single reading.
+    assert _values("2億1700萬元", strict=True) == [[217_000_000.0]]
+    assert _values("1조 9000억 원") == [[1_900_000_000_000.0]]

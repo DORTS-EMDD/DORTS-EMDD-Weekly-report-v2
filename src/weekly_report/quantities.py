@@ -250,8 +250,15 @@ def _place(token: str) -> float:
     return 10.0 ** -len(decimals) if decimals.isdigit() else 1.0
 
 
+# Multipliers inside a CJK amount ("3천296억", "217百萬", "1千萬"). RC-29 lists
+# thousand = 千, million = 百萬, lakh = 十萬, crore = 千萬 and billion = 十億 as
+# exact factors, and a Korean amount writes 천 inside it (RC-66).
+_CJK_SMALL = {"千": 1000, "천": 1000, "百": 100, "백": 100, "十": 10, "십": 10}
+
+
 def _cjk_value(text: str, start: int, notation: str | None) -> tuple[set[float], int, float, float] | None:
-    """Read a composed CJK amount such as ``1兆9000億``, ``1조 9000억`` or ``5,000億``.
+    """Read a composed CJK amount such as ``1兆9000億``, ``1조 9000억``, ``5,000億``,
+    ``3천296억`` or ``217百萬``.
 
     Returns the values, the end, the place of the last digit and the magnitude
     of the leading part (which a range's lower bound shares).
@@ -261,30 +268,50 @@ def _cjk_value(text: str, start: int, notation: str | None) -> tuple[set[float],
     totals: set[float] = {0.0}
     place = 1.0
     leading: float | None = None
+    group: set[float] = {0.0}
+    group_place: float | None = None
     while True:
         resume = position
-        while leading is not None and resume < len(text) and text[resume] == " ":
+        while (leading is not None or group_place is not None) and resume < len(text) and text[resume] == " ":
             resume += 1
         number = _NUMBER_RE.match(text, resume)
-        if not number:
+        if number:
+            after = number.end()
+            while after < len(text) and text[after] == " ":
+                after += 1
+            unit = text[after] if after < len(text) else ""
+            # A number written with a CJK magnitude is in CJK notation.
+            readings = _readings(number.group(), notation if notation == _STRICT else ".")
+        elif group_place is not None and resume < len(text) and text[resume] in _CJK_MAGNITUDES:
+            # A magnitude directly after a multiplier ("百萬", "千萬").
+            after, unit, readings = resume, text[resume], {0.0}
+        else:
             break
-        after = number.end()
-        while after < len(text) and text[after] == " ":
-            after += 1
-        unit = text[after] if after < len(text) else ""
-        # A number written with a CJK magnitude is in CJK notation.
-        readings = _readings(number.group(), notation if notation == _STRICT else ".")
-        if unit not in _CJK_MAGNITUDES:
-            if leading is None:
-                return None
-            totals = {total + reading for total in totals for reading in readings}
-            place = _place(number.group())
-            position = number.end()
-            break
-        totals = {total + reading * _CJK_MAGNITUDES[unit] for total in totals for reading in readings}
-        place = _place(number.group()) * _CJK_MAGNITUDES[unit]
-        leading = leading or _CJK_MAGNITUDES[unit]
-        position = after + 1
+        if number and unit in _CJK_SMALL:
+            group = {value + reading * _CJK_SMALL[unit] for value in group for reading in readings}
+            group_place = _place(number.group()) * _CJK_SMALL[unit]
+            position = after + 1
+            continue
+        if unit in _CJK_MAGNITUDES:
+            magnitude = _CJK_MAGNITUDES[unit]
+            totals = {total + (value + reading) * magnitude for total in totals for value in group for reading in readings}
+            place = (_place(number.group()) if number else group_place) * magnitude
+            leading = leading or magnitude
+            group, group_place = {0.0}, None
+            position = after + 1
+            continue
+        if leading is None and group_place is None:
+            return None
+        totals = {total + value + reading for total in totals for value in group for reading in readings}
+        place = _place(number.group())
+        position = number.end()
+        group, group_place = {0.0}, None
+        break
+    if group_place is not None:
+        # A trailing multiplier group ("3千", "3천").
+        totals = {total + value for total in totals for value in group}
+        place = group_place
+        leading = leading or min(_CJK_SMALL.values())
     return (totals, position, place, leading) if leading is not None else None
 
 
