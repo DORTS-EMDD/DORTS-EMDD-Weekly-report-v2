@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
 from datetime import date
 from enum import StrEnum
+from typing import Any
 
 from .candidate_normalizer import CandidateNormalizationError, CandidateNormalizer
 from .debug_service import observe_stage
@@ -126,6 +127,9 @@ class ReportApplicationResult:
     # state.  RC-5: events excluded for legal event-level data insufficiency.
     technical_gaps: tuple[TechnicalGap, ...] = ()
     metadata_exclusions: tuple[FormalMetadataExclusion, ...] = ()
+    # RC-66, observation only: (candidate ID, IDs-only shape) of each Scope
+    # proposal rejected as a contract violation. No decision reads it.
+    scope_rejected_proposals: tuple[tuple[str, Mapping[str, Any]], ...] = ()
 
     @property
     def search_runtime_acceptance(self) -> SearchRuntimeAcceptance:
@@ -670,6 +674,7 @@ class ReportApplication:
             observation.observe(normalized, final=True)
 
         technical_gaps: list[TechnicalGap] = []
+        scope_rejected_proposals: list[tuple[str, Mapping[str, Any]]] = []
         with observe_stage("Evidence", len(normalized.normalized_candidates)) as observation:
             evidence_results: list[EvidenceResult] = []
             for normalized_candidate in normalized.normalized_candidates:
@@ -714,6 +719,9 @@ class ReportApplication:
                     technical_gaps.append(
                         TechnicalGap.from_failure("Scope", normalized_candidate.candidate.candidate_id, failure)
                     )
+                    shape = getattr(failure, "observation", None)
+                    if isinstance(shape, Mapping):
+                        scope_rejected_proposals.append((normalized_candidate.candidate.candidate_id, shape))
                     continue
                 if not isinstance(scope, ScopeResult):
                     raise TypeError("ScopeClassifier must return a ScopeResult")
@@ -815,6 +823,7 @@ class ReportApplication:
             final_report=final_report,
             technical_gaps=tuple(technical_gaps),
             metadata_exclusions=metadata_exclusions,
+            scope_rejected_proposals=tuple(scope_rejected_proposals),
         )
         if final_report is None or self._delivery is None or self._delivery_recipient is None:
             return result

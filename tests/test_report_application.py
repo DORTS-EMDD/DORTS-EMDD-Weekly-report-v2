@@ -2326,7 +2326,7 @@ class TechnicalGapIsolationTests(TestCase):
             def classify(self, evidence, *, candidate_title="", monitored_check=None):
                 if self.violations == 0:
                     self.violations += 1
-                    raise ScopeProposalViolation("CITATION_INVALID")
+                    raise ScopeProposalViolation("CITATION_INVALID", {"records": {}, "labels": {}})
                 return super().classify(evidence, candidate_title=candidate_title)
 
         result = self._app(
@@ -2348,6 +2348,13 @@ class TechnicalGapIsolationTests(TestCase):
         )
         self.assertEqual(len(result.scope_results), 1)
         self.assertTrue(all(scope.state is ScopeState.IN_SCOPE for scope in result.scope_results))
+        # RC-66: the rejected proposal's IDs-only shape reaches the audit only.
+        from src.weekly_report.selection_audit import build_selection_audit
+
+        gap_subject = result.technical_gaps[0].subject_id
+        self.assertEqual(result.scope_rejected_proposals, ((gap_subject, {"records": {}, "labels": {}}),))
+        audited = {entry["candidate_id"]: entry for entry in build_selection_audit(result)["candidates"]}
+        self.assertEqual(audited[gap_subject]["scope"]["rejected_proposal"], {"records": {}, "labels": {}})
         self.assertEqual(result.final_report.disclosure.technical_gap_count, 1)
 
     def test_category_proposal_violation_is_a_disclosed_event_gap(self):

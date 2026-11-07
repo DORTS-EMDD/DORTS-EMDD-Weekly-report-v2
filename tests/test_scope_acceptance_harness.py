@@ -581,3 +581,27 @@ def test_scope_request_carries_only_document_headlines_and_is_repeatable():
             pass
     assert requests[0].as_payload()["source_metadata"] == {"principal_source_headlines": ["Platform doors installed"]}
     assert requests[0].as_payload() == requests[1].as_payload()
+
+
+def test_a_rejected_proposal_records_an_ids_only_shape_and_no_text():
+    # RC-66, observation only: the shape tells which sentences hold each label
+    # (none, or outside the cited ones) without keeping any source text.
+    source = "The operator installed platform doors. The weather was mild. The Metro line commissioned new signalling."
+    mismatch = _semantic_proposal(source)
+    mismatch["target_system"]["sentence_ids"] = ["S2"]
+    with pytest.raises(ScopeProposalViolation) as caught:
+        _classify(mismatch, source)
+    shape = caught.value.observation
+    assert caught.value.failure_class == "TARGET_SYSTEM_CONTAINMENT"
+    assert shape["records"]["target_system"]["sentence_ids"] == ["S2"]
+    assert shape["labels"]["system"] == {"length": len(mismatch["system"]["label"]), "found_in_sentence_ids": ["S3"]}
+    assert shape["labels"]["target"]["found_in_sentence_ids"] == ["S1"]
+    serialized = json.dumps(shape)
+    for text in ("platform doors", "weather", "signalling", mismatch["system"]["label"]):
+        assert text not in serialized
+
+    invented = _semantic_proposal(POSITIVE_SOURCE, system="Tramway")
+    with pytest.raises(ScopeProposalViolation) as caught:
+        _classify(invented, POSITIVE_SOURCE)
+    assert caught.value.failure_class == "ENDPOINT_LABEL"
+    assert caught.value.observation["labels"]["system"]["found_in_sentence_ids"] == []

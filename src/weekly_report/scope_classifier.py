@@ -161,9 +161,59 @@ class ScopeProposalViolation(ProposalContractViolation):
     helper defect must not be presented as news that failed the Scope rule.
     """
 
-    def __init__(self, predicate: str) -> None:
+    def __init__(self, predicate: str, observation: Mapping[str, Any] | None = None) -> None:
         self.failure_class = predicate
+        # RC-66, observation only: the rejected proposal's structure with
+        # sentence IDs and no source text (see ``_rejected_proposal_shape``).
+        self.observation = observation
         super().__init__(f"Scope proposal violated its contract: {predicate}")
+
+
+_SHAPE_RECORDS = ("event_focus", "action_target", "target_system", "ambiguity", "noneligible_relation")
+_SHAPE_LABELS = (("action", "label"), ("target", "label"), ("system", "label"), ("target_system", "target_reference"))
+
+
+def _rejected_proposal_shape(proposal: object, request: "ScopeSemanticRequest") -> dict[str, Any] | None:
+    """IDs-only facts about a rejected proposal, for the selection audit (RC-66).
+
+    For each record: its status, relation and cited sentence IDs as proposed.
+    For each label: its length and the sentence IDs whose text contains it
+    (case-insensitive), so a reader can tell a label absent from the Evidence
+    from one outside the cited or focus sentences. No label or source text is
+    kept, and nothing here takes part in the decision.
+    """
+
+    try:
+        if not isinstance(proposal, Mapping):
+            return None
+        shape: dict[str, Any] = {"records": {}, "labels": {}}
+        for name in _SHAPE_RECORDS:
+            record = proposal.get(name)
+            if isinstance(record, Mapping):
+                ids = record.get("sentence_ids")
+                shape["records"][name] = {
+                    "status": str(record.get("status")) if record.get("status") is not None else None,
+                    "relation": str(record["relation"]) if isinstance(record.get("relation"), str) else None,
+                    "sentence_ids": [str(item) for item in ids][:40] if isinstance(ids, (list, tuple)) else None,
+                }
+        for role, key in _SHAPE_LABELS:
+            record = proposal.get(role)
+            label = record.get(key) if isinstance(record, Mapping) else None
+            if not isinstance(label, str) or not label.strip():
+                continue
+            folded = label.casefold()
+            shape["labels"][role if key == "label" else "target_reference"] = {
+                "length": len(label),
+                "found_in_sentence_ids": [
+                    sentence.sentence_id for sentence in request.principal_sentences if folded in sentence.text.casefold()
+                ][:40],
+            }
+        for key in ("eligible_mode_family", "event_status", "decision", "noneligible_kind"):
+            if isinstance(proposal.get(key), str):
+                shape[key] = proposal[key]
+        return shape
+    except Exception:
+        return None
 
 
 class ScopeSemanticHelper(Protocol):
@@ -471,9 +521,9 @@ class ScopeClassifier:
                 # Observation cannot change the owner's decision or failure behavior.
                 return
 
-        def violation(predicate: str) -> ScopeProposalViolation:
+        def violation(predicate: str, observation: Mapping[str, Any] | None = None) -> ScopeProposalViolation:
             observe(None, predicate, "PROPOSAL_VIOLATION")
-            return ScopeProposalViolation(predicate)
+            return ScopeProposalViolation(predicate, observation)
 
         if evidence.state is not EvidenceState.READY:
             raise ValueError("ScopeClassifier requires EVIDENCE_READY evidence")
@@ -536,7 +586,7 @@ class ScopeClassifier:
         try:
             support, diagnostic, provenance, first_rejection = _proposal_support(response.proposal, request)
         except _Violation as rejected:
-            raise violation(rejected.predicate) from None
+            raise violation(rejected.predicate, _rejected_proposal_shape(response.proposal, request)) from None
         except Exception:
             raise violation("VALIDATOR_EXCEPTION") from None
         if support is ScopeSemanticSupport.IN_SCOPE_SUPPORT:

@@ -54,7 +54,7 @@ def _result() -> ProductionRunResult:
         evidence_ready_count=136, evidence_rejected_count=194,
         evidence_reject_reason_distribution={"SOURCE_PAGE_MISMATCH": 142, "CONTENT_UNAVAILABLE": 48},
         technical_gap_signature_distribution={"Scope:SUBJECT:PROPOSAL_CONTRACT_VIOLATION:ENDPOINT_LABEL": 6},
-        selection_audit={"audit_version": "selection-audit-v2", "candidates": []},
+        selection_audit={"audit_version": "selection-audit-v3", "candidates": []},
     )
 
 
@@ -87,7 +87,7 @@ class DebugArtifactTests(TestCase):
         self.assertEqual(summary["dedup"]["events"], 41)
         self.assertEqual(summary["event_counts"]["validated"], 18)
         self.assertIsNone(summary["declared_maiagent_role_version"])
-        self.assertEqual(debug["candidate_forensic_trace"], {"file": "selection_audit.json", "audit_version": "selection-audit-v2"})
+        self.assertEqual(debug["candidate_forensic_trace"], {"file": "selection_audit.json", "audit_version": "selection-audit-v3"})
         self.assertEqual(summary["artifacts"]["files"]["report_pdf"], "weekly-report-a1b2c3d4e5f60718.pdf")
 
     def test_no_recipient_or_secret_reaches_the_debug_files(self):

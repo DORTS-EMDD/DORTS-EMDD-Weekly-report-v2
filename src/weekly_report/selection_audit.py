@@ -24,7 +24,7 @@ from typing import Any
 from .contracts import EvidenceState, ScopeState
 from .evidence_sentences import event_focus_sentences
 
-SELECTION_AUDIT_VERSION = "selection-audit-v2"
+SELECTION_AUDIT_VERSION = "selection-audit-v3"
 STAGES = (
     "EVIDENCE",
     "SCOPE",
@@ -268,6 +268,7 @@ def build_selection_audit(
         for candidate_id in group.member_candidate_ids
     }
     identity_diagnostics, identity_proposals = _identity_diagnostics(run)
+    rejected_scope = dict(getattr(result, "scope_rejected_proposals", ()) or ())
     rejected_members = _rejected_members(run)
     events = _event_outcomes(result)
 
@@ -308,6 +309,9 @@ def build_selection_audit(
             judged = scope.get(candidate_id)
             if gap is not None:
                 entry["scope"] = {"technical_gap": _gap(gap)}
+                if candidate_id in rejected_scope:
+                    # RC-66: IDs-only shape of the rejected proposal.
+                    entry["scope"]["rejected_proposal"] = dict(rejected_scope[candidate_id])
                 stop("SCOPE", f"TECHNICAL_GAP:{_value(gap.kind)}:{gap.failure_class}")
             elif judged is None:
                 stop("SCOPE", "NOT_REACHED")
