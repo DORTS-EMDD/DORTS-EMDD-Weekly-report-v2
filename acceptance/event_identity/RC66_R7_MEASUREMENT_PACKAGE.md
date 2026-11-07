@@ -135,3 +135,77 @@ using the same fields as rc64, plus `corpus_source: "refetched,
 sha256-verified Event Identity input"` and the list of records that failed
 the hash. Without a passing result, prompt v10 stays in production. This
 offline night changed no Event Identity rule, prompt, schema or Golden.
+
+## 6. Adversarial review of this package (Phase B, 2026-11-07, offline)
+
+The cross-run audit (REPORT section 72) found evidence that weakens the
+hypothesis this package was written for. The acceptance design below is
+amended. No Domain Rule or prompt is changed.
+
+**Disconfirming evidence.**
+* The "mixed record" explanation (section 1) covers only some of the wrong
+  confirmation splits in runs #24–#34. The wrong splits also include:
+  * pure same-occurrence reports with no marking activity: the Daegu
+    Myeongdeok entrance (#24), the Seoul Line 2 outage reported in Japanese
+    and Korean (#26), two reports of one Kim Min-seok statement (#32), two
+    Kyiv attack reports (#34), and the 8 Ulsan depot records returned as 8
+    single-record groups (#34);
+  * near-identical copies: the Wuhan 【画像】 gallery pages (#25, #26, #33);
+  * scheduled versus occurred: Wuhan "間もなく全線開通" (#26, #29, #34);
+  * duplicate membership inside the confirmation answer (Wirye #26, #29;
+    Incheon 10th anniversary #30; Gwangju #34).
+* The helper is not consistent about marking activities. In #24 it grouped
+  the Ministry's 5G verification record (디지털투데이) with the operator's
+  launch (이데일리). That is the opposite of the RC-42 decision and of the
+  separation seen in #25 and #34.
+* Confirmation is also the only guard against batch mega-groups. In #29 it
+  correctly split a 26-record group of unrelated items; in #31 it split a
+  14-record group mixing IEC 61373, Hiroshima, Gera, Napoli and others. A
+  candidate that loosens confirmation can only be judged safe when such
+  groups are in the corpus.
+
+**Defects in sections 3–4 and the amendments.**
+1. *Controls that never reach the helper.* LA Metro D Line against Sydney is
+   a `PROPOSAL_REGION_CONFLICT` pair that Python removes before
+   confirmation, so it cannot test a confirmation prompt. Replace it.
+2. *Too few negative controls, and none of the dangerous kind.* Add these
+   real records, rebuilt with the same sha256 procedure:
+   * all members of the #29 `event-identity-batch-1-p3-n2:group-5` (26) and
+     `group-4` (12) groups, and of the #31 `event-identity-batch-1-p2:group-3`
+     (14) group, as recorded confirmation inputs;
+   * a record that reports only the Ministry activity (Run 40817530617
+     records named in section A.26). This audit is selection-audit-v1; if a
+     record cannot be rebuilt, record EVIDENCE_UNAVAILABLE;
+   * the 국감 statement "[국감] 인천지하철 5G 와이파이 구축…전국 확대 '목소리'"
+     (#20), which must stay apart from the launch (RC-45 statement rule);
+   * the Barcelona fire, the TMB cause confirmation and the service-restored
+     report (#30, #31): R3 says the incident and its later findings or
+     measures are different occurrences.
+3. *A vacuous criterion.* Criterion 1 (no false merge) is met trivially when
+   the batch never nominates a control. Add a direct confirmation
+   measurement:
+   * **M-C:** replay the exact recorded confirmation inputs (record maps from
+     the audits, with rebuilt excerpts) under v10 and the candidate, three
+     times each.
+   * Report, per input group, the partition against the labels.
+   * Report the number of differently labelled pairs that reach a
+     confirmation. It must be at least the number of same-labelled pairs.
+4. *Mechanisms the candidate does not target.* Add same-labelled pure
+   over-split pairs (Daegu entrance, Seoul outage, Kyiv, Kim Min-seok,
+   Ulsan) as a separate stratum. Criterion 3 then shows whether the
+   candidate helps, hurts or does nothing outside the mixed-record case.
+   That result decides whether mixed records are the right target at all.
+5. *Label leakage.* The labels in section 3 were drafted by Claude from
+   titles. Before any paid call, labels must be set from the rebuilt excerpt
+   text by the user or an independent pass, without seeing any helper
+   answer. L1 and the Daegu pair stay user decisions.
+6. *Duplicate membership.* A confirmation answer that names a record twice
+   loses that record through RC-42 per-member rejection. This is not a
+   prompt-content effect, so report it separately (count per round). It
+   must not be counted as a split or a merge of the labelled pair.
+
+**Verdict.** The package as first written would have measured a narrow fix
+on a corpus biased toward merges. With amendments 1–6 it can detect false
+merges and separate the mechanisms. It is still `BLOCKED_PAID_VALIDATION`.
+Raise the estimated cost to about 200 calls (M-C adds about 12 confirmation
+inputs × 2 prompts × 3).

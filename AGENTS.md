@@ -579,6 +579,11 @@ Transport retry 與 semantic correction 必須分開計算。
   * 未決：
     * 演練的分類、仁川 L1、歷史回顧的 Domain Rule：BLOCKED_USER_DECISION。
     * 「広島市」名稱：未修。
+  * Phase B 跨 run 稽核（REPORT §72，矩陣在 `acceptance/phase_b_audit/`）：
+    * 確認階段的過度拆分有五種機制，R3 混合紀錄只是其一；R7 量測包已補對抗性設計。
+    * Scope 缺口在同一 Evidence 上不重現（機率性）。
+    * DATE_PROVENANCE_INVALID 依 host 而定、每次相同。
+    * 契約 §L（RC-63 專案步驟無分類）與 §N（施工或通車屬報導價值路徑）互相矛盾，待使用者決定。
 
 ## 13. Report / Delivery
 

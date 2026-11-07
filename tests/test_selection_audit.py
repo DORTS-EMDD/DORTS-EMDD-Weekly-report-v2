@@ -188,3 +188,23 @@ def test_an_unestablished_region_shows_its_evidence_diagnostic_only():
     unresolved = RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="UNRECOGNIZED_VALUE")
     assert _region(evidence(unresolved)) == {"basis": "UNRESOLVED", "region_id": None, "diagnostic": "UNRECOGNIZED_VALUE"}
     assert _region(evidence(RegionResolution(RegionResolutionBasis.NOT_STATED))) == {"basis": "NOT_STATED", "region_id": None}
+
+
+def test_observer_only_fields_are_read_by_no_decision_module():
+    # AGENTS section 14: Debug only observes. The RC-66 observation fields are
+    # written by their owners' failure paths and read only by the audit.
+    allowed = {
+        "scope_rejected_proposals": {"report_application.py", "selection_audit.py"},
+        'getattr(failure, "observation"': {"report_application.py"},
+        "source_date_fact_kinds": {"selection_audit.py"},
+        "build_selection_audit": {"selection_audit.py", "production_runner.py"},
+    }
+    package = ROOT / "src" / "weekly_report"
+    for source in package.glob("*.py"):
+        text = source.read_text(encoding="utf-8")
+        for name, files in allowed.items():
+            if name in text:
+                assert source.name in files, f"{source.name} reads observer-only {name}"
+    # The runner only writes the audit next to the report; no owner reads it back.
+    runner = (package / "production_runner.py").read_text(encoding="utf-8")
+    assert runner.count("build_selection_audit(") == 1

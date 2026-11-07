@@ -2736,7 +2736,7 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - 雪梨：Run 42148605765 的 ABC 在每次確認都被分開；本機第 3 輪 6/6 分開（§70.1 文字紀錄）。
 - 共同形態：該紀錄同時寫出共同的發生事項與其具體細節（仁川 S2：三家電信業者都開通 5G Wi-Fi 的第一條路線；ABC：4:31、13 公里），又寫了標示該事項的活動（部會體驗活動、乘客慶祝）。
 - 契約 R3 已決定：「同時報導兩個發生事項的紀錄，只與具體細節相同的紀錄同群」。但確認提示詞第 55 行「不同發生事項不得同群」與第 45 行「里程碑與標示它的活動（如乘車活動）是不同發生事項」並列，沒有說明第 46 行如何適用。推測確認時以後兩行為準（未證實）。
-- 判定：已證明是一般的確認問題，不是雪梨或仁川特例。
+- 判定：已證明是一般的確認問題，不是雪梨或仁川特例。（2026-11-07 Phase B 補註：混合紀錄只是確認階段過度拆分的五種機制之一，見 §72.3。）
 - 修改提示詞須先做 R7 量測：已準備 `acceptance/event_identity/RC66_R7_MEASUREMENT_PACKAGE.md`（BLOCKED_PAID_VALIDATION）。
 - 另須使用者確認 L1：RC-42 曾決定仁川部會體驗活動是不同事件；스마트투데이 是報導共同完成事項還是部會活動，由使用者判定（BLOCKED_USER_DECISION）。
 - 其他確認分開的配對多為不同事件（羅馬與 Bergamo、Kraków 與 Delft）。另見：
@@ -2752,7 +2752,7 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - ENDPOINT_LABEL：韓文 56／95（佔韓文請求 6.2%，日文 1.0%，拉丁字母 5.0%），屬標籤未逐字複製（詞形、空白）。
   - TARGET_SYSTEM_CONTAINMENT：中文最高（7.1%）。
   - 三種 containment 檢查都是提案中標籤、引用句與焦點範圍互相不一致。
-- 判定：
+- 判定（Phase B 補註：同一 Evidence 重複送出時缺口不重現，屬受內容影響的機率性不一致，見 §72.5）：
   - 至少有兩種獨立機制：標籤複製不逐字，以及關係與焦點不一致。不宜合併為單一根因。
   - Python 檢查符合 RC-8、RC-9、RC-17（Evidence 文字已正規化空白，排除 NBSP 之類的機械原因）。
   - 每個缺口的機制無法確認，因為從未保存被拒的提案。
@@ -2792,3 +2792,192 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - Event Identity 重放：5 次執行差異為 0。
 - 任何修正都未經 Live 驗收。
 - RELEASE_READY = NO。
+
+## 72. 夜間 Phase B：跨 Run 證據稽核（2026-11-07，無付費呼叫，僅觀測）
+
+- 證據：
+  - GitHub Actions #12～#34：19 次有 artifact。
+  - #12、#23、#27、#28 未執行 production job，沒有報告（EVIDENCE_UNAVAILABLE）。
+  - #13～#15 沒有 selection audit（RC-31 前）。
+  - #24～#34 有 Event Identity 往返紀錄。
+- 矩陣檔：`acceptance/phase_b_audit/`
+  - cross_run_evidence_matrix、category_decision_matrix、event_identity_proposal_confirmation_matrix、scope_gap_matrix；
+  - event_identity_confirmation_splits.txt（判讀原始資料）。
+- 方法：以各 run 自身的 artifact 與當次 commit 的提示詞版本為準。只有本節的判讀出自 Claude，依據是標題與 audit 摘錄，**不是**人工標註。
+
+### 72.1 跨 Run 行為變化（CROSS_RUN_EVIDENCE_MATRIX）
+
+- 每次正式事件數：週報 9～36 則；月報 #34 為 24 則。
+- 技術缺口：每次 4～42 個，Scope 佔大多數。
+- 章節分布：
+  - 分類 v3 時期：營運動態約佔 36%～60%。
+  - #34（v5）：營運動態只剩 4／24；CATEGORY_UNRESOLVED 由 v3 平均每次約 5 個事件，增為 31 個事件（52 個候選）。
+  - 檢視 #34 的 31 個未分類事件，絕大多數依 RC-63 屬正確（延期、預告通車、聲明、統計、計畫）。
+- 同一 Evidence 在不同 run 的穩定性：
+  - #17～#26 重複處理 10-21～28 同一期間，是天然的重複實驗。
+  - Scope：同內容出現 3 次以上的 79 筆中，25% 的 IN／OUT 判定不一致。
+  - Reportability：9 筆中 0 筆不一致。
+  - Category（v3，單一成員事件）：7 筆中 1 筆不一致。
+
+### 72.2 Category（CATEGORY_DECISION_MATRIX；v3 共 646 個事件，v5 共 66 個）
+
+| 型態 | v3（#16～#33） | v5（#34） | v6 是否處理（未經 Live） |
+| --- | --- | --- | --- |
+| 專案步驟→技術新知（動土、施工、潛盾、量產里程碑） | 21 | 0 | 已由 RC-63 處理 |
+| 試運轉、驗收、通車前測試→技術新知 | 41 | 3（Bergamo、羅馬、Lyon） | 是（安裝系統的測試） |
+| 訓練、演練（技術新知與營運動態搖擺） | 18 | 2 | 只處理技術新知；營運動態歸屬須使用者決定 |
+| 展覽、交流→技術新知 | 5 | 1（SLW） | 是 |
+| 車上非運輸服務（仁川 Wi-Fi）→營運動態 | 約 12 | 1 | 是（車上） |
+| 未來招標意向→採購（含房地產專題「將簽約」） | 16 | 1（波多招標延期） | RC-63 已規定；延期截止日屬既有招標的變更，未判定 |
+| 依法處分→規範變動 | 0 | 1（公取委） | 是 |
+
+- NEW_CATEGORY_COUNTEREXAMPLES：
+  - 獎項文章被分為營運動態（墨爾本 G Class 獲獎，subtype 為 passenger_service_opening）。
+  - 房地產專題被分為採購（동탄 땅집고，兩次）。
+  - 紐約專題「為何落後」在 4 次 run 中分別被分為 3 種類別。
+- CATEGORY_FALSE_NEGATIVE_RISK_SET：v6 可能誤殺的真技術案例。
+  - 阪急／住友 LRT1 回生電力實證事業（「実証」不是展覽）；
+  - Gera 新電車 Härtetest（車型測試與驗收的邊界）；
+  - 紐約 A／C 線 CBTC 號誌更新「始動」（技術部署的施工開始）；
+  - 仁川 AI 軌道巡檢機器人實地測試；
+  - Docomo 5G 擴建、仁川 5G Wi-Fi（技術部署，不是營運）；
+  - 東京地鐵床面投影實證、Point AI 導入。
+  - 這些須列入下一次真實驗證的正向觀察清單。
+
+### 72.3 Event Identity（EVENTIDENTITY_PROPOSAL_CONFIRMATION_MATRIX，#24～#34）
+
+- 確認階段共 61 次分群；逐一判讀如下。
+- 正確分開：
+  - 不同事件：雪梨開通日期與粉紅公車；L&T 與孟買；羅馬兩則招標；Kraków 與 Delft；羅馬與 Bergamo。
+  - #29 的 26 筆、#31 的 14 筆無關巨型群組。
+  - 巴塞隆納火災與「起火原因確認」「恢復正常」（R3：事故與其後續調查或措施是不同發生事項）。
+- 錯誤分開，至少五種機制：
+  1. **R3 混合紀錄**：仁川 스마트투데이（#24、#25、#34）、ABC 雪梨（#29、#33）、武漢「工人慶祝」照片（#29）、동탄 市長談話（#26）。
+  2. **純同一事項短訊**：大邱明德站出入口（#24）、首爾 2 號線停電的日文與韓文報導（#26）、金民錫同一發言（#32）、基輔兩則（#34）、蔚山車輛基地 8 筆全拆為單筆群組（#34）、仁川 컨슈머타임스與 OBS（#24）。
+  3. **近乎相同的副本**：武漢【画像】圖庫頁（#25、#26、#33）。
+  4. **預告與發生**：武漢「間もなく」（#26、#29、#34）。
+  5. **確認回答重複列出成員**，依 RC-42 遭淘汰：位禮（#26、#29）、仁川 2 號線 10 週年（#30）、光州（#34）。
+- 疑似誤合併：
+  - #25 老人免費搭乘「6506 億效益」研究與首爾交通公社「2050 年虧損」推估（進入正式報告）；
+  - #24 紐約號誌更新與「紐約地鐵為何落後」專題；
+  - #20 國會「全國擴大」發言併入仁川開通（違反 RC-45 聲明規則）。
+- DISCONFIRMING_EVIDENCE：Phase A §71.3 只歸因於 R3 混合紀錄，這只涵蓋一部分。
+  - 機制 2～5 都與標示活動無關。
+  - #24 部會驗證紀錄反而與營運機構開通合併，表示 helper 對 R3 沒有一致行為。
+  - 確認階段同時是防止巨型錯誤群組合併的唯一防線。
+  - 結論：問題是確認階段單次判斷的一般性過度拆分，加上回答格式違約。§71.3 的單一機制假設已被取代，相關檔案已補註。
+
+### 72.4 R7 量測包的對抗性審查
+
+- 問題：
+  - 原設計偏向合併：負例少，且有一組在確認前就被 Python 去除。
+  - 若批次未提出負例，「不同事件合併為 0」會無效地自動成立。
+  - 未涵蓋其他四種機制。
+  - 標註由 Claude 依標題草擬，有洩漏風險。
+- 已修正量測設計：
+  - 加入 M-C：直接重放實際記錄的確認輸入，包括巨型群組。
+  - 加入聲明與部會活動負例、純過度拆分層、重複列出成員的獨立計數。
+  - 標註須獨立完成。
+  - 見 `RC66_R7_MEASUREMENT_PACKAGE.md` §6。
+- 未修改任何 Domain Rule；仍為 BLOCKED_PAID_VALIDATION。
+
+### 72.5 Scope（SCOPE_GAP_MATRIX：156 個缺口，v12 有 125、v13 有 31）
+
+- 依檢查：ENDPOINT_LABEL 45、TARGET_SYSTEM 39、ACTION_TARGET 32、EVENT_FOCUS 31、其他 9。
+- 依語言：韓文 76、拉丁字母 36、日文 30、中文 14。
+- 重複性（關鍵證據）：
+  - 同一 Evidence 進入 Scope 3 次以上的 96 筆中，29 筆至少一次為缺口，**0 筆每次都是缺口**。
+  - 重複出現缺口時，多為同一檢查（10／12）。
+- 判定：缺口是受內容影響的機率性提案不一致，不是確定性的 Python 或提示詞缺陷。
+  - Validator 沒有要求提示詞未說明的性質（RC-8、RC-9、RC-17 皆寫入提示詞與 schema）。
+  - 這項任務要求模型同時做語意選擇（事件、關係）與機械複製（逐字標籤、句子 ID、焦點範圍），兩者混在同一提案中，這是最可能的共同上游因素。
+  - 每案的機制在 RC-66 觀測前無法取得（EVIDENCE_UNAVAILABLE）。
+  - 不做 parser rescue。
+
+### 72.6 Temporal（TEMPORAL_FAILURE_TAXONOMY）
+
+- 全部結果：有效 1,180、OUT_OF_RANGE 180、DATE_PROVENANCE_INVALID 163、DATE_UNPARSEABLE 10、DATE_CONFLICT 1。
+- T1／T2 DATE_PROVENANCE_INVALID：
+  - 集中在 51 個 host（kyeonggi.com 19、people.com.cn 14、epochtimes 9……）。
+  - 同一內容每次都相同（MHI、NHK、1904 Pau、Norderstedt 30 年）。
+  - 屬於確定性的頁面結構或日期擷取問題（EvidenceService），不是模型雜訊。
+  - 歷史資料無法區分 T1 與 T2；RC-66 已加入觀測。
+- T3 OUT_OF_RANGE 早於期間（63 筆）：正確擋下舊文重刊（2016、2022、2025）。
+- T4 晚於期間（117 筆）：正確。
+- T6 發布日期與發生日期不同：
+  - 京都 1997 被判為有效；1904 Pau、Norderstedt 只是偶然因缺日期被擋。
+  - 若修好 T1 的日期擷取，這些歷史回顧會漏進報告。歷史回顧 Domain Rule（BLOCKED_USER_DECISION）的影響因此大於京都一例。
+- T7 未來事件：Temporal 只看發布日期；預告由 Category（RC-63）處理，沒有規則缺口。
+
+### 72.7 地區（REGION_NOT_ESTABLISHED：69 個事件）
+
+- 幾乎全是 UNRESOLVED，同內容每次相同；只有一則位禮報導在一次 run 中為 KR、另一次為 UNRESOLVED，與 metadata helper 的擷取值變動相符。
+- 許多案例明顯位於指定地區：東京地鐵 MONOist、熊本與高知電車、首爾 7 號線長岩站、巨濟單軌、臺灣安坑與淡海輕軌、Metrovalencia、Jaén、羅馬 Atac、杜林、Gera、岡山。
+- Owner：EvidenceService（metadata 擷取值與 geographic_reference）。
+- 歷次 run 都沒有 invalid_response 或 transport_error，因此不是技術失敗被轉成 Domain 結果。
+- 實際擷取到的值未保存（EVIDENCE_UNAVAILABLE），無法判定是參照表不足（街區、車站、路線名稱）還是擷取不符 RC-28（城市）。不新增 fallback。
+
+### 72.8 Reportability（決策外洩）
+
+- NO_DECISION_LEAKAGE_FOUND（程式層級）。
+  - Reportability 只把 Scope、Temporal 與 Category 狀態當作前提斷言；只依 RC-58、RC-59 讀取 NORMATIVE_CHANGE 與 Scope 的 monitored 事實。
+  - 不重新推導、不修改、不救回上游決定。
+  - Writer 只讀 Scope 焦點（RC-20 授權）。
+- 但有語意重疊（見 72.11 M1、M2）。
+
+### 72.9 Validator（VALIDATOR_CAUSALITY_MATRIX：約 18 個不同的 FAIL 事件）
+
+- 上游錯誤被下游偶然擋下：
+  - 京都歷史回顧（數字讀法）；
+  - 동탄 房地產專題被分為採購（混寫，#26、#33）。
+- Writer 依 RC-29、RC-20 的真實失敗：
+  - 紐約 19억 달러 被寫成美元（幣別比來源具體，4 次），導致真實事件（紐約 A／C 號誌更新）遺失；
+  - 巴塞隆納、Atac、蔚山的數字；
+  - 광주 ㈜애나、大邱演練、明德站的混寫；
+  - 新北「啟示」無依據。
+- Validator false positive：未證實。
+- Validator false negative：中黑點讀法已修。
+- Validator 不是事實上的 rescue owner：多數上游錯誤（Bergamo、Lyon、大邱技術新知）照樣 PASS。
+
+### 72.10 Golden（GOLDEN_COVERAGE_GAPS）
+
+- 101 個 pipeline Golden 全為合成案例，只有 2 個含非 ASCII 原文；Event Dedup 25 案只有 1 個。Production Evidence 約 60% 為 CJK。
+- 沒有任何 Golden 來自真實失敗。
+- Category、Scope、EI 的 Golden 都經 oracle 或腳本回答，鎖的是 Python 處理，不是 helper 行為。Live 驗收與 `recorded_answers.json` 是唯一能看見 helper 行為的證據。
+- 缺口：
+  - 演練分類、歷史回顧、仁川 L1 須 Domain 決定（BLOCKED）；
+  - 車上非運輸服務、R3 混合紀錄、純同一事項的過度拆分未鎖。前者涉及 v6 的推廣，後者的預期結果已由 R3 決定，但 harness 只能驗證 Python。
+- 依「不為數量新增低價值 Golden」，本階段未新增 Golden。
+
+### 72.11 架構二階審查
+
+- M1 **§L 與 §N 矛盾（須使用者決定）**：
+  - §N：「Opening or construction of a line ... is a concrete service or engineering change」是報導價值路徑；Reportability helper 也有 CONSTRUCTION_MILESTONE、DELIVERY_TEST_OR_COMMISSIONING。
+  - §L RC-63：施工階段與通車前測試為 CATEGORY_UNRESOLVED，在 Category 終止。
+  - 結果：§N 這些路徑在 production 已無法到達，Category 實際上成了專案步驟的報導閘門。
+  - 依 AGENTS，不自行選邊：BLOCKED_USER_DECISION。
+- M2 **同一 Domain 意義由兩個 owner 各自保存**：
+  - 聲明、排名、統計、專題同時寫在 Category（RC-63）與 Reportability（RC-20、25、27）的提示詞中，結果分別為 UNRESOLVED 與 NOT_REPORTABLE。
+  - 已觀察到兩者對主要發生事項判斷不一致（墨爾本：Category 為開通，Reportability 為獎項）。
+  - 有規則漂移風險。
+- M3 契約 §L 的技術新知條目仍是未限定的寫法，RC-63 以後附註收窄；提示詞 v6 已改為單一定義。兩者意義一致，但寫法不同。
+- M4 地區判定依賴非確定性的 metadata 擷取，RC-28 產品規則的結果在不同 run 之間可能不同。
+- M5 潛在：EvidenceService 把未分類的 Exception 視為 metadata absent（契約只授權 invalid_response 這樣處理）；未觀察到。
+- 未發現：fallback、rescue、backfill、debug 欄位被 production 讀取（新增守門測試）、下游重新推導。
+
+### 72.12 測試盲點（TESTS_PASS_BUT_CONTRACT_CAN_FAIL）
+
+1. helper 語意退化：prompt 測試只檢查是否含某些句子。v5 同時有兩種定義時，測試全過。
+2. §L 與 §N 這類跨層契約矛盾。
+3. 多語言行為。
+4. 確認階段過度拆分：只有 `recorded_answers.json` 能測。
+5. observation 欄位被決策讀取：**已新增** `test_observer_only_fields_are_read_by_no_decision_module`。
+
+### 72.13 紀錄一致性（ACCEPTANCE_RECORD_CONSISTENCY_AUDIT）
+
+- §71.3 的單一機制結論已被 72.3 取代（已補註）。
+- §71.4 的「兩種機制」應讀為受內容影響的機率性不一致（72.5）。
+- §L「Golden G92～G96 lock these boundaries」：只鎖 Python 處理，不代表 helper 遵守。#34 在 G93 通過的情況下仍有通車前測試被分為技術新知。
+- RC-64：已標 INVALID。
+- RC-44、RC-47 保留條件：第二次提案在 11 次 run 中有 9 次確認了配對，與保留一致。
+- 未發現離線測試被寫成 Live 驗收，也未發現觀察被寫成 Domain Rule。

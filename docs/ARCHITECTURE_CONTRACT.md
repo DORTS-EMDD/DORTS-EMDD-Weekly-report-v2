@@ -3005,8 +3005,31 @@ GitHub. Detail: REPORT section 71.
     audit now shows EvidenceService's resolution diagnostic.
   * Rules and reference data are unchanged.
 
+* **Phase B cross-run audit (REPORT section 72; matrices in
+  `acceptance/phase_b_audit/`).**
+  * Event Identity confirmation over-splits through at least five
+    mechanisms, not only the R3 mixed record. It is also the only guard
+    against unrelated batch mega-groups. The R7 package is amended (its
+    section 6).
+  * Scope gaps do not repeat on the same Evidence: 0 of 96 repeated contents
+    gap every time. They are content-dependent, probabilistic proposal
+    inconsistencies.
+  * Temporal `DATE_PROVENANCE_INVALID` is deterministic per host.
+* **Open contract conflict (`BLOCKED_USER_DECISION`; not resolved here).**
+  * Section N accepts "opening or construction of a line, extension or
+    station" as a value path. The Reportability helper also lists
+    `CONSTRUCTION_MILESTONE` and `DELIVERY_TEST_OR_COMMISSIONING`.
+  * Section L (RC-63) makes construction stages and pre-opening tests
+    `CATEGORY_UNRESOLVED`, which ends the Event Group before Reportability.
+  * So those section N paths cannot be reached.
+  * The user must say which section governs project steps.
+  * The statement, ranking, statistics and feature classes are also held by
+    both owners (section L RC-63, section N RC-20/25/27), with different
+    outcomes.
+
 ```text
 RC66_STATUS = OFFLINE_ONLY; LIVE_ACCEPTANCE = NOT_RUN; RELEASE_READY = NO
+SECTION_L_VS_N_PROJECT_STEPS = CONFLICT (BLOCKED_USER_DECISION)
 RC66_BLOCKED = PAID_VALIDATION (Category v6, Docomo predicate, EI R7) | USER_DECISION (drill Category, Incheon L1, historical retrospective)
 ```
 

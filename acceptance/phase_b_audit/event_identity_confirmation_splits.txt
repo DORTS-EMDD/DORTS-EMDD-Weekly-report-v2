@@ -1,0 +1,406 @@
+#24 ntity-batch-1:group-2:confirmation in=7 parts=[5, 1, 1]
+   [0] 인천지하철, 1·2호선 전 객차에 5G 초고속 와이파이 개통…전국 최초 - 국제뉴스
+   [0] [인천] 전국 최초 인천지하철 전 객차 5G 개통..."속도 3배" - YTN
+   [0] 인천 지하철 1·2 호선 전 객차 , 358 량에 5G 기반 와이파이 구축을 완료 - 핀포인트뉴스
+   [0] 인천교통공사, 전국 최초 지하철 전 객차 5G Wi-Fi 시대 개막 … 통신속도 3배 껑충! - 경기매일
+   [0] 인천교통공사, 인천지하철 전 객차 5G 기반 초고속 와이파이 서비스 본격 개시 - 경기도민일보 미디어
+   [1] 인천교통공사, 전국 최초 지하철 전 객차 5G 와이파이 개통…속도 3배↑ - 컨슈머타임스
+   [2] '전국 최초' 인천 지하철 5G 시대… 다운 속도 3배 향상 - OBS경인TV
+#24 ntity-batch-1:group-4:confirmation in=3 parts=[2, 1]
+   [0] 인천지하철 와이파이 빨라졌다…통신 3사 5G 서비스 첫 개시 - 이데일리
+   [0] 韓国科学技術情報通信省、地下鉄「5GベースのWi-Fi」の全国展開支援へ 仁川で改善効果確認 - 디지털투데이
+   [1] 지하철 와이파이도 5G로…인천 1·2호선 통신 3사 전환 완료 - 스마트투데이
+#24 ntity-batch-1:group-5:confirmation in=2 parts=[1, 1]
+   [0] Opening date locked in for final stage of Sydney’s M1 metro line -
+   [1] A farewell to Sydney’s dreaded pink buses - SMH.com.au
+#24 tity-batch-1:group-15:confirmation in=2 parts=[1, 1]
+   [0] 대구도시철도 명덕역 신설 출입구 오는 30일 개통 - 한국철도일보
+   [1] 대구 도시철도 명덕역 신설 출입구 30일 개통 - 대경일보
+#25 ntity-batch-1:group-8:confirmation in=4 parts=[3, 1]
+   [0] News by CNBC TV18 on TradingView, 2026-10-27 — cnbctv:97d5f25fa094
+   [0] L&T Secures Major Dhaka Metro Orders, Contracts Exceed Rs 5,000 Cr
+   [0] L&T to supply track, power and signaling for Dhaka Metro Line 1 - 
+   [1] Mumbai Metro Line 4 Work Gains Pace in Thane - Urban Acres
+#25 ntity-batch-1:group-9:confirmation in=12 parts=[11, 1]
+   [0] 기관 간 이견에 멈춰 선 위례선 트램 … 연내 개통 결국 무산 - 뉴데일리
+   [0] 공정률 97%인데 또 개통 연기…위례선 트램, 안전 절차에 발목 - 머니투데이 - 머니투데이
+   [0] “공사 97% 끝났는데”…안전절차 지연에 위례선 트램 개통 결국 연기 - 이데일리
+   [0] 위례선 트램, 12월 개통 무산…안전진단 추가로 내년 연기 - https://www.entv.kr/
+   [0] 서울시, ‘12월 예정’ 위례선 트램 개통 연기… “내년 상반기 중 일정 발표” - Chosunbiz
+   [0] 위례선 트램 올해 12월 개통 연기…서울시 "내년 상반기 중 확정 일정 발표" - 펜앤마이크
+   [0] 이번엔 안전진단 한다며… 위례트램 또 출발 못한다 - 문화일보
+   [0] 위례선 트램 12월 개통 연기…안전 절차 마친 뒤 일정 확정 - 전기신문
+   [0] 위례 트램, 연말 개통 또 '무산'…보행자·車 혼용구간 정리 안돼 - 한국경제
+   [0] 위례선 트램 올해 12월 개통 무산…새 일정은 내년 상반기 발표 - 한겨레
+   [0] '완공은 코앞인데…' 위례선 트램 내년 개통? - 비즈워치
+   [1] Métropole de Lyon : le tramway T9 ne sera pas mis en service avant
+#25 tity-batch-1:group-10:confirmation in=2 parts=[1, 1]
+   [0] Colonnine SOS fuori uso nella metro di Roma: pronto il nuovo bando
+   [1] Atac schreibt Reinigung von Graffiti an 79 U-Bahn-Zügen in Rom aus
+#25 ty-batch-1-n2:group-4:confirmation in=2 parts=[1, 1]
+   [0] 【画像】アジア最長の地下鉄環状線・武漢12号線が間もなく全線開通―中国 1/2 - ライブドアニュース
+   [1] アジア最長の地下鉄環状線・武漢12号線が間もなく全線開通―中国 - ライブドアニュース
+#25 ty-batch-1-p2:group-1:confirmation in=7 parts=[6, 1]
+   [0] ¿Qué pasó en la Línea 9 del Metro CDMX? Por incendio cierran seis 
+   [0] Línea 9 del Metro cierra estaciones por incendio: ¿cuáles cuándo a
+   [0] Incendio en Línea 9 del Metro CDMX deja sin servicio: ¿Qué estacio
+   [0] Afecta incendio a L-9 del Metro, daña cables y fibra óptica - Refo
+   [0] Conato de incendio en Línea 9 del Metro suspende servicio parcial 
+   [0] Incendio en la Línea 9 del Metro: suspenden servicio entre las est
+   [1] Normaliza servicio en la Línea 9 del Metro: ‘Trenes circulan de Ta
+#25 ty-batch-1-p2:group-3:confirmation in=2 parts=[1, 1]
+   [0] Atac, ecco quanto (ci) costano i vandali dei treni delle metro - R
+   [1] Atac schreibt Reinigung von Graffiti an 79 U-Bahn-Zügen in Rom aus
+#25 y-batch-1-p2:group-16:confirmation in=3 parts=[2, 1]
+   [0] 지하철 노인 무임승차 '6500억 효과'..."연령은 65→70세 높여야" - 머니투데이 - 머니투데이
+   [0] '65세는 너무 젊다?'…지하철 무임승차 '70세 상향' 고개 - 이데일리
+   [1] “65살 이상 지하철 무료 승차, 연 6506억 편익…재정 부담은 가중” - 한겨레
+#25 ty-batch-1-p3:group-3:confirmation in=5 parts=[4, 1]
+   [0] 대구교통공사, 두류역서 도시철도 맞춤형 화재대응 합동훈련 실시 - 국제뉴스
+   [0] 대구 도시철도 화재 대응훈련…지하역사·3호선 대피 점검 - SK브로드밴드 회사소개
+   [0] 두류역서 짙은 연기 가정 화재훈련…대구도시철도 대응체계 점검 - 한국철도일보
+   [0] 대구교통공사, 대구소방안전본부와 도시철도 맞춤형 화재대응 합동훈련 실시 - 펜앤마이크
+   [1] 대구소방, 도시철도 화재대응 합동훈련 - 대구신문
+#25 ty-batch-1-p3:group-4:confirmation in=7 parts=[6, 1]
+   [0] 인천지하철 와이파이 빨라졌다…통신 3사 5G 서비스 첫 개시 - 이데일리
+   [0] 韓国・仁川地下鉄1・2号線の全車両で5G Wi-Fi開通、全国初…速度3倍に - BigGo ファイナンス
+   [0] 인천지하철 1·2호선 전 객차 5G 와이파이 개통…통신속도 최대 3.4배 빨라졌다 - 투어코리아
+   [0] 인천교통공사, 전국 최초 지하철 전 객차 5G Wi-Fi 시대 개막 … 통신속도 3배 껑충! - 경기매일
+   [0] 인천 지하철 1·2호선, 통신 3사 5G 와이파이 서비스 개시 - 지디넷코리아
+   [0] 인천교통공사, 인천지하철 전 객차 5G 기반 초고속 와이파이 서비스 본격 개시 - 경기도민일보 미디어
+   [1] 지하철 와이파이도 5G로…인천 1·2호선 통신 3사 전환 완료 - 스마트투데이
+#26 ntity-batch-1:group-2:confirmation in=5 parts=[4, 1]
+   [0] 国内最長の地下鉄環状線が全線開通―中国 - ライブドアニュース
+   [0] 中国武漢 国内最長の地下鉄環状線が全線開通 - AFPBB News
+   [0] 中国武漢 国内最長の地下鉄環状線が全線開通 - AFPBB News
+   [0] Wuhan’s first metro loop opens in full with 37 stations over 59.9 
+   [1] アジア最長の地下鉄環状線・武漢12号線が間もなく全線開通―中国 - ライブドアニュース
+#26 ntity-batch-1:group-4:confirmation in=12 parts=[12, 2, 1, 1]
+   [0] 기관 간 이견에 멈춰 선 위례선 트램 … 연내 개통 결국 무산 - 뉴데일리
+   [0] 공정률 97%인데 또 개통 연기…위례선 트램, 안전 절차에 발목 - 머니투데이 - 머니투데이
+   [0] “공사 97% 끝났는데”…안전절차 지연에 위례선 트램 개통 결국 연기 - 이데일리
+   [0] 위례선 트램, 12월 개통 무산…안전진단 추가로 내년 연기 - https://www.entv.kr/
+   [0] 서울시, ‘12월 예정’ 위례선 트램 개통 연기… “내년 상반기 중 일정 발표” - Chosunbiz
+   [0] 이번엔 안전진단 한다며… 위례트램 또 출발 못한다 - 문화일보
+   [0] 위례선 트램 12월 개통 연기…안전 절차 마친 뒤 일정 확정 - 전기신문
+   [0] 위례 트램, 연말 개통 또 '무산'…보행자·車 혼용구간 정리 안돼 - 한국경제
+   [0] 위례선 트램 올해 12월 개통 무산…새 일정은 내년 상반기 발표 - 한겨레
+   [0] '완공은 코앞인데…' 위례선 트램 내년 개통? - 비즈워치
+   [0] 이번엔 안전절차 발목… '위례선 트램' 개통 또 브레이크 - 머니투데이 - 머니투데이
+   [0] 서울시, ‘위례선 트램’ 개통 지연 최소화 총력 - 시정일보
+   [1] 공정률 97%인데 또 개통 연기…위례선 트램, 안전 절차에 발목 - 머니투데이 - 머니투데이
+   [1] 서울시, ‘위례선 트램’ 개통 지연 최소화 총력 - 시정일보
+   [2] 위례선 트램 올해 12월 개통 무산…새 일정은 내년 상반기 발표 - 한겨레
+   [3] “공사 97% 끝났는데”…안전절차 지연에 위례선 트램 개통 결국 연기 - 이데일리
+#26 batch-1-p2-n2:group-9:confirmation in=2 parts=[1, 1]
+   [0] 【画像】アジア最長の地下鉄環状線・武漢12号線が間もなく全線開通―中国 1/2 - ライブドアニュース
+   [1] アジア最長の地下鉄環状線・武漢12号線が間もなく全線開通―中国 - ライブドアニュース
+#26 ty-batch-1-p3:group-6:confirmation in=6 parts=[4, 1, 1]
+   [0] 国内最長の地下鉄環状線が全線開通―中国 - ライブドアニュース
+   [0] 中国武漢 国内最長の地下鉄環状線が全線開通 - AFPBB News
+   [0] 中国武漢 国内最長の地下鉄環状線が全線開通 - AFPBB News
+   [0] Wuhan’s first metro loop opens in full with 37 stations over 59.9 
+   [1] 【画像】国内最長の地下鉄環状線が全線開通―中国 - ライブドアニュース
+   [2] 【画像】中国・武漢で国内最長の地下鉄環状線開通 全長59.9キロ 1/11 - ライブドアニュース
+#26 y-batch-1-p3:group-15:confirmation in=2 parts=[1, 1]
+   [0] ソウル地下鉄2号線で停電 運行一時中断も復旧 - Chosunbiz
+   [1] 서울 지하철 2호선 서초역 인근 양방향 단전…운행 차질 - 뉴시스
+#26 y-batch-1-p3:group-17:confirmation in=9 parts=[8, 1]
+   [0] 유찰·계약무산 거친 동탄 트램, 우선시공분 공사 착수하며 재시동 - 아시아투데이
+   [0] “31.5㎞ 동탄 트램, 마침내 움직인다”…화성시, 33개 정거장 건설 첫발 - 주간한국
+   [0] "17년 숙원 풀었다"…화성시,'동탄 트램' 본격 착공 - 중앙이코노미뉴스
+   [0] 화성시의회, 6차례 유찰 끝 동탄트램 첫삽…본공사는 내년 - 서울경제TV
+   [0] 동탄트램 17년 만에 첫 삽…2031년 개통까지 남은 과제 - 광교신문
+   [0] 동탄트램 17년 만의 첫 삽, 화성시민 삶의 변화 시작…”출퇴근·통학길 달라진다" | - 뉴스로드
+   [0] 화성 ‘동탄 트램’ 마침내 첫 삽… 우선시공분 착수 - 서울뉴스통신
+   [0] 이계철 의장 "오랜 기다림 끝에 첫걸음 뗀 동탄 도시철도, 시민의 삶 바꾸는 교통 변화 기대" - 서울뉴스통신
+   [1] 정명근 화성시장 “17년 기다린 동탄트램 첫 삽”…2031년 개통 목표 본격 추진 - 투어코리아
+#26 batch-1-p3-n2:group-1:confirmation in=10 parts=[8, 1, 1]
+   [0] 유찰·계약무산 거친 동탄 트램, 우선시공분 공사 착수하며 재시동 - 아시아투데이
+   [0] “31.5㎞ 동탄 트램, 마침내 움직인다”…화성시, 33개 정거장 건설 첫발 - 주간한국
+   [0] "17년 숙원 풀었다"…화성시,'동탄 트램' 본격 착공 - 중앙이코노미뉴스
+   [0] 화성시의회, 6차례 유찰 끝 동탄트램 첫삽…본공사는 내년 - 서울경제TV
+   [0] 동탄트램 17년 만에 첫 삽…2031년 개통까지 남은 과제 - 광교신문
+   [0] 동탄트램 17년 만의 첫 삽, 화성시민 삶의 변화 시작…”출퇴근·통학길 달라진다" | - 뉴스로드
+   [0] 화성 ‘동탄 트램’ 마침내 첫 삽… 우선시공분 착수 - 서울뉴스통신
+   [0] 이계철 의장 "오랜 기다림 끝에 첫걸음 뗀 동탄 도시철도, 시민의 삶 바꾸는 교통 변화 기대" - 서울뉴스통신
+   [1] 정명근 화성시장 “17년 기다린 동탄트램 첫 삽”…2031년 개통 목표 본격 추진 - 투어코리아
+   [2] 화성시, 동탄트램 첫 삽…2031년 말 개통 목표 - SK브로드밴드 회사소개
+#29 ntity-batch-1:group-2:confirmation in=5 parts=[3, 1, 1]
+   [0] 国内最長の地下鉄環状線が全線開通―中国 - ライブドアニュース
+   [0] 中国武漢 国内最長の地下鉄環状線が全線開通 - AFPBB News
+   [0] 中国・武漢で国内最長の地下鉄環状線開通 全長59.9キロ (2026年10月31日掲載) - ライブドアニュース
+   [1] アジア最長の地下鉄環状線・武漢12号線が間もなく全線開通―中国 - ライブドアニュース
+   [2] [사진] '우한 지하철 12호선' 개통 축하하는 건설 근로자들 - 서울뉴스통신
+#29 ntity-batch-1:group-4:confirmation in=12 parts=[12, 3]
+   [0] 기관 간 이견에 멈춰 선 위례선 트램 … 연내 개통 결국 무산 - 뉴데일리
+   [0] 공정률 97%인데 또 개통 연기…위례선 트램, 안전 절차에 발목 - 머니투데이 - 머니투데이
+   [0] 위례선 트램 개통 연기...내년 상반기에 개통 일정 확정 - BBS불교방송
+   [0] 위례선 트램, 12월 개통 무산…안전진단 추가로 내년 연기 - https://www.entv.kr/
+   [0] 위례선 트램 올해 12월 개통 연기…서울시 "내년 상반기 중 확정 일정 발표" - 펜앤마이크
+   [0] 위례선 트램 12월 개통 연기…안전 절차 마친 뒤 일정 확정 - 전기신문
+   [0] 공사 97% 끝난 위례선 트램, 안전 심의 지연에 연내 개통 무산 - 한국일보
+   [0] 서울 첫 트램, 왜 못 달리나…내년 상반기로 개통 미뤄져 - 채널A
+   [0] 위례선 트램 올해 12월 개통 무산…새 일정은 내년 상반기 발표 - 한겨레
+   [0] ‘위례선 트램’ 12월 개통, 물 건너갔다 - 경향신문
+   [0] 이번엔 안전절차 발목… '위례선 트램' 개통 또 브레이크 - 머니투데이 - 머니투데이
+   [0] 서울시, ‘위례선 트램’ 개통 지연 최소화 총력 - 시정일보
+   [1] 공정률 97%인데 또 개통 연기…위례선 트램, 안전 절차에 발목 - 머니투데이 - 머니투데이
+   [1] 위례선 트램 12월 개통 연기…안전 절차 마친 뒤 일정 확정 - 전기신문
+   [1] 서울시, ‘위례선 트램’ 개통 지연 최소화 총력 - 시정일보
+#29 ntity-batch-1:group-7:confirmation in=4 parts=[3, 1]
+   [0] 雪梨地鐵西南延伸線通車：M1線延伸至Bankstown - 新聞與統計 - IndexBox
+   [0] シドニーメトロ南西延伸区間が開業、M1線はバンクスタウンまで66kmに - ニュースと統計 - IndexBox
+   [0] Ouverture du prolongement sud-ouest du métro de Sydney : la ligne 
+   [1] 'Absolutely ecstatic': Metro finally arrives at 130yo train statio
+#29 ty-batch-1-p2:group-5:confirmation in=2 parts=[1, 1]
+   [0] 광주도시철도 2호선 1단계 18개 역명 확정…2028년 12월 개통 목표 - https://www.theleader.c
+   [1] 'AX 실증밸리 선정' 광주교통공사, AI기반 도시철도 개발·실증 - 뉴시스
+#29 batch-1-p3-n2:group-4:confirmation in=12 parts=[2, 2, 1, 1, 1, 1, 1, 1, 1, 1]
+   [0] News by CNBC TV18 on TradingView, 2026-10-27 — cnbctv:97d5f25fa094
+   [0] L&T to supply track, power and signaling for Dhaka Metro Line 1 - 
+   [1] 東京メトロ，夜間線路保守車両にAI運転者支援システム「ポイントAI」を導入へ - 鉄道ファン・railf.jp
+   [1] 東京メトロ、AI画像認識の運転者支援システム「ポイントAI」を夜間線路保守車両に導入へ - クラウド Watch
+   [2] Tram T2, prime prove sui binari. Ma niente data esatta dell’apertu
+   [3] 地下鉄ホームでモバイルバッテリー燃える 一時運転見合わせ けが人なし 京都市 - 産経ニュース
+   [4] La Pintana tendrá Metro por primera vez: cuándo abrirá la Línea 9 
+   [5] 서울교통공사, 해외 6개국 도시철도 관계자와 운영 노하우 공유 - 로컬세계
+   [6] Metrovalencia, 62개 지하철 차량의 좌석 7,500개 교체 - Foro3D
+   [7] 부자 도시 뉴욕, 지하철은 왜 낙후됐을까 - 월간조선
+   [8] 東京メトロ東西線に「ぱとれーる」登場！ 子どもたちにも伝えたい「見えない仕事」とは？ - Tetsudo.com（鉄道コム）
+   [9] Metro de Madrid moderniza la Línea 6 con una inversión de 18 millo
+#29 batch-1-p3-n2:group-5:confirmation in=26 parts=[12, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+   [0] 기관 간 이견에 멈춰 선 위례선 트램 … 연내 개통 결국 무산 - 뉴데일리
+   [0] 공정률 97%인데 또 개통 연기…위례선 트램, 안전 절차에 발목 - 머니투데이 - 머니투데이
+   [0] 위례선 트램 개통 연기...내년 상반기에 개통 일정 확정 - BBS불교방송
+   [0] 위례선 트램, 12월 개통 무산…안전진단 추가로 내년 연기 - https://www.entv.kr/
+   [0] 위례선 트램 올해 12월 개통 연기…서울시 "내년 상반기 중 확정 일정 발표" - 펜앤마이크
+   [0] 위례선 트램 12월 개통 연기…안전 절차 마친 뒤 일정 확정 - 전기신문
+   [0] 공사 97% 끝난 위례선 트램, 안전 심의 지연에 연내 개통 무산 - 한국일보
+   [0] 서울 첫 트램, 왜 못 달리나…내년 상반기로 개통 미뤄져 - 채널A
+   [0] 위례선 트램 올해 12월 개통 무산…새 일정은 내년 상반기 발표 - 한겨레
+   [0] ‘위례선 트램’ 12월 개통, 물 건너갔다 - 경향신문
+   [0] 이번엔 안전절차 발목… '위례선 트램' 개통 또 브레이크 - 머니투데이 - 머니투데이
+   [0] 서울시, ‘위례선 트램’ 개통 지연 최소화 총력 - 시정일보
+   [1] アジア最長の地下鉄環状線・武漢12号線が間もなく全線開通―中国 - ライブドアニュース
+   [2] Pullaro busca que la licitación del tranvía metropolitano se reali
+   [3] En Nuevo León, la seguridad de las nuevas líneas del metro avanza 
+   [4] 광주도시철도 2호선 1단계 18개 역명 확정…2028년 12월 개통 목표 - https://www.theleader.c
+   [5] “서울지하철 배우러 왔어요”…해외 6개국 도시철도 관계자 서울교통공사 찾아 도시철도 운영 노하우 공유 - 데일리시사닷컴
+   [6] 'AX 실증밸리 선정' 광주교통공사, AI기반 도시철도 개발·실증 - 뉴시스
+   [7] 東京メトロ東西線「ぱとれーる」公開「もぐぱくん」車体ラッピング（マイナビニュース） - Yahoo!ニュース
+   [8] 대전 유성구, 복합재난 대응 훈련...지하철 역사 등 대응체계 점검 - 여성신문
+   [9] ホーチミン市メトロ2号線、全11駅で工事へ 2030年末の開業目指す - https://access-online.net/
+   [10] 지하철 7호선 장암역 내일(31일) 운행 재개…임시 역사 개통 - LG헬로비전
+   [11] 정량평가는 ‘배터리’, 정성평가서 ‘수소’로···대전참여연대 “트램 선정 과정 의문” - 경향신문
+   [12] L’extension du tramway vers le nord doit débuter en 2027 et entrai
+   [13] 빈스피드, 호치민시 ‘벤탄-껀저’ 도시철도 건설 본격화…2029년 개통 목표 - 인사이드비나
+   [14] Metro Line 1 will close early from November 2nd to 5th. - Napolike
+#30 ntity-batch-1:group-1:confirmation in=8 parts=[7, 1]
+   [0] Un incendio en la L1 del metro de Barcelona altera el servicio ent
+   [0] Incendio nella metro di Barcellona: 39 feriti, chiusa la linea 1 -
+   [0] Un incendio en el metro de Barcelona deja más de 130 afectados, va
+   [0] Un incendio en el metro de Barcelona deja 137 heridos por inhalaci
+   [0] Un desprendimiento sobre la catenaria del Metro de Barcelona gener
+   [0] Un incendio en la catenaria del metro obliga a desalojar las estac
+   [0] El metro de Barcelona funciona con “normalidad” tras el incendio e
+   [1] TMB confirma que el incendio del Metro de Barcelona comenzó al ard
+#30 ty-batch-1-p2:group-4:confirmation in=2 parts=[2, 1]
+   [0] 국내최초 무인전철 인천도시철도 2호선 개통 10주년 - Hankookilbo
+   [0] [썰물밀물] 개통 10주년 맞은 인천도시철도 2호선의 미래 - 인천일보
+   [1] [썰물밀물] 개통 10주년 맞은 인천도시철도 2호선의 미래 - 인천일보
+#30 batch-1-p2-n2:group-1:confirmation in=2 parts=[1, 1]
+   [0] Gera schickt seine neue Straßenbahn in den Härtetest - MDR.de
+   [1] Melbourne’s First G Class Tram Enters Passenger Service - Railway 
+#31 ty-batch-1-n2:group-1:confirmation in=9 parts=[8, 1]
+   [0] Un incendio en la L1 del metro de Barcelona altera el servicio ent
+   [0] Incendio nella metro di Barcellona: 39 feriti, chiusa la linea 1 -
+   [0] Extinguido el incendio en la L1 del metro de Barcelona, tras oblig
+   [0] Un incendio en el metro de Barcelona deja más de 130 afectados, va
+   [0] Un incendio en la catenaria del metro de Barcelona obliga a desalo
+   [0] Un incendio en el metro de Barcelona deja 137 heridos por inhalaci
+   [0] Un desprendimiento sobre la catenaria del Metro de Barcelona gener
+   [0] Un incendio en la catenaria del metro obliga a desalojar las estac
+   [1] El metro de Barcelona funciona con “normalidad” tras el incendio e
+#31 ty-batch-1-p2:group-2:confirmation in=2 parts=[1, 1]
+   [0] 김상욱 "울산도시철도, 실시계획 확정 전에 이미 발주 계약? 의아해" - OhmyNews
+   [1] 존폐 갈림길 울산 도시철도 1호선 사업, 이번주 결론 낸다 - 한겨레
+#31 ty-batch-1-p2:group-3:confirmation in=14 parts=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+   [0] IEC 61373:2026: Railway applications - Rolling stock equipment - S
+   [1] 【なぜ？】＜路面電車トラブル＞信号を無視したら…前後の車輪が別々の線路に入り込む 復旧めど立たず 熊本市電 - TBS NEWS D
+   [2] Gera schickt seine neue Straßenbahn in den Härtetest - MDR.de
+   [3] Lavori in due stazioni, caos per la Metro storica di Napoli - il F
+   [4] 危険な「地下鉄サーフィン」に警鐘 走行中の車両の屋根に乗り動画撮影、死亡事故相次ぐ アメリカ・ニューヨーク - FNNプライムオンラ
+   [5] TMB confirma que el incendio del Metro de Barcelona comenzó al ard
+   [6] ホームと反対のドア開く 東京メトロ車両けが人なし - 47NEWS
+   [7] Straßenbahn-Maßnahmenprogramm bis 2035: ÖPNV: Neue Linien und Sani
+   [8] Metro de Lisboa altera circulação na Linha Azul em agosto: saiba o
+   [9] 서울 지하철 전동킥보드 반입 금지…리튬배터리 화재로부터 시민안전 지킨다 - 세이프티퍼스트닷뉴스
+   [10] Melbourne’s First G Class Tram Enters Passenger Service - Railway 
+   [11] CRRC Delivers Seven Trains for Shanghai Metro Line 22 - Railway Su
+   [12] Singapore MRT Automation Moves Into Depot Maintenance - Railway Su
+   [13] [썰물밀물] 개통 10주년 맞은 인천도시철도 2호선의 미래 - 인천일보
+#31 batch-1-p2-n2:group-1:confirmation in=10 parts=[8, 1, 1]
+   [0] Un incendio en la L1 del metro de Barcelona altera el servicio ent
+   [0] Incendio nella metro di Barcellona: 39 feriti, chiusa la linea 1 -
+   [0] Extinguido el incendio en la L1 del metro de Barcelona, tras oblig
+   [0] Un incendio en el metro de Barcelona deja más de 130 afectados, va
+   [0] Un incendio en la catenaria del metro de Barcelona obliga a desalo
+   [0] Un incendio en el metro de Barcelona deja 137 heridos por inhalaci
+   [0] Un desprendimiento sobre la catenaria del Metro de Barcelona gener
+   [0] Un incendio en la catenaria del metro obliga a desalojar las estac
+   [1] TMB confirma que el incendio del Metro de Barcelona comenzó al ard
+   [2] El metro de Barcelona funciona con “normalidad” tras el incendio e
+#32 ntity-batch-1:group-3:confirmation in=8 parts=[7, 1]
+   [0] 지하철 1호선 의왕∼성균관대역 선로서 60대 사망…한때 운행 지연 - 중앙일보
+   [0] 지하철 1호선 의왕∼성균관대역 선로서 60대 남성 사망 - Chosunbiz
+   [0] 지하철 1호선 의왕∼성균관대역 선로서 60대 치여 사망 - 국제뉴스
+   [0] 地下鉄1号線で60代男性死亡 上り2時間超遅延 - Chosunbiz
+   [0] 지하철 1호선 의왕∼성균관대역 선로서 60대 열차에 치여 사망 - OBS경인TV
+   [0] 지하철 1호선 의왕~성균관대역 선로서 60대 남성 사망…열차 지연 - 한국일보
+   [0] 선로서 60대 열차에 치여 사망…지하철 1호선 의왕~성균관대역 2시간 지연 - 위키트리
+   [1] Paura in corso Unione Sovietica, tram deraglia e invade la carregg
+#32 ntity-batch-1:group-5:confirmation in=2 parts=[1, 1]
+   [0] 대전참여연대 "수소트램, 왜 선택했나... 결정 과정 공개하라" - OhmyNews
+   [1] 또 흔들리는 대전도시철도 2호선···공기 지연에 수소트램 재검토 요구까지 - 경향신문
+#32 ntity-batch-1:group-6:confirmation in=12 parts=[10, 2]
+   [0] 끝없이 늦어지는 광주 도시철도2호선…2단계 개통 2035년으로 - 폴리뉴스 Polinews
+   [0] 광주도시철도 2호선 1단계 2028년·2단계 2035년 개통…총사업비 3조2천억으로 늘어난다 - 산경일보
+   [0] 광주도시철도 2호선 전 구간 개통 2035년 말…1단계 1년·2단계 5년 각각 연기 - 더팩트
+   [0] '또 연기된' 광주 지하철 2호선…완공 5년 늦추고 사업비는 3조 2000억 '눈덩이' - 프레시안
+   [0] 광주도시철도 2호선 개통 또 지연…전구간 개통 2030년→2035년 - 문화일보
+   [0] 광주지하철 2호선 공사 또 연기…1단계 2028년·2단계 2035년 개통 - 한겨레
+   [0] 광주 도시철도 2호선 또 차질···개통 5년 늦고 사업비는 2배 가까이 - 경향신문
+   [0] 광주도시철도 2호선 개통 최장 5년 연기...16년 공사, 공사비 2배 가량 증가 - BBS불교방송
+   [0] 광주도시철도2호선 1단계 개통, "2028년 12월로 미뤄져, 시민 발목" 잡아 - 무등뉴스
+   [0] 광주 도시철도2호선, 개통 늦어진다…1단계 2028년·2단계 2035년 - AI타임스
+   [1] 광주 도시철도 2호선 '양산-첨단·수완-신가, 먼저 개통' - OhmyNews
+   [1] 광주 도시철도 2호선,양산~첨단·수완~신가 11.9km 우선 개통 추진 - 한국철도일보
+#32 batch-1-p2-n2:group-3:confirmation in=6 parts=[3, 3]
+   [0] 끝없이 늦어지는 광주 도시철도2호선…2단계 개통 2035년으로 - 폴리뉴스 Polinews
+   [0] 광주도시철도 2호선 전 구간 개통 2035년 말…1단계 1년·2단계 5년 각각 연기 - 더팩트
+   [0] 광주도시철도 2호선 개통 또 지연…전구간 개통 2030년→2035년 - 문화일보
+   [1] 광주 도시철도 2호선 '양산-첨단·수완-신가, 먼저 개통' - OhmyNews
+   [1] 광주도시철도2호선 1단계 개통, "2028년 12월로 미뤄져, 시민 발목" 잡아 - 무등뉴스
+   [1] 광주 도시철도 2호선,양산~첨단·수완~신가 11.9km 우선 개통 추진 - 한국철도일보
+#32 ty-batch-1-p3:group-2:confirmation in=2 parts=[1, 1]
+   [0] 김민석 "지하철 인력 감축 안전문제 국감서 점검" - 신아일보
+   [1] 김민석 민주당 대표 “서울 지하철 인력 감축, 안전 우려”…국감 점검 예고 - 서울뉴스통신
+#33 ty-batch-1-n2:group-3:confirmation in=4 parts=[3, 1]
+   [0] 雪梨地鐵西南延伸線通車：M1線延伸至Bankstown - 新聞與統計 - IndexBox
+   [0] Ouverture du prolongement sud-ouest du métro de Sydney : la ligne 
+   [0] Una vía de tren de 130 años convertida en metro sin conductor: Síd
+   [1] 'Absolutely ecstatic': Metro finally arrives at 130yo train statio
+#33 ty-batch-1-n2:group-7:confirmation in=8 parts=[4, 1, 1, 1, 1]
+   [0] [사진] 中 최장 지하철 순환선 '우한 12호선' 전 구간 개통 - 동방일보
+   [0] [사진] '우한 지하철 12호선' 개통 축하하는 건설 근로자들 - 동방일보
+   [0] 国内最長の地下鉄環状線が全線開通―中国 - ライブドアニュース
+   [0] 中国武漢 国内最長の地下鉄環状線が全線開通 - AFPBB News
+   [1] 【画像】中国・武漢で国内最長の地下鉄環状線開通 全長59.9キロ 3/11 - ライブドアニュース
+   [2] 【画像】中国・武漢で国内最長の地下鉄環状線開通 全長59.9キロ 4/11 - ライブドアニュース
+   [3] 【画像】中国・武漢で国内最長の地下鉄環状線開通 全長59.9キロ 5/11 - ライブドアニュース
+   [4] 【画像】中国・武漢で国内最長の地下鉄環状線開通 全長59.9キロ 1/11 - ライブドアニュース
+#33 ty-batch-1-p2:group-3:confirmation in=10 parts=[8, 1, 1]
+   [0] "17년 숙원 풀었다"…화성시,'동탄 트램' 본격 착공 - 중앙이코노미뉴스
+   [0] 동탄트램 17년 만에 첫 삽…2031년 개통까지 남은 과제 - 광교신문
+   [0] 동탄트램 17년 만의 첫 삽, 화성시민 삶의 변화 시작…”출퇴근·통학길 달라진다" | - 뉴스로드
+   [0] 화성 ‘동탄 트램’ 마침내 첫 삽… 우선시공분 착수 - 서울뉴스통신
+   [0] 이계철 의장 "오랜 기다림 끝에 첫걸음 뗀 동탄 도시철도, 시민의 삶 바꾸는 교통 변화 기대" - 서울뉴스통신
+   [0] 화성시, 동탄트램 첫 삽…2031년 말 개통 목표 - SK브로드밴드 회사소개
+   [0] 2031년 목표로 '동탄 트램' 첫 삽…서·남동탄 부동산 기대감 - 뉴시스
+   [0] 다시 주목받는 트램…동탄 17년 만에 첫발, 용인·의정부 경전철의 교훈 - 광교신문
+   [1] 트램이 초래할 동탄신도시 지각변동…교통사각지대 서·남동탄 단지도 들썩 - 땅집고
+   [2] “31.5㎞ 동탄 트램, 마침내 움직인다”…화성시, 33개 정거장 건설 첫발 - 주간한국
+#33 batch-1-p2-n2:group-5:confirmation in=10 parts=[9, 1]
+   [0] “31.5㎞ 동탄 트램, 마침내 움직인다”…화성시, 33개 정거장 건설 첫발 - 주간한국
+   [0] "17년 숙원 풀었다"…화성시,'동탄 트램' 본격 착공 - 중앙이코노미뉴스
+   [0] 동탄트램 17년 만에 첫 삽…2031년 개통까지 남은 과제 - 광교신문
+   [0] 동탄트램 17년 만의 첫 삽, 화성시민 삶의 변화 시작…”출퇴근·통학길 달라진다" | - 뉴스로드
+   [0] 화성 동탄 트램 17년 만에 첫 삽…2031년 개통 목표 - OBS경인TV
+   [0] 화성 ‘동탄 트램’ 마침내 첫 삽… 우선시공분 착수 - 서울뉴스통신
+   [0] 이계철 의장 "오랜 기다림 끝에 첫걸음 뗀 동탄 도시철도, 시민의 삶 바꾸는 교통 변화 기대" - 서울뉴스통신
+   [0] 2031년 목표로 '동탄 트램' 첫 삽…서·남동탄 부동산 기대감 - 뉴시스
+   [0] 다시 주목받는 트램…동탄 17년 만에 첫발, 용인·의정부 경전철의 교훈 - 광교신문
+   [1] 화성시, 동탄트램 첫 삽…2031년 말 개통 목표 - SK브로드밴드 회사소개
+#33 ty-batch-1-p3:group-5:confirmation in=9 parts=[8, 1]
+   [0] Línea B del Metro CDMX sin servicio a Ciudad Azteca por incendio -
+   [0] Línea B del Metro suspende servicio por incendio: ¿A qué hora reab
+   [0] Incendio deja sin servicio la Línea B del Metro - Once Noticias Di
+   [0] Incendio afecta la Línea B del Metro CDMX: estas son las 11 estaci
+   [0] Incendio en el Metro CDMX: suspenden estas estaciones de la Línea 
+   [0] Metro CDMX reporta un detenido tras incendio que dañó la Línea B -
+   [0] Incendio en la línea B del Metro CDMX afecta servicio; reanuda sol
+   [0] Incendio en la estación Oceanía de la Línea B del Metro por quema 
+   [1] Captan humo en estación Tlatelolco del Metro CDMX; reportan retras
+#34 ntity-batch-1:group-4:confirmation in=2 parts=[1, 1]
+   [0] Cracovia inaugura la cuarta fase de su red de tranvía rápido - Ind
+   [1] Bijzondere rit: tram 19 van station Delft door naar TU Delft Campu
+#34 ntity-batch-1:group-5:confirmation in=2 parts=[1, 1]
+   [0] 박현규 대구시의원 "도시철도 4호선 차량형식 결정 근거 공개하라" - 뉴시스
+   [1] 김포시장 "지하철 5호선 내 집 앞 역도 좋지만 조기 개통이 먼저" - 한국일보
+#34 tity-batch-1:group-11:confirmation in=8 parts=[1, 1, 1, 1, 1, 1, 1, 1]
+   [0] 울산 트램 차량기지 입지 변경 불가피…추가 비용 발생 ‘부담’ - 울산매일 - 울산최초, 최고의 조간신문
+   [1] 울산 수소트램 차량기지 옮긴다···고압가스관 ‘걸림돌’ - 수소신문
+   [2] 울산 트램 1호선 차량기지 대체부지 찾는다···태화강역 고압가스관 등 ‘걸림돌’ - 경향신문
+   [3] 울산 트램 차량기지 이전 불가피…공기·비용↑ - 뉴시스
+   [4] 태화강역 조성 예정 트램 차량기지 변경 - 울산신문
+   [5] [이슈앤이슈] 최적지였던 울산 트램 차량기지 왜 옮기나…사업계획 다시 시험대 - 아주경제
+   [6] 가스관·연약지반에 '발목'… 울산 트램 차량기지 이전 추진 - 한국일보
+   [7] 울산시, 태화강역 트램 1호선 차량기지 이전 추진 - 울산시민신문
+#34 tity-batch-1:group-12:confirmation in=2 parts=[1, 1]
+   [0] 민형배 "도시철도 2호선 2035년 개통, 쉽지 않아" - OhmyNews
+   [1] 정진철 서울시의원 “위례선 트램 12월 개통 약속 지킬 수 있도록 관계 기관 총력 대응 촉구” - 서울일보
+#34 tity-batch-1:group-17:confirmation in=5 parts=[4, 1]
+   [0] 대구교통공사, 소방본부와 '도시철도 화재대응' 합동훈련 실시 - BBS불교방송
+   [0] 대구교통공사, 두류역서 도시철도 맞춤형 화재대응 합동훈련 실시 - 국제뉴스
+   [0] “지하철에 불이 난다면”…대구교통공사, 11월까지 실전형 화재 대응훈련 - 아이뉴스24
+   [0] 대구 도시철도 화재 대응훈련…지하역사·3호선 대피 점검 - SK브로드밴드 회사소개
+   [1] 대구소방, 도시철도 지하·고가 맞춤 화재훈련 - 경북일보
+#34 tity-batch-1:group-19:confirmation in=3 parts=[2, 1]
+   [0] 韓国・仁川地下鉄1・2号線の全車両で5G Wi-Fi開通、全国初…速度3倍に - BigGo ファイナンス
+   [0] 인천교통공사, 전국 최초 지하철 전 객차 5G Wi-Fi 시대 개막… 통신속도 3배 껑충 - 서울일보
+   [1] 지하철 와이파이도 5G로…인천 1·2호선 통신 3사 전환 완료 - 스마트투데이
+#34 tity-batch-1:group-26:confirmation in=4 parts=[3, 1]
+   [0] 国内最長の地下鉄環状線が全線開通―中国 - ライブドアニュース
+   [0] 中国武漢 国内最長の地下鉄環状線が全線開通 - AFPBB News
+   [0] 中国・武漢で国内最長の地下鉄環状線開通 全長59.9キロ - ライブドアニュース
+   [1] アジア最長の地下鉄環状線・武漢12号線が間もなく全線開通―中国 - Infoseek
+#34 ty-batch-1-n2:group-6:confirmation in=2 parts=[1, 1]
+   [0] [2026 국감] 5년간 서울 지하철 안전사고로 4430명 부상 - 신아일보
+   [1] 지하철 노인 무임승차 '6500억 효과'..."연령은 65→70세 높여야" - 머니투데이 - 머니투데이
+#34 ty-batch-1-n2:group-9:confirmation in=2 parts=[1, 1]
+   [0] 정진철 서울시의원 “위례선 트램 12월 개통 약속 지킬 수 있도록 관계 기관 총력 대응 촉구” - 서울일보
+   [1] 성남시의회, 위례선 트램 개통 초읽기…안전대책 촉구 - 서울경제TV
+#34 y-batch-1-n2:group-15:confirmation in=2 parts=[1, 1]
+   [0] Why some train doors will not open when final section of Sydney’s 
+   [1] ‘We are very close’: Opening date narrows for final stage of Sydne
+#34 ty-batch-1-p2:group-2:confirmation in=6 parts=[4, 3]
+   [0] '또 연기된' 광주 지하철 2호선…완공 5년 늦추고 사업비는 3조 2000억 '눈덩이' - 프레시안
+   [0] 광주 도시철도 2호선 또 연기…‘2035년’ 시민들 믿을 수 있나 - 서울경제TV
+   [0] 광주도시철도 2호선 개통 최장 5년 연기...16년 공사, 공사비 2배 가량 증가 - BBS불교방송
+   [0] 광주 도시철도2호선, 개통 늦어진다…1단계 2028년·2단계 2035년 - AI타임스
+   [1] 광주 도시철도 2호선 양산동~첨단·수완·신가지구 우선 개통 - 아시아투데이
+   [1] 광주 도시철도 2호선 '양산-첨단·수완-신가, 먼저 개통' - OhmyNews
+   [1] 광주 도시철도2호선, 개통 늦어진다…1단계 2028년·2단계 2035년 - AI타임스
+#34 y-batch-1-p2:group-11:confirmation in=2 parts=[1, 1]
+   [0] 서울시, 위례선 트램 교통시설 안전진단 착수···연내 개통 목표 - 경향신문
+   [1] 정진철 서울시의원 “위례선 트램 12월 개통 약속 지킬 수 있도록 관계 기관 총력 대응 촉구” - 서울일보
+#34 ty-batch-1-p3:group-9:confirmation in=3 parts=[2, 1]
+   [0] 地下鉄ホームでモバイルバッテリー燃える 一時運転見合わせ けが人なし 京都市 - 産経ニュース
+   [0] 地下鉄駅でバッテリー発火、京都 けが人なし（共同通信） - Yahoo!ニュース
+   [1] 10月12日 京都市営地下鉄東西線開業 1997（平成9）年｜京都新聞デジタル 京都・滋賀のニュースサイト - 京都新聞デジタル
+#34 y-batch-1-p3:group-18:confirmation in=2 parts=[1, 1]
+   [0] ウクライナの首都キーウの地下鉄施設損傷 ロシア攻撃で1人死亡24人負傷 - FNNプライムオンライン
+   [1] ロシアがキーウ攻撃、1人死亡 地下鉄駅や医療施設に被害＝市長（ロイター） - Yahoo!ニュース
+#34 y-batch-1-p3:group-19:confirmation in=2 parts=[1, 1]
+   [0] Métropole de Lyon : le tramway T9 ne sera pas mis en service avant
+   [1] 리옹 T10 트램, 베니시외에서 야간 신호 시스템 테스트 - Foro3D
+#34 y-batch-1-p3:group-20:confirmation in=2 parts=[1, 1]
+   [0] Tram CAF Urbos: ottenuta la circolabilità sugli itinerari del 3L e
+   [1] Tram T2, prime prove sui binari. Ma niente data esatta dell’apertu
+#34 batch-1-p3-n2:group-5:confirmation in=2 parts=[1, 1]
+   [0] アジア最長の地下鉄環状線・武漢12号線が間もなく全線開通―中国 - Infoseek
+   [1] 中国・武漢で国内最長の地下鉄環状線開通 全長59.9キロ - ライブドアニュース
+#34 batch-1-p3-n2:group-9:confirmation in=2 parts=[1, 1]
+   [0] Tram CAF Urbos: ottenuta la circolabilità sugli itinerari del 3L e
+   [1] Tram per Villa d’Almè, da novembre le prove tecniche. A inizio 202
