@@ -3013,6 +3013,19 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 | C22 | 其他 Category 未分類出口 | 建議、資料不足、無唯一主要行動幾乎都正確；【画像】圖庫頁通過 Evidence 但只有圖說，連帶造成資料不足與 EI 拆分（只觀測）。 | — | 否 |
 | C23 | 重複列出成員的來源 | 批次提案回答 14／50（28%）重複列出成員，確認回答很少（12 筆以上的群組為 2／13）。依 RC-42 被淘汰的成員因此不會合併，構成 C18 的提案遺漏。 | EI helper | 否（量測包 §7） |
 
+| C24 | Evidence 焦點中的付費牆或登入介面文字 | 600 則中有 19 則（3%）、其中 6 則進入正式報告；屬已知類型（§A.26），資訊增益低。 | EvidenceService | 否 |
+| C25 | 地點擷取層級（R2） | 正式報告「地點」340 次中 302 次（89%）為城市層級，約 11% 為區或車站。R2 存在但屬少數，R1 參照表缺口是更普遍的原因。 | EvidenceService metadata | 否 |
+
+- Phase C 最終回歸：
+  - targeted 168 passed；
+  - 完整測試 1544 passed、5 skipped；
+  - clean export 結果相同；
+  - Event Identity 重放：7 次執行差異 0。
+- 停止原因：約 Asia/Taipei 05:00，因本工作階段的 context 預算（平台限制）而停止，不是因為清單完成。
+- 尚未執行的方向（須外部資源）：
+  - 頁面 HTML 結構 fixture（D5）；
+  - helper 付費量測（R7、Scope 穩定性、Category v6）。
+
 - 本階段新增的 production 修改都依既有契約，且都只經離線測試：
   - geo-reference-v5；
   - Writer v9（幣別）；
