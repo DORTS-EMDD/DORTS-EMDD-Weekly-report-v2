@@ -2787,7 +2787,7 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 
 ### 71.8 驗證與狀態
 
-- 完整離線測試：1532 passed、5 skipped。
+- 完整離線測試：1533 passed、5 skipped。
 - clean export（git archive HEAD）：結果相同。
 - Event Identity 重放：5 次執行差異為 0。
 - 任何修正都未經 Live 驗收。
