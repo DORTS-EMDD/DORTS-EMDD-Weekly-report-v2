@@ -226,3 +226,8 @@ inputs × 2 prompts × 3).
   were never proposed together by any nomination; only 2 were split by a
   confirmation. Report batch-recall misses alongside the M-C confirmation
   result.
+* **Count duplicate membership per answer.** 14 of 50 batch nomination
+  answers in runs #24–#34 named some record twice; confirmations rarely did.
+  Every such member is rejected (RC-42) and is not merged through that
+  group. Report this rate per prompt, because it is part of the batch-recall
+  loss.
