@@ -210,7 +210,7 @@ WRITER_INSTRUCTIONS = (
     "Amounts and magnitudes: keep the number and its magnitude word as the evidence states them, or convert only with these exact factors: thousand = 千, million = 百萬, billion = 十億, trillion = 兆, lakh = 十萬, crore = 千萬, 만/万 = 萬, 억 = 億, 조 = 兆 (for example ₹5,000 crore = 500億印度盧比, €16.4 million = 1,640萬歐元, 300억 원 = 300億韓元). When unsure, keep the evidence's own number and unit (for example ₹5,000～10,000 crore). Never add a converted value, a unit conversion or a total that the evidence does not state. Name a currency only as specifically as the evidence names it: a sign or word shared by several currencies ($, ¥, Rs, 元, dollars, kroner) stays as written (for example $19.3億 or 5億元), and never becomes a currency the evidence does not name (美元, 日圓, 新臺幣 ...). The same shared word in another language, such as 달러, ドル or dólares, is written with its sign in the Traditional Chinese prose (19억 달러 or 19億ドル = $19億), not as 美元; write 美元 only when the evidence itself says US dollars (美元, 米ドル, 미국 달러, US$).",
     "The reported event is the one described by event_focus, which quotes the evidence sentences that identify it: write the headline and factual_summary about that event, use the rest of the evidence only for details of the same event, and never report another event the article mentions.",
     "Keep a proper name of a place, line, station, product or organization in its original form unless the evidence gives its Chinese name or it has a widely established Traditional Chinese name; never guess a translation.",
-    "Korean and Japanese names: use the established Traditional Chinese name when one exists (for example 蔚山, 光州, 慶尚南道, 名古屋, 東京地下鐵); otherwise keep the complete original name unchanged. Never mix scripts inside one name or word (not 경남道長 or 울산市議會).",
+    "Korean and Japanese names: use the established Traditional Chinese name when one exists (for example 蔚山, 光州, 慶尚南道, 名古屋, 東京地下鐵); otherwise keep the complete original name unchanged. Never mix scripts inside one name or word (not 경남道長 or 울산市議會). A kept Korean name is set off from the Chinese text around it with 「」 (for example 與「애나」簽署 or 「명덕역」新設出入口), because written directly against Chinese characters it reads as one fused word.",
     "Translate technical terms into Traditional Chinese; do not leave common English words such as turnkey untranslated.",
     "When the request contains a correction, rewrite the previous block so that every listed statement is removed or corrected to match the evidence, keep the supported statements, and add no new facts.",
     "Return JSON only with exactly event_id, headline, factual_summary, taipei_insight.",
@@ -235,7 +235,7 @@ def build_maiagent_writer_model_input(result: ReportWorkflowResult) -> dict[str,
         raise ValueError("Writer requires authoritative substantive content")
     return {
         "task_identity": "formal_report_writer",
-        "prompt_version": "formal-report-writer-v9",
+        "prompt_version": "formal-report-writer-v10",
         "schema_version": "writer-report-block-v1",
         "instructions": list(WRITER_INSTRUCTIONS),
         "writer_request": {

@@ -93,3 +93,20 @@ def test_writer_insight_must_be_specific_and_not_assert_taipei_status():
     text = " ".join(WRITER_INSTRUCTIONS)
     assert "avoid generic advice that would fit any event" in text
     assert "rail system in Taiwan" in text
+
+
+def test_a_kept_korean_name_passes_only_when_set_off_from_chinese_text():
+    # RC-66, from runs 40817530617 and 40999869397 (광주교통공사 and ㈜애나): RC-20
+    # lets the Writer keep a complete Korean name, but Chinese prose has no
+    # spaces, so the name written directly against Chinese characters is a
+    # fused word. Set off with 「」 it is a kept name (formal-report-writer-v10).
+    assert _mixed_script_words("光州交通公社與애나公司簽署協議") != []
+    assert _mixed_script_words("光州交通公社與「애나」公司簽署協議") == []
+    assert _mixed_script_words("大邱都市鐵道「명덕역」新設出入口") == []
+
+
+def test_the_writer_instruction_says_to_set_off_a_kept_korean_name():
+    from src.weekly_report import writer
+
+    text = "\n".join(item for value in vars(writer).values() if isinstance(value, tuple) for item in value if isinstance(item, str))
+    assert "A kept Korean name is set off from the Chinese text around it with 「」" in text

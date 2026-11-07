@@ -906,12 +906,14 @@ carries the same risk.
   unit conversion or total the source does not state, and names a currency
   only as specifically as the source names it: a sign or word shared by
   several currencies ($, ¥, Rs, 元, dollars, kroner) stays as written
-  (formal-report-writer-v8). RC-66 (formal-report-writer-v9): the same shared
+  (formal-report-writer-v8). RC-66 (formal-report-writer-v9, v10): the same shared
   word in another language (달러, ドル, dólares) is written with its sign
   ($19億), because it cannot stay as written in Traditional Chinese prose
   (Korean letters would be fused script). 美元 is written only when the source
   says US dollars. The Validator reads 미국 달러 and 미 달러 as US dollars, as it
-  already read 米ドル and 美元.
+  already read 米ドル and 美元. v10 (RC-20 names, applied): a kept Korean name
+  is set off with 「」, because without spaces it is a fused word under the
+  Validator's existing rule (與「애나」簽署, not 與애나公司簽署).
 * **Validator (owner of the check, deterministic).** Before the helper call,
   every Writer quantity in `headline`, `factual_summary` and `taipei_insight`
   that states a unit or currency, or is at least 10,000 (including magnitude
