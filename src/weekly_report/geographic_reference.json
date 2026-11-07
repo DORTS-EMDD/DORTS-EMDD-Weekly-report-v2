@@ -1,6 +1,6 @@
 {
- "reference_version": "geo-reference-v4",
- "effective_date": "2026-10-28",
+ "reference_version": "geo-reference-v5",
+ "effective_date": "2026-11-08",
  "basis": {
   "region_ids": "ISO 3166-1 alpha-2 codes (HK and MO as their ISO-assigned codes).",
   "region_display_names": "Traditional Chinese names used for formal DORTS reports.",
@@ -891,7 +891,15 @@
     "삿포로",
     "센다이",
     "橫濱",
-    "神戶"
+    "神戶",
+    "Kumamoto",
+    "Okayama",
+    "高知",
+    "高知市",
+    "熊本",
+    "熊本市",
+    "岡山",
+    "岡山市"
    ],
    "systems": [
     "Tokyo Metro",
@@ -901,7 +909,13 @@
     "Osaka Metro",
     "大阪メトロ",
     "Hiroshima Electric Railway",
-    "広島電鉄"
+    "広島電鉄",
+    "Tosaden",
+    "とさでん交通",
+    "熊本市電",
+    "Kumamoto City Tram",
+    "岡山電気軌道",
+    "Okaden"
    ]
   },
   {
@@ -933,14 +947,19 @@
     "仁川",
     "大邱",
     "光州",
-    "蔚山"
+    "蔚山",
+    "Uijeongbu",
+    "의정부",
+    "의정부시",
+    "議政府"
    ],
    "systems": [
     "Seoul Metro",
     "서울교통공사",
     "서울 지하철",
     "Busan Metro",
-    "부산교통공사"
+    "부산교통공사",
+    "의정부경전철"
    ]
   },
   {
@@ -1310,7 +1329,8 @@
     "Rostock",
     "Erfurt",
     "Würzburg",
-    "Bielefeld"
+    "Bielefeld",
+    "Gera"
    ],
    "systems": [
     "BVG",
@@ -1445,12 +1465,16 @@
     "Vitoria-Gasteiz",
     "Alicante",
     "Murcia",
-    "Santa Cruz de Tenerife"
+    "Santa Cruz de Tenerife",
+    "Jaén",
+    "Jaen",
+    "València"
    ],
    "systems": [
     "Metro de Madrid",
     "Metro de Barcelona",
-    "TMB"
+    "TMB",
+    "Metrovalencia"
    ]
   },
   {

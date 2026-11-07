@@ -49,10 +49,40 @@ def _evaluate(observations, body):
     )
 
 
+class DesignatedUrbanRailCitiesV5Tests(unittest.TestCase):
+    """RC-66 (section A.22 rule, applied): geo-reference-v5 adds urban-rail cities and
+    systems of designated regions that real REGION_NOT_ESTABLISHED losses showed
+    missing (runs 41977624472, 41984480598, 42186338279 and earlier)."""
+
+    def test_missing_designated_urban_rail_places_now_resolve(self):
+        reference = default_geographic_reference()
+        expected = {
+            "高知市": "JP", "とさでん交通": "JP", "熊本市": "JP", "熊本市電": "JP",
+            "岡山市": "JP", "岡山電気軌道": "JP", "의정부": "KR", "의정부경전철": "KR",
+            "Gera": "DE", "Jaén": "ES", "València": "ES", "Metrovalencia": "ES",
+        }
+        for name, region in expected.items():
+            with self.subTest(name=name):
+                match = reference.lookup(name)
+                self.assertIsNotNone(match)
+                self.assertEqual(match.region_id, region)
+
+    def test_no_existing_name_changes_and_shared_names_stay_unresolved(self):
+        reference = default_geographic_reference()
+        # Kochi is Kochi Metro's city in India; the Japanese city is added only
+        # in Japanese script, so the Latin name keeps its existing resolution.
+        self.assertEqual(reference.lookup("Kochi").region_id, "IN")
+        for name in ("Valencia", "Santiago"):
+            self.assertIs(reference.lookup(name).kind, GeographicMatchKind.AMBIGUOUS)
+        # Districts, lines and stations are not cities (RC-28): still unresolved.
+        for name in ("江東区", "東西線", "장암역", "위례선"):
+            self.assertIsNone(reference.lookup(name) or reference.lookup_contained(name))
+
+
 class GeographicReferenceTests(unittest.TestCase):
     def test_reference_is_versioned_and_matches_whole_values_only(self):
         reference = default_geographic_reference()
-        self.assertEqual(reference.version, "geo-reference-v4")
+        self.assertEqual(reference.version, "geo-reference-v5")
         self.assertEqual(reference.lookup("vietnam").kind, GeographicMatchKind.REGION)
         self.assertEqual(reference.lookup("Hanoi Metro").kind, GeographicMatchKind.SYSTEM)
         self.assertEqual(reference.lookup("Hanoi").kind, GeographicMatchKind.CITY)
@@ -89,7 +119,7 @@ class RegionResolutionTests(unittest.TestCase):
         resolution = _resolve(system="Hanoi Metro")
         self.assertEqual(
             (resolution.basis, resolution.region_id, resolution.source_field, resolution.reference_version),
-            (RegionResolutionBasis.REFERENCE_MAPPED, "VN", "transit_system_name", "geo-reference-v4"),
+            (RegionResolutionBasis.REFERENCE_MAPPED, "VN", "transit_system_name", "geo-reference-v5"),
         )
 
     def test_conflicting_regions_are_unresolved_without_choosing(self):
