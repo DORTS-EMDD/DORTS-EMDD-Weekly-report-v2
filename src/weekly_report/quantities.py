@@ -75,7 +75,7 @@ _PREFIX_CURRENCIES = (
     *((code, {code}) for code in _ISO_CODES),
 )
 _SUFFIX_CURRENCIES = (
-    (r"US\s?dollars?|U\.S\.\s?dollars?|美元|美金|米ドル|USD", {"USD"}),
+    (r"US\s?dollars?|U\.S\.\s?dollars?|美元|美金|米ドル|미국\s?달러|미\s?달러|USD", {"USD"}),
     (r"Australian\s+dollars?|澳元|澳幣|豪ドル|AUD", {"AUD"}),
     (r"Canadian\s+dollars?|加元|加幣|カナダドル|CAD", {"CAD"}),
     (r"Singapore\s+dollars?|新加坡元|新加坡幣|星元|シンガポールドル|SGD", {"SGD"}),

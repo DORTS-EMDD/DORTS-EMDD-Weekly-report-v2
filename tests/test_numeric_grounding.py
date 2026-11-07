@@ -232,3 +232,26 @@ def test_a_middle_dot_joined_number_has_no_reading_and_grounds_nothing():
 def test_a_middle_dot_list_of_line_numbers_does_not_affect_other_quantities():
     evidence = "인천지하철 1·2호선 전 객차에 5G 와이파이를 설치하는 데 120억원이 들었다."
     assert _grounded(evidence, "總經費120億韓元") == [True]
+
+
+# RC-66, from runs 40838021391, 41378751642, 41405830454 and 41765559889: a
+# Korean source states "19억 달러" (a word shared by several dollars). The Writer
+# wrote 美元 every time and the event failed. The rule already grounds the sign;
+# the Writer instruction (formal-report-writer-v9) now says how to write it.
+def test_a_shared_dollar_word_in_a_cjk_source_grounds_its_sign_but_not_us_dollars():
+    for evidence in ("A·C선 노후 신호를 교체하는 19억 달러 규모 사업", "信号・線路設備を更新する19億ドル規模の事業"):
+        assert _grounded(evidence, "總額$19億") == [True]
+        assert _grounded(evidence, "總額19億美元") == [False]
+
+
+def test_an_explicit_korean_us_dollar_name_grounds_us_dollars():
+    assert _grounded("19억 미국 달러 규모", "19億美元") == [True]
+    assert _grounded("19억 미 달러 규모", "19億美元") == [True]
+
+
+def test_the_writer_instruction_states_how_a_shared_cjk_dollar_word_is_written():
+    from src.weekly_report import writer
+
+    text = "\n".join(line for line in vars(writer).values() if isinstance(line, tuple) for line in line if isinstance(line, str))
+    assert "19억 달러 or 19億ドル = $19億" in text
+    assert "write 美元 only when the evidence itself says US dollars" in text
