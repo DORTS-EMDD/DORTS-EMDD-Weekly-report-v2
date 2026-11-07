@@ -963,6 +963,8 @@ carries the same risk.
     3천296억 = 3,296억, and 217百萬 = 2.17億 in Writer prose. These are RC-29's
     own factors (千, 百萬, 十萬, 千萬, 十億). Before, the reader took only 296억,
     and a 百萬 amount was never checked.
+    The Italian thousands word "mila" (100 mila euro = 100,000 €) is a
+    magnitude word, like the Spanish "mil" already was.
 
   An ungrounded quantity is
   `factual_<field>_quantity_ungrounded`; it uses the event's one semantic

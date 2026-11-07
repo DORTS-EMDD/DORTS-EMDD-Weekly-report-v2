@@ -276,3 +276,11 @@ def test_writer_amounts_in_rc29_factors_are_read_and_checked():
     # Existing compositions keep their single reading.
     assert _values("2億1700萬元", strict=True) == [[217_000_000.0]]
     assert _values("1조 9000억 원") == [[1_900_000_000_000.0]]
+
+
+# RC-66, from an Italian tender report ("aumentando di 100 mila euro la base
+# d'asta"): "mila" (Italian thousands) was not a magnitude word, so the amount
+# was read as a bare 100 and the correct 10萬歐元 was ungrounded.
+def test_italian_mila_is_a_thousands_magnitude():
+    assert _grounded("aumentando di 100 mila euro la base d'asta", "增加10萬歐元") == [True]
+    assert _grounded("aumentando di 100 mila euro la base d'asta", "增加100歐元") == [False]

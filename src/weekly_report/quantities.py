@@ -32,7 +32,7 @@ _WORD_MAGNITUDES = (
     (r"millions?|mn|mln|mio\.?|millionen|millones|millón|millon|milioni|milione|miljoen|miljoner|millioner|milh(?:ões|oes|ão|ao)", 10**6),
     (r"milliards?|milliarden|mrd\.?|miliardi|miliardo|miljard(?:en)?|miljarder|milliarder", 10**9),
     (r"bilh(?:ões|oes|ão|ao)", 10**9),
-    (r"thousands?|tsd\.?|mil", 10**3),
+    (r"thousands?|tsd\.?|mila|mil", 10**3),
 )
 _WORD_RE = re.compile(r"\s*(" + "|".join(pattern for pattern, _ in _WORD_MAGNITUDES) + r")(?![a-zà-ÿ])", re.IGNORECASE)
 # Magnitude words only English uses, always with a dot decimal mark ("91.766 billion").
