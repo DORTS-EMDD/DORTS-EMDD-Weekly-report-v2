@@ -242,9 +242,9 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-63 修訂（2026-10-20～11-06）
+### RC-3～RC-66 修訂（2026-10-20～11-07）
 
-完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.38、§N 與 §R。
+完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.47、§L、§N 與 §R。
 
 * RC-3：所有引用 seam 採 `EXACT_TEXT_ALL_OCCURRENCES`；同一字串重複出現不再
   使 Evidence、Scope、Category、Taxonomy、Reportability 或 Validation 失敗；
@@ -564,6 +564,21 @@ Transport retry 與 semantic correction 必須分開計算。
   * 根因：Run 42148605765 的分類提示詞只寫「pilots, experiments, applied technical tests」，未說明對象須是技術，也未說明建設步驟與統計沒有分類行動；技術新知 4 則全是建設步驟，另有拆遷計畫被分為採購、運量紀錄與車站診療亭被分為營運動態。
   * 修正：分類提示詞 v4（`_CATEGORY_GUIDANCE` 唯一來源），schema、Python 驗證與其他 owner 不變。
   * Golden：另立 `category_boundary_manifest.json`（G92～G96），不動已鎖定的 Category 母體與封存驗收。
+  * RC-64（R7 量測）無效：語料取自 audit highlights，不是 Event Identity 實際輸入（`rc64_r7_measurement.json` 標為 INVALID）。
+  * RC-65：Scope 提示詞 v13，事件焦點須含陳述發生事項的句子；分類提示詞 v5（營運治理只針對已營運的服務）；Golden G97、G98。
+* RC-66（§A.47，2026-11-07 夜間離線檢討，無付費呼叫，未經 Live 驗收）：
+  * Category 提示詞 v6：技術新知只有一個定義（對象是技術、方法或材料本身）；分類只適用於其定義列出的主要行動。
+    * 訓練、演練，以及關於技術的會議、交流、展覽都不是技術新知；依既有規定的處分不是規範變動。
+    * 已安裝系統的通車前或驗收測試仍是專案步驟。
+    * 車上的非運輸服務不是營運動態。
+    * subtype 須以英文字母開頭。
+  * Category 提案違約時，技術缺口簽章寫出失敗的檢查（只作觀測）。Golden G99～G101。
+  * Validator：以中黑點連接的數字沒有讀法，不作依據。
+  * Scope 被拒提案的 ID 形狀記入 selection audit v3（不含原文，不參與決策）。
+  * Event Identity 確認階段的一般問題已證明；R7 量測包已備妥（`acceptance/event_identity/RC66_R7_MEASUREMENT_PACKAGE.md`）。
+  * 未決：
+    * 演練的分類、仁川 L1、歷史回顧的 Domain Rule：BLOCKED_USER_DECISION。
+    * 「広島市」名稱：未修。
 
 ## 13. Report / Delivery
 
@@ -714,5 +729,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-63 APPLIED (2026-11-06; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
+CONTRACT_REVISION = RC-3..RC-66 (2026-11-07; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```

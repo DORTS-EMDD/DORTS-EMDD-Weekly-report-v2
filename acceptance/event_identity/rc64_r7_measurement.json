@@ -31,5 +31,6 @@
  ],
  "finding": "Superseded by the correction: the corpus did not reproduce the Event Identity input.",
  "verdict": "NOT_ADOPTED; no safety runs (no candidate to adopt)",
- "correction": "2026-11-06, RC-65: this measurement is invalid as evidence about the Sydney split. Its corpus was built from audit evidence_highlights (ABC S2, S3), not from the Event Identity input, which is the Scope focus (S2, S3, S5 in production). S5 says 'The Southwest Metro has finally opened to Sydney commuters'. So the 'no city' finding was wrong. The earliest root cause is the Scope focus, which omitted the occurrence sentence S6 ('the first 13-kilometre passenger service from Bankstown to Sydenham, which arrived at 4:31am'). See REPORT section 70."
+ "correction": "2026-11-06, RC-65: this measurement is invalid as evidence about the Sydney split. Its corpus was built from audit evidence_highlights (ABC S2, S3), not from the Event Identity input, which is the Scope focus (S2, S3, S5 in production). S5 says 'The Southwest Metro has finally opened to Sydney commuters'. So the 'no city' finding was wrong. The earliest root cause is the Scope focus, which omitted the occurrence sentence S6 ('the first 13-kilometre passenger service from Bankstown to Sydenham, which arrived at 4:31am'). See REPORT section 70.",
+ "measurement_validity": "INVALID: corpus built from audit evidence_highlights, not the Event Identity input (RC-65 correction); not acceptance evidence for any prompt"
 }

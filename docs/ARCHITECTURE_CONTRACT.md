@@ -397,7 +397,7 @@ disclosed as a technical gap.
 ```text
 EVENT_HELPER_CITATION = SOURCE_REF + SENTENCE_ID (Category, Taxonomy, Reportability)
 CATEGORY_SCHEMA_VERSION = category-proposal-v5
-CATEGORY_PROMPT_VERSION = category-principal-action-v5
+CATEGORY_PROMPT_VERSION = category-principal-action-v6
 TAXONOMY_SCHEMA_VERSION = taxonomy-semantic-proposal-v2
 TAXONOMY_PROMPT_VERSION = taxonomy-principal-body-v3
 REPORTABILITY_SCHEMA_VERSION = reportability-semantic-proposal-v2
@@ -948,6 +948,10 @@ carries the same risk.
     written with trailing zeros, so it groups thousands). Otherwise the
     token is unresolved and grounds nothing; it is never read both ways. A
     space joins digits only as thousands grouping, never two numbers.
+    RC-66 (2026-11-07): a middle dot (・ · ‧ ･) between digit runs is a decimal
+    mark or a list ("１２・７キロ", "1·2호선"). The text does not say which, so
+    neither run has a reading: it grounds nothing, and in Writer prose it is
+    ungrounded. It is not read as a standalone "７キロ".
 
   An ungrounded quantity is
   `factual_<field>_quantity_ungrounded`; it uses the event's one semantic
@@ -1089,7 +1093,7 @@ EVENT_IDENTITY_CONFIRMATION_SCHEMA = members.minItems 1 (confirmation only)
 EVENT_IDENTITY_PROMPT = event-identity-grouping-v5
 CONFIRMATION_INCOMPLETE_ROOT_CAUSE = CONFIRMED (schema contradicted RC-25)
 DUPLICATES_2026_10_21_27_ROOT_CAUSE = UNCONFIRMED (per-pair path not retained)
-SELECTION_AUDIT = selection_audit.json, observer-only
+SELECTION_AUDIT = selection_audit.json, observer-only (selection-audit-v3 since RC-66: adds scope.rejected_proposal, IDs only)
 PDF = no transit-system line, no execution notes, one-line linked source
 EMAIL_BODY = section index of linked headlines; PDF attached
 SOURCE_DISPLAY = validated publisher name for the canonical host, else canonical hostname
@@ -2951,6 +2955,54 @@ EXPLICIT_CHILD = OWNS ITSELF; NEVER A FAMILY MEMBER
 NUMBERING_DERIVED_COVERAGE = FORBIDDEN
 ```
 
+### A.47 RC-66 Offline review of Run 42186338279 and the November runs (2026-11-07, no paid calls)
+
+Evidence: the artifacts of 19 GitHub Actions runs and the repository's own
+records. The local round artifacts of section 70.1 (REPORT) are not on
+GitHub. Detail: REPORT section 71.
+
+* **Category (section L).** Prompt v6: one qualified definition and a closed
+  set of actions. The failed predicate is now observable. Live is not
+  validated.
+* **Numeric grounding (section A.23).** A middle-dot-joined number has no
+  reading. The Kyoto Validation FAIL was this numeric check, not a check of
+  historical dates.
+* **Scope (section A.4, A.11).**
+  * Gaps are 11–17% of Scope requests in every run at v10–v13. They are
+    spread over independent mechanisms: label copying in Korean and Latin
+    scripts, and relation-to-focus consistency.
+  * Rejected proposals were never kept, so per-gap causes are unknown.
+  * Observation only: the selection audit (v3) keeps an IDs-only shape of
+    each rejected proposal: statuses, relations, cited IDs, and the
+    sentences that contain each label.
+  * Predicates, prompt and decisions are unchanged.
+* **Event Identity (section A.36).**
+  * The confirmation separates records that state a shared occurrence and
+    an activity marking it: Incheon in Run #34, 3 of 3; ABC Sydney.
+  * R3 already places such a record with the records whose specific details
+    it shares. The prompt does not say how that line applies in a
+    confirmation.
+  * A prompt change needs R7 first:
+    `acceptance/event_identity/RC66_R7_MEASUREMENT_PACKAGE.md`, with a
+    re-fetched corpus verified against the audit `content_sha256`.
+  * Label L1 (Incheon, against the RC-42 decision) needs the user.
+  * Unchanged: rules, prompt v10, schema, Golden.
+* **Historical retrospective.** The Kyoto "this day" page states the 1997
+  date only in its title, which is not Evidence. The current contract gives
+  no owner a way to know the occurrence is historical.
+  `BLOCKED_USER_DECISION: HISTORICAL_RETROSPECTIVE_DOMAIN_RULE`.
+* **Writer.** The headline 「広島市」 breaks the existing naming rule. It is not
+  fixed: a deterministic glyph rule would conflict with keeping complete
+  original names (`BLOCKED_ARCHITECTURE_EXPANSION` if a name owner is
+  wanted).
+* **Invalid evidence.** The RC-64 R7 corpus (audit highlights) is marked
+  `INVALID` in `rc64_r7_measurement.json`.
+
+```text
+RC66_STATUS = OFFLINE_ONLY; LIVE_ACCEPTANCE = NOT_RUN; RELEASE_READY = NO
+RC66_BLOCKED = PAID_VALIDATION (Category v6, Docomo predicate, EI R7) | USER_DECISION (drill Category, Incheon L1, historical retrospective)
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -4616,11 +4668,51 @@ clinic booth, all `CATEGORY_UNRESOLVED` (`NO_CATEGORY_DEFINING_ACTION`).
 * This is the Scope owner's own definition. Unchanged: the Event Identity
   prompt, R5, the excerpt rule, metadata and Python validation.
 
+**RC-66 (2026-11-07, offline; Live not validated): one definition, a
+closed set of actions.** This applies RC-63 and adds no Category or Domain
+Rule.
+* **Root cause (Run 42186338279, prompt v5).** RC-63 added a narrowing line
+  but kept the old unqualified line "applied technical tests, technical
+  deployments, and substantive technical development". So the guidance held
+  two definitions of `TECHNICAL_DEVELOPMENT`.
+  * Five of the run's ten 技術新知 decisions fall outside RC-63: pre-opening
+    integration, commissioning and signalling tests, a fire-brigade training
+    and a trade-show exhibit.
+  * Their subtypes describe the old line.
+  * Activities about a technology match no listed action, so only the old
+    catch-all admitted them.
+* **Prompt `category-principal-action-v6`.**
+  * `TECHNICAL_DEVELOPMENT` is defined once, with a technology, method or
+    material itself as its subject.
+  * A Category applies only when the principal action is one its definition
+    lists. Training or drills that use equipment, and meetings, exchanges or
+    exhibitions about a technology, are not `TECHNICAL_DEVELOPMENT`. A
+    penalty under an existing rule is not `NORMATIVE_CHANGE`.
+  * Pre-opening or acceptance tests of installed systems are project steps,
+    also for signalling, control, communication or power equipment.
+  * Non-transport services on board, as well as at a station, are not
+    `OPERATIONAL_CHANGE`.
+  * The subtype guidance states the schema's existing pattern.
+* **Open user decision (`BLOCKED_USER_DECISION`).** Whether a safety drill or
+  training is `OPERATIONAL_CHANGE` (operational governance) or has no
+  Category-defining action. Section L does not say, and v6 only says it is
+  not technical development.
+* **Observation.** A Category proposal violation's TechnicalGap
+  `failure_class` names the failed predicate (`SUBTYPE_FORMAT`,
+  `CATEGORY_ID`, `CATEGORY_STATE`, `RESOLUTION_REASON`, `RESPONSE_SHAPE`,
+  `UNRESOLVED_ASSIGNMENT`, `CITATION_INVALID`); `PROPOSAL_INVALID` remains
+  for anything else. The decision is unchanged.
+* **Golden.** G99 technical exchange meeting, G100 pre-opening signalling
+  tests (both `NO_CATEGORY_DEFINING_ACTION`), and G101 5G deployment on
+  operating lines (`TECHNICAL_DEVELOPMENT`, a false-negative guard).
+
 ```text
-CATEGORY_PROMPT_VERSION = category-principal-action-v5 (RC-63, RC-65)
+CATEGORY_PROMPT_VERSION = category-principal-action-v6 (RC-63, RC-65, RC-66; Live not validated)
 SCOPE_PROMPT_VERSION = scope-event-target-system-v13 (RC-65: focus includes the occurrence sentence)
 TECHNICAL_DEVELOPMENT_REQUIRES = A TECHNOLOGY, METHOD OR MATERIAL AS THE SUBJECT
 PROJECT_STEPS_AND_STATISTICS = NO CATEGORY-DEFINING ACTION
+CATEGORY_APPLIES_ONLY_TO = A LISTED PRINCIPAL ACTION (RC-66)
+DRILL_OR_TRAINING_CATEGORY = BLOCKED_USER_DECISION (not TECHNICAL_DEVELOPMENT)
 ```
 
 事故後發布的新強制規則屬 `NORMATIVE_CHANGE`，不是原事故。只發布有實質調查

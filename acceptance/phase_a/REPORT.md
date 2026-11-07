@@ -2656,7 +2656,7 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
     - 技術缺口 8 個（皆為 Scope）。
 - 仍未解決：
   - 雪梨重複：兩次執行都在確認時分開 ABC。
-    - R7 量測（RC-64，使用者核准，40／300 次付費呼叫）推翻原先的推測：在 19 筆標註語料上，v10 與候選 v13 都從未把 ABC 與其他雪梨報導一起提出，v13 沒有任何效果，不採用（`acceptance/event_identity/rc64_r7_measurement.json`）。
+    - （此量測後來判定無效，見下一點與 §71.3）R7 量測（RC-64，使用者核准，40／300 次付費呼叫）推翻原先的推測：在 19 筆標註語料上，v10 與候選 v13 都從未把 ABC 與其他雪梨報導一起提出，v13 沒有任何效果，不採用（`acceptance/event_identity/rc64_r7_measurement.json`）。
     - 更正（RC-65）：該語料取自 audit 的 highlights（ABC 的 S2、S3），不是 Event Identity 實際收到的 Scope 焦點（production 為 S2、S3、S5），因此「沒有寫雪梨」的結論錯誤。S5 寫「The Southwest Metro has finally opened to Sydney commuters」。
     - 最早根因（RC-65）：Scope 選的焦點只有導言與反應，缺少陳述發生事項本身的 S6（「first 13-kilometre passenger service from Bankstown to Sydenham, which arrived at 4:31am」）。這一句與其他來源相同的具體細節正好在其中。Scope 提示詞 v13 要求焦點包含陳述發生事項的句子；R5、Event Identity 提示詞與摘錄規則都不變。
   - 光州宣導小組：§L 的「營運性治理 action」未定義，helper 把通車前建設單位的宣導、公開進度當成營運治理。分類提示詞 v5 澄清：營運治理針對已營運的客運服務，通車前專案的報告、宣導、人事或管理屬專案步驟。Golden G97。
@@ -2681,3 +2681,103 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
   - 技術交流會屬會議或活動，不是技術發展；目前分類規則未列出會議、研討會、交流會。
   - Docomo 5G 在 3 輪中有 2 輪因分類提議違約遺失，根因尚未調查。
 - 本機共 1,747 次付費呼叫（另有 Sydney 定向檢查與 RC-64 的 40 次）。
+
+## 71. 夜間離線檢討：Run #34（2026-10-01～10-31）與 11 月既有紀錄（RC-66，2026-11-07，無付費呼叫）
+
+- 範圍與依據：
+  - 只用 GitHub 上既有的資料：19 次 Actions 執行的 artifact（selection audit、run summary、報告），以及 repository 內的紀錄。
+  - 沒有新的付費呼叫、production run 或寄信，也沒有重新抓取來源。
+  - 本機三輪驗證（§70.1）的 artifact 不在 GitHub：HISTORICAL_LOCAL_ARTIFACT = UNAVAILABLE_ON_THIS_MACHINE。
+- 期間證據：
+  - 10-01～10-31：Run 42186338279（#34，64cbce0）。
+  - 11-01～11-04：Run 41585675879（10-27～11-03）、41765559889（10-26～11-01）、42148605765（10-29～11-04）。
+  - 11-05～11-07：EVIDENCE_NOT_AVAILABLE_FOR_PERIOD。
+- 重放：`scripts/event_identity_replay.py` 對 5 次執行（#34、42148605765、41765559889、41585675879、41984480598）完全重現 audit 的事件，差異為 0。
+
+### 71.1 Category（分類提示詞 v6，僅離線驗證）
+
+- 最早根因：RC-63 用另一行收窄技術新知，但保留原本未加限定的定義（「applied technical tests, technical deployments, and substantive technical development」），提示詞因此同時有兩種技術新知定義。
+- 證據：#34 的 10 則技術新知中有 5 則超出 RC-63：
+  - Bergamo T2 通車前整合測試；
+  - 羅馬 CAF Urbos 驗收測試；
+  - Lyon T10 通車前號誌測試；
+  - 大邱消防訓練；
+  - SLW 展覽。
+  - 它們的 subtype（pre_service_testing、signal_system_testing、emergency_response_training、technical_demonstration）對應的是舊定義，不是主體規則。
+  - 訓練、會議、展覽不屬於任何列出的行動，只能落入舊定義的概括語。
+  - Python 依 §L 只做結構驗證，無權判斷語意；schema 不是原因。
+- 修正（Classifier 唯一 owner，`category-principal-action-v6`）：
+  - 技術新知只有一個定義：對象是技術、方法或材料本身。
+  - 分類只適用於其定義列出的主要行動：使用設備的訓練或演練，以及關於技術的會議、交流或展覽，都不是技術新知；依既有規定的處分不是規範變動。
+  - 已安裝系統的通車前或驗收測試即使是號誌、控制、通訊或供電設備，仍是專案步驟。
+  - 車上的非運輸服務與車站內的一樣，不是營運動態（RC-63 原則）。
+  - subtype 須以英文字母開頭（說明 schema 既有的 pattern）。
+- Golden：G99（技術交流會）、G100（通車前號誌測試）、G101（營運路線的 5G 部署仍為技術新知，防止漏報）。
+- 其他發現：
+  - 公取委對都營地下鐵談合的課徵金方針被分為規範變動（之後由 Reportability 排除）；v6 已涵蓋。
+  - 仁川 5G Wi-Fi 的同一完成事項兩筆分類不同（營運動態／技術新知），屬 Event Identity 分開後的下游症狀。
+- 未決：BLOCKED_USER_DECISION——演練或訓練應為營運動態（營運治理）還是沒有分類行動；契約未定，v6 只說它不是技術新知。
+- 驗證：離線測試通過；v6 的 Live 行為未驗證（BLOCKED_PAID_VALIDATION）。
+
+### 71.2 Docomo／東京地鐵 5G
+
+- 19 次執行中只有一個 PROPOSAL_INVALID 分類缺口，就是 Docomo（Run 42148605765）。同一則在 Run 41585675879 為技術新知（subtype `network_infrastructure_deployment`）。
+- Evidence 足夠，提案內容未保存，failure_class 只寫 PROPOSAL_INVALID，因此無法判定是哪一條檢查失敗。
+- 最可能的假設（未證實）：subtype 以數字開頭（如 `5g_...`），違反既有 pattern `^[a-z]`。其他會造成 PROPOSAL_INVALID 的檢查都與文章內容無關，無法解釋只有這一則反覆失敗。
+- 處理：
+  - 分類提案違約時，技術缺口簽章改為寫出失敗的檢查（SUBTYPE_FORMAT、CATEGORY_ID、RESOLUTION_REASON 等），只作觀測。
+  - v6 說明 subtype 格式。
+  - 沒有 Docomo 特判，也沒有放寬檢查。
+- 狀態：OPEN，須由下一次真實驗證確認（BLOCKED_PAID_VALIDATION）。
+
+### 71.3 Event Identity：確認階段的一般問題
+
+- #34 仁川：6 次批次提案都把三筆放在一起，3 次確認都把 스마트투데이 分開（不是不穩定，而是每次相同）。
+- 雪梨：Run 42148605765 的 ABC 在每次確認都被分開；本機第 3 輪 6/6 分開（§70.1 文字紀錄）。
+- 共同形態：該紀錄同時寫出共同的發生事項與其具體細節（仁川 S2：三家電信業者都開通 5G Wi-Fi 的第一條路線；ABC：4:31、13 公里），又寫了標示該事項的活動（部會體驗活動、乘客慶祝）。
+- 契約 R3 已決定：「同時報導兩個發生事項的紀錄，只與具體細節相同的紀錄同群」。但確認提示詞第 55 行「不同發生事項不得同群」與第 45 行「里程碑與標示它的活動（如乘車活動）是不同發生事項」並列，沒有說明第 46 行如何適用。推測確認時以後兩行為準（未證實）。
+- 判定：已證明是一般的確認問題，不是雪梨或仁川特例。
+- 修改提示詞須先做 R7 量測：已準備 `acceptance/event_identity/RC66_R7_MEASUREMENT_PACKAGE.md`（BLOCKED_PAID_VALIDATION）。
+- 另須使用者確認 L1：RC-42 曾決定仁川部會體驗活動是不同事件；스마트투데이 是報導共同完成事項還是部會活動，由使用者判定（BLOCKED_USER_DECISION）。
+- 其他確認分開的配對多為不同事件（羅馬與 Bergamo、Kraków 與 Delft）。另見：
+  - 武漢「即將全線通車」與「全線通車」（R3 同一事項，但本來就因地區而排除）；
+  - 大邱消防與交通公社的訓練（§59 已接受此類殘餘重複）。
+- 本晚未修改任何 Event Identity 規則、提示詞、schema 或 Golden。
+
+### 71.4 Scope 可靠度
+
+- 缺口比例：#34 有 31 個缺口，佔 186 個 Scope 請求的 16.7%。v10～v13 各次執行都在 11%～17%，沒有任何版本消除。
+- 依檢查分（#34）：TARGET_SYSTEM_CONTAINMENT 12、ENDPOINT_LABEL 8、ACTION_TARGET_CONTAINMENT 5、EVENT_FOCUS_CONTAINMENT 4、NONELIGIBLE_CONSISTENCY 1、無法解析的回應 1。
+- 依語言分（14 次週報、月報執行合計）：
+  - ENDPOINT_LABEL：韓文 56／95（佔韓文請求 6.2%，日文 1.0%，拉丁字母 5.0%），屬標籤未逐字複製（詞形、空白）。
+  - TARGET_SYSTEM_CONTAINMENT：中文最高（7.1%）。
+  - 三種 containment 檢查都是提案中標籤、引用句與焦點範圍互相不一致。
+- 判定：
+  - 至少有兩種獨立機制：標籤複製不逐字，以及關係與焦點不一致。不宜合併為單一根因。
+  - Python 檢查符合 RC-8、RC-9、RC-17（Evidence 文字已正規化空白，排除 NBSP 之類的機械原因）。
+  - 每個缺口的機制無法確認，因為從未保存被拒的提案。
+  - 遺失的有價值候選包括：東京地鐵與 Sharp 的 AI 實證、胡志明市地鐵停電、蘇黎世電車死亡事故、武漢環狀線開通、雪梨 IndexBox。
+- 修正（只作觀測）：被拒的 Scope 提案以只含 ID 的形狀記入 selection audit（v3）：各紀錄的狀態、關係與引用句 ID，以及各標籤出現在哪些句子。不保存原文。
+- 不做 fuzzy matching、parser rescue 或 fallback。
+- 剩餘風險：每次約 1／7 的候選因技術缺口遺失；須以下一次真實執行的觀測資料再定根因。
+
+### 71.5 京都歷史回顧（1997 年東西線開業）
+
+- Evidence（付費牆頁）的焦點只有 S1：「京都市の地下鉄東西線（醍醐－二条間、１２・７キロ）が開業した。」
+- 1997 只出現在頁面標題，而契約規定標題不作 Evidence。因此 Scope、Category 與 Reportability 收到的內容沒有歷史性質；Reportability 既有的週年、專題規則（RC-43）因此無法套用。
+- 內文其餘句子未保存，不能完全排除內文另有年份（BLOCKED_MISSING_HISTORICAL_EVIDENCE）。
+- 更正：Validator 的 FAIL 是 RC-29 數字檢查，不是歷史日期檢查。「１２・７キロ」被讀成 12 與 7 公里，Writer 的 12.7 公里因此沒有依據。這是巧合的攔截，不是根因修正。
+- 已修正數字讀法：中黑點連接的數字沒有讀法，不作依據。
+- 契約缺口：歷史事項只在標題時，是否可由標題或來源提供發生日期、由誰判定，屬 Domain Rule（BLOCKED_USER_DECISION: HISTORICAL_RETROSPECTIVE_DOMAIN_RULE）。
+
+### 71.6 Writer「広島市」
+
+- 標題「広島市中心部…」違反 Writer 既有規則（有既定繁體中文名時使用之，如 廣島）；摘要本身已寫「廣島市」。
+- 「地點：広島市」「運輸系統：広島電鉄」是 EvidenceService 來源原值的投影，依契約正確。
+- 未修改：以確定性方式禁止日文字形，會與「無既定中文名時保留完整原文」衝突；要正確判定須新增名稱對照 owner（BLOCKED_ARCHITECTURE_EXPANSION），屬 minor。
+
+### 71.7 驗證與狀態
+
+- 完整離線測試與 clean export：見本次 commit 紀錄。
+- 任何修正都未經 Live 驗收。
+- RELEASE_READY = NO。
