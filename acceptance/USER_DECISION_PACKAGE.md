@@ -82,6 +82,12 @@ drills. Prompt v6 only says such a drill is not 技術新知. Options:
   * the Temporal controlling date is the occurrence date when the Evidence
     states one; or
   * no change: accept the leak.
+* Disconfirming evidence (Phase C, C20): a Korean "[역사 속 오늘] 10월 27일…뉴욕
+  지하철 개통" column was miscategorized as a service opening (Run 40817530617).
+  It was still correctly rejected by Reportability's existing anniversary rule,
+  because its own Evidence carried the historical framing. The gap is
+  therefore limited to Evidence that loses the framing (paywall teasers,
+  title-only dates). It is not a missing Reportability rule.
 
 ## D4. Incheon label L1, and the RC-42 decision
 
