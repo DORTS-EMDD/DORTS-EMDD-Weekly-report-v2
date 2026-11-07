@@ -3034,9 +3034,28 @@ GitHub. Detail: REPORT section 71.
     both owners (section L RC-63, section N RC-20/25/27), with different
     outcomes.
 
+* **Phase C rolling audit (REPORT section 73; decisions in
+  `acceptance/USER_DECISION_PACKAGE.md`).** Existing rules applied, offline
+  only:
+  * geo-reference-v5 (the section A.22 rule: missing urban-rail cities of
+    designated regions);
+  * Writer prompt v9 (a shared dollar word in a CJK source is written with
+    its sign) and the Validator reading 미국 달러 / 미 달러 as US dollars (both
+    RC-29);
+  * Writer prompt v10 (a kept Korean name is set off with 「」, RC-20).
+
+  New evidence, not changed here:
+  * Principal-document detection fails on every page of 160 of 175 hosts,
+    including Yonhap and the specialist rail media Search queries on purpose.
+  * `DATE_PROVENANCE_INVALID` hosts are site-wide failures. At least 22% of
+    those pages show a visible dateline that no extractor reads.
+  * 58% of `SEMANTIC_MATCH` rejections are READY in another run.
+
 ```text
 RC66_STATUS = OFFLINE_ONLY; LIVE_ACCEPTANCE = NOT_RUN; RELEASE_READY = NO
 SECTION_L_VS_N_PROJECT_STEPS = CONFLICT (BLOCKED_USER_DECISION)
+GEOGRAPHIC_REFERENCE = geo-reference-v5 (RC-66)
+WRITER_PROMPT_VERSION = formal-report-writer-v10 (RC-66)
 RC66_BLOCKED = PAID_VALIDATION (Category v6, Docomo predicate, EI R7) | USER_DECISION (drill Category, Incheon L1, historical retrospective)
 ```
 

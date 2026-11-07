@@ -209,3 +209,20 @@ on a corpus biased toward merges. With amendments 1–6 it can detect false
 merges and separate the mechanisms. It is still `BLOCKED_PAID_VALIDATION`.
 Raise the estimated cost to about 200 calls (M-C adds about 12 confirmation
 inputs × 2 prompts × 3).
+
+## 7. Phase C additions (2026-11-08, offline)
+
+* **Cross-language stratum is required.** A pair kept by some confirmation
+  but split by another is split in 13% of cross-language confirmations and
+  6% of same-language ones (2,806 observations, runs #24–#34). Include
+  ja/ko/zh/latin mixed same-occurrence pairs: Seoul Line 2 outage (ja/ko),
+  Sydney (zh/fr/en/es), Incheon (ja/ko).
+* **Do not read the `-n2` gap as an ordering effect.** Confirmations of
+  reversed nominations split 15% against 4%. That is a selection effect:
+  RC-44 sends later confirmations only pairs no earlier confirmation judged.
+  Any comparison must stratify by nomination.
+* **A confirmation-only change cannot remove most duplicates.** Of 6
+  final-report duplicate pairs detected by a same-language title proxy, 4
+  were never proposed together by any nomination; only 2 were split by a
+  confirmation. Report batch-recall misses alongside the M-C confirmation
+  result.

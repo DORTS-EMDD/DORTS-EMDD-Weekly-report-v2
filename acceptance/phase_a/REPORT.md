@@ -2981,3 +2981,49 @@ P2_BUDGET = 待 Evidence 修正並重新量測後估算
 - RC-64：已標 INVALID。
 - RC-44、RC-47 保留條件：第二次提案在 11 次 run 中有 9 次確認了配對，與保留一致。
 - 未發現離線測試被寫成 Live 驗收，也未發現觀察被寫成 Domain Rule。
+
+## 73. 夜間 Phase C：輪替深度稽核（2026-11-08 04:38 起，Asia/Taipei；無付費呼叫）
+
+每一輪只處理當時資訊價值最高、尚未解決的問題；不重做 Phase A／B。使用者決策彙整於 `acceptance/USER_DECISION_PACKAGE.md`。
+
+| 輪次 | 問題 | 新證據與結論 | Owner／契約 | 是否修改 |
+| --- | --- | --- | --- | --- |
+| C1 | §L 與 §N 衝突的來源 | §N 施工或通車路徑來自 RC-10（10-21）；Reportability 的 CONSTRUCTION_MILESTONE 來自 RC-27（使用者指示）；RC-63「專案步驟無分類」只在 WIP（64cbce0），契約未標示使用者核准，main 沒有。使用者 11-07 只說「本身不是技術新知」。v3 時期約 31 則正式報告事件是專案生命週期事件（施工 8、測試 6、計畫／核准 11、延期 6），在 RC-63 下全部排除。 | 契約衝突 | 否：D1 |
+| C2 | 確認階段過度拆分的可觀測特徵 | 「至少被確認一次合併」的配對中，跨語言被拆比例 13%、同語言 6%；`-n2` 的 15% 對 4% 是 RC-44 只送剩餘配對造成的選擇效應，不是排序效應；群組大小與拆分比例無單調關係。 | EI | 否（量測包 §7） |
+| C3 | Scope IN／OUT 不穩定的預測因子 | 與提示詞版本無關（同 23%）；日文 35%、採購 50%、技術 35%；35 次翻轉中 34 次為 IN 與 SCOPE_NOT_ESTABLISHED 互換，即「關係是否確立」的邊界。 | Scope helper | 否 |
+| C4 | 日期擷取失敗的類型 | DPI 的 51 個網站中 49 個每頁都失敗（79 則）；擷取只讀 article:published_time／datePublished 類 meta、JSON-LD、`<time pubdate|itemprop>`；至少 14／65 則的主文有可見日期列（MHI、NHK、JETRO 奧克蘭等）。 | EvidenceService；TEMPORAL_CONTRACT 允許可觀測節點 | 否：D5（新機制，且與 D3 互動） |
+| C5 | 地區遺失的類型 | 以 production 解析器離線查名稱：R1 參照表缺指定地區的都市軌道城市（高知、熊本、岡山、의정부、Gera、Jaén、València）；R2 擷取值低於城市層級（江東区、東西線、장암역、위례선）；R3 真正的歧義（Valencia、Santiago）。 | §A.22 已規定由參照表補缺漏的都市軌道城市 | **是**：geo-reference-v5（c01b8ca）。拉丁字母 Kochi 因會使印度的 Kochi 變成歧義而不加入；其餘 1,346 個名稱結果完全不變 |
+| C6 | 規則漂移（Writer 與 Validator 的幣別） | 「共用幣別詞照原文寫」對韓日文來源（달러、ドル）不可能做到（混寫或寫成美元皆失敗）；紐約 19억 달러 4 次全失敗。另外 미국 달러 原本完全讀不出數量。 | RC-29 已規定結果 | **是**：Writer v9 與韓文美元讀法（0cb161f） |
+| C7 | 技術新聞在哪一階段遺失 | 590 則 technology intent 候選中：Evidence 58%（內容無法取得 29%、頁面不符 29%）、Scope OUT 11%、Scope 缺口 4%、正式報告 9%。 | — | 否 |
+| C8 | Evidence 遺失是否依網站而定 | 主文件判定：175 個網站中 160 個每頁都失敗（318／380），包括 Yonhap、masstransitmag（20／20）、railway-news（18／18）。這兩個專業媒體是 RC-12 刻意搜尋的來源，33 則技術候選從未通過。來源核對失敗也多依網站而定。 | EvidenceService（§A.7） | 否：D5（需要頁面 HTML） |
+| C9 | 歷史結論是否被推翻 | 部分被取代：RC-43「東京保守車 AI 已修」（v11 後在 #22、#24、#26、#29 仍有 OUT）；RC-12 專業媒體（Evidence 0 通過）；RC-13（160 個網站每頁失敗）；RC-28 v4 涵蓋（已改 v5）；RC-29 Writer 指示（已改 v9）。仍有效：RC-43「今晚無施工」、RC-52 R7、RC-44／RC-47 保留條件。 | — | 本表即補註 |
+| C10 | 真實失敗能否轉成 Golden | 幾乎都是 INSUFFICIENT_EVIDENCE（audit 不存主文）；G92～G100 的預期取決於 D1；多語言同一事項配對適合放入 R7 語料，不適合腳本化 harness。地區、數字、幣別改以確定性單元測試鎖定。 | — | 否 |
+| C11 | 統計類別的漂移 | Reportability 的 STATISTICS_OR_REPORT_RELEASE 不是低價值類；Category 把運量統計判為無分類。併入 D1。 | — | 否 |
+| C12 | 正式報告的揭露是否符合 AGENTS §13 | 符合：#34 技術缺口 31 則、可能重複的說明、地區 3 則、Validation FAIL 1 則，與 run summary 一致。 | — | 否（無缺陷） |
+| C13 | Writer 與 Validator 的韓文名稱 | RC-20 允許保留完整韓文原名，但中文無空格，直接寫在中文旁一律判為混寫（與애나公司…）；以「」隔開則通過。광주 ㈜애나 兩次 FAIL。 | RC-20 已規定兩個結果 | **是**：Writer v10（e6c18dc） |
+| C14 | 日文「メトロ」假設 | 只寫メトロ者 5／8 不穩定，有地下鉄等詞者 6／15；樣本小，只是傾向。 | Scope 提示詞 | 否（須量測） |
+| C15 | 跨 owner 的提示詞逐字重複 | 只有樣板句重複；Category 與 Reportability 的重疊都是改寫過的文字，逐字比對測不出，不新增該測試。 | — | 否 |
+| C16 | Evidence 判定穩定性 | 同一 URL：SEMANTIC_MATCH 被拒者 69／119 在其他 run 為 READY（helper 變動）；PRINCIPAL_DOCUMENT 0／162（確定性）。來源核對有兩種：轉載（正確）與同一出版者、同一 URL 前後翻轉（伺服器回傳的頁面不同）。 | EvidenceService | 否（須頁面） |
+| C17 | E&M Taxonomy 穩定性 | 重複內容 3／35 不一致；新加坡機廠自動化未對到機廠維修設備（單例）。 | Taxonomy | 否 |
+| C18 | 正式報告重複來自哪一階段 | 標題近似的同語言重複 6 組：4 組從未被提案、2 組提案後在確認被拆。 | EI | 否（量測包 §7） |
+
+- 本階段新增的 production 修改都依既有契約，且都只經離線測試：
+  - geo-reference-v5；
+  - Writer v9（幣別）；
+  - Validator 讀出韓文美元；
+  - Writer v10（韓文原名加「」）。
+- RULE_DRIFT_MATRIX：
+
+| # | 規則 | 位置 | 狀態 |
+| --- | --- | --- | --- |
+| D1 | 技術新知定義 | 契約 §L 原條目（寬鬆）與 RC-63 附註、提示詞 v6（單一定義） | 寫法不同，意義一致 |
+| D2 | 專案步驟 | §L RC-63 與 §N、Reportability | 衝突，待使用者 D1 |
+| D3 | 聲明、排名、統計、專題 | Category 與 Reportability 各自保存 | 漂移，待使用者 D1 |
+| D4 | 幣別 | Writer 與 Validator | 已修（v9） |
+| D5 | 韓文原名 | Writer 與 Validator | 已修（v10） |
+| D6 | 日期來源 | Temporal 契約允許可觀測節點，EvidenceService 實作較窄 | 待使用者 D5 |
+| D7 | 標籤位置 | Scope 提示詞要求兩個標籤都在引用句，Validator 只要求一個 | 提示詞較嚴，無害 |
+| D8 | R3 混合紀錄 | 契約與確認提示詞第 45、46、55 行 | 待 R7 |
+| D9 | 都市軌道城市涵蓋 | RC-28 宣稱與參照表內容 | 已修（v5） |
+| D10 | Scope 運具詞 | 提示詞列表與 §J（缺メトロ） | 證據弱，未修 |
+| D11 | 搜尋目標與 Evidence 能力 | Search 刻意搜尋的專業媒體，Evidence 全部拒絕 | 跨 owner 不一致，待 D5 |

@@ -584,6 +584,9 @@ Transport retry 與 semantic correction 必須分開計算。
     * Scope 缺口在同一 Evidence 上不重現（機率性）。
     * DATE_PROVENANCE_INVALID 依 host 而定、每次相同。
     * 契約 §L（RC-63 專案步驟無分類）與 §N（施工或通車屬報導價值路徑）互相矛盾，待使用者決定。
+  * Phase C 輪替稽核（REPORT §73；決策彙整於 `acceptance/USER_DECISION_PACKAGE.md`）：
+    * 依既有規則修正：geo-reference-v5、Writer v9（韓日文來源的共用幣別詞寫成符號）、Validator 讀出 미국 달러、Writer v10（保留的韓文原名以「」隔開）。
+    * 新證據：主文件判定在 175 個網站中有 160 個每頁都失敗（含 Yonhap 與刻意搜尋的專業軌道媒體）；DPI 為整站失敗，至少 22% 的頁面有可見日期列。
 
 ## 13. Report / Delivery
 
