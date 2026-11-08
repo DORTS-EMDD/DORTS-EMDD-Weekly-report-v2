@@ -231,3 +231,22 @@ inputs × 2 prompts × 3).
   Every such member is rejected (RC-42) and is not merged through that
   group. Report this rate per prompt, because it is part of the batch-recall
   loss.
+
+## 8. Bug BH-2: the published focus is a subset of the validated focus (2026-11-08)
+
+* **The contract.** RC-17 (section A.11) and the Scope schema define the
+  event focus as the range from the first to the last cited sentence. Scope
+  validates every endpoint against that range.
+* **The defect.** `candidate_event_focus`, the excerpt Event Identity
+  compares and the Writer's event focus under RC-20/section A.14, carries
+  only the cited sentences.
+* **The extent.** 346 of 1,044 distinct IN_SCOPE foci (33%, runs #16–#34)
+  are non-consecutive, so downstream misses 1 to 34 in-range sentences. ABC
+  Sydney (S2, S3, S5 and in round 3 S2, S3, S5, S6, S7) never sent S4.
+* **Why it is not fixed yet.** Owner ScopeClassifier, a one-line provenance
+  change. But it changes the Event Identity input of a third of records, and
+  enlarged excerpts have caused a false merge before (RC-42) and lower
+  recall (RC-51). So it needs the R7 measurement first
+  (BLOCKED_VALIDATION_EVIDENCE).
+* **Add arm M-F.** The same corpus with focus = full validated range, for
+  the batch and M-C. The same acceptance criteria apply.

@@ -965,6 +965,8 @@ carries the same risk.
     and a 百萬 amount was never checked.
     The Italian thousands word "mila" (100 mila euro = 100,000 €) is a
     magnitude word, like the Spanish "mil" already was.
+    BH-1: a range states its scale once, and its lower bound takes only the
+    part it does not state ("3～5千円" = 3千～5千, "2천～3천억" = 2천억～3천억).
 
   An ungrounded quantity is
   `factual_<field>_quantity_ungrounded`; it uses the event's one semantic
@@ -3061,6 +3063,7 @@ GitHub. Detail: REPORT section 71.
 RC66_STATUS = OFFLINE_ONLY; LIVE_ACCEPTANCE = NOT_RUN; RELEASE_READY = NO
 SECTION_L_VS_N_PROJECT_STEPS = CONFLICT (BLOCKED_USER_DECISION)
 GEOGRAPHIC_REFERENCE = geo-reference-v5 (RC-66)
+SCOPE_PUBLISHED_FOCUS = CITED_SENTENCES_ONLY (BH-2: differs from the validated range; BLOCKED_VALIDATION_EVIDENCE, R7 arm M-F)
 WRITER_PROMPT_VERSION = formal-report-writer-v10 (RC-66)
 RC66_BLOCKED = PAID_VALIDATION (Category v6, Docomo predicate, EI R7) | USER_DECISION (drill Category, Incheon L1, historical retrospective)
 ```
