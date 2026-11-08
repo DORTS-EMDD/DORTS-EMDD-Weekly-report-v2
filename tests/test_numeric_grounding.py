@@ -284,3 +284,16 @@ def test_writer_amounts_in_rc29_factors_are_read_and_checked():
 def test_italian_mila_is_a_thousands_magnitude():
     assert _grounded("aumentando di 100 mila euro la base d'asta", "增加10萬歐元") == [True]
     assert _grounded("aumentando di 100 mila euro la base d'asta", "增加100歐元") == [False]
+
+
+# Bug hunt BH-1: a range states its scale once (RC-29), and a CJK amount's scale
+# has two parts, the 十/百/千 multiplier and the 萬/億/兆 magnitude. The lower
+# bound takes only the part it does not state itself. Before, "3～5千円" read
+# its lower bound as 30, and "2천～3천억원" as 2,000 won.
+def test_a_cjk_range_lower_bound_takes_the_scale_it_leaves_out():
+    assert _values("3～5千円") == [[3_000.0], [5_000.0]]
+    assert _values("3~5천만원") == [[30_000_000.0], [50_000_000.0]]
+    assert _values("2천～3천억원") == [[200_000_000_000.0], [300_000_000_000.0]]
+    assert _values("1천～2천명") == [[1_000.0], [2_000.0]]
+    assert _values("2～3億円") == [[200_000_000.0], [300_000_000.0]]
+    assert _grounded("사업비 2천～3천억원", "經費2,000億至3,000億韓元") == [True, True]

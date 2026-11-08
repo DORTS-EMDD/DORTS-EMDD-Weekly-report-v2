@@ -156,6 +156,10 @@ class _Reading:
     currency: frozenset[str] = frozenset()
     measure: str | None = None
     measure_factor: float = 1.0
+    # The 十/百/千 multiplier of a CJK amount's leading part ("5千", "5천만"),
+    # kept apart from its 萬/億/兆 magnitude so a range shares only what its
+    # lower bound leaves out.
+    multiplier: float | None = None
 
 
 # Notation of a token: _STRICT is Traditional Chinese report style (Writer
@@ -256,18 +260,20 @@ def _place(token: str) -> float:
 _CJK_SMALL = {"千": 1000, "천": 1000, "百": 100, "백": 100, "十": 10, "십": 10}
 
 
-def _cjk_value(text: str, start: int, notation: str | None) -> tuple[set[float], int, float, float] | None:
+def _cjk_value(text: str, start: int, notation: str | None) -> tuple[set[float], int, float, float | None, float | None] | None:
     """Read a composed CJK amount such as ``1兆9000億``, ``1조 9000억``, ``5,000億``,
     ``3천296억`` or ``217百萬``.
 
-    Returns the values, the end, the place of the last digit and the magnitude
-    of the leading part (which a range's lower bound shares).
+    Returns the values, the end, the place of the last digit, and the
+    萬/億/兆 magnitude and 十/百/千 multiplier of the leading part (which a
+    range's lower bound shares).
     """
 
     position = start
     totals: set[float] = {0.0}
     place = 1.0
     leading: float | None = None
+    leading_multiplier: float | None = None
     group: set[float] = {0.0}
     group_place: float | None = None
     while True:
@@ -288,6 +294,8 @@ def _cjk_value(text: str, start: int, notation: str | None) -> tuple[set[float],
         else:
             break
         if number and unit in _CJK_SMALL:
+            if leading is None and group_place is None:
+                leading_multiplier = _CJK_SMALL[unit]
             group = {value + reading * _CJK_SMALL[unit] for value in group for reading in readings}
             group_place = _place(number.group()) * _CJK_SMALL[unit]
             position = after + 1
@@ -311,8 +319,9 @@ def _cjk_value(text: str, start: int, notation: str | None) -> tuple[set[float],
         # A trailing multiplier group ("3千", "3천").
         totals = {total + value for total in totals for value in group}
         place = group_place
-        leading = leading or min(_CJK_SMALL.values())
-    return (totals, position, place, leading) if leading is not None else None
+    if leading is None and leading_multiplier is None:
+        return None
+    return totals, position, place, leading, leading_multiplier
 
 
 def _matched(table, match: re.Match[str]):
@@ -325,8 +334,8 @@ def _read(text: str, number: re.Match[str], notation: str | None) -> _Reading:
     currency = frozenset(_matched(_PREFIX_CURRENCIES, prefix)[1]) if prefix else frozenset()
     cjk = _cjk_value(text, start, notation)
     if cjk is not None:
-        values, end, place, magnitude = cjk
-        reading = _Reading(start, end, values, place, magnitude, currency)
+        values, end, place, magnitude, multiplier = cjk
+        reading = _Reading(start, end, values, place, magnitude, currency, multiplier=multiplier)
     else:
         word = _WORD_RE.match(text, number.end())
         if notation != _STRICT and _cjk_adjacent(text, start, number.end()):
@@ -367,9 +376,12 @@ def _read(text: str, number: re.Match[str], notation: str | None) -> _Reading:
 def _share_upper_bound(lower: _Reading, upper: _Reading) -> None:
     """A range states its magnitude and unit once: "5,000～10,000億円", "5-10%"."""
 
-    if lower.magnitude is None and lower.measure is None and upper.magnitude:
-        lower.values = {value * upper.magnitude for value in lower.values}
-        lower.place *= upper.magnitude
+    if lower.magnitude is None and lower.measure is None and (upper.magnitude or upper.multiplier):
+        # The lower bound takes the part of the upper's scale it does not state
+        # itself: "3～5千" = 3千～5千, "2천～3천억" = 2천억～3천억, "3~5천만" = 3천만～5천만.
+        factor = (upper.magnitude or 1) if lower.multiplier else (upper.magnitude or 1) * (upper.multiplier or 1)
+        lower.values = {value * factor for value in lower.values}
+        lower.place *= factor
         lower.magnitude = upper.magnitude
     if lower.measure is None and not lower.currency:
         if upper.measure is not None:
