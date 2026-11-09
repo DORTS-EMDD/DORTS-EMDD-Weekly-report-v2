@@ -187,6 +187,10 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
             changed = evaluation._configuration_fingerprint(specs, oracle)
         self.assertNotEqual(first, changed)
 
+        with patch.object(evaluation, "CATEGORY_SEMANTIC_PROMPT_VERSION", "category-principal-action-test"):
+            changed_version = evaluation._configuration_fingerprint(specs, oracle)
+        self.assertNotEqual(first, changed_version)
+
         with patch.dict(
             "os.environ",
             {

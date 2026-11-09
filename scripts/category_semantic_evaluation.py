@@ -21,6 +21,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.weekly_report.category_semantic_provider import (  # noqa: E402
+    CATEGORY_SEMANTIC_PROMPT_VERSION,
     CATEGORY_SEMANTIC_SCHEMA_VERSION,
     MAIAGENT_CATEGORY_MESSAGE_VERSION,
     MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER,
@@ -492,6 +493,7 @@ def _configuration_fingerprint(
     material = {
         "acceptance_version": ACCEPTANCE_VERSION,
         "evaluation_harness_version": EVALUATION_HARNESS_VERSION,
+        "category_prompt_version": CATEGORY_SEMANTIC_PROMPT_VERSION,
         "category_guidance": list(_CATEGORY_GUIDANCE),
         "authoritative_response_schema": _CATEGORY_RESPONSE_SCHEMA,
         "provider_schema_projection": _MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
