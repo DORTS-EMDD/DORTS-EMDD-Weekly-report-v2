@@ -100,3 +100,46 @@ production rerun was performed.
 Complexity is unchanged: the patch changes prompt text and assertions only;
 EventIdentity grouping, confirmation, complete-link behavior and asymptotic
 cost are unchanged.
+
+## RC66-R7 measurement preflight (2026-11-09)
+
+Starting SHA: `22a66a74aef917048954d3282955b4f493b24249` on
+`release/report-quality-wip`. The authoritative EventIdentity owner remains
+the production EventIdentity grouping/confirmation path. No prompt, schema,
+production behavior, Golden expected outcome, downstream rescue, or second
+owner changed.
+
+The baseline identity remains `event-identity-grouping-v10`, proposal schema
+`event-identity-semantic-proposal-v1`, confirmation schema
+`event-identity-semantic-confirmation-v1`, helper
+`maiagent-structured-helper-event-identity-adapter-v1`, provider
+`maiagent-structured-helper-event-identity`, and contract `event-identity-v1`.
+Recorded replay remains `reproduced=true`, `events=81`, `differences=[]`.
+
+The RC66-R7 corpus was rebuilt with the production Evidence fetcher and
+`assess_document(...).body_text` SHA-256. The preflight contains 78 prepared
+records: 65 hash-verified, 8 hash mismatches, 3 evidence-unavailable, and 2
+records with required audit metadata unavailable. No substitute source was
+used. Pure same-occurrence controls were added for the Daegu Myeongdeok
+entrance, Seoul Line 2 ja/ko outage, Kim Min-seok statement, Kyiv attack, and
+8-record Ulsan depot strata. One Kyiv Yahoo body remained unavailable and is
+explicitly excluded.
+
+D4/L1 remains unresolved for SmartToday candidate
+`cand_9ce03b4da316d4ea90f2eb7cf957ecf0ff5b45a5287192fe06b97878e0938997`
+(SHA-256 `6814dd94eb73c249ee4e98372801e68baa6bb750c7bb1f638476f742ecb0b96b`,
+focus S1/S2). The preflight records the only permitted choices:
+`INCHEON-WIFI-START` or `MINISTRY-EVENT`. No MaiAgent call was made.
+
+The cited-focus RC-52 plus M-C design is estimated at about 192 calls
+(120 + 72), within the proposed hard cap of 200. Phase C also mandates M-F
+with the full validated focus for both batch and M-C, increasing the complete
+bound to about 384 calls. This cap/design conflict is recorded as a blocker;
+the preflight stops before paid measurement rather than exceeding the cap or
+silently omitting M-F.
+
+Validation at this checkpoint: targeted EventIdentity/Golden/failure-path
+tests `169 passed`; full offline regression `1545 passed, 5 skipped`; compile
+check passed; ED01-ED28 expected outcomes remain unchanged. Real production
+EventIdentity validation was not run. The machine-readable details are in
+`acceptance/event_identity/rc66_r7_preflight.json`.

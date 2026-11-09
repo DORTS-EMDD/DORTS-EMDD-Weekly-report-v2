@@ -1,0 +1,100 @@
+{
+  "artifact": "RC66-R7 EventIdentity measurement preflight",
+  "generated_at": "2026-11-09",
+  "status": "READY_FOR_D4_DECISION",
+  "repository": {
+    "branch": "release/report-quality-wip",
+    "starting_sha": "22a66a74aef917048954d3282955b4f493b24249",
+    "production_prompt_changed": false,
+    "paid_provider_authorized": "MaiAgent only"
+  },
+  "baseline_identity": {
+    "prompt": "event-identity-grouping-v10",
+    "proposal_schema": "event-identity-semantic-proposal-v1",
+    "confirmation_schema": "event-identity-semantic-confirmation-v1",
+    "helper": "maiagent-structured-helper-event-identity-adapter-v1",
+    "provider": "maiagent-structured-helper-event-identity",
+    "contract": "event-identity-v1",
+    "replay": "reproduced=true; events=81; differences=[]"
+  },
+  "corpus": {
+    "method": "production evidence fetcher plus assess_document body_text SHA-256; no substitution for unavailable or mismatched records",
+    "prepared_record_count": 78,
+    "verified_record_count": 65,
+    "hash_mismatch_count": 8,
+    "evidence_unavailable_count": 3,
+    "required_metadata_unavailable_count": 2,
+    "strata": {
+      "mixed_records": "5 verified; 1 evidence unavailable",
+      "mega_group_negative_controls": "52 recorded inputs; 43 verified; 8 hash mismatches; 1 evidence unavailable",
+      "incident_followup": "2 verified",
+      "pure_oversplit": "16 records; 15 verified; 1 evidence unavailable",
+      "announcement_statement_controls": "2 records; required audit SHA metadata unavailable"
+    },
+    "pure_oversplit_controls": [
+      "Daegu Myeongdeok entrance: 2 records",
+      "Seoul Line 2 outage ja/ko: 2 records",
+      "Kim Min-seok statement: 2 records",
+      "Kyiv attack reports: 2 records",
+      "Ulsan depot: 8 records"
+    ],
+    "d4_l1": {
+      "candidate_id": "cand_9ce03b4da316d4ea90f2eb7cf957ecf0ff5b45a5287192fe06b97878e0938997",
+      "source_url": "https://www.smarttoday.co.kr/ko-kr/articles/112956",
+      "content_sha256": "6814dd94eb73c249ee4e98372801e68baa6bb750c7bb1f638476f742ecb0b96b",
+      "focus_sentence_ids": ["S1", "S2"],
+      "status": "UNRESOLVED",
+      "choices": {
+        "A": "INCHEON-WIFI-START",
+        "B": "MINISTRY-EVENT"
+      }
+    }
+  },
+  "arms": {
+    "candidate_confirmation_guidance": "In a confirmation, a record that reports two occurrences goes with the records of the occurrence whose specific details it states; reporting an activity that marks or verifies that occurrence does not by itself make it a different event. It is a single-record group only when the shared details cannot be determined.",
+    "rc52": "PREPARED_NOT_RUN; 3 rounds per prompt",
+    "m_c": "PREPARED_NOT_RUN; exact recorded confirmation inputs, 3 rounds per prompt",
+    "pure_oversplit": "PREPARED_NOT_RUN; evidence rebuilt without production mutation",
+    "cross_language": "PREPARED_NOT_RUN; ja/ko/zh/fr/en/es same-occurrence controls",
+    "mega_group_negative_controls": "PREPARED_WITH_EXCLUSIONS; no substitute for 8 mismatches or 1 unavailable input",
+    "duplicate_membership": "PREPARED_OFFLINE_OBSERVATION_ONLY",
+    "batch_recall": "NOT_RUN; paid gate",
+    "bh2_mf": "DESIGNED_NOT_RUN; full validated focus required for batch and M-C"
+  },
+  "call_budget": {
+    "estimated_calls_min": 192,
+    "estimated_calls_max": 384,
+    "hard_cap": 200,
+    "by_arm": {
+      "cited_focus_rc52": 120,
+      "cited_focus_m_c": 72,
+      "full_validated_focus_rc52": 120,
+      "full_validated_focus_m_c": 72
+    },
+    "actual_maiagent_calls": 0,
+    "cap_finding": "The cited-focus design is about 192 calls; the mandatory M-F full-focus design raises the complete bound to about 384, exceeding the package hard cap of 200. No paid calls started."
+  },
+  "offline_validation": {
+    "targeted_event_identity_and_golden": "169 passed",
+    "full_regression": "1545 passed; 5 skipped",
+    "compile": "passed",
+    "golden_ed01_ed28": "PASS; expected outcomes unchanged"
+  },
+  "governance": {
+    "event_identity_owner_preserved": true,
+    "fallback_or_backfill": false,
+    "downstream_rescue": false,
+    "second_owner": false,
+    "golden_mutation": false,
+    "country_language_event_special_case": false,
+    "production_run": false,
+    "unauthorized_external_paid_api_used": false
+  },
+  "unresolved_blockers": [
+    "D4/L1 user label is required: A=INCHEON-WIFI-START or B=MINISTRY-EVENT.",
+    "One Kyiv Yahoo evidence body was unavailable during refetch; no substitute is authorized.",
+    "Eight records have current body hashes different from audit hashes; they remain excluded rather than substituted.",
+    "Two legacy announcement/statement records lack required audit content_sha256 metadata.",
+    "Mandatory M-F full-focus arms exceed the package hard cap by about 184 calls."
+  ]
+}
