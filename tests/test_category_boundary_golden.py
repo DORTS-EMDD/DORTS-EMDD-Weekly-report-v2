@@ -84,12 +84,15 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         # RC-66: one qualified definition, the closed set of listed actions,
         # on-board non-transport services, and the schema's subtype pattern.
         self.assertIn("substantive development whose subject is a technology, method or material itself", guidance)
+        self.assertIn("only a principal action that itself is", guidance)
         self.assertNotIn("technical deployments, and substantive technical development", guidance)
         self.assertIn("A Category applies only when the principal action is itself one of the actions its definition lists", guidance)
         self.assertIn("are not TECHNICAL_DEVELOPMENT", guidance)
         self.assertIn("at a station or on board a train that is not transport service", guidance)
         self.assertIn("starts with a letter a-z", guidance)
         self.assertIn("even when the tested system is signalling, train control, communication or power equipment", guidance)
+        self.assertIn("future tense does not make it an unadopted recommendation", guidance)
+        self.assertIn("passenger-facing service", guidance)
 
 
 
