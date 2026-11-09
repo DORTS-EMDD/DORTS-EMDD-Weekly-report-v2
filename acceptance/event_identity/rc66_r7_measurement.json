@@ -1,0 +1,65 @@
+{
+  "description": "RC66-R7 complete measurement attempt; blocked before first paid call because the authorized Structured Helper runtime configuration was unavailable.",
+  "verdict": "BLOCKED_EXTERNAL_DEPENDENCY",
+  "starting_sha": "5bb281813d2327a7de5327d997a8ab445b4a22de",
+  "d4_l1": "INCHEON-WIFI-START",
+  "corpus_source": "refetched, sha256-verified Event Identity input",
+  "corpus": {
+    "prepared": 78,
+    "verified": 65,
+    "hash_mismatch": 8,
+    "evidence_unavailable": 3,
+    "required_metadata_unavailable": 2,
+    "excluded_records_used": false
+  },
+  "baseline": {
+    "prompt": "event-identity-grouping-v10",
+    "proposal_schema": "event-identity-semantic-proposal-v1",
+    "confirmation_schema": "event-identity-semantic-confirmation-v1",
+    "helper": "maiagent-structured-helper-event-identity-adapter-v1",
+    "provider": "maiagent-structured-helper-event-identity",
+    "replay": "reproduced=true; events=81; differences=[]"
+  },
+  "candidate": {
+    "identity": "event-identity-grouping-v10+rc66-confirmation-clarification-v1",
+    "change": "confirmation-only measurement guidance; not applied to production"
+  },
+  "planned_design": {
+    "rounds": 3,
+    "cited_focus_rc52": "NOT_RUN",
+    "cited_focus_m_c": "NOT_RUN",
+    "bh2_mf_rc52": "NOT_RUN",
+    "bh2_mf_m_c": "NOT_RUN",
+    "mixed_record": "NOT_MEASURED",
+    "pure_oversplit": "NOT_MEASURED",
+    "cross_language": "NOT_MEASURED",
+    "mega_group_negative_controls": "NOT_MEASURED",
+    "batch_recall": "NOT_MEASURED",
+    "duplicate_membership": "NOT_MEASURED",
+    "frozen_acceptance_predicates": "NOT_MEASURED"
+  },
+  "calls": {
+    "estimated": 384,
+    "actual": 0,
+    "transport_retries": 0,
+    "hard_cap": 400,
+    "provider_authorized": "MaiAgent only"
+  },
+  "blocker": {
+    "class": "BLOCKED_EXTERNAL_DEPENDENCY",
+    "reason": "Existing runtime has MAIAGENT_API_BASE, MAIAGENT_API_KEY and MAIAGENT_CHATBOT_ID, but lacks MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID. The latter is required by the EventIdentity provider and must be distinct from the Writer chatbot.",
+    "provider_configuration_check": "build_maiagent_event_identity_provider() returned None",
+    "writer_chatbot_substitution": false
+  },
+  "offline_validation": {
+    "targeted_event_identity_and_golden": "169 passed",
+    "full_regression": "1545 passed; 5 skipped",
+    "ed01_ed28": "PASS"
+  },
+  "production_eventidentity_changed": false,
+  "production_scope_changed": false,
+  "downstream_rescue_added": false,
+  "second_owner_added": false,
+  "golden_expected_outcome_changed": false,
+  "real_production_validated": false
+}

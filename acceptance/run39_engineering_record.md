@@ -143,3 +143,23 @@ tests `169 passed`; full offline regression `1545 passed, 5 skipped`; compile
 check passed; ED01-ED28 expected outcomes remain unchanged. Real production
 EventIdentity validation was not run. The machine-readable details are in
 `acceptance/event_identity/rc66_r7_preflight.json`.
+
+## RC66-R7 execution attempt (2026-11-09)
+
+Starting SHA: `5bb281813d2327a7de5327d997a8ab445b4a22de`. D4/L1 was frozen as
+`INCHEON-WIFI-START` before execution. The branch, repository identity and
+clean working tree were verified; origin matched the starting SHA.
+
+The measurement was blocked before the first paid call. The existing runtime
+exposes `MAIAGENT_API_BASE`, `MAIAGENT_API_KEY`, and the Writer-only
+`MAIAGENT_CHATBOT_ID`, but does not expose the required
+`MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID`. The repository's EventIdentity
+provider therefore returned `None` during the configuration check. Using the
+Writer chatbot as a Structured Helper would violate the authoritative
+provider boundary, so it was not attempted.
+
+Actual MaiAgent calls: 0. Transport retries: 0. No R7 round, M-C, M-F,
+candidate comparison, or acceptance predicate was measured. The blocked
+result is recorded in `acceptance/event_identity/rc66_r7_measurement.json`.
+Production EventIdentity, Scope, Golden outcomes, and downstream behavior
+remain unchanged.
