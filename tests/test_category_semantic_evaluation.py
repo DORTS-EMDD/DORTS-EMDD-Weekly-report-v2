@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import hashlib
+import json
 import unittest
 from unittest.mock import patch
 
@@ -58,6 +60,13 @@ def _deployment_snapshot() -> dict:
             "platform_schema_version",
         ],
     }
+
+
+def _bound_deployment_record(snapshot: dict, identity: str = "category-instance-123") -> dict:
+    return evaluation._deployment_provenance_record(
+        snapshot,
+        runtime_helper_identity=identity,
+    )
 
 
 class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
@@ -215,10 +224,27 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
             return {
                 "CATEGORY_53_GROUP_LIVE_ACCEPTANCE": "PASS",
                 "ACCEPTANCE_VERSION": evaluation.ACCEPTANCE_VERSION,
+                "ACCEPTANCE_EVIDENCE_VERSION": evaluation.ACCEPTANCE_EVIDENCE_VERSION,
                 "CONFIGURATION_FINGERPRINT": fingerprint,
                 "DEPLOYMENT_PROVENANCE_STATUS": "OBSERVED_AND_FROZEN",
                 "DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION": evaluation.DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION,
                 "DEPLOYMENT_FINGERPRINT": "b" * 64,
+                "SAME_RUNTIME_HELPER_BINDING": "PROVEN",
+                "ACCEPTANCE_EVIDENCE_CHAIN_STATUS": "COMPLETE",
+                "ACCEPTANCE_EVIDENCE_COMPLETE_COUNT": 53,
+                "RESULTS": [
+                    {
+                        "acceptance_evidence": {
+                            "request_payload_sha256": "c" * 64,
+                            "provider_request_body_sha256": "d" * 64,
+                            "provider_response_body_sha256": "1" * 64,
+                            "proposal_sha256": "e" * 64,
+                            "validated_result_sha256": "f" * 64,
+                            "chain_sha256": "0" * 64,
+                        }
+                    }
+                    for _ in range(53)
+                ],
                 "ROUND_INDEX": index,
                 "LIVE_CALL_COUNT": 53,
                 "HTTP_200_COUNT": 53,
@@ -234,6 +260,23 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
         passed = evaluation.assess_final_seal_batch(reports)
         self.assertEqual(passed["CATEGORY_V4_FINAL_SEAL"], "PASS")
         self.assertEqual(passed["FAILED_ROUNDS"], [])
+
+        historical_reports = [dict(report) for report in reports]
+        for report in historical_reports:
+            report.pop("ACCEPTANCE_EVIDENCE_VERSION")
+            report.pop("SAME_RUNTIME_HELPER_BINDING")
+            report.pop("ACCEPTANCE_EVIDENCE_CHAIN_STATUS")
+            report.pop("ACCEPTANCE_EVIDENCE_COMPLETE_COUNT")
+            report.pop("RESULTS")
+        current_blocked = evaluation.assess_final_seal_batch(historical_reports)
+        self.assertEqual(
+            current_blocked["BLOCKER"],
+            "CURRENT_ACCEPTANCE_EVIDENCE_VERSION_REQUIRED",
+        )
+        historical = evaluation.assess_historical_final_seal_batch(historical_reports)
+        self.assertEqual(historical["CATEGORY_V4_FINAL_SEAL"], "PASS")
+        self.assertEqual(historical["ACCEPTANCE_SCOPE"], "HISTORICAL_ONLY")
+        self.assertEqual(historical["CURRENT_LIVE_SCOREABILITY"], "NO")
 
         reports[1]["RESOLUTION_REASON_MISMATCH_COUNT"] = 1
         reports[1]["EXACT_CATEGORY_MATCH_COUNT"] = 52
@@ -260,19 +303,44 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
     def test_deployment_snapshot_validates_and_fingerprints_observed_contract(self):
         snapshot = _deployment_snapshot()
         snapshot["skills_tools"]["selected"] = ["structured-output", "json-schema"]
-        first = evaluation._deployment_provenance_record(snapshot)
+        first = _bound_deployment_record(snapshot)
         reordered = deepcopy(snapshot)
         reordered["skills_tools"]["selected"].reverse()
         reordered["unavailable_platform_facts"].reverse()
         reordered["platform"] = dict(reversed(list(reordered["platform"].items())))
-        second = evaluation._deployment_provenance_record(reordered)
+        second = _bound_deployment_record(reordered)
         self.assertEqual(first, second)
         self.assertEqual(first["DEPLOYMENT_PROVENANCE_STATUS"], "OBSERVED_AND_FROZEN")
+        self.assertEqual(first["DEPLOYMENT_BINDING_STATUS"], "SAME_RUNTIME_HELPER_PROVEN")
+        self.assertEqual(first["SAME_RUNTIME_HELPER_BINDING"], "PROVEN")
+        self.assertEqual(
+            first["RUNTIME_HELPER_IDENTITY_FINGERPRINT"],
+            first["DEPLOYMENT_SNAPSHOT_IDENTITY_FINGERPRINT"],
+        )
         self.assertEqual(
             first["DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION"],
             evaluation.DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION,
         )
         self.assertEqual(len(first["DEPLOYMENT_FINGERPRINT"]), 64)
+
+    def test_different_runtime_helper_snapshot_fails_closed(self):
+        with self.assertRaises(ValueError):
+            _bound_deployment_record(
+                _deployment_snapshot(),
+                identity="different-category-instance",
+            )
+
+    def test_missing_runtime_helper_binding_is_not_frozen(self):
+        record = evaluation._deployment_provenance_record(_deployment_snapshot())
+        self.assertEqual(
+            record["DEPLOYMENT_PROVENANCE_STATUS"],
+            "DEPLOYMENT_PROVENANCE_UNAVAILABLE",
+        )
+        self.assertEqual(
+            record["DEPLOYMENT_BINDING_STATUS"],
+            "RUNTIME_HELPER_IDENTITY_UNAVAILABLE",
+        )
+        self.assertNotIn("DEPLOYMENT_FINGERPRINT", record)
 
     def test_deployment_snapshot_requires_observed_identity_content(self):
         required_cases = (
@@ -286,26 +354,26 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
                 snapshot = _deployment_snapshot()
                 snapshot[parent].pop(child)
                 with self.assertRaises(ValueError):
-                    evaluation._deployment_provenance_record(snapshot)
+                    _bound_deployment_record(snapshot)
 
         snapshot = _deployment_snapshot()
         snapshot["structured_output"]["schema"] = {"schema_version": "category-proposal-v4"}
         with self.assertRaises(ValueError):
-            evaluation._deployment_provenance_record(
+            _bound_deployment_record(
                 {key: value for key, value in snapshot.items() if key != "structured_output"}
             )
 
     def test_deployment_snapshot_allows_optional_metadata_and_unavailable_facts(self):
         snapshot = _deployment_snapshot()
         snapshot["optional_platform_metadata"] = {}
-        record = evaluation._deployment_provenance_record(snapshot)
+        record = _bound_deployment_record(snapshot)
         self.assertEqual(record["DEPLOYMENT_PROVENANCE_STATUS"], "OBSERVED_AND_FROZEN")
 
         unavailable_snapshot = _deployment_snapshot()
         unavailable_snapshot.pop("answer_mode")
         unavailable_snapshot["unavailable_platform_facts"].append("answer_mode")
         self.assertEqual(
-            evaluation._deployment_provenance_record(unavailable_snapshot)[
+            _bound_deployment_record(unavailable_snapshot)[
                 "DEPLOYMENT_PROVENANCE_STATUS"
             ],
             "OBSERVED_AND_FROZEN",
@@ -317,7 +385,7 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
             "schema_version": "platform-v4",
         }
         self.assertEqual(
-            evaluation._deployment_provenance_record(snapshot)["DEPLOYMENT_PROVENANCE_STATUS"],
+            _bound_deployment_record(snapshot)["DEPLOYMENT_PROVENANCE_STATUS"],
             "OBSERVED_AND_FROZEN",
         )
 
@@ -325,7 +393,7 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
             snapshot["platform"]["chatbot_instance_id"]
         )
         with self.assertRaises(ValueError):
-            evaluation._deployment_provenance_record(snapshot)
+            _bound_deployment_record(snapshot)
 
     def test_deployment_snapshot_rejects_placeholders_and_never_backfills(self):
         for path in (
@@ -337,17 +405,17 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
                 snapshot = _deployment_snapshot()
                 snapshot[path[0]][path[1]] = "UNAVAILABLE"
                 with self.assertRaises(ValueError):
-                    evaluation._deployment_provenance_record(snapshot)
+                    _bound_deployment_record(snapshot)
 
         snapshot = _deployment_snapshot()
         snapshot["unavailable_platform_facts"] = ["platform_schema_version"]
         self.assertEqual(
-            evaluation._deployment_provenance_record(snapshot)["DEPLOYMENT_PROVENANCE_STATUS"],
+            _bound_deployment_record(snapshot)["DEPLOYMENT_PROVENANCE_STATUS"],
             "OBSERVED_AND_FROZEN",
         )
 
     def test_deployment_snapshot_fingerprint_changes_for_observable_behavior_inputs(self):
-        base = evaluation._deployment_provenance_record(_deployment_snapshot())[
+        base = _bound_deployment_record(_deployment_snapshot())[
             "DEPLOYMENT_FINGERPRINT"
         ]
         changes = (
@@ -366,20 +434,20 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
                 for key in path[:-1]:
                     target = target[key]
                 target[path[-1]] = value
-                changed = evaluation._deployment_provenance_record(snapshot)[
+                changed = _bound_deployment_record(snapshot)[
                     "DEPLOYMENT_FINGERPRINT"
                 ]
                 self.assertNotEqual(base, changed)
 
     def test_deployment_snapshot_audit_metadata_does_not_change_fingerprint(self):
         snapshot = _deployment_snapshot()
-        first = evaluation._deployment_provenance_record(snapshot)
+        first = _bound_deployment_record(snapshot)
         snapshot["audit_metadata"] = {
             "captured_at": "2099-01-01T00:00:00Z",
             "screenshot_filename": "capture-a.png",
             "operator_note": "first read-back",
         }
-        second = evaluation._deployment_provenance_record(snapshot)
+        second = _bound_deployment_record(snapshot)
         self.assertEqual(
             first["DEPLOYMENT_FINGERPRINT"], second["DEPLOYMENT_FINGERPRINT"]
         )
@@ -403,8 +471,62 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
 
         self.assertEqual(
             evaluation._deployment_provenance_record(None),
-            {"DEPLOYMENT_PROVENANCE_STATUS": "DEPLOYMENT_PROVENANCE_UNAVAILABLE"},
+            {
+                "DEPLOYMENT_PROVENANCE_STATUS": "DEPLOYMENT_PROVENANCE_UNAVAILABLE",
+                "DEPLOYMENT_BINDING_STATUS": "DEPLOYMENT_SNAPSHOT_UNAVAILABLE",
+            },
         )
+
+    def test_offline_acceptance_retains_bound_request_response_chain(self):
+        provider = _AssignedProcurementStub()
+        report = evaluation.run_evaluation(provider=provider)
+
+        self.assertEqual(report["ACCEPTANCE_EVIDENCE_VERSION"], evaluation.ACCEPTANCE_EVIDENCE_VERSION)
+        self.assertEqual(report["CONFIGURATION_FINGERPRINT"], evaluation._configuration_fingerprint(
+            evaluation._phase_a_reconcile(self.fixtures)[0],
+            evaluation._phase_a_reconcile(self.fixtures)[1],
+        ))
+        row = report["RESULTS"][0]
+        evidence = row["acceptance_evidence"]
+        serialized_request = json.dumps(
+            provider.payloads[0], ensure_ascii=False, separators=(",", ":")
+        )
+        self.assertEqual(
+            evidence["request_payload_sha256"],
+            hashlib.sha256(serialized_request.encode("utf-8")).hexdigest(),
+        )
+        self.assertEqual(evidence["proposal_evidence_status"], "PARSED_PROPOSAL_RETAINED")
+        self.assertEqual(evidence["validation_status"], "CLASSIFIER_ACCEPTED")
+        self.assertEqual(len(evidence["proposal_sha256"]), 64)
+        self.assertEqual(len(evidence["validated_result_sha256"]), 64)
+        self.assertEqual(len(evidence["chain_sha256"]), 64)
+        self.assertEqual(
+            evidence["configuration_fingerprint"],
+            report["CONFIGURATION_FINGERPRINT"],
+        )
+        self.assertEqual(report["RESPONSES_ADAPTER_USED"], "NO")
+        self.assertIsNone(evidence["provider_request_body_sha256"])
+        self.assertNotIn("api_key", json.dumps(evidence, ensure_ascii=False).lower())
+
+    def test_runtime_binding_blocks_transport_before_live_call(self):
+        config = MaiAgentCategorySemanticProviderConfig(
+            api_base="https://maiagent.invalid",
+            api_key="test-only",
+            chatbot_id="runtime-helper-instance",
+        )
+        calls = []
+
+        def forbidden_transport(*args, **kwargs):
+            calls.append((args, kwargs))
+            raise AssertionError("transport must not run for a mismatched Helper instance")
+
+        with self.assertRaises(ValueError):
+            evaluation.run_evaluation(
+                config=config,
+                transport=forbidden_transport,
+                deployment_provenance=_deployment_snapshot(),
+            )
+        self.assertEqual(calls, [])
 
     def test_final_seal_contract_locks_predeclared_no_replacement_batch(self):
         contract = (evaluation.ROOT / "docs" / "ARCHITECTURE_CONTRACT.md").read_text(

@@ -35,6 +35,7 @@ from src.weekly_report.category_semantic_provider import (  # noqa: E402
 )
 from src.weekly_report.classifier import (  # noqa: E402
     CategoryProposalViolation,
+    CategorySemanticResponse,
     CategorySemanticHelperResult,
     CategorySemanticRequest,
     Classifier,
@@ -64,13 +65,27 @@ class _CaptureProvider:
         self.provider = provider
         self.last_proposal: object | None = None
         self.last_request: CategorySemanticRequest | None = None
+        self.last_provenance: Mapping[str, str] = {}
         self.expected_payloads = expected_payloads
         self.call_count = 0
         self.integrity_error: str | None = None
+        self.call_evidence: list[dict[str, Any]] = []
 
     def __call__(self, request):
         self.last_proposal = None
         self.last_request = request
+        serialized = _serialized_request(request)
+        evidence = {
+            "request_payload_sha256": hashlib.sha256(
+                serialized.encode("utf-8")
+            ).hexdigest(),
+            "request_payload_bytes": len(serialized.encode("utf-8")),
+            "proposal": None,
+            "proposal_sha256": None,
+            "provider_provenance": {},
+            "proposal_evidence_status": "NOT_RECEIVED",
+        }
+        self.call_evidence.append(evidence)
         if self.expected_payloads is not None:
             if self.call_count >= len(self.expected_payloads):
                 self.integrity_error = "classifier produced an unplanned Category request"
@@ -80,8 +95,25 @@ class _CaptureProvider:
                 self.integrity_error = "classifier request differs from the oracle-isolated preflight"
                 raise RuntimeError(self.integrity_error)
         self.call_count += 1
-        result = self.provider(request)
+        try:
+            result = self.provider(request)
+        except Exception as exc:
+            evidence["proposal_evidence_status"] = "PROVIDER_RAISED"
+            evidence["provider_error_type"] = type(exc).__name__
+            raise
         self.last_proposal = result.proposal if isinstance(result, CategorySemanticHelperResult) else result
+        self.last_provenance = (
+            dict(result.provenance)
+            if isinstance(result, CategorySemanticHelperResult)
+            else {}
+        )
+        proposal = _proposal_evidence(self.last_proposal)
+        evidence["proposal"] = proposal
+        evidence["proposal_sha256"] = hashlib.sha256(
+            _canonical_json(proposal).encode("utf-8")
+        ).hexdigest()
+        evidence["provider_provenance"] = dict(self.last_provenance)
+        evidence["proposal_evidence_status"] = "PARSED_PROPOSAL_RETAINED"
         return result
 
 
@@ -101,12 +133,34 @@ class _RecordingMaiAgentTransport:
                 timeout_seconds=timeout_seconds,
             )
         except Exception as exc:
-            self.observations.append({"status_code": None, "transport_error_type": type(exc).__name__})
+            self.observations.append(
+                {
+                    "status_code": None,
+                    "transport_error_type": type(exc).__name__,
+                    "request_body_sha256": hashlib.sha256(body).hexdigest(),
+                    "request_body_bytes": len(body),
+                }
+            )
             raise
         if isinstance(response, MaiAgentHttpResponse):
-            self.observations.append({"status_code": response.status_code})
+            self.observations.append(
+                {
+                    "status_code": response.status_code,
+                    "request_body_sha256": hashlib.sha256(body).hexdigest(),
+                    "request_body_bytes": len(body),
+                    "response_body_sha256": hashlib.sha256(response.body).hexdigest(),
+                    "response_body_bytes": len(response.body),
+                }
+            )
         else:
-            self.observations.append({"status_code": None, "transport_error_type": "InvalidTransportResponse"})
+            self.observations.append(
+                {
+                    "status_code": None,
+                    "transport_error_type": "InvalidTransportResponse",
+                    "request_body_sha256": hashlib.sha256(body).hexdigest(),
+                    "request_body_bytes": len(body),
+                }
+            )
         return response
 
 
@@ -236,7 +290,8 @@ def _groups(upstream: _UpstreamFixture, records: tuple[EventIdentityRecord, ...]
 
 
 ACCEPTANCE_VERSION = "category-v4-final-seal-v2"
-EVALUATION_HARNESS_VERSION = "category-semantic-evaluation-v3"
+ACCEPTANCE_EVIDENCE_VERSION = "category-acceptance-evidence-v1"
+EVALUATION_HARNESS_VERSION = "category-semantic-evaluation-v4"
 DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION = "category-deployment-snapshot-v1"
 TOTAL_GOLDEN_FIXTURES = 85
 CATEGORY_REACHED_FIXTURES = 52
@@ -476,6 +531,39 @@ def _canonical_json(value: object) -> str:
     )
 
 
+def _proposal_evidence(value: object) -> dict[str, Any]:
+    """Return a JSON-safe copy of the untrusted proposal for audit only."""
+
+    if isinstance(value, CategorySemanticResponse):
+        return {
+            "category_state": getattr(value.category_state, "value", value.category_state),
+            "primary_category_id": getattr(
+                value.primary_category_id,
+                "value",
+                value.primary_category_id,
+            ),
+            "subtype": value.subtype,
+            "category_resolution_reason": getattr(
+                value.category_resolution_reason,
+                "value",
+                value.category_resolution_reason,
+            ),
+            "citations": [
+                {
+                    "source_ref": citation.source_ref,
+                    "sentence_ids": list(citation.sentence_ids),
+                }
+                for citation in value.citations
+            ],
+        }
+    if isinstance(value, Mapping):
+        try:
+            return json.loads(_canonical_json(value))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("acceptance proposal evidence is not JSON-serializable") from exc
+    raise ValueError("acceptance proposal evidence has an unsupported shape")
+
+
 def _configuration_fingerprint(
     specs: list[dict[str, Any]],
     oracle_mapping: Mapping[tuple[str, str], Mapping[str, str]],
@@ -492,6 +580,7 @@ def _configuration_fingerprint(
     ]
     material = {
         "acceptance_version": ACCEPTANCE_VERSION,
+        "acceptance_evidence_version": ACCEPTANCE_EVIDENCE_VERSION,
         "evaluation_harness_version": EVALUATION_HARNESS_VERSION,
         "category_prompt_version": CATEGORY_SEMANTIC_PROMPT_VERSION,
         "category_guidance": list(_CATEGORY_GUIDANCE),
@@ -714,12 +803,43 @@ def _validate_deployment_snapshot(value: Mapping[str, Any]) -> dict[str, Any]:
     return canonical
 
 
+def _identity_fingerprint(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
 def _deployment_provenance_record(
     value: Mapping[str, Any] | None,
+    *,
+    runtime_helper_identity: str | None = None,
 ) -> dict[str, Any]:
+    """Validate and bind a platform snapshot to the actual runtime Helper.
+
+    A snapshot is never considered observed/frozen without the identity used
+    by the provider configuration for the calls.  The raw identity is only
+    compared in memory; artifacts retain fingerprints, not the identifier.
+    """
+
     if value is None:
-        return {"DEPLOYMENT_PROVENANCE_STATUS": "DEPLOYMENT_PROVENANCE_UNAVAILABLE"}
+        return {
+            "DEPLOYMENT_PROVENANCE_STATUS": "DEPLOYMENT_PROVENANCE_UNAVAILABLE",
+            "DEPLOYMENT_BINDING_STATUS": "DEPLOYMENT_SNAPSHOT_UNAVAILABLE",
+        }
     snapshot = _validate_deployment_snapshot(value)
+    snapshot_identity = snapshot["platform"]["chatbot_instance_id"]
+    if runtime_helper_identity is None:
+        return {
+            "DEPLOYMENT_PROVENANCE_STATUS": "DEPLOYMENT_PROVENANCE_UNAVAILABLE",
+            "DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION": snapshot["snapshot_contract_version"],
+            "DEPLOYMENT_BINDING_STATUS": "RUNTIME_HELPER_IDENTITY_UNAVAILABLE",
+        }
+    if (
+        not isinstance(runtime_helper_identity, str)
+        or not runtime_helper_identity
+        or runtime_helper_identity != runtime_helper_identity.strip()
+    ):
+        raise ValueError("runtime Helper identity is not canonical")
+    if snapshot_identity != runtime_helper_identity:
+        raise ValueError("deployment snapshot Helper identity does not match runtime Helper identity")
     fingerprint_material = {
         key: item for key, item in snapshot.items() if key != "audit_metadata"
     }
@@ -729,15 +849,46 @@ def _deployment_provenance_record(
         "DEPLOYMENT_FINGERPRINT": hashlib.sha256(
             _canonical_json(fingerprint_material).encode("utf-8")
         ).hexdigest(),
+        "DEPLOYMENT_BINDING_STATUS": "SAME_RUNTIME_HELPER_PROVEN",
+        "SAME_RUNTIME_HELPER_BINDING": "PROVEN",
+        "RUNTIME_HELPER_IDENTITY_FINGERPRINT": _identity_fingerprint(
+            runtime_helper_identity
+        ),
+        "DEPLOYMENT_SNAPSHOT_IDENTITY_FINGERPRINT": _identity_fingerprint(
+            snapshot_identity
+        ),
     }
 
 
-def assess_final_seal_batch(round_reports: list[Mapping[str, Any]]) -> dict[str, Any]:
+def _report_has_complete_live_evidence(report: Mapping[str, Any]) -> bool:
+    results = report.get("RESULTS")
+    return (
+        isinstance(results, list)
+        and len(results) == GROUPS_PER_ROUND
+        and all(
+            isinstance(row, Mapping)
+            and isinstance(row.get("acceptance_evidence"), Mapping)
+            and _live_evidence_complete(row["acceptance_evidence"])
+            for row in results
+        )
+    )
+
+
+def _assess_final_seal_batch(
+    round_reports: list[Mapping[str, Any]],
+    *,
+    require_current_evidence: bool,
+) -> dict[str, Any]:
     """Assess exactly the three predeclared rounds without replacing failures."""
 
     result: dict[str, Any] = {
         "CATEGORY_V4_FINAL_SEAL": "BLOCKED",
         "ACCEPTANCE_VERSION": ACCEPTANCE_VERSION,
+        "ACCEPTANCE_EVIDENCE_VERSION": (
+            ACCEPTANCE_EVIDENCE_VERSION
+            if require_current_evidence
+            else "NOT_RECORDED_HISTORICAL"
+        ),
         "DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION": DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION,
         "PLANNED_ROUNDS": FINAL_SEAL_ROUNDS,
         "GROUPS_PER_ROUND": GROUPS_PER_ROUND,
@@ -756,6 +907,32 @@ def assess_final_seal_batch(round_reports: list[Mapping[str, Any]]) -> dict[str,
     if versions != {ACCEPTANCE_VERSION} or len(fingerprints) != 1 or None in fingerprints:
         result["BLOCKER"] = "ROUND_CONFIGURATION_IS_NOT_IDENTICAL_AND_FROZEN"
         return result
+    if require_current_evidence:
+        evidence_versions = {
+            report.get("ACCEPTANCE_EVIDENCE_VERSION") for report in round_reports
+        }
+        binding_statuses = {
+            report.get("SAME_RUNTIME_HELPER_BINDING") for report in round_reports
+        }
+        chain_statuses = {
+            report.get("ACCEPTANCE_EVIDENCE_CHAIN_STATUS") for report in round_reports
+        }
+        complete_counts = {
+            report.get("ACCEPTANCE_EVIDENCE_COMPLETE_COUNT")
+            for report in round_reports
+        }
+        if evidence_versions != {ACCEPTANCE_EVIDENCE_VERSION}:
+            result["BLOCKER"] = "CURRENT_ACCEPTANCE_EVIDENCE_VERSION_REQUIRED"
+            return result
+        if binding_statuses != {"PROVEN"}:
+            result["BLOCKER"] = "CURRENT_ACCEPTANCE_RUNTIME_BINDING_REQUIRED"
+            return result
+        if chain_statuses != {"COMPLETE"} or complete_counts != {GROUPS_PER_ROUND}:
+            result["BLOCKER"] = "CURRENT_ACCEPTANCE_EVIDENCE_CHAIN_REQUIRED"
+            return result
+        if not all(_report_has_complete_live_evidence(report) for report in round_reports):
+            result["BLOCKER"] = "CURRENT_ACCEPTANCE_EVIDENCE_ROWS_REQUIRED"
+            return result
     deployment_statuses = {
         report.get("DEPLOYMENT_PROVENANCE_STATUS") for report in round_reports
     }
@@ -792,6 +969,23 @@ def assess_final_seal_batch(round_reports: list[Mapping[str, Any]]) -> dict[str,
     result["DEPLOYMENT_FINGERPRINT"] = next(iter(deployment_fingerprints))
     result["FAILED_ROUNDS"] = failed_rounds
     result["CATEGORY_V4_FINAL_SEAL"] = "PASS" if not failed_rounds else "FINDINGS"
+    return result
+
+
+def assess_final_seal_batch(round_reports: list[Mapping[str, Any]]) -> dict[str, Any]:
+    """Assess current live rounds; unbound reports cannot be current PASS evidence."""
+
+    return _assess_final_seal_batch(round_reports, require_current_evidence=True)
+
+
+def assess_historical_final_seal_batch(
+    round_reports: list[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Assess the frozen historical seal without treating it as current acceptance."""
+
+    result = _assess_final_seal_batch(round_reports, require_current_evidence=False)
+    result["ACCEPTANCE_SCOPE"] = "HISTORICAL_ONLY"
+    result["CURRENT_LIVE_SCOREABILITY"] = "NO"
     return result
 
 
@@ -1030,6 +1224,76 @@ def _summarize_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _acceptance_evidence_for(
+    *,
+    call_evidence: Mapping[str, Any],
+    actual: CategoryResult,
+    expected: Mapping[str, str],
+    round_index: int,
+    ordinal: int,
+    configuration_fingerprint: str,
+    deployment_fingerprint: str | None,
+    runtime_identity_fingerprint: str | None,
+    transport_attempts: list[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Bind exact request, proposal, validation and deployment evidence."""
+
+    validated_result = actual.as_mapping()
+    evidence = dict(call_evidence)
+    evidence["ordinal"] = ordinal
+    evidence["round_index"] = round_index
+    evidence["configuration_fingerprint"] = configuration_fingerprint
+    evidence["deployment_fingerprint"] = deployment_fingerprint
+    evidence["runtime_helper_identity_fingerprint"] = runtime_identity_fingerprint
+    evidence["validated_result"] = validated_result
+    evidence["validated_result_sha256"] = hashlib.sha256(
+        _canonical_json(validated_result).encode("utf-8")
+    ).hexdigest()
+    evidence["validation_status"] = (
+        "CLASSIFIER_REJECTED_PROPOSAL"
+        if actual.provenance.get("decision_basis") == "proposal_contract_violation"
+        else "CLASSIFIER_ACCEPTED"
+    )
+    evidence["transport_attempts"] = [dict(item) for item in transport_attempts]
+    latest_transport = transport_attempts[-1] if transport_attempts else {}
+    evidence["provider_request_body_sha256"] = latest_transport.get(
+        "request_body_sha256"
+    )
+    evidence["provider_response_body_sha256"] = latest_transport.get(
+        "response_body_sha256"
+    )
+    chain_material = {
+        "evidence_version": ACCEPTANCE_EVIDENCE_VERSION,
+        "round_index": round_index,
+        "ordinal": ordinal,
+        "configuration_fingerprint": configuration_fingerprint,
+        "deployment_fingerprint": deployment_fingerprint,
+        "runtime_helper_identity_fingerprint": runtime_identity_fingerprint,
+        "request_payload_sha256": evidence.get("request_payload_sha256"),
+        "provider_request_body_sha256": evidence.get("provider_request_body_sha256"),
+        "provider_response_body_sha256": evidence.get("provider_response_body_sha256"),
+        "proposal_sha256": evidence.get("proposal_sha256"),
+        "validated_result_sha256": evidence["validated_result_sha256"],
+        "expected": dict(expected),
+    }
+    evidence["chain_sha256"] = hashlib.sha256(
+        _canonical_json(chain_material).encode("utf-8")
+    ).hexdigest()
+    return evidence
+
+
+def _live_evidence_complete(evidence: Mapping[str, Any]) -> bool:
+    required = (
+        "request_payload_sha256",
+        "provider_request_body_sha256",
+        "provider_response_body_sha256",
+        "proposal_sha256",
+        "validated_result_sha256",
+        "chain_sha256",
+    )
+    return all(isinstance(evidence.get(key), str) and evidence[key] for key in required)
+
+
 def _base_report(
     manifest,
     fixtures,
@@ -1040,17 +1304,22 @@ def _base_report(
     *,
     round_index: int,
     deployment_provenance: Mapping[str, Any] | None,
+    runtime_helper_identity: str | None,
 ) -> dict[str, Any]:
     return {
         "CATEGORY_53_GROUP_LIVE_ACCEPTANCE": "BLOCKED",
         "ACCEPTANCE_VERSION": ACCEPTANCE_VERSION,
+        "ACCEPTANCE_EVIDENCE_VERSION": ACCEPTANCE_EVIDENCE_VERSION,
         "DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION": DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION,
         "CONFIGURATION_FINGERPRINT": _configuration_fingerprint(specs, oracle_mapping),
         "ROUND_INDEX": round_index,
         "PLANNED_ROUNDS": FINAL_SEAL_ROUNDS,
         "GROUPS_PER_ROUND": GROUPS_PER_ROUND,
         "TOTAL_PLANNED_LIVE_CALLS": TOTAL_PLANNED_LIVE_CALLS,
-        **_deployment_provenance_record(deployment_provenance),
+        **_deployment_provenance_record(
+            deployment_provenance,
+            runtime_helper_identity=runtime_helper_identity,
+        ),
         "TOTAL_GOLDEN_FIXTURES": counts["total_fixtures"],
         "CATEGORY_REACHED_FIXTURES": counts["category_reached_fixtures"],
         "PREPARED_EVENT_GROUPS": counts["prepared_event_groups"],
@@ -1081,6 +1350,11 @@ def _base_report(
         "RETRY_PRESENT": "NO",
         "RESCUE_PRESENT": "NO",
         "BACKFILL_PRESENT": "NO",
+        "REQUEST_EVIDENCE": "EXACT_SERIALIZATION_SHA256",
+        "RESPONSE_EVIDENCE": "PARSED_PROPOSAL_AND_VALIDATED_CATEGORY_RESULT",
+        "ACCEPTANCE_EVIDENCE_CHAIN": "REQUIRED_FOR_LIVE_SCOREABILITY",
+        "ACCEPTANCE_EVIDENCE_CHAIN_STATUS": "NOT_COMPLETE",
+        "ACCEPTANCE_EVIDENCE_COMPLETE_COUNT": 0,
     }
 
 
@@ -1097,6 +1371,14 @@ def run_evaluation(
     if round_index not in range(1, FINAL_SEAL_ROUNDS + 1):
         raise ValueError("round_index must be one of 1, 2, or 3")
 
+    live = provider is None
+    resolved_config = None
+    runtime_helper_identity = None
+    if live:
+        resolved_config = config or MaiAgentCategorySemanticProviderConfig.from_environment()
+        if resolved_config is not None:
+            runtime_helper_identity = resolved_config.chatbot_id
+
     manifest, fixtures = _load_population()
     specs, oracle_mapping, counts = _phase_a_reconcile(fixtures)
     leakage = _oracle_leakage_check(specs)
@@ -1109,6 +1391,7 @@ def run_evaluation(
         leakage,
         round_index=round_index,
         deployment_provenance=deployment_provenance,
+        runtime_helper_identity=runtime_helper_identity,
     )
     if not leakage[0]:
         report["CATEGORY_53_GROUP_LIVE_ACCEPTANCE"] = "BLOCKED"
@@ -1126,19 +1409,17 @@ def run_evaluation(
         report["BLOCKER"] = "EVENT_GROUP_ORACLE_MAPPING_INCOMPLETE"
         return report
 
-    live = provider is None
     if live:
         proxy_blockers = _proxy_blockers()
         if proxy_blockers:
             report["BLOCKER"] = "LOCAL_PROXY_VARIABLES_MUST_BE_ABSENT"
             report["PROXY_VARIABLES_PRESENT"] = proxy_blockers
             return report
-        if report["DEPLOYMENT_PROVENANCE_STATUS"] != "OBSERVED_AND_FROZEN":
-            report["BLOCKER"] = "DEPLOYMENT_PROVENANCE_READBACK_REQUIRED"
-            return report
-        resolved_config = config or MaiAgentCategorySemanticProviderConfig.from_environment()
         if resolved_config is None:
             report["BLOCKER"] = "CATEGORY_MAIAGENT_CONFIGURATION_UNAVAILABLE"
+            return report
+        if report["DEPLOYMENT_PROVENANCE_STATUS"] != "OBSERVED_AND_FROZEN":
+            report["BLOCKER"] = "DEPLOYMENT_RUNTIME_BINDING_REQUIRED"
             return report
         recording_transport = _RecordingMaiAgentTransport(
             transport or UrllibMaiAgentJsonTransport()
@@ -1161,12 +1442,18 @@ def run_evaluation(
     for spec in specs:
         key = (spec["case_id"], spec["group"].event_id)
         observation_index = len(rows)
-        actual = _classify_for_evaluation(classifier, spec)
-        observation = (
-            recording_transport.observations[observation_index]
-            if recording_transport is not None and observation_index < len(recording_transport.observations)
-            else None
+        transport_start = (
+            len(recording_transport.observations)
+            if recording_transport is not None
+            else 0
         )
+        actual = _classify_for_evaluation(classifier, spec)
+        transport_attempts = (
+            recording_transport.observations[transport_start:]
+            if recording_transport is not None
+            else []
+        )
+        observation = transport_attempts[-1] if transport_attempts else None
         expected = oracle_mapping[key]
         citations, citation_concerns = _citation_details(
             actual, spec["request"], capture.last_proposal
@@ -1197,6 +1484,22 @@ def run_evaluation(
             "validation_error": actual.provenance.get("validation_error"),
             "http_status": observation.get("status_code") if observation else None,
         }
+        call_evidence = capture.call_evidence[observation_index]
+        acceptance_evidence = _acceptance_evidence_for(
+            call_evidence=call_evidence,
+            actual=actual,
+            expected=expected,
+            round_index=round_index,
+            ordinal=observation_index + 1,
+            configuration_fingerprint=report["CONFIGURATION_FINGERPRINT"],
+            deployment_fingerprint=report.get("DEPLOYMENT_FINGERPRINT"),
+            runtime_identity_fingerprint=report.get(
+                "RUNTIME_HELPER_IDENTITY_FINGERPRINT"
+            ),
+            transport_attempts=transport_attempts,
+        )
+        row["proposal"] = acceptance_evidence.get("proposal")
+        row["acceptance_evidence"] = acceptance_evidence
         row["outcome_class"] = _outcome_class(
             expected_state=expected["category_state"],
             actual_state=actual_state,
@@ -1218,6 +1521,17 @@ def run_evaluation(
         if recording_transport is not None
         else 0
     )
+    if live and (
+        len(rows) != len(specs)
+        or any(not _live_evidence_complete(row["acceptance_evidence"]) for row in rows)
+        or report.get("SAME_RUNTIME_HELPER_BINDING") != "PROVEN"
+    ):
+        report["CATEGORY_53_GROUP_LIVE_ACCEPTANCE"] = "BLOCKED"
+        report["BLOCKER"] = "ACCEPTANCE_EVIDENCE_CHAIN_INCOMPLETE"
+        return report
+    if live:
+        report["ACCEPTANCE_EVIDENCE_CHAIN_STATUS"] = "COMPLETE"
+        report["ACCEPTANCE_EVIDENCE_COMPLETE_COUNT"] = len(rows)
     if report.get("BLOCKER"):
         return report
     if live and (
@@ -1246,7 +1560,13 @@ def main() -> int:
         "--assess-round-reports",
         nargs=FINAL_SEAL_ROUNDS,
         metavar=("ROUND_1", "ROUND_2", "ROUND_3"),
-        help="assess exactly three saved round JSON reports without network access",
+        help="assess exactly three current live round JSON reports with evidence-chain proof",
+    )
+    action.add_argument(
+        "--assess-historical-round-reports",
+        nargs=FINAL_SEAL_ROUNDS,
+        metavar=("ROUND_1", "ROUND_2", "ROUND_3"),
+        help="assess the frozen historical round JSON reports as historical-only evidence",
     )
     parser.add_argument(
         "--round-index",
@@ -1259,12 +1579,18 @@ def main() -> int:
         help="JSON read-back of the category-deployment-snapshot-v1 contract",
     )
     args = parser.parse_args()
-    if args.assess_round_reports:
+    if args.assess_round_reports or args.assess_historical_round_reports:
+        report_paths = args.assess_round_reports or args.assess_historical_round_reports
         reports = [
             json.loads(Path(path).read_text(encoding="utf-8"))
-            for path in args.assess_round_reports
+            for path in report_paths
         ]
-        assessment = assess_final_seal_batch(reports)
+        assessor = (
+            assess_final_seal_batch
+            if args.assess_round_reports
+            else assess_historical_final_seal_batch
+        )
+        assessment = assessor(reports)
         print(json.dumps(assessment, ensure_ascii=False, indent=2))
         return 0 if assessment["CATEGORY_V4_FINAL_SEAL"] == "PASS" else 2
     if not args.run_live_maiagent:
@@ -1273,6 +1599,7 @@ def main() -> int:
                 {
                     "CATEGORY_53_GROUP_LIVE_ACCEPTANCE": "NOT_RUN",
                     "ACCEPTANCE_VERSION": ACCEPTANCE_VERSION,
+                    "ACCEPTANCE_EVIDENCE_VERSION": ACCEPTANCE_EVIDENCE_VERSION,
                     "DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION": DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION,
                     "PLANNED_ROUNDS": FINAL_SEAL_ROUNDS,
                     "GROUPS_PER_ROUND": GROUPS_PER_ROUND,
@@ -1302,6 +1629,7 @@ def main() -> int:
                 {
                     "CATEGORY_53_GROUP_LIVE_ACCEPTANCE": "BLOCKED",
                     "ACCEPTANCE_VERSION": ACCEPTANCE_VERSION,
+                    "ACCEPTANCE_EVIDENCE_VERSION": ACCEPTANCE_EVIDENCE_VERSION,
                     "DEPLOYMENT_PROVENANCE_STATUS": "INVALID",
                     "BLOCKER": "DEPLOYMENT_SNAPSHOT_INVALID",
                     "ERROR": str(exc),

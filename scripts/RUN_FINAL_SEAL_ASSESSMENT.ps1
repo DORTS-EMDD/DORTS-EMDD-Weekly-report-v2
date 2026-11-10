@@ -17,7 +17,7 @@ if ($missing) {
 }
 
 python -B $evaluationScript `
-  --assess-round-reports `
+  --assess-historical-round-reports `
   $reports[0] `
   $reports[1] `
   $reports[2]

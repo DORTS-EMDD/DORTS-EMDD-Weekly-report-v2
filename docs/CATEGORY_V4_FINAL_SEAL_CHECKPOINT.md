@@ -27,7 +27,7 @@ CONFIGURATION_FINGERPRINT = 9f93fda69106a7fe0a43c4c87550ceed022735687e0603377db3
 DEPLOYMENT_FINGERPRINT = 3e6de75b29724801efd67b1acca89dc8301754f26fdd1b44de72ea2833ad8b08
 DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION = category-deployment-snapshot-v1
 
-AUTHORITATIVE_ASSESSOR = assess_final_seal_batch
+HISTORICAL_ASSESSOR = assess_historical_final_seal_batch
 LIVE_ACCEPTANCE_RERUN = NO
 REPLACEMENT_ROUNDS = NO
 AUTOMATIC_RETRY = NO
@@ -35,12 +35,16 @@ ROUND_4 = NO
 ```
 
 The three complete round reports were assessed offline by
-`assess_final_seal_batch`. Historically these reports were captured as root
+`assess_historical_final_seal_batch`; this is an explicit historical-only
+assessment and is not current live scoreability. Historically these reports were captured as root
 `.env.category-*` files. Their current canonical local paths are
 `docs/category-v4-final-seal/category-final-seal-round{1,2,3}.json`; all five
 evidence files remain `IGNORED_LOCAL` and are not part of this checkpoint
 commit. The operator harness is
-`scripts/RUN_FINAL_SEAL_ASSESSMENT.ps1`.
+`scripts/RUN_FINAL_SEAL_ASSESSMENT.ps1`. Current live round assessment uses
+`assess_final_seal_batch` and requires the new same-runtime evidence chain;
+the historical reports do not contain that chain and must not be presented as
+current acceptance.
 
 The Category `Classifier` remains the sole Category decision owner. MaiAgent
 remains proposal-only; this checkpoint introduces no Writer path, fallback,
