@@ -163,3 +163,90 @@ candidate comparison, or acceptance predicate was measured. The blocked
 result is recorded in `acceptance/event_identity/rc66_r7_measurement.json`.
 Production EventIdentity, Scope, Golden outcomes, and downstream behavior
 remain unchanged.
+
+## RC66-R7 resumed execution attempt (2026-11-10)
+
+Starting SHA: `be864067f2f5bc098735e25bdd8c574d88d7d89a`. The target branch and
+remote remained aligned, and the Structured Helper configuration check passed:
+the helper was present and distinct from the Writer chatbot. D4/L1 was frozen
+as `INCHEON-WIFI-START`.
+
+The measurement-only harness rebuilt 63 current hash-verified records from the
+78-record prepared population. Two records that were previously inside the
+65-record preflight verified population now have different current body hashes
+and were excluded without substitution: the Singapore MRT depot automation
+record and the Dhaka Metro Line 1 contract record. Ten direct confirmation
+groups were rebuilt; the Kyiv pair could not be used because only one member
+remained after the other recorded source was unavailable.
+
+The paid measurement then began and completed the first baseline
+`event-identity-grouping-v10` round-1 cited-focus RC-52 batch evaluation. The
+measurement harness stopped immediately afterward because its scoring code
+attempted to read `EventIdentityRun.exchanges`, which is not part of the
+production result contract. The first attempt did not persist the transport
+meter before that exception. Therefore the actual MaiAgent call count and
+retry count are **UNKNOWN**, not zero, and no further paid call is authorized
+under the 400-attempt hard cap until that count is externally recoverable or
+the measurement window is explicitly reset.
+
+Candidate comparison, M-C, M-F, rounds 2–3, and acceptance predicates were not
+run. Production EventIdentity, Scope, prompt, schemas, Golden outcomes, and
+downstream behavior remain unchanged. The measurement script was corrected to
+persist a hash-only call journal before future attempts and to score duplicate
+membership from the response envelope without depending on an internal
+`EventIdentityRun.exchanges` field. This correction has not been used for a
+second paid attempt.
+
+## RC66-R7 measurement infrastructure repair (2026-11-10)
+
+Starting SHA: `be864067f2f5bc098735e25bdd8c574d88d7d89a`.
+
+The crash root cause is proven and is measurement-only: the scorer read
+`EventIdentityRun.exchanges`, a field that does not exist in the authoritative
+contract. The production observation surface is `proposal_exchanges`, which is
+used by the repaired scorer. No compatibility alias was added to production
+EventIdentity, and no production EventIdentity defect was introduced.
+
+The interrupted baseline remains `INTERRUPTED_NOT_SCOREABLE`. The prior
+MaiAgent call count and retry count remain **UNKNOWN** because the first
+attempt did not persist a journal before the exception. No exact prior count or
+safe auditable upper bound is available, so the cumulative 400-call campaign
+is fail-closed as `BLOCKED_CALL_ACCOUNTING`; no paid resume is authorized. New
+MaiAgent calls during this repair: **0**.
+
+The repaired `MeteredTransport` requires an explicit prior count or conservative
+upper bound for a new campaign, refuses to reset an existing journal, reserves
+each attempt as `IN_FLIGHT` before network I/O, atomically persists completion
+or failure, and reports cumulative attempted calls and safe remaining budget.
+The journal contains request hashes, state, outcome and aggregate duplicate
+membership counts only; it does not persist source bodies or credentials.
+
+Files changed in this repair:
+
+* `scripts/rc66_r7_measurement.py` — corrected the observation field and added
+  cumulative crash-safe accounting.
+* `tests/test_rc66_r7_measurement.py` — added offline observation and ledger
+  boundary tests.
+* `acceptance/event_identity/rc66_r7_measurement.json` — appended the repair
+  result without rewriting the interrupted-attempt record.
+* `acceptance/run39_engineering_record.md` — appended this truthful repair
+  record.
+
+Validation:
+
+* New measurement infrastructure tests: **4 passed**.
+* EventIdentity observation/RC52/observability targeted run: **24 passed**.
+* EventIdentity/Golden/failure-path/replay/observability suite: **169 passed**;
+  ED01–ED28 remain PASS.
+* Full offline repository regression: **1549 passed, 5 skipped** after
+  redirecting TEMP/TMP to a writable directory. The earlier default-TEMP run
+  had 5 sandbox-permission failures, not product failures.
+* Recorded replay remains `reproduced=true`, `events=81`,
+  `differences=[]`.
+* Compile/static checks and `git diff --check` passed.
+
+Architecture review passes: one EventIdentity owner remains, no downstream
+rescue/backfill or duplicated path was added, no Golden expected outcome was
+changed, no production prompt/scope/configuration was changed, and no
+country/language/event-specific rule was introduced. Real production
+validation was not run, and release readiness is not claimed.

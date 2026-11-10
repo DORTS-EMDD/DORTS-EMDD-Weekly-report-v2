@@ -61,5 +61,87 @@
   "downstream_rescue_added": false,
   "second_owner_added": false,
   "golden_expected_outcome_changed": false,
-  "real_production_validated": false
+  "real_production_validated": false,
+  "latest_execution_attempt": {
+    "date": "2026-11-10",
+    "starting_sha": "be864067f2f5bc098735e25bdd8c574d88d7d89a",
+    "status": "BLOCKED",
+    "structured_helper_configuration": "PASS",
+    "d4_l1": "INCHEON-WIFI-START",
+    "corpus": {
+      "prepared": 78,
+      "preflight_verified": 65,
+      "verified_this_attempt": 63,
+      "new_hash_drift_exclusions": [
+        "cand_41c475786cd0d79780ab7b495e5b6e71b97d60c7b3cf7e666300f5f8349157aa",
+        "cand_eefa8b5c46c2b677e054f5f6e312ec603b9d127d76587f48dfdf4e95f87b96aa"
+      ],
+      "substitution_used": false,
+      "direct_confirmation_groups_rebuilt": 10,
+      "kyiv_direct_pair": "NOT_RUN; one verified member remained after the other member was unavailable"
+    },
+    "planned_arms": [
+      "cited_focus_rc52",
+      "cited_focus_m_c",
+      "bh2_mf_rc52",
+      "bh2_mf_m_c"
+    ],
+    "completed_before_harness_failure": [
+      "baseline/event-identity-grouping-v10/round-1/cited_focus_rc52"
+    ],
+    "candidate_comparison": "NOT_RUN",
+    "m_c": "NOT_RUN",
+    "m_f": "NOT_RUN",
+    "actual_maiagent_calls": "UNKNOWN; first attempt did not persist the meter before the harness exception",
+    "transport_retries": "UNKNOWN",
+    "hard_call_cap": 400,
+    "harness_failure": {
+      "type": "AttributeError",
+      "message": "EventIdentityRun has no attribute exchanges",
+      "root_cause": "measurement-only scoring code attempted to read internal exchange data that the production run result does not expose"
+    },
+    "production_eventidentity_changed": false,
+    "production_scope_changed": false,
+    "downstream_rescue_added": false,
+    "second_owner_added": false,
+    "golden_expected_outcome_changed": false,
+    "next_attempt_safety": "Do not issue further paid calls until the prior attempt's transport count is externally recoverable or the RC66-R7 measurement window/cap is explicitly reset."
+  },
+  "measurement_infrastructure_repair": {
+    "date": "2026-11-10",
+    "starting_sha": "be864067f2f5bc098735e25bdd8c574d88d7d89a",
+    "new_maiagent_calls_this_task": 0,
+    "harness_root_cause": "The measurement-only scorer read EventIdentityRun.exchanges, but the authoritative production result exposes proposal_exchanges.",
+    "authoritative_eventidentityrun_field": "proposal_exchanges",
+    "production_eventidentity_defect": false,
+    "prior_maiagent_call_count": "UNKNOWN",
+    "prior_call_count_evidence": "The interrupted pre-repair attempt recorded that the first cited-focus RC52 baseline batch completed, but it persisted no meter or transport journal before the scorer exception.",
+    "prior_call_upper_bound": "UNKNOWN",
+    "prior_transport_retries": "UNKNOWN",
+    "partial_baseline_result": "INTERRUPTED_NOT_SCOREABLE",
+    "partial_result_scoreable": false,
+    "call_accounting_crash_safe": true,
+    "cumulative_hard_cap": 400,
+    "safe_remaining_call_budget": "UNKNOWN; no paid resume is permitted until an authoritative prior count or conservative upper bound is recovered.",
+    "targeted_harness_tests": "4 passed",
+    "eventidentity_observation_tests": "24 passed",
+    "eventidentity_golden_regression": "169 passed",
+    "ed01_ed28": "PASS; included in the 169-test EventIdentity/Golden suite",
+    "failure_paths": "PASS; included in the 169-test EventIdentity/Golden suite",
+    "observability_tests": "PASS; included in the 169-test EventIdentity/Golden suite",
+    "recorded_replay": "unchanged preflight: reproduced=true; events=81; differences=[]",
+    "full_regression": "1549 passed; 5 skipped with writable TEMP/TMP; the initial default-TEMP run had 5 sandbox-permission failures",
+    "architecture_review": {
+      "production_eventidentity_changed": false,
+      "production_scope_changed": false,
+      "downstream_rescue_added": false,
+      "second_owner_added": false,
+      "golden_expected_outcome_changed": false,
+      "configuration_identity_changed": false,
+      "complexity_increased": false
+    },
+    "status": "BLOCKED_CALL_ACCOUNTING",
+    "real_production_validated": false,
+    "release_ready": false
+  }
 }
