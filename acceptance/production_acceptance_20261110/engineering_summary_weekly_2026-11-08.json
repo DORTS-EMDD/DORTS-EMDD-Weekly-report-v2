@@ -1,0 +1,163 @@
+{
+ "artifact": "engineering_summary",
+ "version": "debug-artifacts-v1",
+ "run": {
+  "run_id": "862b4757138643f8a3ad603504e7e0bf",
+  "report_id": "weekly-report-149ed145cfc3f441",
+  "github_run_id": null,
+  "github_run_attempt": null,
+  "status": "SUCCESS_WITH_TECHNICAL_GAPS",
+  "failure_stage": null,
+  "failure_class": null
+ },
+ "config": {
+  "report_type": "weekly",
+  "region_mode": "selected",
+  "period_start": "2026-10-12",
+  "period_end": "2026-11-08"
+ },
+ "search_coverage": {
+  "planned": 213,
+  "attempted": 213,
+  "unattempted": 0,
+  "technical_failures": 1,
+  "degraded": true,
+  "failure_classes": {
+   "NETWORK": 1
+  },
+  "failure_reasons": {
+   "UNKNOWN": 1
+  }
+ },
+ "candidate_counts": {
+  "discovered": 559,
+  "evidence_ready": 200,
+  "evidence_rejected": 359,
+  "in_scope": 125,
+  "date_valid": 102
+ },
+ "dedup": {
+  "records": 102,
+  "events": 69,
+  "diagnostics": {
+   "DISTINCT_REGION": 3209,
+   "INSUFFICIENT_IDENTITY": 1857,
+   "PROPOSAL_CONFIRMED": 49,
+   "PROPOSAL_MEMBER_REJECTED": 1,
+   "PROPOSAL_NOT_AGREED": 12,
+   "PROPOSAL_NOT_CONFIRMED": 38,
+   "SINGLE_MEMBER_PROPOSAL": 35
+  },
+  "unconfirmed": {
+   "SEPARATED": 38
+  },
+  "confirmed_pairs": {
+   "FIRST": 88,
+   "FIRST_P2": 66,
+   "FIRST_P3": 89,
+   "SECOND": 2,
+   "SECOND_P2": 16,
+   "SECOND_P3": 3
+  }
+ },
+ "event_counts": {
+  "categorized": 69,
+  "reportable": 26,
+  "formal_metadata": 15,
+  "metadata_exclusions": 11,
+  "generated": 15,
+  "validated": 14,
+  "final_report_events": 14
+ },
+ "top_rejection_reasons": {
+  "evidence_reasons": [
+   {
+    "reason": "SOURCE_PAGE_MISMATCH",
+    "count": 192
+   },
+   {
+    "reason": "CONTENT_UNAVAILABLE",
+    "count": 151
+   },
+   {
+    "reason": "INSUFFICIENT_SUBSTANCE",
+    "count": 16
+   }
+  ],
+  "evidence_gates": [
+   {
+    "reason": "FETCH_TRANSPORT",
+    "count": 151
+   },
+   {
+    "reason": "PRINCIPAL_DOCUMENT",
+    "count": 137
+   },
+   {
+    "reason": "SEMANTIC_MATCH",
+    "count": 45
+   },
+   {
+    "reason": "SOURCE_PROVENANCE",
+    "count": 26
+   }
+  ]
+ },
+ "provider_failures": {
+  "technical_gaps": 28,
+  "technical_gap_signatures": {
+   "Scope:SUBJECT:PROPOSAL_CONTRACT_VIOLATION:ENDPOINT_LABEL": 12,
+   "Scope:SUBJECT:PROPOSAL_CONTRACT_VIOLATION:TARGET_SYSTEM_CONTAINMENT": 8,
+   "Scope:SUBJECT:PROPOSAL_CONTRACT_VIOLATION:EVENT_FOCUS_CONTAINMENT": 3,
+   "Scope:SUBJECT:PROPOSAL_CONTRACT_VIOLATION:ACTION_TARGET_CONTAINMENT": 3,
+   "Scope:SUBJECT:TRANSIENT_FAILURE_AFTER_RETRY:TIMEOUT": 1,
+   "EventIdentity:GROUP:PROPOSAL_CONTRACT_VIOLATION:CITATION_INVALID": 1
+  },
+  "search_failure_classes": {
+   "NETWORK": 1
+  }
+ },
+ "validation_failures": {
+  "count": 1
+ },
+ "final_events": {
+  "count": 14,
+  "event_ids": [
+   "evt_00da49fcf8d9c251292359e5",
+   "evt_2f1b0bd9309f8aff5f8c1f6b",
+   "evt_96684184292651241aa1b55b",
+   "evt_ac4e5ab0fec99cc7ba4935b3",
+   "evt_f7f2c51645655e829d618005",
+   "evt_98eb5d110d28694e28ed06a1",
+   "evt_30ad1b657a747817676c4aff",
+   "evt_87dfbe636508847d56f6b2a1",
+   "evt_3b0df4b55798b6a9870c140c",
+   "evt_81816395b37e197197232072",
+   "evt_04f860b09761d2c0c67b1fba",
+   "evt_6a1fa71f60bbaa4d42005bae",
+   "evt_035317ee22e7368f620ec8bc",
+   "evt_6afb605b7760f4b84e5ef955"
+  ],
+  "sections": {
+   "技術新知": 4,
+   "事故及安全事件": 5,
+   "營運動態": 3,
+   "機電標案及採購動態": 2
+  }
+ },
+ "delivery": null,
+ "artifacts": {
+  "report_id": "weekly-report-149ed145cfc3f441",
+  "artifact_id": "formal-report-149ed145cfc3f44134cce892adff4d91590ec006e192dde0fdbc47c48e3faf78",
+  "files": {
+   "run_summary": "run_summary.txt",
+   "selection_audit": "selection_audit.json",
+   "report_markdown": "weekly-report-149ed145cfc3f441.md",
+   "report_pdf": "weekly-report-149ed145cfc3f441.pdf",
+   "developer_debug": "developer_debug_weekly_2026-11-08.json",
+   "engineering_summary": "engineering_summary_weekly_2026-11-08.json"
+  }
+ },
+ "declared_maiagent_role_version": null,
+ "declared_maiagent_role_status": "NOT_DECLARED"
+}

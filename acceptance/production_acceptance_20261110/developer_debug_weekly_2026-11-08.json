@@ -1,0 +1,379 @@
+{
+ "artifact": "developer_debug",
+ "version": "debug-artifacts-v1",
+ "run": {
+  "run_id": "862b4757138643f8a3ad603504e7e0bf",
+  "report_id": "weekly-report-149ed145cfc3f441",
+  "github_run_id": null,
+  "github_run_attempt": null
+ },
+ "stage_counts": {
+  "search_plan": 213,
+  "search_attempts": 213,
+  "search_unattempted": 0,
+  "acquisitions": 789,
+  "normalized_observations": 213,
+  "evidence_results": 559,
+  "scope_results": 173,
+  "temporal_results": 125,
+  "event_identity_records": 102,
+  "category_results": 69,
+  "downstream_results": 69,
+  "ordered_results": 26,
+  "formal_metadata": 15,
+  "writer_blocks": 15,
+  "validation_passed": 14,
+  "validation_failed": 1,
+  "final_report_events": 14,
+  "technical_gaps": 28,
+  "technical_gaps_scope": 27,
+  "technical_gaps_eventidentity": 1,
+  "metadata_exclusions": 11
+ },
+ "observations": {
+  "status": "SUCCESS_WITH_TECHNICAL_GAPS",
+  "period_start": "2026-10-12",
+  "period_end": "2026-11-08",
+  "region_mode": "selected",
+  "failure_stage": null,
+  "failure_class": null,
+  "diagnostic": null,
+  "search_failure_count": 1,
+  "search_failure_class_distribution": {
+   "NETWORK": 1
+  },
+  "search_failure_reason_distribution": {
+   "UNKNOWN": 1
+  },
+  "search_failure_http_status_distribution": {},
+  "search_failure_details": [
+   {
+    "ordinal": 152,
+    "plan_item_id": "search_befd6c90e5ddac30de5d8dab44fd656e121e8ca19f84f5c5c53337a549b24f2a",
+    "market_id": "standards_catalogue",
+    "language_profile": "catalogue",
+    "intent": "monitored_standards",
+    "query_family_id": "monitored_standard_catalogue",
+    "terminal_status": "TECHNICAL_FAILURE",
+    "technical_failure_class": "NETWORK",
+    "reason_code": "UNKNOWN",
+    "http_status": null
+   }
+  ],
+  "evidence_ready_count": 200,
+  "evidence_rejected_count": 359,
+  "evidence_reject_reason_distribution": {
+   "SOURCE_PAGE_MISMATCH": 192,
+   "CONTENT_UNAVAILABLE": 151,
+   "INSUFFICIENT_SUBSTANCE": 16
+  },
+  "evidence_rejection_gate_distribution": {
+   "PRINCIPAL_DOCUMENT": 137,
+   "SEMANTIC_MATCH": 45,
+   "FETCH_TRANSPORT": 151,
+   "SOURCE_PROVENANCE": 26
+  },
+  "evidence_reason_gate_distribution": {
+   "SOURCE_PAGE_MISMATCH|PRINCIPAL_DOCUMENT": 121,
+   "SOURCE_PAGE_MISMATCH|SEMANTIC_MATCH": 45,
+   "CONTENT_UNAVAILABLE|FETCH_TRANSPORT": 151,
+   "INSUFFICIENT_SUBSTANCE|PRINCIPAL_DOCUMENT": 16,
+   "SOURCE_PAGE_MISMATCH|SOURCE_PROVENANCE": 26
+  },
+  "evidence_http_status_distribution": {
+   "403": 48,
+   "302": 1,
+   "406": 1,
+   "404": 2,
+   "520": 1,
+   "402": 1
+  },
+  "evidence_transport_error_distribution": {
+   "NOT_REACHED": 200,
+   "_UnsafeDestinationError": 85,
+   "HTTPError": 54,
+   "URLError": 8,
+   "TimeoutError": 4
+  },
+  "evidence_content_type_distribution": {
+   "text/html": 408
+  },
+  "evidence_principal_document_status_distribution": {
+   "PRINCIPAL_DOCUMENT_ESTABLISHED": 266,
+   "PRINCIPAL_DOCUMENT_AMBIGUOUS": 122,
+   "NOT_REACHED": 151,
+   "STRUCTURAL_FAILURE_ESTABLISHED": 20
+  },
+  "evidence_page_kind_distribution": {},
+  "evidence_source_provenance_distribution": {
+   "TRUE": 382,
+   "NOT_REACHED": 151,
+   "FALSE": 26
+  },
+  "evidence_canonical_related_distribution": {
+   "TRUE": 245,
+   "NOT_REACHED": 151,
+   "FALSE": 26
+  },
+  "evidence_body_available_distribution": {
+   "TRUE": 266,
+   "FALSE": 142,
+   "NOT_REACHED": 151
+  },
+  "evidence_factual_substance_distribution": {
+   "TRUE": 245,
+   "NOT_REACHED": 314
+  },
+  "evidence_semantic_relation_distribution": {
+   "SAME_EVENT": 205,
+   "NOT_REACHED": 314,
+   "UNCERTAIN": 39,
+   "DIFFERENT_EVENT": 1
+  },
+  "evidence_semantic_response_validation_distribution": {
+   "valid": 240,
+   "NOT_REACHED": 314,
+   "invalid": 5
+  },
+  "evidence_metadata_extraction_status_distribution": {
+   "valid_metadata": 174,
+   "NOT_REACHED": 359,
+   "partial_metadata": 14,
+   "valid_zero_metadata": 12
+  },
+  "evidence_candidate_hostname_distribution": {
+   "www.webeconomy.co.kr": 1,
+   "news.google.com": 359,
+   "breisgau.live": 1,
+   "finance.biggo.jp": 1,
+   "news.pchome.com.tw": 1,
+   "www.gukjenews.com": 2,
+   "newtalk.tw": 1,
+   "news.tv-asahi.co.jp": 1,
+   "www.naewoeilbo.com": 1,
+   "www.recordchina.co.jp": 2,
+   "biz.chosun.com": 2,
+   "www.mt.co.kr": 2,
+   "udn.com": 2,
+   "www.smh.com.au": 2,
+   "www.newsis.com": 3,
+   "okdiario.com": 1,
+   "www.fnn.jp": 1,
+   "www.polinews.co.kr": 1,
+   "www.ulsanilbo.co.kr": 1,
+   "www.khan.co.kr": 3,
+   "www.railwaygazette.com": 5,
+   "tgpadova.telenuovo.it": 1,
+   "j.people.com.cn": 1,
+   "www.businesstoday.com.tw": 1,
+   "www.okinawatimes.co.jp": 1,
+   "www.napolike.it": 1,
+   "www.pennmike.com": 1,
+   "bahnblogstelle.com": 1,
+   "www.hankyung.com": 1,
+   "supertaste.tvbs.com.tw": 1,
+   "www.romatoday.it": 1,
+   "OTHER": 156
+  },
+  "evidence_resolved_hostname_distribution": {
+   "www.webeconomy.co.kr": 2,
+   "news.sbs.co.kr": 1,
+   "breisgau.live": 1,
+   "www.news1.kr": 4,
+   "finance.biggo.jp": 1,
+   "news.pchome.com.tw": 2,
+   "www.gukjenews.com": 2,
+   "newtalk.tw": 1,
+   "mobile.busan.com": 2,
+   "news.tv-asahi.co.jp": 1,
+   "www.nmas.com.mx": 5,
+   "www.theportugalnews.com": 1,
+   "www.naewoeilbo.com": 1,
+   "www.recordchina.co.jp": 3,
+   "biz.chosun.com": 3,
+   "www.ikbc.co.kr": 2,
+   "www.nbnbiz.co.kr": 1,
+   "www.goodmorningvietnam.co.kr": 1,
+   "www.mt.co.kr": 4,
+   "udn.com": 2,
+   "www.gjdream.com": 1,
+   "www.smh.com.au": 2,
+   "www.economicpost.co.kr": 1,
+   "www.newsis.com": 3,
+   "okdiario.com": 1,
+   "www.mk.co.kr": 1,
+   "tsri.ch": 1,
+   "www.fnn.jp": 1,
+   "www.polinews.co.kr": 1,
+   "www.ulsanilbo.co.kr": 1,
+   "www.khan.co.kr": 3,
+   "OTHER": 352
+  },
+  "evidence_redirect_hop_count_distribution": {
+   "0": 448,
+   "1": 12,
+   "2": 1,
+   "5": 1
+  },
+  "evidence_host_transition_distribution": {
+   "SAME_HOST": 200,
+   "CHANGED_HOST": 208,
+   "RESOLVED_HOST_MISSING": 151
+  },
+  "evidence_rejection_signature_distribution": {
+   "reject_reason=SOURCE_PAGE_MISMATCH;evidence_rejection_gate=PRINCIPAL_DOCUMENT;principal_document_status=PRINCIPAL_DOCUMENT_AMBIGUOUS;source_provenance=TRUE;body_text_available=FALSE;acquisition_path=DIRECT;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=UNKNOWN": 118,
+   "reject_reason=SOURCE_PAGE_MISMATCH;evidence_rejection_gate=SEMANTIC_MATCH;principal_document_status=PRINCIPAL_DOCUMENT_ESTABLISHED;source_provenance=TRUE;canonical_related=TRUE;body_text_available=TRUE;factual_substance=TRUE;raw_relation=UNCERTAIN;response_validation_result=valid;acquisition_path=DIRECT;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=NOT_APPLICABLE": 38,
+   "reject_reason=CONTENT_UNAVAILABLE;evidence_rejection_gate=FETCH_TRANSPORT;transport_error=_UnsafeDestinationError;acquisition_path=UNKNOWN;acquisition_final_endpoint=UNKNOWN;acquisition_redirect_consistency=UNKNOWN": 85,
+   "reject_reason=CONTENT_UNAVAILABLE;evidence_rejection_gate=FETCH_TRANSPORT;status_code=403;transport_error=HTTPError;acquisition_path=DIRECT;acquisition_final_endpoint=UNKNOWN;acquisition_redirect_consistency=UNKNOWN": 48,
+   "reject_reason=INSUFFICIENT_SUBSTANCE;evidence_rejection_gate=PRINCIPAL_DOCUMENT;principal_document_status=STRUCTURAL_FAILURE_ESTABLISHED;source_provenance=TRUE;body_text_available=FALSE;acquisition_path=DIRECT;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=UNKNOWN": 13,
+   "reject_reason=SOURCE_PAGE_MISMATCH;evidence_rejection_gate=PRINCIPAL_DOCUMENT;principal_document_status=PRINCIPAL_DOCUMENT_AMBIGUOUS;source_provenance=TRUE;body_text_available=FALSE;acquisition_path=REDIRECTED;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=UNKNOWN": 3,
+   "reject_reason=SOURCE_PAGE_MISMATCH;evidence_rejection_gate=SOURCE_PROVENANCE;principal_document_status=PRINCIPAL_DOCUMENT_ESTABLISHED;source_provenance=FALSE;canonical_related=FALSE;body_text_available=TRUE;source_provenance_mismatch_reason=CANONICAL_RESOURCE_MISMATCH;acquisition_path=DIRECT;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=NOT_APPLICABLE": 20,
+   "reject_reason=SOURCE_PAGE_MISMATCH;evidence_rejection_gate=SOURCE_PROVENANCE;principal_document_status=PRINCIPAL_DOCUMENT_AMBIGUOUS;source_provenance=FALSE;canonical_related=FALSE;body_text_available=FALSE;source_provenance_mismatch_reason=CANONICAL_RESOURCE_MISMATCH;acquisition_path=DIRECT;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=NOT_APPLICABLE": 1,
+   "reject_reason=CONTENT_UNAVAILABLE;evidence_rejection_gate=FETCH_TRANSPORT;transport_error=URLError;acquisition_path=UNKNOWN;acquisition_final_endpoint=UNKNOWN;acquisition_redirect_consistency=UNKNOWN": 8,
+   "reject_reason=CONTENT_UNAVAILABLE;evidence_rejection_gate=FETCH_TRANSPORT;transport_error=TimeoutError;acquisition_path=UNKNOWN;acquisition_final_endpoint=UNKNOWN;acquisition_redirect_consistency=UNKNOWN": 4,
+   "reject_reason=SOURCE_PAGE_MISMATCH;evidence_rejection_gate=SOURCE_PROVENANCE;principal_document_status=STRUCTURAL_FAILURE_ESTABLISHED;source_provenance=FALSE;canonical_related=FALSE;body_text_available=FALSE;source_provenance_mismatch_reason=CANONICAL_RESOURCE_MISMATCH;acquisition_path=DIRECT;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=NOT_APPLICABLE": 2,
+   "reject_reason=SOURCE_PAGE_MISMATCH;evidence_rejection_gate=SEMANTIC_MATCH;principal_document_status=PRINCIPAL_DOCUMENT_ESTABLISHED;source_provenance=TRUE;canonical_related=TRUE;body_text_available=TRUE;factual_substance=TRUE;raw_relation=UNCERTAIN;response_validation_result=valid;acquisition_path=REDIRECTED;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=CONSISTENT": 1,
+   "reject_reason=CONTENT_UNAVAILABLE;evidence_rejection_gate=FETCH_TRANSPORT;status_code=302;transport_error=HTTPError;acquisition_path=REDIRECTED;acquisition_final_endpoint=UNKNOWN;acquisition_redirect_consistency=UNKNOWN": 1,
+   "reject_reason=CONTENT_UNAVAILABLE;evidence_rejection_gate=FETCH_TRANSPORT;status_code=406;transport_error=HTTPError;acquisition_path=DIRECT;acquisition_final_endpoint=UNKNOWN;acquisition_redirect_consistency=UNKNOWN": 1,
+   "reject_reason=CONTENT_UNAVAILABLE;evidence_rejection_gate=FETCH_TRANSPORT;status_code=404;transport_error=HTTPError;acquisition_path=DIRECT;acquisition_final_endpoint=UNKNOWN;acquisition_redirect_consistency=UNKNOWN": 2,
+   "reject_reason=CONTENT_UNAVAILABLE;evidence_rejection_gate=FETCH_TRANSPORT;status_code=520;transport_error=HTTPError;acquisition_path=DIRECT;acquisition_final_endpoint=UNKNOWN;acquisition_redirect_consistency=UNKNOWN": 1,
+   "reject_reason=SOURCE_PAGE_MISMATCH;evidence_rejection_gate=SEMANTIC_MATCH;principal_document_status=PRINCIPAL_DOCUMENT_ESTABLISHED;source_provenance=TRUE;canonical_related=TRUE;body_text_available=TRUE;factual_substance=TRUE;raw_relation=SAME_EVENT;response_validation_result=invalid;acquisition_path=DIRECT;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=NOT_APPLICABLE": 5,
+   "reject_reason=SOURCE_PAGE_MISMATCH;evidence_rejection_gate=SOURCE_PROVENANCE;principal_document_status=STRUCTURAL_FAILURE_ESTABLISHED;source_provenance=FALSE;canonical_related=FALSE;body_text_available=FALSE;source_provenance_mismatch_reason=CANONICAL_RESOURCE_MISMATCH;acquisition_path=REDIRECTED;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=CONSISTENT": 2,
+   "reject_reason=SOURCE_PAGE_MISMATCH;evidence_rejection_gate=SOURCE_PROVENANCE;principal_document_status=PRINCIPAL_DOCUMENT_ESTABLISHED;source_provenance=FALSE;canonical_related=FALSE;body_text_available=TRUE;source_provenance_mismatch_reason=CANONICAL_RESOURCE_MISMATCH;acquisition_path=REDIRECTED;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=CONSISTENT": 1,
+   "reject_reason=INSUFFICIENT_SUBSTANCE;evidence_rejection_gate=PRINCIPAL_DOCUMENT;principal_document_status=STRUCTURAL_FAILURE_ESTABLISHED;source_provenance=TRUE;body_text_available=FALSE;acquisition_path=REDIRECTED;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=UNKNOWN": 3,
+   "reject_reason=SOURCE_PAGE_MISMATCH;evidence_rejection_gate=SEMANTIC_MATCH;principal_document_status=PRINCIPAL_DOCUMENT_ESTABLISHED;source_provenance=TRUE;canonical_related=TRUE;body_text_available=TRUE;factual_substance=TRUE;raw_relation=DIFFERENT_EVENT;response_validation_result=valid;acquisition_path=DIRECT;acquisition_final_endpoint=OBSERVED;acquisition_redirect_consistency=NOT_APPLICABLE": 1,
+   "reject_reason=CONTENT_UNAVAILABLE;evidence_rejection_gate=FETCH_TRANSPORT;status_code=402;transport_error=HTTPError;acquisition_path=DIRECT;acquisition_final_endpoint=UNKNOWN;acquisition_redirect_consistency=UNKNOWN": 1
+  },
+  "evidence_acquisition_latency_bucket_distribution": {
+   "500-999ms": 146,
+   "1000-4999ms": 234,
+   "250-499ms": 58,
+   "10000ms+": 91,
+   "100-249ms": 22,
+   "5000-9999ms": 6,
+   "50-99ms": 2
+  },
+  "evidence_acquisition_path_distribution": {
+   "DIRECT": 448,
+   "UNKNOWN": 97,
+   "REDIRECTED": 14
+  },
+  "evidence_acquisition_final_endpoint_distribution": {
+   "OBSERVED": 408,
+   "UNKNOWN": 151
+  },
+  "evidence_acquisition_redirect_consistency_distribution": {
+   "NOT_APPLICABLE": 264,
+   "UNKNOWN": 288,
+   "CONSISTENT": 7
+  },
+  "evidence_acquisition_initial_hostname_distribution": {
+   "www.webeconomy.co.kr": 2,
+   "news.sbs.co.kr": 2,
+   "breisgau.live": 1,
+   "www.news1.kr": 5,
+   "finance.biggo.jp": 2,
+   "www.hkej.com": 3,
+   "news.pchome.com.tw": 3,
+   "www.gukjenews.com": 2,
+   "newtalk.tw": 1,
+   "mobile.busan.com": 2,
+   "news.tv-asahi.co.jp": 1,
+   "www.railjournal.com": 8,
+   "www.milenio.com": 3,
+   "www.nmas.com.mx": 5,
+   "www.theportugalnews.com": 1,
+   "www.naewoeilbo.com": 1,
+   "www.recordchina.co.jp": 3,
+   "biz.chosun.com": 4,
+   "www.ikbc.co.kr": 3,
+   "www.masstransitmag.com": 6,
+   "www.nbnbiz.co.kr": 1,
+   "www.valoraanalitik.com": 2,
+   "www.globalrailwayreview.com": 1,
+   "www.goodmorningvietnam.co.kr": 1,
+   "www.mt.co.kr": 5,
+   "udn.com": 2,
+   "bogota.gov.co": 1,
+   "www.railwaygazette.com": 6,
+   "www.gjdream.com": 1,
+   "www.smh.com.au": 2,
+   "www.economicpost.co.kr": 1,
+   "OTHER": 478
+  },
+  "evidence_acquisition_failing_endpoint_hostname_distribution": {
+   "NOT_APPLICABLE": 408,
+   "UNKNOWN": 97,
+   "www.railjournal.com": 8,
+   "www.milenio.com": 3,
+   "www.valoraanalitik.com": 2,
+   "www.timeoutdubai.com": 1,
+   "www.railwaypro.com": 16,
+   "oem.com.mx": 1,
+   "www.larepublica.co": 1,
+   "www.bazonline.ch": 1,
+   "www.ao.no": 4,
+   "www.stern.de": 1,
+   "www.elperiodico.com": 1,
+   "www.manufacturingtodayindia.com": 1,
+   "news.yahoo.co.jp": 1,
+   "thoibao.de": 1,
+   "news.nicovideo.jp": 3,
+   "www.ratp.fr": 1,
+   "www.sinembargo.mx": 1,
+   "www.sbbit.jp": 1,
+   "www.wort.lu": 1,
+   "amp.alerta.com.co": 1,
+   "kobinet-nachrichten.org": 1,
+   "www.asahi.co.jp": 1,
+   "www.punekarnews.in": 1,
+   "www.desmoinesregister.com": 1
+  },
+  "evidence_source_provenance_mismatch_distribution": {
+   "NOT_REACHED": 351,
+   "CANONICAL_RESOURCE_MISMATCH": 26
+  },
+  "technical_gap_signature_distribution": {
+   "Scope:SUBJECT:PROPOSAL_CONTRACT_VIOLATION:ENDPOINT_LABEL": 12,
+   "Scope:SUBJECT:PROPOSAL_CONTRACT_VIOLATION:TARGET_SYSTEM_CONTAINMENT": 8,
+   "Scope:SUBJECT:PROPOSAL_CONTRACT_VIOLATION:EVENT_FOCUS_CONTAINMENT": 3,
+   "Scope:SUBJECT:PROPOSAL_CONTRACT_VIOLATION:ACTION_TARGET_CONTAINMENT": 3,
+   "Scope:SUBJECT:TRANSIENT_FAILURE_AFTER_RETRY:TIMEOUT": 1,
+   "EventIdentity:GROUP:PROPOSAL_CONTRACT_VIOLATION:CITATION_INVALID": 1
+  },
+  "event_identity_diagnostic_distribution": {
+   "DISTINCT_REGION": 3209,
+   "INSUFFICIENT_IDENTITY": 1857,
+   "PROPOSAL_CONFIRMED": 49,
+   "PROPOSAL_MEMBER_REJECTED": 1,
+   "PROPOSAL_NOT_AGREED": 12,
+   "PROPOSAL_NOT_CONFIRMED": 38,
+   "SINGLE_MEMBER_PROPOSAL": 35
+  },
+  "event_identity_unconfirmed_distribution": {
+   "SEPARATED": 38
+  },
+  "event_identity_excerpt_limits": "6x900",
+  "event_identity_confirmed_pairs": {
+   "FIRST": 88,
+   "FIRST_P2": 66,
+   "FIRST_P3": 89,
+   "SECOND": 2,
+   "SECOND_P2": 16,
+   "SECOND_P3": 3
+  }
+ },
+ "delivery": null,
+ "candidate_forensic_trace": {
+  "file": "selection_audit.json",
+  "audit_version": "selection-audit-v3"
+ },
+ "files": {
+  "run_summary": "run_summary.txt",
+  "selection_audit": "selection_audit.json",
+  "report_markdown": "weekly-report-149ed145cfc3f441.md",
+  "report_pdf": "weekly-report-149ed145cfc3f441.pdf",
+  "developer_debug": "developer_debug_weekly_2026-11-08.json",
+  "engineering_summary": "engineering_summary_weekly_2026-11-08.json"
+ }
+}

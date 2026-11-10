@@ -385,3 +385,137 @@ offline regression test. Final validation after this repair was **9 RC66-R7
 harness tests passed**, **1554 full repository tests passed with 5 skips**,
 compile passed, JSON validation passed, and no paid call was made after the
 integrity finding.
+
+## Real-production quality acceptance (2026-11-10)
+
+Starting SHA: `aa869dde27dc46a69b1c13323fa4b7bda4fed643` on
+`release/report-quality-wip`. The branch was clean before execution and the
+canonical V2 production path was used for `2026-10-12..2026-11-08` with
+`run_production=true` and `send_email=false`. The existing MaiAgent API call
+was explicitly preauthorized by the user; no email was sent and no other paid
+provider was used.
+
+The run completed as `SUCCESS_WITH_TECHNICAL_GAPS` (CLI exit code 2):
+
+* RunTrace: `862b4757138643f8a3ad603504e7e0bf`.
+* Report: `weekly-report-149ed145cfc3f441`.
+* Artifact: `formal-report-149ed145cfc3f44134cce892adff4d91590ec006e192dde0fdbc47c48e3faf78`.
+* Search: 213 planned, 213 attempted, 1 network technical failure (standards catalogue ordinal 152).
+* Acquisition: 789; normalized observations: 213.
+* Evidence: 559 total, 200 ready, 359 rejected. Rejections were
+  `SOURCE_PAGE_MISMATCH=192`, `CONTENT_UNAVAILABLE=151`, and
+  `INSUFFICIENT_SUBSTANCE=16`; rejection gates were
+  `FETCH_TRANSPORT=151`, `PRINCIPAL_DOCUMENT=137`,
+  `SEMANTIC_MATCH=45`, and `SOURCE_PROVENANCE=26`.
+* Scope: 125 IN_SCOPE, 48 OUT_OF_SCOPE, and 27 disclosed Scope technical gaps.
+  Temporal: 102 DATE_VALID and 23 DATE_INVALID.
+* EventIdentity: 102 records and 69 EventGroups. The production prompt remained
+  `event-identity-grouping-v10`; proposal and confirmation exchanges,
+  procedure identities, diagnostics, and the one EventIdentity technical gap
+  were retained in `selection_audit.json`. The current audit replay reproduced
+  `true`, with `events=69` and `differences=[]`. The historical Run #39 replay
+  remains `reproduced=true`, `events=81`, `differences=[]`.
+* Category: 69 groups, 30 assigned and 39 `CATEGORY_UNRESOLVED`; every
+  unresolved result used `NO_CATEGORY_DEFINING_ACTION`. Assigned totals were
+  `TECHNICAL_DEVELOPMENT=4`, `INCIDENT=12`, `OPERATIONAL_CHANGE=9`, and
+  `PROCUREMENT=5`.
+* Reportability/ordering: 26 reportable and 26 ordered. Formal metadata
+  projected 15 events and excluded 11 (`NON_DESIGNATED_REGION=10`,
+  `REGION_NOT_ESTABLISHED=1`). Writer generated 15 blocks; Validator returned
+  14 PASS and 1 event-level FAIL for
+  `factual_factual_summary_quantity_ungrounded`; final report count was 14.
+  Final distribution was `技術新知=4`, `事故及安全事件=5`, `營運動態=3`,
+  `機電標案及採購動態=2`.
+
+### Production findings and ownership
+
+The earliest confirmed Category root cause remains the Classifier's semantic
+proposal/guidance boundary, not Report Service, Writer, Validator, or a
+downstream repair:
+
+* Lyon T10 was emitted as `TECHNICAL_DEVELOPMENT /
+  pre_opening_signal_testing` and included in the final report. This still
+  violates G100: pre-opening signalling/control/communication/power testing
+  as a project step must be `CATEGORY_UNRESOLVED /
+  NO_CATEGORY_DEFINING_ACTION`.
+* Bergamo T2 first track testing was also emitted as
+  `TECHNICAL_DEVELOPMENT /
+  pre_opening_testing`, showing the same project-step pollution boundary.
+* Incheon operating-subway 5G was emitted as `OPERATIONAL_CHANGE /
+  passenger_wifi_service_launch` and included. This still violates G101:
+  the evidenced principal technology deployment on an operating rail system
+  must remain `TECHNICAL_DEVELOPMENT`.
+* Tokyo Point AI was emitted as `TECHNICAL_DEVELOPMENT /
+  ai_driver_assistance_system_development` and included. The evidence is a
+  useful control observation, but this run does not authorize a universal rule
+  that future tense or an announcement alone proves adoption. No such rule was
+  added.
+
+Classifier remains the sole Category owner. The production run added no
+fallback, rescue, backfill, second owner, downstream reclassification,
+country/language/event-specific rule, or Golden mutation. The production
+EventIdentity owner, prompt, nomination, confirmation, RC-52, complete-link
+behavior, and Scope were unchanged.
+
+For the Daegu Line 3 occurrence, this run's audit contains one EventGroup with
+six supported occurrence members, so the Run #39 three-group split was absent
+in this run. This is a run-specific observation only; it is not evidence that
+the unchanged EventIdentity behavior has been generally fixed, and no rescue
+was added.
+
+The 14 final items were read in full. Their prose passed the canonical
+Validator except for the one excluded event above; no internal/debug wording,
+unsupported Taipei-specific operational claim, or broken/truncated prose was
+found. A formal metadata quality finding remains: the Lyon item displays the
+location as Korean `리옹` in an otherwise Traditional-Chinese report. This is
+a presentation/metadata normalization issue, not a reason to alter Category
+or Writer ownership.
+
+### Deployment provenance and verification
+
+The run used the existing MaiAgent API origin `api.maiagent.ai`. To avoid
+recording credentials, the configured Writer and Structured Helper chatbot
+identities are identified by stable SHA-256 fingerprints only:
+
+* Writer chatbot ID fingerprint:
+  `1eba425625dea9ff503554d5347b155094412fa45827ec43e00e936ab5b8e9a4`
+  (length 36).
+* Structured Helper chatbot ID fingerprint:
+  `ae6703c51cb946e9e635c541d171bbbe178d4c851336049385b973feaf30b305`
+  (length 37); distinct from Writer.
+* Repository prompt identities remained Category
+  `category-principal-action-v6`, EventIdentity
+  `event-identity-grouping-v10`, and Writer `formal-report-writer-v10`.
+
+The generated Engineering Summary truthfully reports
+`declared_maiagent_role_status=NOT_DECLARED`; no platform management snapshot,
+exact model label, role content, or platform schema read-back was available.
+The fingerprints identify the two configured deployment identities but do not
+claim `OBSERVED_AND_FROZEN` platform provenance.
+
+Offline verification after production:
+
+* Category/EventIdentity/Golden/observability/failure-path targeted suite:
+  **240 passed**.
+* Full repository regression in the declared isolated environment with
+  writable temporary paths: **1558 passed, 5 skipped**.
+* Current production selection-audit replay: **reproduced=true,
+  events=69, differences=[]**.
+* `compileall` for `src` and `scripts`: **passed**.
+
+The six canonical production artifacts are preserved under
+`acceptance/production_acceptance_20261110/`: run summary, selection audit,
+Markdown report, PDF report, Developer Debug, and Engineering Summary. The
+acceptance is not release-ready. Smallest remaining blockers, in owner order,
+are: (1) Classifier guidance/deployment must produce G100 and G101 contract
+outcomes without inventing a future-adoption precedence rule; (2) formal
+metadata presentation must stop rendering the Lyon location as mixed-script
+Korean; and (3) the missing platform read-back must be captured if release
+governance requires frozen deployment provenance. The known EventIdentity
+quality limitation remains observable and unchanged; this run is sufficient
+for a later offline comparable-run assessment because the audit retains the
+three RC-52 procedure proposal/confirmation exchange sets, but it is not an
+EventIdentity acceptance experiment.
+
+Verdict: **FINDINGS**. `REAL_PRODUCTION_VALIDATED=YES`;
+`RELEASE_READY=NO`.
