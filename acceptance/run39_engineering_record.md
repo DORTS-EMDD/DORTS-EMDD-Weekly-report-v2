@@ -250,3 +250,35 @@ rescue/backfill or duplicated path was added, no Golden expected outcome was
 changed, no production prompt/scope/configuration was changed, and no
 country/language/event-specific rule was introduced. Real production
 validation was not run, and release readiness is not claimed.
+
+## RC66-R7 call-accounting recovery (2026-11-10)
+
+Starting SHA: `bd6a13db90f0fd8176caf139ceb354a3f4bb484a`. The target branch was
+fetched and verified at the same SHA; the working tree was clean before this
+record-only update.
+
+Phase 1 was performed read-only. The repository measurement artifacts and
+engineering history still record the interrupted baseline as
+`INTERRUPTED_NOT_SCOREABLE` with prior MaiAgent calls and transport retries
+`UNKNOWN`. The RC66-R7 artifact history contains no durable campaign journal or
+provider usage record. Workspace-local searches found only the repaired
+ledger's synthetic pytest journals, which were not treated as campaign
+evidence. No retained provider-side history or other configured read-only
+provider log was available in this environment. No MaiAgent call was made.
+
+The exact prior call count therefore remains **UNKNOWN**. A rigorous finite
+upper bound also cannot be proven from the deterministic code alone: the
+provider response schema does not bound the number of proposal groups, and the
+number of confirmation calls can depend on that response, with the shared
+transport retry applicable to each attempt. The 400-call cap was not reset.
+
+Phase 2 does not credit the interrupted work as a completed acceptance round.
+The frozen complete design remains the recorded preflight estimate of **384
+future calls** (baseline and candidate, three rounds, cited-focus RC52/M-C and
+BH-2 full-focus M-F RC52/M-C). Cumulative required calls are therefore
+`UNKNOWN + 384`, so safety cannot be proven under cap 400.
+
+Verdict: **BLOCKED_CALL_ACCOUNTING**. R7 was not resumed. No production
+EventIdentity, Scope, prompt, schema, downstream path, or Golden outcome
+changed. This section and the machine-readable recovery object are the only
+new changes.

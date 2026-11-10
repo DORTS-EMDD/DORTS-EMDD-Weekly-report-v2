@@ -143,5 +143,38 @@
     "status": "BLOCKED_CALL_ACCOUNTING",
     "real_production_validated": false,
     "release_ready": false
+  },
+  "call_accounting_recovery": {
+    "date": "2026-11-10",
+    "starting_sha": "bd6a13db90f0fd8176caf139ceb354a3f4bb484a",
+    "remote_sha_verified": "bd6a13db90f0fd8176caf139ceb354a3f4bb484a",
+    "new_maiagent_calls": 0,
+    "authoritative_sources_checked": [
+      "repository measurement artifacts and engineering record",
+      "Git history for the RC66-R7 measurement artifact",
+      "workspace-local execution, transport and call-journal paths",
+      "existing read-only provider/log interfaces available in this environment"
+    ],
+    "provider_history_available": false,
+    "local_campaign_journal_available": false,
+    "synthetic_test_journals_used_as_campaign_evidence": false,
+    "prior_call_count": "UNKNOWN",
+    "prior_call_count_type": "UNKNOWN",
+    "prior_call_count_evidence": "The prior artifact records only that baseline round-1 cited-focus RC52 completed before the scorer crash. No provider usage record, retained execution log, or RC66-R7 durable journal is available; Git history preserves UNKNOWN rather than a count.",
+    "prior_transport_retries": "UNKNOWN",
+    "future_calls_required": "384; frozen complete-design estimate from preflight, with the interrupted work not credited as a completed acceptance round",
+    "cumulative_required_calls": "UNKNOWN + 384 = UNKNOWN",
+    "cumulative_hard_cap": 400,
+    "safe_remaining_call_budget": "UNKNOWN",
+    "r7_resumed": false,
+    "verdict": "BLOCKED_CALL_ACCOUNTING",
+    "blocking_reason": "Neither an exact prior count nor a rigorous finite conservative upper bound can be proven from the retained evidence. The deterministic EventIdentity structure does not bound the number of proposal groups in a provider response, so code structure alone cannot safely bound the interrupted call consumption including retries.",
+    "campaign_consumption_reset": false,
+    "production_eventidentity_changed": false,
+    "production_scope_changed": false,
+    "downstream_rescue_added": false,
+    "second_owner_added": false,
+    "golden_expected_outcome_changed": false,
+    "real_production_validated": false
   }
 }
