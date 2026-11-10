@@ -1,0 +1,286 @@
+{
+  "artifact": "category_comparison_evidence",
+  "version": "category-comparison-evidence-v1",
+  "observer_only": true,
+  "task": "Read-only reconstruction of the 2026-11-10 production Lyon G100-equivalent and Incheon G101-equivalent Category failures.",
+  "repository": "DORTS-EMDD/DORTS-EMDD-Weekly-report-v2",
+  "branch": "release/report-quality-wip",
+  "starting_sha": "058aea9918571b100e552fb28ae12c0846a7324e",
+  "ending_sha": "058aea9918571b100e552fb28ae12c0846a7324e",
+  "production": {
+    "run_trace_id": "862b4757138643f8a3ad603504e7e0bf",
+    "report_id": "weekly-report-149ed145cfc3f441",
+    "period": "2026-10-12..2026-11-08",
+    "status": "SUCCESS_WITH_TECHNICAL_GAPS",
+    "real_production_validated": true,
+    "new_category_semantic_calls_in_this_task": 0,
+    "new_production_report_in_this_task": false
+  },
+  "current_configuration": {
+    "prompt_identity": "category-principal-action-v6",
+    "adapter_identity": "maiagent-chatbot-adapter-v2",
+    "message_identity": "category-full-response-contract-v2",
+    "schema_identity": "category-proposal-v5",
+    "provider_identity": "maiagent-chatbot-completions",
+    "acceptance_version": "category-v4-final-seal-v2",
+    "evaluation_harness_version": "category-semantic-evaluation-v3",
+    "configuration_fingerprint": "1fe427b77642df14792c4980096f7c4c881345befcc4d736878e45ba282c9534",
+    "reproduction": {
+      "result": "PASS",
+      "fixtures": 85,
+      "category_reached_fixtures": 52,
+      "prepared_event_groups": 53,
+      "group_level_assigned": 47,
+      "group_level_unresolved": 6,
+      "oracle_leakage_check": "PASS",
+      "g100_in_sealed_manifest": false,
+      "g101_in_sealed_manifest": false
+    }
+  },
+  "evidence_sources": {
+    "production_selection_audit": {
+      "path": "acceptance/production_acceptance_20261110/selection_audit.json",
+      "sha256": "fa757f63f29825da7f6c2ee8792e54e370704ff325409d86c3022bf64c8f8dd4",
+      "retained_fields_relevant_here": [
+        "event_id",
+        "member_candidate_ids",
+        "canonical_candidate_id",
+        "Evidence state",
+        "Evidence canonical URL",
+        "Evidence content_sha256",
+        "Scope event_focus_sentence_ids",
+        "Evidence highlights",
+        "final Classifier Category result",
+        "validation outcome"
+      ],
+      "not_retained_fields_relevant_here": [
+        "complete substantive source body",
+        "EventIdentityFacts handed to Category",
+        "unresolved EventGroup claims in Category request",
+        "serialized Category request",
+        "raw Structured Helper proposal",
+        "provider response envelope",
+        "platform deployment read-back"
+      ]
+    },
+    "production_engineering_summary": {
+      "path": "acceptance/production_acceptance_20261110/engineering_summary_weekly_2026-11-08.json",
+      "sha256": "781ff33551441312762d189f2b1ffa00f2a6f64e264eff1a3c22a517b615130b",
+      "declared_maiagent_role_status": "NOT_DECLARED"
+    },
+    "production_developer_debug": {
+      "path": "acceptance/production_acceptance_20261110/developer_debug_weekly_2026-11-08.json",
+      "sha256": "e9810965e40d95ea338549ef57feaecb4fb63ec0d0a51787d7c5f2508345ac56"
+    },
+    "production_run_summary": {
+      "path": "acceptance/production_acceptance_20261110/run_summary.txt",
+      "sha256": "169321abe7d5dfab978960b112f09372433370e4ccee58205d60543c9f4f8f9e"
+    },
+    "category_boundary_manifest": {
+      "path": "golden/category_boundary_manifest.json",
+      "sha256": "372deab927aa754b7b19c31c8820978d4e6bd8cfd22adcf0da048d3fc49d4541",
+      "status": "EXTENSION; intentionally excluded from the 53-group sealed population"
+    },
+    "g100_fixture": {
+      "path": "golden/cases/g100_pre_opening_signalling_tests.json",
+      "sha256": "d9dc8825790352633d5e23dbc129d3677988e0d6eb0d784c1979637d77e7b76c",
+      "expected": {
+        "category_state": "CATEGORY_UNRESOLVED",
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION"
+      }
+    },
+    "g101_fixture": {
+      "path": "golden/cases/g101_subway_5g_network_deployment.json",
+      "sha256": "c899e1300cf8daae669516a4a13b19cfb2bb5f7305636c7671cf18d03075c2e9",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT",
+        "subtype": "fifth_generation_network_deployment"
+      }
+    }
+  },
+  "events": {
+    "lyon": {
+      "event_group_id": "evt_ac4e5ab0fec99cc7ba4935b3",
+      "member_candidate_ids": [
+        "cand_6151760a1a98bd02f0e94aca8ddb43d540edd35b785d54a32aa9e3dbd8d7bfb9"
+      ],
+      "canonical_candidate_id": "cand_6151760a1a98bd02f0e94aca8ddb43d540edd35b785d54a32aa9e3dbd8d7bfb9",
+      "evidence": {
+        "canonical_source_url": "https://foro3d.com/ko/2026/octubre/tranvia-t10-de-lyon-prueba-senalizacion-nocturna-en-venissieux.html",
+        "content_sha256": "bceeddfddd7ded718a4b9867b5d279b09edc2cb0d209fd9b0fbf25c662726afc",
+        "hash_status": "RECORDED_SHA256_ONLY; complete body bytes were not retained and no local body match was found",
+        "scope_state": "IN_SCOPE",
+        "event_focus_sentence_ids": ["S1", "S2", "S3", "S4"],
+        "retained_highlights_direction": "Future T10 line, night signalling-system testing and switch works, with infrastructure connection to existing T4. These retained highlights are directionally consistent with G100 but are not the complete Category input."
+      },
+      "production_actual": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT",
+        "subtype": "pre_opening_signal_testing",
+        "resolution_reason": null,
+        "validation_outcome": "PASS",
+        "final_report_included": true
+      },
+      "category_request_status": "NOT_RECOVERABLE",
+      "request_reconstruction_reason": "The retained audit has candidate IDs, evidence hash, focus sentence IDs and highlights, but not the substantive body, Category action_facts, unresolved claims, or serialized request. Re-running the request builder would require missing authoritative inputs and could not prove historical content identity.",
+      "request_configuration_identity": "category-principal-action-v6 / category-full-response-contract-v2 / category-proposal-v5 / maiagent-chatbot-adapter-v2 / configuration fingerprint 1fe427b77642df14792c4980096f7c4c881345befcc4d736878e45ba282c9534",
+      "actual_helper_proposal_status": "NOT_RETAINED",
+      "actual_helper_outcome": "NOT_RECONSTRUCTABLE; only the final accepted CategoryResult is retained",
+      "classifier_validation": "NORMAL_ACCEPTED_PATH_PROVEN_AT_RESULT_LEVEL; validation PASS and no Category technical gap are recorded, but raw proposal and citation resolution cannot be independently rechecked",
+      "expected_contract_outcome": "CATEGORY_UNRESOLVED / NO_CATEGORY_DEFINING_ACTION",
+      "input_supports_g100": "NOT_PROVEN",
+      "earliest_proven_failure": "NOT_YET_ISOLATED"
+    },
+    "incheon": {
+      "event_group_id": "evt_6a1fa71f60bbaa4d42005bae",
+      "member_candidate_ids": [
+        "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898",
+        "cand_7c5e6ae670391bb1a04c12b55ab0e26ffb39d305ae16f0a153ff3eccbe740709"
+      ],
+      "canonical_candidate_id": "cand_7c5e6ae670391bb1a04c12b55ab0e26ffb39d305ae16f0a153ff3eccbe740709",
+      "evidence": {
+        "members": [
+          {
+            "candidate_id": "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898",
+            "canonical_source_url": "https://finance.biggo.jp/news/3a4d17b4-6d0f-4654-b19d-783a7732b872",
+            "content_sha256": "29680c42d876038d8559910cd58f07d0dd8d6199c4d3ea33ba8bb3e2fb018c0f",
+            "event_focus_sentence_ids": ["S8", "S9", "S10"]
+          },
+          {
+            "candidate_id": "cand_7c5e6ae670391bb1a04c12b55ab0e26ffb39d305ae16f0a153ff3eccbe740709",
+            "canonical_source_url": "http://www.seoulilbo.com/news/articleView.html?idxno=859750",
+            "content_sha256": "24b3ad7a91de6111213b2384ff9965987d73a8daa2f7c4270baf217ea35e3553",
+            "event_focus_sentence_ids": ["S1", "S2", "S3"]
+          }
+        ],
+        "hash_status": "RECORDED_SHA256_ONLY; complete body bytes were not retained and no local body match was found",
+        "scope_state": "IN_SCOPE",
+        "retained_highlights_direction": "The retained highlights describe completion of the Incheon subway Wi-Fi upgrade, start of 5G-based Wi-Fi on Lines 1/2, and LTE-to-5G backhaul replacement. They are directionally consistent with G101 but are not the complete Category input."
+      },
+      "production_actual": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE",
+        "subtype": "passenger_wifi_service_launch",
+        "resolution_reason": null,
+        "validation_outcome": "PASS",
+        "final_report_included": true
+      },
+      "category_request_status": "NOT_RECOVERABLE",
+      "request_reconstruction_reason": "The retained audit lacks both complete substantive bodies and the exact EventIdentityFacts/unresolved claims projected into the request. The request builder is deterministic only after those authoritative values are available.",
+      "request_configuration_identity": "category-principal-action-v6 / category-full-response-contract-v2 / category-proposal-v5 / maiagent-chatbot-adapter-v2 / configuration fingerprint 1fe427b77642df14792c4980096f7c4c881345befcc4d736878e45ba282c9534",
+      "actual_helper_proposal_status": "NOT_RETAINED",
+      "actual_helper_outcome": "NOT_RECONSTRUCTABLE; only the final accepted CategoryResult is retained",
+      "classifier_validation": "NORMAL_ACCEPTED_PATH_PROVEN_AT_RESULT_LEVEL; validation PASS and no Category technical gap are recorded, but raw proposal and citation resolution cannot be independently rechecked",
+      "expected_contract_outcome": "CATEGORY_ASSIGNED / TECHNICAL_DEVELOPMENT",
+      "input_supports_g101": "NOT_PROVEN",
+      "earliest_proven_failure": "NOT_YET_ISOLATED"
+    },
+    "bergamo": {
+      "event_group_id": "evt_00da49fcf8d9c251292359e5",
+      "member_candidate_ids": [
+        "cand_9adbb01f8d23100a35a25b8b35d947cf6c0b1132e9b34f9ccfc5b55721bae575"
+      ],
+      "canonical_candidate_id": "cand_9adbb01f8d23100a35a25b8b35d947cf6c0b1132e9b34f9ccfc5b55721bae575",
+      "evidence": {
+        "canonical_source_url": "https://www.zazoom.it/2026-11-03/t2-prime-prove-dei-tram-sui-binari-ma-trainati/19881334/",
+        "content_sha256": "fa68a114879b5b5fa79d8c3ac7dcc9fae0d48780e5681ec0be9087605d3e04c4",
+        "hash_status": "RECORDED_SHA256_ONLY; complete body bytes were not retained and no local body match was found",
+        "scope_state": "IN_SCOPE",
+        "event_focus_sentence_ids": ["S1", "S2", "S3"],
+        "retained_highlights_direction": "First tests on the new Bergamo–Villa d’Almè tram line, with trams hauled during the test phase."
+      },
+      "production_actual": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT",
+        "subtype": "pre_opening_testing",
+        "validation_outcome": "PASS",
+        "final_report_included": true
+      },
+      "use": "CORROBORATING_G100_DIRECTION_ONLY",
+      "canonical_control_input": "NO",
+      "reason_not_control": "The retained evidence does not preserve the exact Category request or complete source body needed for deterministic live-control construction."
+    }
+  },
+  "helper_and_deployment": {
+    "current_helper_runtime_identity_status": "CONFIGURED_IDENTITY_FINGERPRINT_ONLY; the production artifact does not retain a same-runtime platform read-back",
+    "current_platform_snapshot_status": "NOT_AVAILABLE; production Engineering Summary declares NOT_DECLARED",
+    "platform_snapshot_runtime_binding": "NOT_PROVEN",
+    "current_platform_role_status": "NOT_PROVEN",
+    "current_platform_model_status": "NOT_PROVEN",
+    "current_platform_schema_status": "NOT_PROVEN",
+    "current_platform_memory_context_status": "NOT_PROVEN",
+    "current_platform_tools_knowledge_status": "NOT_PROVEN",
+    "historical_to_current_deployment_comparability": "NOT_COMPARABLE; historical snapshot is OBSERVED_AND_FROZEN for a different Helper instance and a different configuration. Historical snapshot also records a Category-specific role and enabled context/history-related settings, which the current shared neutral helper contract does not automatically accept.",
+    "historical_seal": {
+      "acceptance_version": "category-v4-final-seal-v2",
+      "configuration_fingerprint": "9f93fda69106a7fe0a43c4c87550ceed022735687e0603377db38d4dc6a6ae86",
+      "deployment_fingerprint": "3e6de75b29724801efd67b1acca89dc8301754f26fdd1b44de72ea2833ad8b08",
+      "snapshot_contract_version": "category-deployment-snapshot-v1",
+      "offline_assessment": "PASS; 3 rounds x 53 calls, 159/159 exact for its frozen historical population/configuration",
+      "current_configuration_match": "NO",
+      "g100_g101_coverage": "ABSENT_FROM_HISTORICAL_53_GROUP_POPULATION"
+    }
+  },
+  "acceptance_harness": {
+    "runtime_binding_gap": "YES",
+    "gap_type": "ACCEPTANCE_INTEGRITY",
+    "finding": "The harness validates a supplied deployment snapshot and separately resolves the runtime configuration, but current code does not prove that the snapshot platform.chatbot_instance_id equals the configured runtime Helper instance. A valid snapshot for another instance can therefore be associated without same-instance proof.",
+    "read_only_code_refs": [
+      "scripts/category_semantic_evaluation.py:552-606",
+      "scripts/category_semantic_evaluation.py:717-727",
+      "scripts/category_semantic_evaluation.py:1136-1139"
+    ],
+    "harness_modified": false
+  },
+  "root_cause_decision": {
+    "lyon": "NOT_YET_ISOLATED",
+    "incheon": "NOT_YET_ISOLATED",
+    "common_root_cause": "NOT_PROVEN",
+    "common_root_cause_if_any": "Neither input construction nor Helper semantic behavior can be separated from deployment/binding with the retained production evidence.",
+    "request_input_defect_proven": false,
+    "helper_semantic_failure_proven": false,
+    "platform_configuration_mismatch_proven": false,
+    "acceptance_binding_gap_proven": true,
+    "earliest_proven_governance_gap": "Current-fingerprint live G100/G101 semantic acceptance and same-runtime deployment binding were not retained before production.",
+    "earliest_observed_runtime_failure": "Classifier accepted a semantically wrong assigned Category result; the upstream source of that proposal is not isolated."
+  },
+  "control_suitability": {
+    "lyon_canonical_control_input": "NO",
+    "incheon_canonical_control_input": "NO",
+    "bergamo_canonical_control_input": "NO",
+    "reason": "All three production inputs lack a retained exact or deterministically reconstructable Category request with complete authoritative source content, action facts and unresolved claims."
+  },
+  "validation": {
+    "current_configuration_fingerprint_reproduction": "PASS",
+    "historical_three_round_assessment": "PASS",
+    "historical_deployment_fingerprint_recomputation": "PASS",
+    "targeted_offline_tests": "43 passed",
+    "live_semantic_generation": "NOT_RUN",
+    "production_rerun": "NOT_RUN",
+    "secret_scan_policy": "No API keys, credentials or chatbot IDs are recorded in this package"
+  },
+  "architecture_review": {
+    "authoritative_owner": "Classifier",
+    "structured_helper": "proposal-only",
+    "debug_and_acceptance": "observer-only",
+    "production_category_changed": false,
+    "production_eventidentity_changed": false,
+    "production_scope_changed": false,
+    "downstream_rescue_added": false,
+    "second_owner_added": false,
+    "golden_expected_outcome_changed": false,
+    "fallback_or_backfill_added": false,
+    "category_precedence_added": false,
+    "complexity_review": "No production architecture path or decision owner was changed; this package only records retained evidence, reproduction checks and explicit non-recoverability."
+  },
+  "decision": {
+    "verdict": "MULTIPLE_FINDINGS",
+    "primary_next_boundary": "D. repair acceptance/deployment binding first",
+    "another_production_run_required_now": "NO",
+    "full_159_call_seal_required_now": "NO",
+    "real_production_validated": "YES",
+    "release_ready": "NO",
+    "highest_information_next_action": "Repair the acceptance/runtime Helper same-instance binding and retain a hash-checked request/proposal/deployment evidence chain, then decide whether a narrow current-config G100/G101 control is justified."
+  }
+}
