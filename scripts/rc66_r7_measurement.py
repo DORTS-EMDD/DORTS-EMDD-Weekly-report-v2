@@ -34,7 +34,7 @@ from src.weekly_report.contracts import (  # noqa: E402
     TemporalResult,
 )
 from src.weekly_report.evidence_document import assess_document  # noqa: E402
-from src.weekly_report.evidence_sentences import segment_evidence_sentences  # noqa: E402
+from src.weekly_report.evidence_sentences import event_focus_sentences, segment_evidence_sentences  # noqa: E402
 from src.weekly_report.evidence_service import _default_fetcher  # noqa: E402
 from src.weekly_report.event_identity import EventIdentity, _grouping_record  # noqa: E402
 from src.weekly_report import maiagent_event_identity_provider as provider_module  # noqa: E402
@@ -49,6 +49,8 @@ from src.weekly_report.maiagent_transport import (  # noqa: E402
 
 
 HARD_CALL_CAP = 400
+STARTING_SHA = "95cd459613cf68fd723329b6e40490dc190d2600"
+DEFAULT_CAMPAIGN_ID = "RC66-R7"
 BASELINE_PROMPT = "event-identity-grouping-v10"
 CANDIDATE_PROMPT = "event-identity-grouping-v10+rc66-confirmation-clarification-v1"
 CANDIDATE_GUIDANCE = (
@@ -57,6 +59,33 @@ CANDIDATE_GUIDANCE = (
     "activity that marks or verifies that occurrence does not by itself make it "
     "a different event. It is a single-record group only when the shared details "
     "cannot be determined."
+)
+
+FROZEN_ACCEPTANCE_PREDICATES = (
+    "zero differently labelled false merges in every measured round",
+    "required mixed same-occurrence pairs meet the frozen 2-of-3 success criterion",
+    "same-labelled recall does not regress against baseline in any required round",
+    "direct M-C partitions match the independently reviewed occurrence labels",
+    "pure same-occurrence over-split controls are reported separately",
+    "cross-language controls are reported separately",
+    "mega-group negative controls remain separated",
+    "batch nomination misses are reported separately from confirmation outcomes",
+    "duplicate membership is reported separately from split/merge scoring",
+    "ED01-ED28 and existing failure paths remain unchanged offline",
+    "BH-2 full validated-focus M-F results are reported separately",
+)
+
+REQUIRED_DIRECT_GROUP_NAMES = (
+    "mixed_incheon",
+    "mixed_sydney",
+    "pure_daegu",
+    "pure_seoul",
+    "pure_kim",
+    "pure_ulsan",
+    "incident_followup",
+    "mega_29_group4",
+    "mega_29_group5",
+    "mega_31_group3",
 )
 
 # These are the eight refetch hash mismatches and one unavailable item already
@@ -142,15 +171,27 @@ class BudgetExceeded(BaseException):
 class MeteredTransport:
     """Crash-safe cumulative campaign ledger plus one-call transport."""
 
-    CAMPAIGN_ID = "RC66-R7"
+    CAMPAIGN_ID = DEFAULT_CAMPAIGN_ID
 
-    def __init__(self, cap: int, journal_path: Path, prior_call_upper_bound: int | None = None) -> None:
+    def __init__(
+        self,
+        cap: int,
+        journal_path: Path,
+        prior_call_upper_bound: int | None = None,
+        *,
+        campaign_id: str = DEFAULT_CAMPAIGN_ID,
+    ) -> None:
         if not isinstance(journal_path, Path):
             raise TypeError("RC66-R7 requires a durable journal path")
+        if not isinstance(campaign_id, str) or not campaign_id.strip():
+            raise ValueError("RC66-R7 requires a non-empty campaign identity")
         self.cap = cap
         self.journal_path = journal_path
+        self.campaign_id = campaign_id.strip()
         self.context = ""
         self.log: list[dict[str, Any]] = []
+        self.completed_units: dict[str, dict[str, Any]] = {}
+        self.active_unit: dict[str, Any] | None = None
         self.duplicate_membership_by_context: Counter[str] = Counter()
         self._seen: Counter[str] = Counter()
         self._real = UrllibMaiAgentJsonTransport()
@@ -181,7 +222,7 @@ class MeteredTransport:
     def _load(self) -> None:
         try:
             data = json.loads(self.journal_path.read_text(encoding="utf-8"))
-            if data.get("campaign_id") != self.CAMPAIGN_ID or int(data.get("hard_call_cap")) != self.cap:
+            if data.get("campaign_id") != self.campaign_id or int(data.get("hard_call_cap")) != self.cap:
                 raise ValueError("campaign identity or hard cap mismatch")
             prior = int(data.get("prior_call_upper_bound"))
             log = data.get("log")
@@ -189,17 +230,34 @@ class MeteredTransport:
                 raise ValueError("invalid durable ledger shape")
             if int(data.get("attempted_calls")) != prior + len(log):
                 raise ValueError("durable ledger attempted-call count is inconsistent")
+            completed_units = data.get("completed_units", [])
+            if not isinstance(completed_units, list):
+                raise ValueError("durable ledger completed-unit checkpoint is invalid")
+            unit_keys = [item.get("unit_key") for item in completed_units if isinstance(item, dict)]
+            if len(unit_keys) != len(completed_units) or any(not isinstance(key, str) or not key for key in unit_keys):
+                raise ValueError("durable ledger completed-unit identity is invalid")
+            if len(set(unit_keys)) != len(unit_keys):
+                raise ValueError("durable ledger completed-unit identity is duplicated")
+            active_unit = data.get("active_unit")
+            if active_unit is not None and (
+                not isinstance(active_unit, dict)
+                or not isinstance(active_unit.get("unit_key"), str)
+                or not active_unit["unit_key"]
+            ):
+                raise ValueError("durable ledger active-unit checkpoint is invalid")
         except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
             raise RuntimeError("RC66-R7 durable ledger is invalid; refusing to reset or continue") from exc
         self.prior_call_upper_bound = prior
         self.log = [dict(item) for item in log]
+        self.completed_units = {item["unit_key"]: dict(item) for item in completed_units}
+        self.active_unit = dict(active_unit) if active_unit is not None else None
         self.retries = int(data.get("transport_retries", sum(1 for item in self.log if item.get("retry"))))
         self._seen.update(item.get("request_sha256", "") for item in self.log if item.get("request_sha256"))
         self.duplicate_membership_by_context.update(data.get("duplicate_membership_by_context", {}))
 
     def _persist(self) -> None:
         payload = {
-            "campaign_id": self.CAMPAIGN_ID,
+            "campaign_id": self.campaign_id,
             "hard_call_cap": self.cap,
             "prior_call_upper_bound": self.prior_call_upper_bound,
             "attempted_calls": self.calls,
@@ -207,8 +265,11 @@ class MeteredTransport:
             "remaining_calls": self.remaining_calls,
             "transport_retries": self.retries,
             "log": self.log,
+            "active_unit": self.active_unit,
+            "completed_units": list(self.completed_units.values()),
             "duplicate_membership_by_context": dict(self.duplicate_membership_by_context),
         }
+        self.journal_path.parent.mkdir(parents=True, exist_ok=True)
         temp_path = self.journal_path.with_name(self.journal_path.name + ".tmp")
         temp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         temp_path.replace(self.journal_path)
@@ -251,6 +312,33 @@ class MeteredTransport:
             pass
         self._persist()
         return response
+
+    def begin_unit(self, unit_key: str, metadata: dict[str, Any]) -> bool:
+        """Durably mark one scoreable arm as active before its first call."""
+
+        if unit_key in self.completed_units:
+            return False
+        if self.active_unit is not None and self.active_unit.get("unit_key") != unit_key:
+            raise RuntimeError(
+                f"RC66-R7 has an incomplete active unit {self.active_unit.get('unit_key')}; refusing to skip it"
+            )
+        self.active_unit = {"unit_key": unit_key, **metadata, "state": "INCOMPLETE"}
+        self._persist()
+        return True
+
+    def complete_unit(self, unit_key: str, kind: str, result: dict[str, Any]) -> None:
+        """Persist a scoreable arm result before moving to the next arm."""
+
+        if self.active_unit is None or self.active_unit.get("unit_key") != unit_key:
+            raise RuntimeError("RC66-R7 scoreable-unit checkpoint does not match the active unit")
+        self.completed_units[unit_key] = {
+            "unit_key": unit_key,
+            "kind": kind,
+            "result": result,
+            "state": "SCOREABLE_COMPLETE",
+        }
+        self.active_unit = None
+        self._persist()
 
 
 def _load_audits(values: list[str]) -> dict[str, dict[str, Any]]:
@@ -433,9 +521,21 @@ def _build_corpus(audits: dict[str, dict[str, Any]], *, allow_exclusions: bool =
 
 
 def _full_focus(record: Any) -> Any:
-    sentences = segment_evidence_sentences(record.evidence.substantive_content)
-    ids = tuple(sentence.sentence_id for sentence in sentences)
-    focus = [{"start": sentence.start, "end": sentence.end} for sentence in sentences]
+    content = record.evidence.substantive_content
+    cited = event_focus_sentences(
+        content,
+        dict(record.scope.provenance).get("candidate_event_focus"),
+    )
+    if not cited:
+        return record
+    first_start = cited[0].start
+    last_end = cited[-1].end
+    sentences = segment_evidence_sentences(content)
+    focus = [
+        {"start": sentence.start, "end": sentence.end}
+        for sentence in sentences
+        if first_start <= sentence.start and sentence.end <= last_end
+    ]
     return replace(record, scope=replace(record.scope, provenance={"candidate_event_focus": focus}))
 
 
@@ -515,16 +615,20 @@ def main() -> int:
     parser.add_argument("--allow-corpus-exclusions", action="store_true")
     parser.add_argument("--journal", type=Path)
     parser.add_argument("--prior-call-upper-bound", type=int)
+    parser.add_argument("--campaign-id", default=DEFAULT_CAMPAIGN_ID)
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
     if args.cap != HARD_CALL_CAP:
         raise SystemExit("RC66-R7 hard cap is frozen at 400")
+    if not args.prepare_only and args.campaign_id == DEFAULT_CAMPAIGN_ID:
+        raise SystemExit("live RC66-R7 execution requires a distinct --campaign-id")
 
     global current_labels
     audits = _load_audits(args.audit)
     records, current_labels, manifest = _build_corpus(audits, allow_exclusions=args.allow_corpus_exclusions)
     plan = {
-        "starting_sha": "be864067f2f5bc098735e25bdd8c574d88d7d89a",
+        "starting_sha": STARTING_SHA,
+        "campaign_id": args.campaign_id,
         "d4_l1": "INCHEON-WIFI-START",
         "baseline_prompt": BASELINE_PROMPT,
         "candidate_prompt": CANDIDATE_PROMPT,
@@ -535,6 +639,7 @@ def main() -> int:
         "expected_verified_records": len(records),
         "corpus_exclusions_allowed": args.allow_corpus_exclusions,
         "hard_call_cap": HARD_CALL_CAP,
+        "acceptance_predicates": list(FROZEN_ACCEPTANCE_PREDICATES),
         "corpus_manifest": manifest,
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -544,14 +649,34 @@ def main() -> int:
         print(json.dumps({"status": "READY", "verified": len(records), "direct_groups": len(manifest["direct_groups"]), "plan": str(plan_path)}, ensure_ascii=False))
         return 0
 
+    missing_direct_groups = [
+        name for name in REQUIRED_DIRECT_GROUP_NAMES
+        if name not in {group["name"] for group in manifest["direct_groups"]}
+    ]
+    if missing_direct_groups:
+        raise SystemExit(
+            "RC66-R7 requires all frozen direct confirmation groups; missing: "
+            + ", ".join(missing_direct_groups)
+        )
+
     journal_path = args.journal or args.out.with_name("rc66_r7_call_journal.json")
     if args.resume and not journal_path.exists():
         raise SystemExit("--resume requires an existing RC66-R7 durable ledger")
     if not args.resume and journal_path.exists():
         raise SystemExit("existing RC66-R7 ledger requires --resume; refusing to reset cumulative accounting")
-    meter = MeteredTransport(HARD_CALL_CAP, journal_path, args.prior_call_upper_bound)
+    meter = MeteredTransport(
+        HARD_CALL_CAP,
+        journal_path,
+        args.prior_call_upper_bound,
+        campaign_id=args.campaign_id,
+    )
     started = time.monotonic()
-    results: dict[str, Any] = {"rounds": [], "direct": []}
+    results: dict[str, Any] = {"campaign_id": args.campaign_id, "rounds": [], "direct": []}
+    for checkpoint in meter.completed_units.values():
+        saved = checkpoint.get("result")
+        if not isinstance(saved, dict):
+            raise RuntimeError("RC66-R7 completed-unit checkpoint has no scoreable result")
+        results[checkpoint["kind"]].append(saved)
     try:
         for prompt in (BASELINE_PROMPT, CANDIDATE_PROMPT):
             provider_module.build_maiagent_event_identity_model_input = _candidate_builder(prompt)
@@ -564,22 +689,28 @@ def main() -> int:
                     ("bh2_mf_rc52", {key: _full_focus(value) for key, value in records.items()}, "full"),
                 ):
                     meter.context = f"{prompt}|round-{round_number}|{arm}"
-                    run = EventIdentity(provider).evaluate(list(source_records.values()))
-                    item = _batch_score(
-                        run,
-                        current_labels,
-                        source_records,
-                        meter.duplicate_membership_by_context.get(meter.context, 0),
-                    )
-                    item.update({"prompt": prompt, "round": round_number, "arm": arm, "focus": focus_mode})
-                    results["rounds"].append(item)
+                    unit_key = meter.context
+                    if meter.begin_unit(unit_key, {"prompt": prompt, "round": round_number, "arm": arm, "focus": focus_mode}):
+                        run = EventIdentity(provider).evaluate(list(source_records.values()))
+                        item = _batch_score(
+                            run,
+                            current_labels,
+                            source_records,
+                            meter.duplicate_membership_by_context.get(meter.context, 0),
+                        )
+                        item.update({"prompt": prompt, "round": round_number, "arm": arm, "focus": focus_mode})
+                        meter.complete_unit(unit_key, "rounds", item)
+                        results["rounds"].append(item)
                 for arm, focus_mode in (("cited_focus_m_c", "cited"), ("bh2_mf_m_c", "full")):
                     source_records = records if focus_mode == "cited" else {key: _full_focus(value) for key, value in records.items()}
                     for group in manifest["direct_groups"]:
                         meter.context = f"{prompt}|round-{round_number}|{arm}|{group['name']}"
-                        item = _direct_call(provider, source_records, group["candidate_ids"], group["subject"])
-                        item.update({"prompt": prompt, "round": round_number, "arm": arm, "focus": focus_mode, "group": group["name"]})
-                        results["direct"].append(item)
+                        unit_key = meter.context
+                        if meter.begin_unit(unit_key, {"prompt": prompt, "round": round_number, "arm": arm, "focus": focus_mode, "group": group["name"]}):
+                            item = _direct_call(provider, source_records, group["candidate_ids"], group["subject"])
+                            item.update({"prompt": prompt, "round": round_number, "arm": arm, "focus": focus_mode, "group": group["name"]})
+                            meter.complete_unit(unit_key, "direct", item)
+                            results["direct"].append(item)
     except BudgetExceeded as exc:
         results["budget_exceeded"] = str(exc)
     except Exception as exc:

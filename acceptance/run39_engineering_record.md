@@ -282,3 +282,78 @@ Verdict: **BLOCKED_CALL_ACCOUNTING**. R7 was not resumed. No production
 EventIdentity, Scope, prompt, schema, downstream path, or Golden outcome
 changed. This section and the machine-readable recovery object are the only
 new changes.
+
+## RC66-R7 new independently accounted campaign (2026-11-10)
+
+The interrupted campaign remains permanently **INTERRUPTED_NOT_SCOREABLE**;
+its prior call count and retry count remain **UNKNOWN**, and its history was
+not rewritten. A new campaign was started from `95cd459613cf68fd723329b6e40490dc190d2600`
+with campaign ID `RC66-R7-CAMPAIGN-20261110-01`, an independent durable
+hash-only journal, initial call count **0**, and a hard cap of **400**. The
+baseline was `event-identity-grouping-v10`; the measurement-only candidate
+was `event-identity-grouping-v10+rc66-confirmation-clarification-v1`.
+
+The authoritative owner remains the production EventIdentity
+grouping/confirmation path. The measured boundary remained confirmation-only:
+a confirmation record is grouped with the occurrence whose specific details it
+states, while an activity that marks or verifies that occurrence does not by
+itself create a new event. No Scope, Category, Writer, Validator, downstream
+repair, fallback, backfill, country/language rule, or second owner was added.
+The earlier Category clarification at `8aa225d` was not changed by this
+campaign.
+
+The live campaign refetched the 78-record prepared corpus. It ultimately
+verified **57** records, with **6 EVIDENCE_UNAVAILABLE** and **2 HASH_MISMATCH**
+exclusions; no substitute source was used. The required ten direct groups
+were all present after resuming the same campaign, yielding **12 batch round
+results** and **120 direct confirmation results**. The first live fetch had
+only six direct groups because four source records were transiently
+unavailable; it was not scored as complete and was resumed with the same
+journal and remaining budget. No cap increase or replacement round was used.
+
+The campaign completed at **384 attempted MaiAgent calls**, **249 repeated
+request-hash entries**, and **16 safe calls remaining**. Every recorded HTTP
+outcome was `HTTP_200`; the journal and result contain no credentials or source
+bodies. The recorded replay remains `reproduced=true`, `events=81`,
+`differences=[]`.
+
+R7 verdict is **R7_FAIL**, based on measured acceptance failures rather than
+test status alone:
+
+* Baseline cited-focus batch recall was `33/41, 33/41, 33/41`; candidate was
+  `29/41, 33/41, 33/41`. This is a candidate recall regression in round 1.
+* Baseline full validated-focus M-F recall was `38/41, 33/41, 33/41`;
+  candidate was `32/41, 33/41, 33/41`. Candidate round 3 also emitted two
+  duplicate-membership technical gaps.
+* The required zero-differently-labelled-false-merges predicate failed in
+  every measured batch family: candidate cited-focus false merges were
+  `2, 2, 2`, and candidate M-F false merges were `2, 3, 3`.
+* The direct mixed Incheon control met the 2-of-3 same-occurrence criterion
+  only for candidate M-F (`2/3`) and met it `0/3` for candidate cited-focus;
+  direct incident/follow-up controls produced six false-merge pairs per
+  candidate direct arm across the three rounds.
+* Pure over-split controls, cross-language/mixed controls, mega-group negative
+  controls, duplicate membership, and batch recall were retained as separate
+  measurements. Mega negative controls had zero false merges, but the
+  mega-31 direct control still recorded duplicate membership in candidate
+  focus modes. These observations do not authorize downstream rescue.
+
+Offline validation after the final measurement-only guard:
+
+* RC66-R7 harness tests: **8 passed**.
+* EventIdentity replay/recorded-answer/RC52/observability/failure-path,
+  dedup Golden, and RC66-R7 targeted suite: **176 passed**.
+* Full repository offline regression: **1553 passed, 5 skipped** in the
+  isolated environment built from `requirements.txt`, with writable TEMP/TMP.
+* JSON validation, `py_compile`, and `git diff --check`: **passed**.
+
+The only post-run code change is a measurement-only fail-closed guard that
+requires all ten frozen direct confirmation group names before a live or
+resumed campaign can spend calls. It adds no production behavior. Architecture
+review passes for one owner, no fallback/rescue/backfill, no duplicated
+classification path, no Golden expected-outcome mutation, no event-specific
+logic, and no unnecessary production complexity. Production EventIdentity was
+not changed, no new production report or email was sent, and real-production
+validation remains **NO**. The machine-readable campaign evidence is stored
+in `acceptance/event_identity/rc66_r7_campaign_20261110_01.json`, its plan, and
+its independently accounted hash-only call journal.

@@ -1,0 +1,853 @@
+{
+  "starting_sha": "95cd459613cf68fd723329b6e40490dc190d2600",
+  "campaign_id": "RC66-R7-CAMPAIGN-20261110-01",
+  "d4_l1": "INCHEON-WIFI-START",
+  "baseline_prompt": "event-identity-grouping-v10",
+  "candidate_prompt": "event-identity-grouping-v10+rc66-confirmation-clarification-v1",
+  "candidate_change": "confirmation-only clarification; no production mutation",
+  "rounds": 3,
+  "arms": [
+    "cited_focus_rc52",
+    "cited_focus_m_c",
+    "bh2_mf_rc52",
+    "bh2_mf_m_c"
+  ],
+  "planned_direct_confirmation_groups": 10,
+  "expected_verified_records": 57,
+  "corpus_exclusions_allowed": true,
+  "hard_call_cap": 400,
+  "acceptance_predicates": [
+    "zero differently labelled false merges in every measured round",
+    "required mixed same-occurrence pairs meet the frozen 2-of-3 success criterion",
+    "same-labelled recall does not regress against baseline in any required round",
+    "direct M-C partitions match the independently reviewed occurrence labels",
+    "pure same-occurrence over-split controls are reported separately",
+    "cross-language controls are reported separately",
+    "mega-group negative controls remain separated",
+    "batch nomination misses are reported separately from confirmation outcomes",
+    "duplicate membership is reported separately from split/merge scoring",
+    "ED01-ED28 and existing failure paths remain unchanged offline",
+    "BH-2 full validated-focus M-F results are reported separately"
+  ],
+  "corpus_manifest": {
+    "d4_l1": "INCHEON-WIFI-START",
+    "corpus_source": "refetched, sha256-verified Event Identity input",
+    "prepared": 78,
+    "preflight_verified": 65,
+    "verified": 57,
+    "excluded": [
+      "cand_23a44c60f2ff25ac9897ef005d620b16d8b4793cd49103e3be6e0048e597acfa",
+      "cand_351c4d6779efb6e66d3fb09f7dcaade53fe0dfcb57f657bacd03dbe0bcf47233",
+      "cand_3a95fcf226602be8d832847a1b439fb7db58596da1c8704f2fd2bd0bf0280b6f",
+      "cand_3f2caa1f683753b30267394f33103028779b98bf15f580e33381bd8240a107a3",
+      "cand_41c475786cd0d79780ab7b495e5b6e71b97d60c7b3cf7e666300f5f8349157aa",
+      "cand_51305225d7a7592b672fd3326bbceb94fc2d4c2da94565c3f6665c38abee8ef5",
+      "cand_59d401d75c640cd16a53a4376994fbddab62735115bccc02578621e947da7832",
+      "cand_6b18cbd933f4584ced526928c3d75d3fa1ebc09b39126ba4a85d7e8f3c3ac012",
+      "cand_8769477d0c03fceeea8d4d96c4c6926009b575ba1af40ccb7eca040f2a11ccb6",
+      "cand_bc383dac0265a4669f7c267734b218830f425d36595b02ee3e565fb7f3e65d65",
+      "cand_c7b3e8dca1bd9ebf9a4211138915b28a81db5687dfa9ccc994e4dbf227882871",
+      "cand_cfd25e1f91532ef1a275d79722704e4db8dc70bd41852ab523b077bab9ac4d7c",
+      "cand_d892c2de4cb8d17f8c71552adb15b167ce41d2ac9202d66eef63a3b215dd6830",
+      "cand_eefa8b5c46c2b677e054f5f6e312ec603b9d127d76587f48dfdf4e95f87b96aa",
+      "cand_f09883d7701e3981555e9b2bb18a9d19ee6e8b088ada2f9cf27e6ae9d1adeda5",
+      "cand_f5148d714d14517057953bd988d9a2843e38bb6902f8a8c4a5190c8bdce0b83d",
+      "cand_f9d5ed081c92e173426bcd32a364ce99657bb8e362294b99a02c0257cf7d3539"
+    ],
+    "fetch_failures": [
+      {
+        "candidate_id": "cand_351c4d6779efb6e66d3fb09f7dcaade53fe0dfcb57f657bacd03dbe0bcf47233",
+        "reason": "EVIDENCE_UNAVAILABLE",
+        "error": "_UnsafeDestinationError"
+      },
+      {
+        "candidate_id": "cand_3a95fcf226602be8d832847a1b439fb7db58596da1c8704f2fd2bd0bf0280b6f",
+        "reason": "EVIDENCE_UNAVAILABLE",
+        "error": "_UnsafeDestinationError"
+      },
+      {
+        "candidate_id": "cand_41c475786cd0d79780ab7b495e5b6e71b97d60c7b3cf7e666300f5f8349157aa",
+        "reason": "HASH_MISMATCH",
+        "expected": "e0a3d88dd66b51bf11489e3726f812d4c9d0629c0767ceff3e5e24e7f205a189",
+        "actual": "e6aabb7a3faf1cc6df8d602bb543da4ec3722bff9bc0abfaadd90c6889ecb335"
+      },
+      {
+        "candidate_id": "cand_51305225d7a7592b672fd3326bbceb94fc2d4c2da94565c3f6665c38abee8ef5",
+        "reason": "EVIDENCE_UNAVAILABLE",
+        "error": "_UnsafeDestinationError"
+      },
+      {
+        "candidate_id": "cand_d892c2de4cb8d17f8c71552adb15b167ce41d2ac9202d66eef63a3b215dd6830",
+        "reason": "EVIDENCE_UNAVAILABLE",
+        "error": "_UnsafeDestinationError"
+      },
+      {
+        "candidate_id": "cand_eefa8b5c46c2b677e054f5f6e312ec603b9d127d76587f48dfdf4e95f87b96aa",
+        "reason": "HASH_MISMATCH",
+        "expected": "07268fee2b384aa839bb895d29df23917739a2781abae8fdf2d6b068e5d4f009",
+        "actual": "0a3a45ad009c3e8db084f75f11badbc2d68ff39acc75a131ca4b3815653006b8"
+      },
+      {
+        "candidate_id": "cand_f09883d7701e3981555e9b2bb18a9d19ee6e8b088ada2f9cf27e6ae9d1adeda5",
+        "reason": "EVIDENCE_UNAVAILABLE",
+        "error": "_UnsafeDestinationError"
+      },
+      {
+        "candidate_id": "cand_f5148d714d14517057953bd988d9a2843e38bb6902f8a8c4a5190c8bdce0b83d",
+        "reason": "EVIDENCE_UNAVAILABLE",
+        "error": "_UnsafeDestinationError"
+      }
+    ],
+    "rows": [
+      {
+        "candidate_id": "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898",
+        "audit": "run34",
+        "content_sha256": "29680c42d876038d8559910cd58f07d0dd8d6199c4d3ea33ba8bb3e2fb018c0f",
+        "focus_sentence_ids": [
+          "S8",
+          "S9",
+          "S10"
+        ],
+        "label": "INCHEON-WIFI-START"
+      },
+      {
+        "candidate_id": "cand_05b1a271c7681e1c3a6ecfc48ea89d9fd3fc33b82b88362e45bf227b9f451ef3",
+        "audit": "run24",
+        "content_sha256": "4e96ca9033b869f19929dcea5a429ce52b17210ffc940df55aba0a1e3ab82b6e",
+        "focus_sentence_ids": [
+          "S1",
+          "S3",
+          "S4",
+          "S8"
+        ],
+        "label": "DHAKA-L1-LT"
+      },
+      {
+        "candidate_id": "cand_12aaae13731c64594c85c9ea7b8854125f8a4803e4730dd1420d9a6449dddf6f",
+        "audit": "run24",
+        "content_sha256": "4667758c8a05c852b07fe6e789612dd8f51bd77c89c96f72c2d703dbeaac8e14",
+        "focus_sentence_ids": [
+          "S5"
+        ],
+        "label": "KYIV-ATTACK"
+      },
+      {
+        "candidate_id": "cand_1463016b9762e47c95eff7ba69e0b0b3cfa315315d3d40da47231be94b0018fe",
+        "audit": "run34",
+        "content_sha256": "c534d9f16286bfee15d60b36b69238c556fa5a185edaf2161d515b02ac9beb72",
+        "focus_sentence_ids": [
+          "S1",
+          "S2",
+          "S3",
+          "S4",
+          "S5",
+          "S6",
+          "S7",
+          "S8",
+          "S9",
+          "S10",
+          "S11",
+          "S12",
+          "S13",
+          "S14",
+          "S15",
+          "S16",
+          "S17",
+          "S18",
+          "S19",
+          "S20"
+        ],
+        "label": "ULSAN-DEPOT"
+      },
+      {
+        "candidate_id": "cand_14ff0ea2472ddbc2b885f7018b268e7de53e732c4ec80d1c6853d4cf89918796",
+        "audit": "run26",
+        "content_sha256": "ad951b870c3c964cf24c931ce62b503c2a304d826489f524b4f71060e96802a8",
+        "focus_sentence_ids": [
+          "S2",
+          "S3",
+          "S4",
+          "S5",
+          "S6",
+          "S7",
+          "S8",
+          "S9",
+          "S10",
+          "S11"
+        ],
+        "label": "DAEJEON-TRAM-SELECTION"
+      },
+      {
+        "candidate_id": "cand_1b9e7dc4fd87f8bb00c0888c8048caded45fb592c386faddcc0598dacb1d4784",
+        "audit": "run30",
+        "content_sha256": "a991a9f2cb04fc58806ac87e9edbbe9c56009d64bd1a995c5980d1c9f6d3910d",
+        "focus_sentence_ids": [],
+        "label": "NYC-SUBWAY-SURFING"
+      },
+      {
+        "candidate_id": "cand_1d6f2d3c0e36849405fed7533bce0d54494a45b50288ab017d6ff5e80ef38b9a",
+        "audit": "run26",
+        "content_sha256": "4b6c036d39cef50bba8ac1187cd08b715fa7a77b6acef5c0b6ec536ff7667dc2",
+        "focus_sentence_ids": [
+          "S1",
+          "S2"
+        ],
+        "label": "SYDNEY-SW-OPENING"
+      },
+      {
+        "candidate_id": "cand_1ee36be311f90aac737f74d1105220ec0edeb2f267d8e40618f6d5beeb4b23f6",
+        "audit": "run26",
+        "content_sha256": "1fd5b83a64482dbd5b446ee3862d978ad7f36c460051838c1b53a575d7eb2dc2",
+        "focus_sentence_ids": [
+          "S3",
+          "S4"
+        ],
+        "label": "NAPLES-L1-CLOSURE"
+      },
+      {
+        "candidate_id": "cand_32a8c8a0f3028627ca46f3922978f1eadee4a315fa623a853fc15d15d916ccb5",
+        "audit": "run30",
+        "content_sha256": "4c0a0c3cd814976a79949cde4d281823a38074d1990b47f9fc8c06e8ccde3a39",
+        "focus_sentence_ids": [
+          "S3",
+          "S4"
+        ],
+        "label": "BARCELONA-FIRE-CAUSE"
+      },
+      {
+        "candidate_id": "cand_3c5fb6f772cf53ff238eff84a4a8ac5d9a50fa59005aad13b76b528045a35eea",
+        "audit": "run24",
+        "content_sha256": "307bfd90020dd014e0b05d71afb3b38992c7e138389ce8c718c0d6e7b02248b3",
+        "focus_sentence_ids": [
+          "S1"
+        ],
+        "label": "SEOUL-OPERATIONS-EXCHANGE"
+      },
+      {
+        "candidate_id": "cand_415b5ed8c994120254700cbaddc937c69c901845e80cb3ad721dbb8ac2bdba32",
+        "audit": "run24",
+        "content_sha256": "f7820eff8c59ed86833d1a440fa8e35fdf44437344faea5dd0291011c8b1e6c9",
+        "focus_sentence_ids": [
+          "S1",
+          "S2"
+        ],
+        "label": "TOKYO-POINT-AI"
+      },
+      {
+        "candidate_id": "cand_44abee21787e659024bdeec9c0699e27ca5a7f8e557694f71619de6442655c81",
+        "audit": "run26",
+        "content_sha256": "2e0ecfc298e992a81c635a480e24c16cfeddeaaa1dbd024f21d67c14ae150f2f",
+        "focus_sentence_ids": [
+          "S1"
+        ],
+        "label": "JANGAM-SERVICE-RESUME"
+      },
+      {
+        "candidate_id": "cand_47cacec5b5fe1e05a2d3815fed93ef795f5233d5df0ef7612b9b156a9563c42d",
+        "audit": "run24",
+        "content_sha256": "5703b1c298dec8d5558ab2525b04fadeb6a0e310bda5ba16de7c111752e261ad",
+        "focus_sentence_ids": [
+          "S5",
+          "S6"
+        ],
+        "label": "WIRYE-OPENING-DELAY"
+      },
+      {
+        "candidate_id": "cand_4a97f33baaf440a97bc6467fc414851a3efc487c65a2bc6b17ac626d0ee487d3",
+        "audit": "run26",
+        "content_sha256": "e728c05e46e99ba965ef343c00d189a0ad857b7985d647a2c5d314836b9eab16",
+        "focus_sentence_ids": [
+          "S1",
+          "S2"
+        ],
+        "label": "WIRYE-OPENING-DELAY"
+      },
+      {
+        "candidate_id": "cand_4d2c9f45e796425a4d37d91c017dcc2a1b18f3c55ffcd1bc188f138fa7a94225",
+        "audit": "run30",
+        "content_sha256": "866f0cd8720d3b1f615f4dac1f127da2017e5fe268730b154e9e9aef3ec33550",
+        "focus_sentence_ids": [
+          "S7",
+          "S24"
+        ],
+        "label": "INCHEON-L2-ANNIVERSARY"
+      },
+      {
+        "candidate_id": "cand_4d2d190478d974e5c98108159ec7b4247d86bda2512b2e6c46b4c5a07944be1d",
+        "audit": "run30",
+        "content_sha256": "fbf51efdf538a248fc089a7835e047f51c342a55d4b93c03d028a8855824ad8a",
+        "focus_sentence_ids": [
+          "S1",
+          "S10"
+        ],
+        "label": "BARCELONA-FIRE-CAUSE"
+      },
+      {
+        "candidate_id": "cand_527a4881f3028ba4eafb45f8eb86222be3ed5689a115c8b6addec8591c74ad03",
+        "audit": "run29",
+        "content_sha256": "db6e3e80d9163d7a94b0679fba5813d593d16f6dcb5c188b440e5ca60cde5dfe",
+        "focus_sentence_ids": [
+          "S2",
+          "S3"
+        ],
+        "label": "HCMC-BEN-THANH-CAN-GIO"
+      },
+      {
+        "candidate_id": "cand_56a532bc836596ae7f4267222a2980bcba894913da4d880df55e007d1362ba0c",
+        "audit": "run34",
+        "content_sha256": "3c48eb8484d55089623bbc8dfd44640f8da975d064e630e930523b87eaeebae1",
+        "focus_sentence_ids": [
+          "S1",
+          "S2",
+          "S3",
+          "S4",
+          "S5",
+          "S6",
+          "S7",
+          "S8",
+          "S9",
+          "S10",
+          "S11",
+          "S12"
+        ],
+        "label": "ULSAN-DEPOT"
+      },
+      {
+        "candidate_id": "cand_5c1c1daa97e8a2cbf05bdfc8bfdd6870b7a5d0fddd9b61047009adfadd453114",
+        "audit": "run26",
+        "content_sha256": "f653812c63b252aba6c71f11b43986da094b2667474554a0f72ae7bd793e97a5",
+        "focus_sentence_ids": [
+          "S1",
+          "S2"
+        ],
+        "label": "TOKYO-PATRAIL"
+      },
+      {
+        "candidate_id": "cand_632642ad69b3084b2cc9598b68d89b085bf12c24e40670983b90072528942cb0",
+        "audit": "run24",
+        "content_sha256": "41376838ea6658c8621e4c86e3332cef8b3a3ea33feb8483ab78a2c98fbb64b2",
+        "focus_sentence_ids": [],
+        "label": "HCMC-METRO2-CONSTRUCTION"
+      },
+      {
+        "candidate_id": "cand_7116b2272b34e9d2593010b124a57e28f6ed28c474ec62773740dd502321722b",
+        "audit": "run30",
+        "content_sha256": "7b1b1616c2a0c5e610899bbf870199db8e46f7d2da93c7b775d77e3a83ad0502",
+        "focus_sentence_ids": [
+          "S3",
+          "S17"
+        ],
+        "label": "NUREMBERG-TRANSIT-PROGRAM"
+      },
+      {
+        "candidate_id": "cand_72af1abb7460b06e17e26bee3bcbf7c3695ede292197570403d47840949229d7",
+        "audit": "run34",
+        "content_sha256": "a0bb029228c62030b0c4d0f985b39f0724472e347ce5bb3cc6d90c52386c29c1",
+        "focus_sentence_ids": [
+          "S2",
+          "S20"
+        ],
+        "label": "ULSAN-DEPOT"
+      },
+      {
+        "candidate_id": "cand_7b7def62ecda85448fb3135d8e06346114553f9ced4f9451961dbed4b3100f97",
+        "audit": "run30",
+        "content_sha256": "7670ef94603c14671a49804707423f8701732f4c9ef8708f6fda068f1ba2a523",
+        "focus_sentence_ids": [
+          "S1",
+          "S2",
+          "S3"
+        ],
+        "label": "SEOUL-SCOOTER-BAN"
+      },
+      {
+        "candidate_id": "cand_829429754f83a77475d9aea81c6c0d8288561d1872caf50948e5a3fe2282c7c0",
+        "audit": "run34",
+        "content_sha256": "8d40836bbc497f4fc724724b48562e17126ecdbaf2117a1b2d28ccde8962b037",
+        "focus_sentence_ids": [
+          "S2",
+          "S3",
+          "S4",
+          "S5"
+        ],
+        "label": "ULSAN-DEPOT"
+      },
+      {
+        "candidate_id": "cand_84c4b430906f5dd4df1f942f844924a0e67a25db600a92085136dca64ad00b4b",
+        "audit": "run24",
+        "content_sha256": "ab78eb0a67b9b11284360022150ba7bdcfe68b011e6b05cf87d49ebeb80ef1fe",
+        "focus_sentence_ids": [],
+        "label": "WIRYE-OPENING-DELAY"
+      },
+      {
+        "candidate_id": "cand_89f34b8ab343ceb0adc33397cda22bc36e39e977df27531c149966356feaa1be",
+        "audit": "run26",
+        "content_sha256": "d1efcab3f69ab87599c65cf2178ac43fb7a0d6c9be9c6baed49ccb5b8029a1d6",
+        "focus_sentence_ids": [
+          "S2",
+          "S3",
+          "S4"
+        ],
+        "label": "SEOUL-L2-OUTAGE"
+      },
+      {
+        "candidate_id": "cand_8d9641468b3db28b814f3774d63ea2f9fabc5bf3ffb6b6992f398ae3b024e5dd",
+        "audit": "run24",
+        "content_sha256": "19ddaeecc2eece314054deda63765a2f5877ea6c03680f242b9857b05ee49820",
+        "focus_sentence_ids": [
+          "S3",
+          "S4",
+          "S5"
+        ],
+        "label": "WIRYE-OPENING-DELAY"
+      },
+      {
+        "candidate_id": "cand_97b9b572ad5bcacab3238dc843fcd40bf2c4aa77e006bcc0a7e9ffc3fee0d1f3",
+        "audit": "run24",
+        "content_sha256": "cc47b47eb56d63de53cdcaaa8f849d0e87f01d162983cd26eed4cad1add1a234",
+        "focus_sentence_ids": [
+          "S2",
+          "S3",
+          "S4"
+        ],
+        "label": "WIRYE-OPENING-DELAY"
+      },
+      {
+        "candidate_id": "cand_9ba3de65b565a34a47c71b09ff555534379ea7ac9a9616e4c735ac0c083e0692",
+        "audit": "run26",
+        "content_sha256": "7db1fe852c839473ff735e7dd3a6516b9f751b1679de7bf221acdcbbe10d5d89",
+        "focus_sentence_ids": [
+          "S2",
+          "S3",
+          "S4"
+        ],
+        "label": "SEOUL-L2-OUTAGE"
+      },
+      {
+        "candidate_id": "cand_9ce03b4da316d4ea90f2eb7cf957ecf0ff5b45a5287192fe06b97878e0938997",
+        "audit": "run24",
+        "content_sha256": "6814dd94eb73c249ee4e98372801e68baa6bb750c7bb1f638476f742ecb0b96b",
+        "focus_sentence_ids": [
+          "S1"
+        ],
+        "label": "INCHEON-WIFI-START"
+      },
+      {
+        "candidate_id": "cand_a118b341f43552d2b33269716554a43882e0638e933cc57988e4e2cdad1583dc",
+        "audit": "run24",
+        "content_sha256": "3c14c4d49bb39d5fc3d53fae04bb0760f7627c23cb5818fc2fad96bc6c4d004e",
+        "focus_sentence_ids": [
+          "S1"
+        ],
+        "label": "METROVALENCIA-SEATS"
+      },
+      {
+        "candidate_id": "cand_b0055bd6e37fdf1a371a1c7abda644e3b6c5664505ce17169ed504690a3510c1",
+        "audit": "run24",
+        "content_sha256": "be1b36aaa50d6367ee2f7603cc2281ff5b7141117964d8a7c37fdc2f6c8514ba",
+        "focus_sentence_ids": [
+          "S1",
+          "S8"
+        ],
+        "label": "DHAKA-L1-LT"
+      },
+      {
+        "candidate_id": "cand_b268495bec078265689ed209d7ffd76682e189fce84fdee21f307b126ef9351b",
+        "audit": "run34",
+        "content_sha256": "6093e12ce920f359e0f1c3f614c54c2ad7eb6dc7f0935986cfa5ea77a574530d",
+        "focus_sentence_ids": [
+          "S1",
+          "S5",
+          "S19",
+          "S20"
+        ],
+        "label": "ULSAN-DEPOT"
+      },
+      {
+        "candidate_id": "cand_b3285f50770e3790080f1cdf96f7ce07e76e80b826fbb826869efd51339d3b36",
+        "audit": "run29",
+        "content_sha256": "339192750d52ef819ef9234d6943d3efb1b94e377f9710026779bedefdd63a1c",
+        "focus_sentence_ids": [
+          "S2"
+        ],
+        "label": "WIRYE-OPENING-DELAY"
+      },
+      {
+        "candidate_id": "cand_b4658fc05b134319eee42e49fb556db9d62127cc5df58ebd7a426ed038c9cb13",
+        "audit": "run30",
+        "content_sha256": "24164b87c477c0e0516d94b60b66030a4ee9f0de35faa3204bd0622d14a369ac",
+        "focus_sentence_ids": [
+          "S1",
+          "S2"
+        ],
+        "label": "MELBOURNE-G-TRAM"
+      },
+      {
+        "candidate_id": "cand_b7fcaa29b9b4a08a9ef26fd11cacacc5b24421e4c81b729494c2c1a28c812f63",
+        "audit": "run24",
+        "content_sha256": "f33607c55dc69fc0f832225fee39f14b95a0c12b41a3e4eab4774277c8592801",
+        "focus_sentence_ids": [
+          "S1",
+          "S2",
+          "S3"
+        ],
+        "label": "WIRYE-OPENING-DELAY"
+      },
+      {
+        "candidate_id": "cand_b8032c52df72f66acb365e8b7f38d5b1b0e7fccfec1726ebbb4d461db54921ce",
+        "audit": "run31",
+        "content_sha256": "887c409c8d580de753c57864eea487a63dc5c8d5eb0cac4b46f3333a6b836da2",
+        "focus_sentence_ids": [
+          "S1",
+          "S2"
+        ],
+        "label": "KUMAMOTO-TRAM-INCIDENT"
+      },
+      {
+        "candidate_id": "cand_b9d5db43e3e39be064a0f022c4c73a3cdcfced1764567e7e1f747087ae0631af",
+        "audit": "run24",
+        "content_sha256": "d1a440f15e2836b728e0a55b6b8a7d1a6e33f443dc3ad80f672799aec0a29068",
+        "focus_sentence_ids": [
+          "S1",
+          "S2",
+          "S3"
+        ],
+        "label": "WIRYE-OPENING-DELAY"
+      },
+      {
+        "candidate_id": "cand_c3b575ffd39c3de6d71979e28f839672ab2bc80515b1033973f1ff77d2efb4d7",
+        "audit": "run24",
+        "content_sha256": "fac9e1de5b27f7ddfe910f169fc457dbac4b9803a5c561d5291f290cd1a70222",
+        "focus_sentence_ids": [
+          "S1"
+        ],
+        "label": "DAEGU-MYEONGDEOK"
+      },
+      {
+        "candidate_id": "cand_c7555a28754fea816e343150efdbefd869b21cb8f69122084a7e7a788a20d213",
+        "audit": "run34",
+        "content_sha256": "fc59b530e6ca5f7e4e0d5bf873f91102f647b30260690414e9bd4aa6db4423ba",
+        "focus_sentence_ids": [
+          "S2",
+          "S3",
+          "S4",
+          "S5",
+          "S6",
+          "S7",
+          "S8",
+          "S9",
+          "S10",
+          "S11",
+          "S12"
+        ],
+        "label": "ULSAN-DEPOT"
+      },
+      {
+        "candidate_id": "cand_cb7c91e25aed4a8dd6ea6c2cbd52e90c86923a9e72864f73f079ff77fad5e7a6",
+        "audit": "run32",
+        "content_sha256": "9e3c0cc8e4d4bc4ff533b162f2e69f29475d4bbc9b9cdd77550c32066ee439dd",
+        "focus_sentence_ids": [
+          "S1"
+        ],
+        "label": "KIM-MINSEOK-STATEMENT"
+      },
+      {
+        "candidate_id": "cand_ce5a4bc733088eab0891ee4ae3344322b34a6f2408250893ba4310b72e0486e8",
+        "audit": "run34",
+        "content_sha256": "6ea377b9e67be7c7a0fb92e827776c39f034a4d75461c71311122beab48102dc",
+        "focus_sentence_ids": [
+          "S2",
+          "S3",
+          "S4"
+        ],
+        "label": "ULSAN-DEPOT"
+      },
+      {
+        "candidate_id": "cand_cfdc66092dd72a924551c4137de00268c9a6d76f7de6070f2ff2b7fc2a885bd4",
+        "audit": "run24",
+        "content_sha256": "fec6326a23dfe00e7cd2533586722b84a2c5aed80ead7b4ac9747d6b4e7e8520",
+        "focus_sentence_ids": [
+          "S5",
+          "S6",
+          "S7"
+        ],
+        "label": "SANTIAGO-L9-PLAN"
+      },
+      {
+        "candidate_id": "cand_d3494a3a31aa787ff00a9946837a8a9bc3b21880e7b2e1e3518f964595c96803",
+        "audit": "run30",
+        "content_sha256": "ad9433371509271745ae85b408a7f075f61962bbe2b5fd304dda298fcf26cb7a",
+        "focus_sentence_ids": [
+          "S2",
+          "S3",
+          "S4"
+        ],
+        "label": "GERA-TRAM-TEST"
+      },
+      {
+        "candidate_id": "cand_daa93d170a44d8a064594a101bdf1376c867120a6c399bf6f899e56fe6fd66d7",
+        "audit": "run24",
+        "content_sha256": "933a1172a0cf8c2979c50eef81d541c404d795d7a0acbaf5b8fa054c8516da01",
+        "focus_sentence_ids": [
+          "S26",
+          "S27",
+          "S28",
+          "S29"
+        ],
+        "label": "NYC-METRO-CONDITION"
+      },
+      {
+        "candidate_id": "cand_db84b77e41ccc784cd8776cf045defeaf6484c6572c570d9ed1f04dbb38d6174",
+        "audit": "run26",
+        "content_sha256": "c9ff934091d130804b5dbee1fa6cec0f9373fa2be97d42eaaa8e700551039cd5",
+        "focus_sentence_ids": [
+          "S1",
+          "S2"
+        ],
+        "label": "SYDNEY-SW-OPENING"
+      },
+      {
+        "candidate_id": "cand_dfe53d531adc69fb4b0985af0a8a7b38f13c3fad2c3af68bf2195d9011d6078e",
+        "audit": "run24",
+        "content_sha256": "ecbe6335b6d0237696a32f3392397b42dfb959984cbce0df18cbed438e417cf5",
+        "focus_sentence_ids": [
+          "S1",
+          "S2",
+          "S5",
+          "S6"
+        ],
+        "label": "WUHAN-12-SCHEDULE"
+      },
+      {
+        "candidate_id": "cand_e6241c07ad1dba10088b407d6d1b9a899fb1309220e4aeab898d442f24610d27",
+        "audit": "run34",
+        "content_sha256": "cde937b37d31f06e113ad7e1c3799d778533f6c3f1e13c56e296531e37960caa",
+        "focus_sentence_ids": [
+          "S1",
+          "S11"
+        ],
+        "label": "ULSAN-DEPOT"
+      },
+      {
+        "candidate_id": "cand_e7a3df750516f16b774eceb930572e366a3e8914b934e1becfa1dfe74db1f1e3",
+        "audit": "run30",
+        "content_sha256": "2a1067231be1b97e98f613eb7da366fcb8e87592f4c93dae70ee4bfafc0966a3",
+        "focus_sentence_ids": [
+          "S1",
+          "S2",
+          "S3",
+          "S4"
+        ],
+        "label": "NAPLES-STATION-WORKS"
+      },
+      {
+        "candidate_id": "cand_ebf249dc71fd1e5a8c7da6fbeb7adc896e5fa1b5b6701789591941ed5a9fab4d",
+        "audit": "run29",
+        "content_sha256": "4e1db431af158dff7adbd1564e6ecc2bf67cbda0e5176d698fcb1b9ba5bd20ee",
+        "focus_sentence_ids": [
+          "S4",
+          "S5",
+          "S6",
+          "S7",
+          "S8",
+          "S9",
+          "S10",
+          "S11",
+          "S12",
+          "S13",
+          "S14"
+        ],
+        "label": "GWANGJU-AI-PILOT"
+      },
+      {
+        "candidate_id": "cand_edde386e5623ad0f276f36e5de9dfd82684c22447980790168dee84f02244bcb",
+        "audit": "run32",
+        "content_sha256": "257f56d55731c4892ca786e081dd218af2624c103258e9f12ebc70693fbb4d73",
+        "focus_sentence_ids": [
+          "S1"
+        ],
+        "label": "KIM-MINSEOK-STATEMENT"
+      },
+      {
+        "candidate_id": "cand_ef7542e8749f983f34786a1769eb08bd0810fc9b9fd5959696b7de4a4d5f1553",
+        "audit": "run24",
+        "content_sha256": "4221daa5a025e792e46c9ec8caf395200e25a5b26479a8a114641c73e6035bc7",
+        "focus_sentence_ids": [
+          "S1",
+          "S2"
+        ],
+        "label": "WIRYE-OPENING-DELAY"
+      },
+      {
+        "candidate_id": "cand_f1248fa7f4d4570101eb8727d9d372ed85f53a31417139dfed99c0a6de0eb5c3",
+        "audit": "run26",
+        "content_sha256": "aac372325e54841facf4fb0507382c4e8f8fdea14d8c9ceb762de1deeac96c65",
+        "focus_sentence_ids": [
+          "S1",
+          "S6"
+        ],
+        "label": "DAEJEON-DRILL"
+      },
+      {
+        "candidate_id": "cand_f952c63eeb4f18e9affcc54939c89aba010d7ff72025ce38aa720a39015b545d",
+        "audit": "run31",
+        "content_sha256": "be355b43074f40d9ea37019b7ef595a8efe5a7bb725ea12b8f927f00aab6653d",
+        "focus_sentence_ids": [
+          "S1",
+          "S4"
+        ],
+        "label": "SHANGHAI-L22-DELIVERY"
+      },
+      {
+        "candidate_id": "cand_f998a166c6ec54af0c88ce3f68a0668e23a60341cb64b41146e6d4e53bd025dc",
+        "audit": "run24",
+        "content_sha256": "a2b024bd59bde3ab44c50768aa45242ba0d63c71a19809c97e3181c150533df7",
+        "focus_sentence_ids": [
+          "S1",
+          "S2"
+        ],
+        "label": "GWANGJU-L2-PHASE1"
+      },
+      {
+        "candidate_id": "cand_fbff996e9a8b8afc0533851199f25159b96b77402999893ccae79feade5928ad",
+        "audit": "run24",
+        "content_sha256": "6467e2c2aee0d1444573b53797c190a4541decd616187f30aece3574be9f44ac",
+        "focus_sentence_ids": [
+          "S1"
+        ],
+        "label": "DAEGU-MYEONGDEOK"
+      },
+      {
+        "candidate_id": "cand_ff8492106c7cbaef2f3c8babb26d892b35b47e621e1e2ebe576f6135f72f2dbe",
+        "audit": "run24",
+        "content_sha256": "76cbfa4f4f50121cf4277a8fb7dfefd6322083dd26ea0865de1be35e50636fdc",
+        "focus_sentence_ids": [
+          "S4",
+          "S6",
+          "S8"
+        ],
+        "label": "TOKYO-POINT-AI"
+      }
+    ],
+    "direct_groups": [
+      {
+        "name": "mixed_incheon",
+        "subject": "event-identity-batch-1:group-19:confirmation",
+        "candidate_ids": [
+          "cand_010cdde712fe2f1cd1e8667f94ba4676f57ab261e21e33e34d98a21abe6f3898",
+          "cand_9ce03b4da316d4ea90f2eb7cf957ecf0ff5b45a5287192fe06b97878e0938997"
+        ]
+      },
+      {
+        "name": "mixed_sydney",
+        "subject": "event-identity-batch-1:group-2:confirmation",
+        "candidate_ids": [
+          "cand_1d6f2d3c0e36849405fed7533bce0d54494a45b50288ab017d6ff5e80ef38b9a",
+          "cand_db84b77e41ccc784cd8776cf045defeaf6484c6572c570d9ed1f04dbb38d6174"
+        ]
+      },
+      {
+        "name": "pure_daegu",
+        "subject": "event-identity-batch-1:group-15:confirmation",
+        "candidate_ids": [
+          "cand_fbff996e9a8b8afc0533851199f25159b96b77402999893ccae79feade5928ad",
+          "cand_c3b575ffd39c3de6d71979e28f839672ab2bc80515b1033973f1ff77d2efb4d7"
+        ]
+      },
+      {
+        "name": "pure_seoul",
+        "subject": "event-identity-batch-1:group-7:confirmation",
+        "candidate_ids": [
+          "cand_89f34b8ab343ceb0adc33397cda22bc36e39e977df27531c149966356feaa1be",
+          "cand_9ba3de65b565a34a47c71b09ff555534379ea7ac9a9616e4c735ac0c083e0692"
+        ]
+      },
+      {
+        "name": "pure_kim",
+        "subject": "event-identity-batch-1:group-1:confirmation",
+        "candidate_ids": [
+          "cand_cb7c91e25aed4a8dd6ea6c2cbd52e90c86923a9e72864f73f079ff77fad5e7a6",
+          "cand_edde386e5623ad0f276f36e5de9dfd82684c22447980790168dee84f02244bcb"
+        ]
+      },
+      {
+        "name": "pure_ulsan",
+        "subject": "event-identity-batch-1:group-11:confirmation",
+        "candidate_ids": [
+          "cand_c7555a28754fea816e343150efdbefd869b21cb8f69122084a7e7a788a20d213",
+          "cand_b268495bec078265689ed209d7ffd76682e189fce84fdee21f307b126ef9351b",
+          "cand_1463016b9762e47c95eff7ba69e0b0b3cfa315315d3d40da47231be94b0018fe",
+          "cand_56a532bc836596ae7f4267222a2980bcba894913da4d880df55e007d1362ba0c",
+          "cand_72af1abb7460b06e17e26bee3bcbf7c3695ede292197570403d47840949229d7",
+          "cand_829429754f83a77475d9aea81c6c0d8288561d1872caf50948e5a3fe2282c7c0",
+          "cand_ce5a4bc733088eab0891ee4ae3344322b34a6f2408250893ba4310b72e0486e8",
+          "cand_e6241c07ad1dba10088b407d6d1b9a899fb1309220e4aeab898d442f24610d27"
+        ]
+      },
+      {
+        "name": "incident_followup",
+        "subject": "event-identity-batch-1:group-1:confirmation",
+        "candidate_ids": [
+          "cand_4d2d190478d974e5c98108159ec7b4247d86bda2512b2e6c46b4c5a07944be1d",
+          "cand_32a8c8a0f3028627ca46f3922978f1eadee4a315fa623a853fc15d15d916ccb5"
+        ]
+      },
+      {
+        "name": "mega_29_group4",
+        "subject": "event-identity-batch-1-p3-n2:group-4:confirmation",
+        "candidate_ids": [
+          "cand_ff8492106c7cbaef2f3c8babb26d892b35b47e621e1e2ebe576f6135f72f2dbe",
+          "cand_cfdc66092dd72a924551c4137de00268c9a6d76f7de6070f2ff2b7fc2a885bd4",
+          "cand_05b1a271c7681e1c3a6ecfc48ea89d9fd3fc33b82b88362e45bf227b9f451ef3",
+          "cand_a118b341f43552d2b33269716554a43882e0638e933cc57988e4e2cdad1583dc",
+          "cand_daa93d170a44d8a064594a101bdf1376c867120a6c399bf6f899e56fe6fd66d7",
+          "cand_415b5ed8c994120254700cbaddc937c69c901845e80cb3ad721dbb8ac2bdba32",
+          "cand_b0055bd6e37fdf1a371a1c7abda644e3b6c5664505ce17169ed504690a3510c1"
+        ]
+      },
+      {
+        "name": "mega_29_group5",
+        "subject": "event-identity-batch-1-p3-n2:group-5:confirmation",
+        "candidate_ids": [
+          "cand_dfe53d531adc69fb4b0985af0a8a7b38f13c3fad2c3af68bf2195d9011d6078e",
+          "cand_47cacec5b5fe1e05a2d3815fed93ef795f5233d5df0ef7612b9b156a9563c42d",
+          "cand_b7fcaa29b9b4a08a9ef26fd11cacacc5b24421e4c81b729494c2c1a28c812f63",
+          "cand_b9d5db43e3e39be064a0f022c4c73a3cdcfced1764567e7e1f747087ae0631af",
+          "cand_f998a166c6ec54af0c88ce3f68a0668e23a60341cb64b41146e6d4e53bd025dc",
+          "cand_84c4b430906f5dd4df1f942f844924a0e67a25db600a92085136dca64ad00b4b",
+          "cand_3c5fb6f772cf53ff238eff84a4a8ac5d9a50fa59005aad13b76b528045a35eea",
+          "cand_97b9b572ad5bcacab3238dc843fcd40bf2c4aa77e006bcc0a7e9ffc3fee0d1f3",
+          "cand_ebf249dc71fd1e5a8c7da6fbeb7adc896e5fa1b5b6701789591941ed5a9fab4d",
+          "cand_b3285f50770e3790080f1cdf96f7ce07e76e80b826fbb826869efd51339d3b36",
+          "cand_8d9641468b3db28b814f3774d63ea2f9fabc5bf3ffb6b6992f398ae3b024e5dd",
+          "cand_ef7542e8749f983f34786a1769eb08bd0810fc9b9fd5959696b7de4a4d5f1553",
+          "cand_4a97f33baaf440a97bc6467fc414851a3efc487c65a2bc6b17ac626d0ee487d3",
+          "cand_5c1c1daa97e8a2cbf05bdfc8bfdd6870b7a5d0fddd9b61047009adfadd453114",
+          "cand_f1248fa7f4d4570101eb8727d9d372ed85f53a31417139dfed99c0a6de0eb5c3",
+          "cand_632642ad69b3084b2cc9598b68d89b085bf12c24e40670983b90072528942cb0",
+          "cand_44abee21787e659024bdeec9c0699e27ca5a7f8e557694f71619de6442655c81",
+          "cand_14ff0ea2472ddbc2b885f7018b268e7de53e732c4ec80d1c6853d4cf89918796",
+          "cand_527a4881f3028ba4eafb45f8eb86222be3ed5689a115c8b6addec8591c74ad03",
+          "cand_1ee36be311f90aac737f74d1105220ec0edeb2f267d8e40618f6d5beeb4b23f6"
+        ]
+      },
+      {
+        "name": "mega_31_group3",
+        "subject": "event-identity-batch-1-p2:group-3:confirmation",
+        "candidate_ids": [
+          "cand_b8032c52df72f66acb365e8b7f38d5b1b0e7fccfec1726ebbb4d461db54921ce",
+          "cand_d3494a3a31aa787ff00a9946837a8a9bc3b21880e7b2e1e3518f964595c96803",
+          "cand_e7a3df750516f16b774eceb930572e366a3e8914b934e1becfa1dfe74db1f1e3",
+          "cand_1b9e7dc4fd87f8bb00c0888c8048caded45fb592c386faddcc0598dacb1d4784",
+          "cand_32a8c8a0f3028627ca46f3922978f1eadee4a315fa623a853fc15d15d916ccb5",
+          "cand_7116b2272b34e9d2593010b124a57e28f6ed28c474ec62773740dd502321722b",
+          "cand_7b7def62ecda85448fb3135d8e06346114553f9ced4f9451961dbed4b3100f97",
+          "cand_b4658fc05b134319eee42e49fb556db9d62127cc5df58ebd7a426ed038c9cb13",
+          "cand_f952c63eeb4f18e9affcc54939c89aba010d7ff72025ce38aa720a39015b545d",
+          "cand_4d2c9f45e796425a4d37d91c017dcc2a1b18f3c55ffcd1bc188f138fa7a94225"
+        ]
+      }
+    ],
+    "label_basis": "independent review of rebuilt excerpt text before paid calls"
+  }
+}
