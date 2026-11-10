@@ -10,6 +10,7 @@ from scripts.rc66_r7_measurement import (
     REQUIRED_DIRECT_GROUP_NAMES,
     BudgetExceeded,
     MeteredTransport,
+    _corpus_fingerprint,
     _batch_score,
     _full_focus,
 )
@@ -86,6 +87,15 @@ def test_new_campaign_identity_is_not_interchangeable_with_another_journal(tmp_p
     MeteredTransport(4, journal, prior_call_upper_bound=0, campaign_id="RC66-R7-CAMPAIGN-A")
     with pytest.raises(RuntimeError, match="invalid"):
         MeteredTransport(4, journal, campaign_id="RC66-R7-CAMPAIGN-B")
+
+
+def test_resume_rejects_a_changed_corpus_fingerprint(tmp_path):
+    journal = tmp_path / "rc66_r7_campaign.json"
+    manifest = {"rows": [{"candidate_id": "A", "content_sha256": "one"}]}
+    fingerprint = _corpus_fingerprint(manifest)
+    MeteredTransport(4, journal, prior_call_upper_bound=0, campaign_id="RC66-R7-CAMPAIGN-A", corpus_fingerprint=fingerprint)
+    with pytest.raises(RuntimeError, match="invalid"):
+        MeteredTransport(4, journal, campaign_id="RC66-R7-CAMPAIGN-A", corpus_fingerprint=_corpus_fingerprint({"rows": []}))
 
 
 def test_scoreable_units_are_checkpointed_and_reloaded(tmp_path):

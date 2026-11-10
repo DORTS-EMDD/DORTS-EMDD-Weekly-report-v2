@@ -180,6 +180,7 @@ class MeteredTransport:
         prior_call_upper_bound: int | None = None,
         *,
         campaign_id: str = DEFAULT_CAMPAIGN_ID,
+        corpus_fingerprint: str | None = None,
     ) -> None:
         if not isinstance(journal_path, Path):
             raise TypeError("RC66-R7 requires a durable journal path")
@@ -188,6 +189,7 @@ class MeteredTransport:
         self.cap = cap
         self.journal_path = journal_path
         self.campaign_id = campaign_id.strip()
+        self.corpus_fingerprint = corpus_fingerprint
         self.context = ""
         self.log: list[dict[str, Any]] = []
         self.completed_units: dict[str, dict[str, Any]] = {}
@@ -224,6 +226,8 @@ class MeteredTransport:
             data = json.loads(self.journal_path.read_text(encoding="utf-8"))
             if data.get("campaign_id") != self.campaign_id or int(data.get("hard_call_cap")) != self.cap:
                 raise ValueError("campaign identity or hard cap mismatch")
+            if self.corpus_fingerprint is not None and data.get("corpus_fingerprint") != self.corpus_fingerprint:
+                raise ValueError("corpus fingerprint mismatch; refusing to mix scoreable units")
             prior = int(data.get("prior_call_upper_bound"))
             log = data.get("log")
             if prior < 0 or not isinstance(log, list):
@@ -258,6 +262,7 @@ class MeteredTransport:
     def _persist(self) -> None:
         payload = {
             "campaign_id": self.campaign_id,
+            "corpus_fingerprint": self.corpus_fingerprint,
             "hard_call_cap": self.cap,
             "prior_call_upper_bound": self.prior_call_upper_bound,
             "attempted_calls": self.calls,
@@ -347,6 +352,11 @@ def _load_audits(values: list[str]) -> dict[str, dict[str, Any]]:
         name, raw_path = value.split("=", 1)
         audits[name] = json.loads(Path(raw_path).read_text(encoding="utf-8"))
     return audits
+
+
+def _corpus_fingerprint(manifest: dict[str, Any]) -> str:
+    canonical = json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def _candidate_index(audits: dict[str, dict[str, Any]]) -> dict[str, tuple[str, dict[str, Any]]]:
@@ -626,6 +636,7 @@ def main() -> int:
     global current_labels
     audits = _load_audits(args.audit)
     records, current_labels, manifest = _build_corpus(audits, allow_exclusions=args.allow_corpus_exclusions)
+    corpus_fingerprint = _corpus_fingerprint(manifest)
     plan = {
         "starting_sha": STARTING_SHA,
         "campaign_id": args.campaign_id,
@@ -640,6 +651,7 @@ def main() -> int:
         "corpus_exclusions_allowed": args.allow_corpus_exclusions,
         "hard_call_cap": HARD_CALL_CAP,
         "acceptance_predicates": list(FROZEN_ACCEPTANCE_PREDICATES),
+        "corpus_fingerprint": corpus_fingerprint,
         "corpus_manifest": manifest,
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -669,6 +681,7 @@ def main() -> int:
         journal_path,
         args.prior_call_upper_bound,
         campaign_id=args.campaign_id,
+        corpus_fingerprint=corpus_fingerprint,
     )
     started = time.monotonic()
     results: dict[str, Any] = {"campaign_id": args.campaign_id, "rounds": [], "direct": []}

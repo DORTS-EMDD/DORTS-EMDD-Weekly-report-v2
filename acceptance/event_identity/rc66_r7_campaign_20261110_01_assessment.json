@@ -1,0 +1,22 @@
+{
+  "campaign_id": "RC66-R7-CAMPAIGN-20261110-01",
+  "raw_execution_status": "COMPLETE",
+  "assessment_status": "BLOCKED_NOT_SCOREABLE",
+  "reason_code": "RESUME_CORPUS_IDENTITY_DRIFT",
+  "journal_corpus_fingerprint": "ABSENT_ON_LEGACY_JOURNAL",
+  "final_manifest_fingerprint": "3b27c28d9c63b037d5573c23f296136de1551eda49521c1d33191fdeba7099d3",
+  "direct_results": 120,
+  "direct_manifest_membership_mismatches": 72,
+  "mismatched_groups": [
+    "mixed_sydney",
+    "pure_ulsan",
+    "incident_followup",
+    "mega_29_group4",
+    "mega_29_group5",
+    "mega_31_group3"
+  ],
+  "raw_measurement_findings_retained": true,
+  "production_event_identity_changed": false,
+  "new_paid_calls_authorized": false,
+  "repair": "Future journals persist and verify a corpus fingerprint before resuming scoreable units."
+}

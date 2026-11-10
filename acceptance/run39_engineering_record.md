@@ -357,3 +357,31 @@ not changed, no new production report or email was sent, and real-production
 validation remains **NO**. The machine-readable campaign evidence is stored
 in `acceptance/event_identity/rc66_r7_campaign_20261110_01.json`, its plan, and
 its independently accounted hash-only call journal.
+
+## RC66-R7 post-run evidence-integrity finding (2026-11-10)
+
+The raw campaign execution completed, but a post-run audit found that its
+resume path was not scoreable as one frozen corpus. The first live fetch had
+six direct groups and completed those units; the resumed fetch later produced
+ten direct groups with different membership for six groups. Because the unit
+key did not yet include a corpus fingerprint, the result combined the first
+run's scoreable direct rows with the later manifest. **72 of 120 direct rows**
+therefore do not match the final manifest's candidate membership. This is a
+measurement-infrastructure defect, not evidence of a production EventIdentity
+behavior change.
+
+The raw result and call journal remain preserved. The raw diagnostic signals
+(candidate batch false merges and recall regressions) are retained, but the
+campaign is **BLOCKED_NOT_SCOREABLE** and is not credited as R7 acceptance.
+The remaining 16 calls are not used to patch or selectively repeat the
+campaign; a new campaign would require explicit future authorization. The
+machine-readable assessment is
+`acceptance/event_identity/rc66_r7_campaign_20261110_01_assessment.json`.
+
+The measurement harness now computes a SHA-256 corpus fingerprint from the
+verified manifest, persists it in the durable journal and plan, and refuses a
+resume when the fingerprint is absent or changed. The guard is covered by an
+offline regression test. Final validation after this repair was **9 RC66-R7
+harness tests passed**, **1554 full repository tests passed with 5 skips**,
+compile passed, JSON validation passed, and no paid call was made after the
+integrity finding.
