@@ -1,0 +1,49 @@
+{
+  "configuration_fingerprint": "695988ff08b5aa792c68abc6dc4ad243aea88f01fe6b2b7caa10ca174006d749",
+  "control_set": [
+    "G100",
+    "G101",
+    "G93",
+    "G66"
+  ],
+  "control_set_justification": {
+    "G100": "locked pre-opening signalling boundary",
+    "G101": "locked operating-subway technology deployment boundary",
+    "G66": "adjacent operating timetable control against universal technology precedence",
+    "G93": "adjacent pre-opening test control against technical pollution"
+  },
+  "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+  "expected_outcomes": {
+    "G100": {
+      "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+      "category_state": "CATEGORY_UNRESOLVED"
+    },
+    "G101": {
+      "category_state": "CATEGORY_ASSIGNED",
+      "primary_category_id": "TECHNICAL_DEVELOPMENT"
+    },
+    "G66": {
+      "category_state": "CATEGORY_ASSIGNED",
+      "primary_category_id": "OPERATIONAL_CHANGE"
+    },
+    "G93": {
+      "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+      "category_state": "CATEGORY_UNRESOLVED"
+    }
+  },
+  "hard_cap_category_attempts": 24,
+  "new_category_semantic_calls_before_plan": 0,
+  "planned_logical_category_calls": 12,
+  "planned_rounds": 3,
+  "platform_review": {
+    "PLATFORM_CONTEXT_MEMORY_STATUS": "PASS",
+    "PLATFORM_MODEL_STATUS": "PASS",
+    "PLATFORM_ROLE_STATUS": "PASS",
+    "PLATFORM_SCHEMA_STATUS": "PASS",
+    "PLATFORM_TOOLS_KNOWLEDGE_STATUS": "PASS",
+    "ROLE_FORBIDDEN_MARKERS": ""
+  },
+  "readback_sha256": "8409e8e8d273b2de77dcc430cc7101d5a3b2645b2b0b4a17936cf37162a6a2bf",
+  "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+  "same_runtime_helper_binding": "PROVEN"
+}

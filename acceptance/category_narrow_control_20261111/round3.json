@@ -1,0 +1,904 @@
+{
+  "ACCEPTANCE_EVIDENCE_CHAIN": "REQUIRED_FOR_LIVE_SCOREABILITY",
+  "ACCEPTANCE_EVIDENCE_CHAIN_STATUS": "COMPLETE",
+  "ACCEPTANCE_EVIDENCE_COMPLETE_COUNT": 4,
+  "ACCEPTANCE_EVIDENCE_VERSION": "category-acceptance-evidence-v1",
+  "ACCEPTANCE_VERSION": "category-v4-final-seal-v2",
+  "BACKFILL_PRESENT": "NO",
+  "CATEGORY_53_GROUP_LIVE_ACCEPTANCE": "FINDINGS",
+  "CATEGORY_REACHED_FIXTURES": 4,
+  "CATEGORY_STATE_MISMATCH_COUNT": 1,
+  "CLASSIFIER_ACCEPTED_COUNT": 4,
+  "CLASSIFIER_INVALID_COUNT": 0,
+  "CONFIGURATION_FINGERPRINT": "695988ff08b5aa792c68abc6dc4ad243aea88f01fe6b2b7caa10ca174006d749",
+  "DEPLOYMENT_BINDING_STATUS": "SAME_RUNTIME_HELPER_PROVEN",
+  "DEPLOYMENT_FINGERPRINT": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+  "DEPLOYMENT_PROVENANCE_STATUS": "OBSERVED_AND_FROZEN",
+  "DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION": "category-deployment-snapshot-v1",
+  "DEPLOYMENT_SNAPSHOT_IDENTITY_FINGERPRINT": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+  "EXACT_CATEGORY_MATCH_COUNT": 3,
+  "FAILURE_BREAKDOWN": {
+    "CATEGORY_STATE_MISMATCH": 1,
+    "CLASSIFIER_INVALID_RESPONSE": 0,
+    "MAIAGENT_ENVELOPE_INVALID": 0,
+    "PRIMARY_CATEGORY_MISMATCH": 0,
+    "RESOLUTION_REASON_MISMATCH": 0,
+    "TRANSPORT_FAILURE": 0
+  },
+  "FALLBACK_PRESENT": "NO",
+  "GROUPS_PER_ROUND": 4,
+  "GROUP_LEVEL_ASSIGNED_EXPECTED": 2,
+  "GROUP_LEVEL_TOTAL_EXPECTED": 4,
+  "GROUP_LEVEL_UNRESOLVED_EXPECTED": 2,
+  "HTTP_200_COUNT": 4,
+  "LIVE_CALL_BUDGET": 4,
+  "LIVE_CALL_COUNT": 4,
+  "MAIAGENT_ADAPTER_USED": "YES",
+  "MISMATCH_DETAILS": [
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "7ac4bca064a68c6ffd3e01c72c9770f2114ab5cf5082bf202629cccba6f48be9",
+        "configuration_fingerprint": "695988ff08b5aa792c68abc6dc4ad243aea88f01fe6b2b7caa10ca174006d749",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 2,
+        "proposal": {
+          "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+          "category_state": "CATEGORY_UNRESOLVED",
+          "citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "primary_category_id": null,
+          "subtype": null
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "9305e25d31a5f6255a75b62804c8f6e2da1d299b5d6427a9c0c2b9a082d55cac",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v2",
+          "prompt_version": "category-full-response-contract-v2",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-proposal-v5"
+        },
+        "provider_request_body_sha256": "67548bb1b63a3d89b2f349d47a32337063ce378a74b3640f59368eb89d72ce20",
+        "provider_response_body_sha256": "7fcdef3b63c5792fd2a86280e27307bd15b635ecc0c9ac879b695b3c817a4668",
+        "request_payload_bytes": 7944,
+        "request_payload_sha256": "4a0a265869b2dd943a902c4b6bf4d3720a760c14f01ba6ecd81953c40cae711c",
+        "round_index": 3,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_attempts": [
+          {
+            "request_body_bytes": 10198,
+            "request_body_sha256": "67548bb1b63a3d89b2f349d47a32337063ce378a74b3640f59368eb89d72ce20",
+            "response_body_bytes": 1010,
+            "response_body_sha256": "7fcdef3b63c5792fd2a86280e27307bd15b635ecc0c9ac879b695b3c817a4668",
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+          "category_state": "CATEGORY_UNRESOLVED",
+          "classification_reason": "CATEGORY_UNRESOLVED",
+          "event_id": "evaluation-event-1",
+          "primary_category": null,
+          "primary_category_id": null,
+          "provenance": {
+            "decision_basis": "constrained_semantic_helper",
+            "helper_version": "maiagent-chatbot-adapter-v2",
+            "prompt_version": "category-full-response-contract-v2",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-proposal-v5",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_support_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 198,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 284,
+                "start": 199
+              }
+            ]
+          },
+          "subtype": null
+        },
+        "validated_result_sha256": "8617e09d1cd9d2bd8f74cc503a04f7cf20b20eae603df8115ba340367d8437e1",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED",
+        "classification_reason": "CATEGORY_UNRESOLVED",
+        "event_id": "evaluation-event-1",
+        "primary_category": null,
+        "primary_category_id": null,
+        "provenance": {
+          "decision_basis": "constrained_semantic_helper",
+          "helper_version": "maiagent-chatbot-adapter-v2",
+          "prompt_version": "category-full-response-contract-v2",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-proposal-v5",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_support_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 198,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 284,
+              "start": 199
+            }
+          ]
+        },
+        "subtype": null
+      },
+      "citations": [
+        {
+          "candidate_id": "source-1",
+          "resolved_end": 284,
+          "resolved_start": 0,
+          "resolved_substring": "A mobile carrier said it has deployed 5G base stations and antennas in the tunnels and stations of the city's operating subway lines, so that more than 70 percent of the network now has 5G coverage. The carrier describes the new radio equipment installed for the underground sections.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": "CATEGORY_STATE_MISMATCH",
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G101",
+      "http_status": 200,
+      "matches_golden": false,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "FALSE_UNRESOLVED",
+      "proposal": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED",
+        "citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "primary_category_id": null,
+        "subtype": null
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    }
+  ],
+  "ORACLE_LEAKAGE_CHECK": "PASS",
+  "ORACLE_LEAKAGE_DETAILS": [],
+  "ORACLE_MAPPING": "PASS",
+  "ORACLE_MAPPING_DETAILS": [
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G100",
+      "member_candidate_ids": [
+        "source-1"
+      ]
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G101",
+      "member_candidate_ids": [
+        "source-1"
+      ]
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G93",
+      "member_candidate_ids": [
+        "source-1"
+      ]
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G66",
+      "member_candidate_ids": [
+        "source-1"
+      ]
+    }
+  ],
+  "PLANNED_ROUNDS": 3,
+  "PREPARED_EVENT_GROUPS": 4,
+  "PRIMARY_CATEGORY_MISMATCH_COUNT": 0,
+  "REQUEST_EVIDENCE": "EXACT_SERIALIZATION_SHA256",
+  "RESCUE_PRESENT": "NO",
+  "RESOLUTION_REASON_MISMATCH_COUNT": 0,
+  "RESPONSES_ADAPTER_USED": "NO",
+  "RESPONSE_EVIDENCE": "PARSED_PROPOSAL_AND_VALIDATED_CATEGORY_RESULT",
+  "RESULTS": [
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "5bcd4dbe828556becb4540f61d8f11711f57d4c1afe7d07c3bc4552c0db5e0e8",
+        "configuration_fingerprint": "695988ff08b5aa792c68abc6dc4ad243aea88f01fe6b2b7caa10ca174006d749",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 1,
+        "proposal": {
+          "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+          "category_state": "CATEGORY_UNRESOLVED",
+          "citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "primary_category_id": null,
+          "subtype": null
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "9305e25d31a5f6255a75b62804c8f6e2da1d299b5d6427a9c0c2b9a082d55cac",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v2",
+          "prompt_version": "category-full-response-contract-v2",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-proposal-v5"
+        },
+        "provider_request_body_sha256": "20cd7c787c851dd59329a2cb15f189cc548256e9858a7e722e54046b7d24c3c3",
+        "provider_response_body_sha256": "6d0b46da0f8fe2c1edd36a7989d7157f5c8028af0e638872050bf235263e5cf2",
+        "request_payload_bytes": 7910,
+        "request_payload_sha256": "7d739f102a156baaba2d3e55dddd0655e2ddda1ff9d25791940a7da3a6e6aae9",
+        "round_index": 3,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_attempts": [
+          {
+            "request_body_bytes": 10164,
+            "request_body_sha256": "20cd7c787c851dd59329a2cb15f189cc548256e9858a7e722e54046b7d24c3c3",
+            "response_body_bytes": 1010,
+            "response_body_sha256": "6d0b46da0f8fe2c1edd36a7989d7157f5c8028af0e638872050bf235263e5cf2",
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+          "category_state": "CATEGORY_UNRESOLVED",
+          "classification_reason": "CATEGORY_UNRESOLVED",
+          "event_id": "evaluation-event-1",
+          "primary_category": null,
+          "primary_category_id": null,
+          "provenance": {
+            "decision_basis": "constrained_semantic_helper",
+            "helper_version": "maiagent-chatbot-adapter-v2",
+            "prompt_version": "category-full-response-contract-v2",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-proposal-v5",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_support_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 135,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 250,
+                "start": 136
+              }
+            ]
+          },
+          "subtype": null
+        },
+        "validated_result_sha256": "8f88466a116d7a3298ff2b3e128c6e7ef653c723406e317e15d0228f17168aa4",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED",
+        "classification_reason": "CATEGORY_UNRESOLVED",
+        "event_id": "evaluation-event-1",
+        "primary_category": null,
+        "primary_category_id": null,
+        "provenance": {
+          "decision_basis": "constrained_semantic_helper",
+          "helper_version": "maiagent-chatbot-adapter-v2",
+          "prompt_version": "category-full-response-contract-v2",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-proposal-v5",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_support_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 135,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 250,
+              "start": 136
+            }
+          ]
+        },
+        "subtype": null
+      },
+      "citations": [
+        {
+          "candidate_id": "source-1",
+          "resolved_end": 250,
+          "resolved_start": 0,
+          "resolved_substring": "Night tests of the signalling system and new switch works took place this week on the future tram line, which is due to open next year. The tests check that position detection and the control system transmit correctly before passenger service starts.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": null,
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G100",
+      "http_status": 200,
+      "matches_golden": true,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "CORRECT_UNRESOLVED",
+      "proposal": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED",
+        "citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "primary_category_id": null,
+        "subtype": null
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    },
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "7ac4bca064a68c6ffd3e01c72c9770f2114ab5cf5082bf202629cccba6f48be9",
+        "configuration_fingerprint": "695988ff08b5aa792c68abc6dc4ad243aea88f01fe6b2b7caa10ca174006d749",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 2,
+        "proposal": {
+          "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+          "category_state": "CATEGORY_UNRESOLVED",
+          "citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "primary_category_id": null,
+          "subtype": null
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "9305e25d31a5f6255a75b62804c8f6e2da1d299b5d6427a9c0c2b9a082d55cac",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v2",
+          "prompt_version": "category-full-response-contract-v2",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-proposal-v5"
+        },
+        "provider_request_body_sha256": "67548bb1b63a3d89b2f349d47a32337063ce378a74b3640f59368eb89d72ce20",
+        "provider_response_body_sha256": "7fcdef3b63c5792fd2a86280e27307bd15b635ecc0c9ac879b695b3c817a4668",
+        "request_payload_bytes": 7944,
+        "request_payload_sha256": "4a0a265869b2dd943a902c4b6bf4d3720a760c14f01ba6ecd81953c40cae711c",
+        "round_index": 3,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_attempts": [
+          {
+            "request_body_bytes": 10198,
+            "request_body_sha256": "67548bb1b63a3d89b2f349d47a32337063ce378a74b3640f59368eb89d72ce20",
+            "response_body_bytes": 1010,
+            "response_body_sha256": "7fcdef3b63c5792fd2a86280e27307bd15b635ecc0c9ac879b695b3c817a4668",
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+          "category_state": "CATEGORY_UNRESOLVED",
+          "classification_reason": "CATEGORY_UNRESOLVED",
+          "event_id": "evaluation-event-1",
+          "primary_category": null,
+          "primary_category_id": null,
+          "provenance": {
+            "decision_basis": "constrained_semantic_helper",
+            "helper_version": "maiagent-chatbot-adapter-v2",
+            "prompt_version": "category-full-response-contract-v2",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-proposal-v5",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_support_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 198,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 284,
+                "start": 199
+              }
+            ]
+          },
+          "subtype": null
+        },
+        "validated_result_sha256": "8617e09d1cd9d2bd8f74cc503a04f7cf20b20eae603df8115ba340367d8437e1",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED",
+        "classification_reason": "CATEGORY_UNRESOLVED",
+        "event_id": "evaluation-event-1",
+        "primary_category": null,
+        "primary_category_id": null,
+        "provenance": {
+          "decision_basis": "constrained_semantic_helper",
+          "helper_version": "maiagent-chatbot-adapter-v2",
+          "prompt_version": "category-full-response-contract-v2",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-proposal-v5",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_support_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 198,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 284,
+              "start": 199
+            }
+          ]
+        },
+        "subtype": null
+      },
+      "citations": [
+        {
+          "candidate_id": "source-1",
+          "resolved_end": 284,
+          "resolved_start": 0,
+          "resolved_substring": "A mobile carrier said it has deployed 5G base stations and antennas in the tunnels and stations of the city's operating subway lines, so that more than 70 percent of the network now has 5G coverage. The carrier describes the new radio equipment installed for the underground sections.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": "CATEGORY_STATE_MISMATCH",
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G101",
+      "http_status": 200,
+      "matches_golden": false,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "FALSE_UNRESOLVED",
+      "proposal": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED",
+        "citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "primary_category_id": null,
+        "subtype": null
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    },
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "6e47c54a1b4a7559b27025259a03a25562f6efa050997905590a2743c5902a9a",
+        "configuration_fingerprint": "695988ff08b5aa792c68abc6dc4ad243aea88f01fe6b2b7caa10ca174006d749",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 3,
+        "proposal": {
+          "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+          "category_state": "CATEGORY_UNRESOLVED",
+          "citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "primary_category_id": null,
+          "subtype": null
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "9305e25d31a5f6255a75b62804c8f6e2da1d299b5d6427a9c0c2b9a082d55cac",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v2",
+          "prompt_version": "category-full-response-contract-v2",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-proposal-v5"
+        },
+        "provider_request_body_sha256": "ff66231bfa2a49c8fcb21ffc295b4e108a9a2e2fbf0413a04bab2646d6fa5000",
+        "provider_response_body_sha256": "2744a16cb4128b37c6d3f46915ff407db3b083a8fd04e644fdced2f4c55075da",
+        "request_payload_bytes": 7852,
+        "request_payload_sha256": "dc869f68a5c8cc192a7679268e64ebbc7167695304b6a379b35ae0f4f709a348",
+        "round_index": 3,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_attempts": [
+          {
+            "request_body_bytes": 10106,
+            "request_body_sha256": "ff66231bfa2a49c8fcb21ffc295b4e108a9a2e2fbf0413a04bab2646d6fa5000",
+            "response_body_bytes": 1010,
+            "response_body_sha256": "2744a16cb4128b37c6d3f46915ff407db3b083a8fd04e644fdced2f4c55075da",
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+          "category_state": "CATEGORY_UNRESOLVED",
+          "classification_reason": "CATEGORY_UNRESOLVED",
+          "event_id": "evaluation-event-1",
+          "primary_category": null,
+          "primary_category_id": null,
+          "provenance": {
+            "decision_basis": "constrained_semantic_helper",
+            "helper_version": "maiagent-chatbot-adapter-v2",
+            "prompt_version": "category-full-response-contract-v2",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-proposal-v5",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_support_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 76,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 192,
+                "start": 77
+              }
+            ]
+          },
+          "subtype": null
+        },
+        "validated_result_sha256": "08c27dd36e147479a17d439e365dec4480f058d4d8bff2efb91e3a9edc2781cc",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED",
+        "classification_reason": "CATEGORY_UNRESOLVED",
+        "event_id": "evaluation-event-1",
+        "primary_category": null,
+        "primary_category_id": null,
+        "provenance": {
+          "decision_basis": "constrained_semantic_helper",
+          "helper_version": "maiagent-chatbot-adapter-v2",
+          "prompt_version": "category-full-response-contract-v2",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-proposal-v5",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_support_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 76,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 192,
+              "start": 77
+            }
+          ]
+        },
+        "subtype": null
+      },
+      "citations": [
+        {
+          "candidate_id": "source-1",
+          "resolved_end": 192,
+          "resolved_start": 0,
+          "resolved_substring": "Test runs started on the new light rail line ahead of its opening next year. In this first phase the trams are towed along the new tracks at low speed before later tests under their own power.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": null,
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G93",
+      "http_status": 200,
+      "matches_golden": true,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "CORRECT_UNRESOLVED",
+      "proposal": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED",
+        "citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "primary_category_id": null,
+        "subtype": null
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    },
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "d34b9d68234616a232c8310adf19e8b52ec883cbd6271dbb3b0f0fb2775075c2",
+        "configuration_fingerprint": "695988ff08b5aa792c68abc6dc4ad243aea88f01fe6b2b7caa10ca174006d749",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 4,
+        "proposal": {
+          "category_resolution_reason": null,
+          "category_state": "CATEGORY_ASSIGNED",
+          "citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "primary_category_id": "OPERATIONAL_CHANGE",
+          "subtype": "weekday_timetable_change"
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "605c44f459577b2becddc16211c9d4fc30efa477677236b11711cb0ed076ac9a",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v2",
+          "prompt_version": "category-full-response-contract-v2",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-proposal-v5"
+        },
+        "provider_request_body_sha256": "fb2cea0f34f8b1fc092fb735db277f12d7604f5b1a50fdcb6b41cb29e551edea",
+        "provider_response_body_sha256": "065d4bcae676880c1ebc49f977972d61e5d27d893ba62d5dd99a10e20e837f01",
+        "request_payload_bytes": 7864,
+        "request_payload_sha256": "d009dd08cff4fcde1c0a097799941ef95362118ed37348d8654a8ca3baff67d2",
+        "round_index": 3,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_attempts": [
+          {
+            "request_body_bytes": 10118,
+            "request_body_sha256": "fb2cea0f34f8b1fc092fb735db277f12d7604f5b1a50fdcb6b41cb29e551edea",
+            "response_body_bytes": 1049,
+            "response_body_sha256": "065d4bcae676880c1ebc49f977972d61e5d27d893ba62d5dd99a10e20e837f01",
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": null,
+          "category_state": "CATEGORY_ASSIGNED",
+          "classification_reason": "PRINCIPAL_ACTION_OPERATIONAL_CHANGE",
+          "event_id": "evaluation-event-1",
+          "primary_category": "營運動態",
+          "primary_category_id": "OPERATIONAL_CHANGE",
+          "provenance": {
+            "decision_basis": "constrained_semantic_helper",
+            "helper_version": "maiagent-chatbot-adapter-v2",
+            "prompt_version": "category-full-response-contract-v2",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-proposal-v5",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_support_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 104,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 204,
+                "start": 105
+              }
+            ]
+          },
+          "subtype": "weekday_timetable_change"
+        },
+        "validated_result_sha256": "ebf7eda849709bd38f088eb7a649c482818481fd30116bdf21c369a8f3887233",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": null,
+        "category_state": "CATEGORY_ASSIGNED",
+        "classification_reason": "PRINCIPAL_ACTION_OPERATIONAL_CHANGE",
+        "event_id": "evaluation-event-1",
+        "primary_category": "營運動態",
+        "primary_category_id": "OPERATIONAL_CHANGE",
+        "provenance": {
+          "decision_basis": "constrained_semantic_helper",
+          "helper_version": "maiagent-chatbot-adapter-v2",
+          "prompt_version": "category-full-response-contract-v2",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-proposal-v5",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_support_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 104,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 204,
+              "start": 105
+            }
+          ]
+        },
+        "subtype": "weekday_timetable_change"
+      },
+      "citations": [
+        {
+          "candidate_id": "source-1",
+          "resolved_end": 204,
+          "resolved_start": 0,
+          "resolved_substring": "The operator implemented a revised weekday timetable with additional late-night train trips from Monday. The service notice lists the affected hours and stations and confirms that the change is in effect.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": null,
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G66",
+      "http_status": 200,
+      "matches_golden": true,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "CORRECT_ASSIGNED",
+      "proposal": {
+        "category_resolution_reason": null,
+        "category_state": "CATEGORY_ASSIGNED",
+        "citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "primary_category_id": "OPERATIONAL_CHANGE",
+        "subtype": "weekday_timetable_change"
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    }
+  ],
+  "RETRY_PRESENT": "NO",
+  "ROUND_INDEX": 3,
+  "RUNTIME_HELPER_IDENTITY_FINGERPRINT": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+  "SAME_RUNTIME_HELPER_BINDING": "PROVEN",
+  "SEMANTIC_CITATION_CONCERN_COUNT": 0,
+  "SEMANTIC_CITATION_REVIEW": "HUMAN_REVIEW_REQUIRED",
+  "TOTAL_GOLDEN_FIXTURES": 4,
+  "TOTAL_PLANNED_LIVE_CALLS": 12,
+  "WRITER_CHATBOT_USED": "NO"
+}

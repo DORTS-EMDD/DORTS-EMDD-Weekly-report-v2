@@ -1,0 +1,528 @@
+{
+  "actual_logical_category_calls": 12,
+  "configuration_fingerprint": "695988ff08b5aa792c68abc6dc4ad243aea88f01fe6b2b7caa10ca174006d749",
+  "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+  "event_identity_calls": 0,
+  "hard_cap": 24,
+  "planned_logical_category_calls": 12,
+  "planned_rounds": 3,
+  "production_report_run": "NO",
+  "rounds": [
+    {
+      "acceptance_status": "FINDINGS",
+      "by_case": {
+        "G100": {
+          "acceptance_evidence_complete": true,
+          "actual": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED",
+            "classification_reason": "CATEGORY_UNRESOLVED",
+            "event_id": "evaluation-event-1",
+            "primary_category": null,
+            "primary_category_id": null,
+            "provenance": {
+              "decision_basis": "constrained_semantic_helper",
+              "helper_version": "maiagent-chatbot-adapter-v2",
+              "prompt_version": "category-full-response-contract-v2",
+              "provider_identifier": "maiagent-chatbot-completions",
+              "schema_version": "category-proposal-v5",
+              "source_candidate_ids": [
+                "source-1"
+              ],
+              "validated_support_spans": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 135,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 250,
+                  "start": 136
+                }
+              ]
+            },
+            "subtype": null
+          },
+          "earliest_failure_type": null,
+          "expected": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED"
+          },
+          "matches_golden": true
+        },
+        "G101": {
+          "acceptance_evidence_complete": true,
+          "actual": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED",
+            "classification_reason": "CATEGORY_UNRESOLVED",
+            "event_id": "evaluation-event-1",
+            "primary_category": null,
+            "primary_category_id": null,
+            "provenance": {
+              "decision_basis": "constrained_semantic_helper",
+              "helper_version": "maiagent-chatbot-adapter-v2",
+              "prompt_version": "category-full-response-contract-v2",
+              "provider_identifier": "maiagent-chatbot-completions",
+              "schema_version": "category-proposal-v5",
+              "source_candidate_ids": [
+                "source-1"
+              ],
+              "validated_support_spans": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 198,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 284,
+                  "start": 199
+                }
+              ]
+            },
+            "subtype": null
+          },
+          "earliest_failure_type": "CATEGORY_STATE_MISMATCH",
+          "expected": {
+            "category_state": "CATEGORY_ASSIGNED",
+            "primary_category_id": "TECHNICAL_DEVELOPMENT"
+          },
+          "matches_golden": false
+        },
+        "G66": {
+          "acceptance_evidence_complete": true,
+          "actual": {
+            "category_resolution_reason": null,
+            "category_state": "CATEGORY_ASSIGNED",
+            "classification_reason": "PRINCIPAL_ACTION_OPERATIONAL_CHANGE",
+            "event_id": "evaluation-event-1",
+            "primary_category": "營運動態",
+            "primary_category_id": "OPERATIONAL_CHANGE",
+            "provenance": {
+              "decision_basis": "constrained_semantic_helper",
+              "helper_version": "maiagent-chatbot-adapter-v2",
+              "prompt_version": "category-full-response-contract-v2",
+              "provider_identifier": "maiagent-chatbot-completions",
+              "schema_version": "category-proposal-v5",
+              "source_candidate_ids": [
+                "source-1"
+              ],
+              "validated_support_spans": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 104,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 204,
+                  "start": 105
+                }
+              ]
+            },
+            "subtype": "weekday_timetable_change"
+          },
+          "earliest_failure_type": null,
+          "expected": {
+            "category_state": "CATEGORY_ASSIGNED",
+            "primary_category_id": "OPERATIONAL_CHANGE"
+          },
+          "matches_golden": true
+        },
+        "G93": {
+          "acceptance_evidence_complete": true,
+          "actual": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED",
+            "classification_reason": "CATEGORY_UNRESOLVED",
+            "event_id": "evaluation-event-1",
+            "primary_category": null,
+            "primary_category_id": null,
+            "provenance": {
+              "decision_basis": "constrained_semantic_helper",
+              "helper_version": "maiagent-chatbot-adapter-v2",
+              "prompt_version": "category-full-response-contract-v2",
+              "provider_identifier": "maiagent-chatbot-completions",
+              "schema_version": "category-proposal-v5",
+              "source_candidate_ids": [
+                "source-1"
+              ],
+              "validated_support_spans": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 76,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 192,
+                  "start": 77
+                }
+              ]
+            },
+            "subtype": null
+          },
+          "earliest_failure_type": null,
+          "expected": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED"
+          },
+          "matches_golden": true
+        }
+      },
+      "evidence_chain_status": "COMPLETE",
+      "logical_calls": 4,
+      "round_index": 1,
+      "transport_attempts": 4,
+      "transport_retries": 0
+    },
+    {
+      "acceptance_status": "PASS",
+      "by_case": {
+        "G100": {
+          "acceptance_evidence_complete": true,
+          "actual": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED",
+            "classification_reason": "CATEGORY_UNRESOLVED",
+            "event_id": "evaluation-event-1",
+            "primary_category": null,
+            "primary_category_id": null,
+            "provenance": {
+              "decision_basis": "constrained_semantic_helper",
+              "helper_version": "maiagent-chatbot-adapter-v2",
+              "prompt_version": "category-full-response-contract-v2",
+              "provider_identifier": "maiagent-chatbot-completions",
+              "schema_version": "category-proposal-v5",
+              "source_candidate_ids": [
+                "source-1"
+              ],
+              "validated_support_spans": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 135,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 250,
+                  "start": 136
+                }
+              ]
+            },
+            "subtype": null
+          },
+          "earliest_failure_type": null,
+          "expected": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED"
+          },
+          "matches_golden": true
+        },
+        "G101": {
+          "acceptance_evidence_complete": true,
+          "actual": {
+            "category_resolution_reason": null,
+            "category_state": "CATEGORY_ASSIGNED",
+            "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+            "event_id": "evaluation-event-1",
+            "primary_category": "技術新知",
+            "primary_category_id": "TECHNICAL_DEVELOPMENT",
+            "provenance": {
+              "decision_basis": "constrained_semantic_helper",
+              "helper_version": "maiagent-chatbot-adapter-v2",
+              "prompt_version": "category-full-response-contract-v2",
+              "provider_identifier": "maiagent-chatbot-completions",
+              "schema_version": "category-proposal-v5",
+              "source_candidate_ids": [
+                "source-1"
+              ],
+              "validated_support_spans": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 198,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 284,
+                  "start": 199
+                }
+              ]
+            },
+            "subtype": "fifth_generation_network_deployment"
+          },
+          "earliest_failure_type": null,
+          "expected": {
+            "category_state": "CATEGORY_ASSIGNED",
+            "primary_category_id": "TECHNICAL_DEVELOPMENT"
+          },
+          "matches_golden": true
+        },
+        "G66": {
+          "acceptance_evidence_complete": true,
+          "actual": {
+            "category_resolution_reason": null,
+            "category_state": "CATEGORY_ASSIGNED",
+            "classification_reason": "PRINCIPAL_ACTION_OPERATIONAL_CHANGE",
+            "event_id": "evaluation-event-1",
+            "primary_category": "營運動態",
+            "primary_category_id": "OPERATIONAL_CHANGE",
+            "provenance": {
+              "decision_basis": "constrained_semantic_helper",
+              "helper_version": "maiagent-chatbot-adapter-v2",
+              "prompt_version": "category-full-response-contract-v2",
+              "provider_identifier": "maiagent-chatbot-completions",
+              "schema_version": "category-proposal-v5",
+              "source_candidate_ids": [
+                "source-1"
+              ],
+              "validated_support_spans": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 104,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 204,
+                  "start": 105
+                }
+              ]
+            },
+            "subtype": "weekday_timetable_change"
+          },
+          "earliest_failure_type": null,
+          "expected": {
+            "category_state": "CATEGORY_ASSIGNED",
+            "primary_category_id": "OPERATIONAL_CHANGE"
+          },
+          "matches_golden": true
+        },
+        "G93": {
+          "acceptance_evidence_complete": true,
+          "actual": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED",
+            "classification_reason": "CATEGORY_UNRESOLVED",
+            "event_id": "evaluation-event-1",
+            "primary_category": null,
+            "primary_category_id": null,
+            "provenance": {
+              "decision_basis": "constrained_semantic_helper",
+              "helper_version": "maiagent-chatbot-adapter-v2",
+              "prompt_version": "category-full-response-contract-v2",
+              "provider_identifier": "maiagent-chatbot-completions",
+              "schema_version": "category-proposal-v5",
+              "source_candidate_ids": [
+                "source-1"
+              ],
+              "validated_support_spans": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 76,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 192,
+                  "start": 77
+                }
+              ]
+            },
+            "subtype": null
+          },
+          "earliest_failure_type": null,
+          "expected": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED"
+          },
+          "matches_golden": true
+        }
+      },
+      "evidence_chain_status": "COMPLETE",
+      "logical_calls": 4,
+      "round_index": 2,
+      "transport_attempts": 4,
+      "transport_retries": 0
+    },
+    {
+      "acceptance_status": "FINDINGS",
+      "by_case": {
+        "G100": {
+          "acceptance_evidence_complete": true,
+          "actual": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED",
+            "classification_reason": "CATEGORY_UNRESOLVED",
+            "event_id": "evaluation-event-1",
+            "primary_category": null,
+            "primary_category_id": null,
+            "provenance": {
+              "decision_basis": "constrained_semantic_helper",
+              "helper_version": "maiagent-chatbot-adapter-v2",
+              "prompt_version": "category-full-response-contract-v2",
+              "provider_identifier": "maiagent-chatbot-completions",
+              "schema_version": "category-proposal-v5",
+              "source_candidate_ids": [
+                "source-1"
+              ],
+              "validated_support_spans": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 135,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 250,
+                  "start": 136
+                }
+              ]
+            },
+            "subtype": null
+          },
+          "earliest_failure_type": null,
+          "expected": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED"
+          },
+          "matches_golden": true
+        },
+        "G101": {
+          "acceptance_evidence_complete": true,
+          "actual": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED",
+            "classification_reason": "CATEGORY_UNRESOLVED",
+            "event_id": "evaluation-event-1",
+            "primary_category": null,
+            "primary_category_id": null,
+            "provenance": {
+              "decision_basis": "constrained_semantic_helper",
+              "helper_version": "maiagent-chatbot-adapter-v2",
+              "prompt_version": "category-full-response-contract-v2",
+              "provider_identifier": "maiagent-chatbot-completions",
+              "schema_version": "category-proposal-v5",
+              "source_candidate_ids": [
+                "source-1"
+              ],
+              "validated_support_spans": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 198,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 284,
+                  "start": 199
+                }
+              ]
+            },
+            "subtype": null
+          },
+          "earliest_failure_type": "CATEGORY_STATE_MISMATCH",
+          "expected": {
+            "category_state": "CATEGORY_ASSIGNED",
+            "primary_category_id": "TECHNICAL_DEVELOPMENT"
+          },
+          "matches_golden": false
+        },
+        "G66": {
+          "acceptance_evidence_complete": true,
+          "actual": {
+            "category_resolution_reason": null,
+            "category_state": "CATEGORY_ASSIGNED",
+            "classification_reason": "PRINCIPAL_ACTION_OPERATIONAL_CHANGE",
+            "event_id": "evaluation-event-1",
+            "primary_category": "營運動態",
+            "primary_category_id": "OPERATIONAL_CHANGE",
+            "provenance": {
+              "decision_basis": "constrained_semantic_helper",
+              "helper_version": "maiagent-chatbot-adapter-v2",
+              "prompt_version": "category-full-response-contract-v2",
+              "provider_identifier": "maiagent-chatbot-completions",
+              "schema_version": "category-proposal-v5",
+              "source_candidate_ids": [
+                "source-1"
+              ],
+              "validated_support_spans": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 104,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 204,
+                  "start": 105
+                }
+              ]
+            },
+            "subtype": "weekday_timetable_change"
+          },
+          "earliest_failure_type": null,
+          "expected": {
+            "category_state": "CATEGORY_ASSIGNED",
+            "primary_category_id": "OPERATIONAL_CHANGE"
+          },
+          "matches_golden": true
+        },
+        "G93": {
+          "acceptance_evidence_complete": true,
+          "actual": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED",
+            "classification_reason": "CATEGORY_UNRESOLVED",
+            "event_id": "evaluation-event-1",
+            "primary_category": null,
+            "primary_category_id": null,
+            "provenance": {
+              "decision_basis": "constrained_semantic_helper",
+              "helper_version": "maiagent-chatbot-adapter-v2",
+              "prompt_version": "category-full-response-contract-v2",
+              "provider_identifier": "maiagent-chatbot-completions",
+              "schema_version": "category-proposal-v5",
+              "source_candidate_ids": [
+                "source-1"
+              ],
+              "validated_support_spans": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 76,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 192,
+                  "start": 77
+                }
+              ]
+            },
+            "subtype": null
+          },
+          "earliest_failure_type": null,
+          "expected": {
+            "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+            "category_state": "CATEGORY_UNRESOLVED"
+          },
+          "matches_golden": true
+        }
+      },
+      "evidence_chain_status": "COMPLETE",
+      "logical_calls": 4,
+      "round_index": 3,
+      "transport_attempts": 4,
+      "transport_retries": 0
+    }
+  ],
+  "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+  "same_runtime_helper_binding": "PROVEN",
+  "transport_attempts": 12,
+  "transport_retries": 0,
+  "verdict": "STOCHASTIC_OR_INCONSISTENT",
+  "writer_calls": 0
+}
