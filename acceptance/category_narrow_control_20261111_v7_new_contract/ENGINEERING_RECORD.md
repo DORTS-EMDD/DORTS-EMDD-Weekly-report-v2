@@ -89,8 +89,8 @@ live seal is required before any production report rerun. EventIdentity remains
 outside this task and its separate RC66-R7 decision path is unchanged.
 
 ```text
-COMMIT = this cohesive commit; exact final identity is reported from git after amend
-PUSH_STATUS = pending non-force push to release/report-quality-wip
+COMMIT = 06cd71ad835dbaf1b95dfd90a3d6d963c162b2c3
+PUSH_STATUS = pushed non-force to release/report-quality-wip
 FULL_CATEGORY_SEAL_REQUIRED_NEXT = YES
 REAL_PRODUCTION_VALIDATED = YES (narrow Helper acceptance only; no production report)
 RELEASE_READY = NO
