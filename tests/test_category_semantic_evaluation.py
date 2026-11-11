@@ -2,14 +2,22 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 import hashlib
 import json
 import unittest
+from copy import deepcopy
+from pathlib import Path
+from typing import ClassVar
 from unittest.mock import patch
 
+import scripts.category_formal_v7_seal as formal_seal
+import scripts.category_narrow_v7_revaluation as historical_candidate
 import scripts.category_semantic_evaluation as evaluation
-from src.weekly_report.category_semantic_provider import MaiAgentCategorySemanticProviderConfig
+from src.weekly_report import category_semantic_provider as category_provider_module
+from src.weekly_report import classifier as classifier_module
+from src.weekly_report.category_semantic_provider import (
+    MaiAgentCategorySemanticProviderConfig,
+)
 from src.weekly_report.contracts import CategoryState
 
 
@@ -74,7 +82,7 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
         self.manifest, self.fixtures = evaluation._load_population()
 
     def test_phase_a_reconciles_fixture_oracles_to_all_53_event_groups(self):
-        specs, oracle_by_group, counts = evaluation._phase_a_reconcile(self.fixtures)
+        _specs, oracle_by_group, counts = evaluation._phase_a_reconcile(self.fixtures)
 
         self.assertEqual(counts["total_fixtures"], 85)
         self.assertEqual(counts["category_reached_fixtures"], 52)
@@ -151,7 +159,9 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
 
     def test_old_g82_conflict_citation_message_is_not_string_classified(self):
         class InvalidResult:
-            provenance = {"validation_error": "conflict citations require a conflict reason"}
+            provenance: ClassVar = {
+                "validation_error": "conflict citations require a conflict reason"
+            }
             category_resolution_reason = type("Reason", (), {"value": "SEMANTIC_HELPER_INVALID_RESPONSE"})()
 
         self.assertEqual(
@@ -216,6 +226,148 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
         }
         irrelevant_artifact = evaluation._configuration_fingerprint(specs, oracle)
         self.assertEqual(first, irrelevant_artifact)
+
+    def test_formal_configuration_binding_passes_for_checked_in_production(self):
+        production, specs, oracle, _ = evaluation._resolve_checked_in_production_configuration(
+            category_config=MaiAgentCategorySemanticProviderConfig(
+                api_base="https://maiagent.invalid",
+                api_key="test-only",
+                chatbot_id="category-test-only",
+            )
+        )
+        target = evaluation._target_configuration_identity(specs, oracle)
+        binding = evaluation.enforce_category_configuration_binding(
+            production=production,
+            target=target,
+            mode=evaluation.FORMAL_CURRENT_CONFIGURATION_SEAL,
+        )
+        self.assertEqual(binding["status"], "PASS")
+        self.assertEqual(binding["mismatches"], {})
+
+    def test_formal_binding_rejects_each_identity_mismatch_before_provider_call(self):
+        production, specs, oracle, _ = evaluation._resolve_checked_in_production_configuration(
+            category_config=MaiAgentCategorySemanticProviderConfig(
+                api_base="https://maiagent.invalid",
+                api_key="test-only",
+                chatbot_id="category-test-only",
+            )
+        )
+        target = evaluation._target_configuration_identity(specs, oracle)
+        for field in (
+            "guidance_digest",
+            "prompt_identity",
+            "response_contract_identity",
+            "schema_identity",
+            "configuration_fingerprint",
+        ):
+            with self.subTest(field=field):
+                changed = dict(target.as_mapping())
+                changed[field] = "changed-" + field
+                changed_target = evaluation.CategoryAcceptanceConfigurationIdentity(
+                    **changed
+                )
+                provider_calls = []
+                with self.assertRaises(evaluation.CategoryConfigurationBindingError) as raised:
+                    evaluation.enforce_category_configuration_binding(
+                        production=production,
+                        target=changed_target,
+                        mode=evaluation.FORMAL_CURRENT_CONFIGURATION_SEAL,
+                    )
+                self.assertEqual(raised.exception.reason_code, evaluation.FORMAL_SEAL_PRODUCTION_CONFIGURATION_MISMATCH)
+                self.assertEqual(provider_calls, [])
+
+    def test_candidate_mode_allows_explicit_historical_guidance_but_formal_mode_rejects(self):
+        production, specs, oracle, _ = evaluation._resolve_checked_in_production_configuration(
+            category_config=MaiAgentCategorySemanticProviderConfig(
+                api_base="https://maiagent.invalid",
+                api_key="test-only",
+                chatbot_id="category-test-only",
+            )
+        )
+        historical_guidance = historical_candidate._recover_exact_v7_guidance()
+        candidate = evaluation.CategoryAcceptanceConfigurationIdentity(
+            guidance_digest=evaluation._guidance_digest(historical_guidance),
+            prompt_identity=historical_candidate.V7_PROMPT_IDENTITY,
+            response_contract_identity=category_provider_module.MAIAGENT_CATEGORY_MESSAGE_VERSION,
+            schema_identity=category_provider_module.CATEGORY_SEMANTIC_SCHEMA_VERSION,
+            configuration_fingerprint=evaluation._configuration_fingerprint_for(
+                specs,
+                oracle,
+                guidance=historical_guidance,
+                prompt_identity=historical_candidate.V7_PROMPT_IDENTITY,
+                response_contract_identity=category_provider_module.MAIAGENT_CATEGORY_MESSAGE_VERSION,
+                schema_identity=category_provider_module.CATEGORY_SEMANTIC_SCHEMA_VERSION,
+                authoritative_response_schema=category_provider_module._CATEGORY_RESPONSE_SCHEMA,
+                provider_schema_projection=category_provider_module._MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
+                provider_identifier=category_provider_module.MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER,
+                helper_version=category_provider_module.MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION,
+            ),
+        )
+        allowed = evaluation.enforce_category_configuration_binding(
+            production=production,
+            target=candidate,
+            mode=evaluation.CANDIDATE_EXPERIMENT,
+        )
+        self.assertEqual(allowed["status"], "CANDIDATE_EXPERIMENT_ALLOWED")
+        self.assertTrue(allowed["mismatches"])
+        with self.assertRaises(evaluation.CategoryConfigurationBindingError):
+            evaluation.enforce_category_configuration_binding(
+                production=production,
+                target=candidate,
+                mode=evaluation.FORMAL_CURRENT_CONFIGURATION_SEAL,
+            )
+
+    def test_production_identity_tracks_the_single_checked_in_guidance_owner(self):
+        baseline, _, _, _ = evaluation._resolve_checked_in_production_configuration(
+            category_config=MaiAgentCategorySemanticProviderConfig(
+                api_base="https://maiagent.invalid",
+                api_key="test-only",
+                chatbot_id="category-test-only",
+            )
+        )
+        changed_guidance = classifier_module._CATEGORY_GUIDANCE + (
+            "A generic audit-only guidance probe.",
+        )
+        with patch.object(classifier_module, "_CATEGORY_GUIDANCE", changed_guidance):
+            changed, _, _, _ = evaluation._resolve_checked_in_production_configuration(
+                category_config=MaiAgentCategorySemanticProviderConfig(
+                    api_base="https://maiagent.invalid",
+                    api_key="test-only",
+                    chatbot_id="category-test-only",
+                )
+            )
+        self.assertNotEqual(baseline.guidance_digest, changed.guidance_digest)
+        self.assertNotEqual(
+            baseline.configuration_fingerprint,
+            changed.configuration_fingerprint,
+        )
+
+    def test_formal_runner_rejects_target_mismatch_before_any_provider_request(self):
+        config = MaiAgentCategorySemanticProviderConfig(
+            api_base="https://maiagent.invalid",
+            api_key="test-only",
+            chatbot_id="category-test-only",
+        )
+        with (
+            patch.object(
+                evaluation,
+                "_CATEGORY_GUIDANCE",
+                evaluation._CATEGORY_GUIDANCE + ("candidate-only guidance",),
+            ),
+            self.assertRaises(evaluation.CategoryConfigurationBindingError) as raised,
+        ):
+            formal_seal._prepare_configuration(config)
+        self.assertEqual(
+            raised.exception.reason_code,
+            evaluation.FORMAL_SEAL_PRODUCTION_CONFIGURATION_MISMATCH,
+        )
+
+    def test_formal_runner_has_no_historical_in_memory_override_seam(self):
+        source = formal_seal.__file__
+        assert source is not None
+        contents = Path(source).read_text(encoding="utf-8")
+        self.assertNotIn("_apply_recovered_v7_guidance", contents)
+        self.assertNotIn("category_narrow_v7_revaluation", contents)
 
     def test_final_seal_requires_all_three_complete_zero_error_rounds(self):
         fingerprint = "a" * 64

@@ -1,10 +1,10 @@
-"""Run the formal current-configuration Category seal for recovered v7.
+"""Run the formal current-production-configuration Category seal.
 
-This is acceptance-only orchestration. It recovers the exact accepted v7
-guidance from its committed source, applies it in memory alongside the current
-versioned response contract, and delegates all Category evaluation to the
-existing evaluation harness. It does not change production Category source,
-run EventIdentity, or run a production report.
+This is acceptance-only orchestration. The formal path resolves the checked-in
+Category configuration through the production factory, binds the target to that
+identity before any provider request, and delegates Category evaluation to the
+existing harness. Candidate/revaluation experiments keep their separate
+explicit path and cannot claim this formal seal.
 """
 
 from __future__ import annotations
@@ -12,30 +12,23 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import scripts.category_narrow_live_control as narrow  # noqa: E402
-import scripts.category_narrow_v7_revaluation as accepted_v7  # noqa: E402
-import scripts.category_semantic_evaluation as evaluation  # noqa: E402
-from src.weekly_report import category_semantic_provider as provider  # noqa: E402
+import scripts.category_narrow_live_control as narrow
+import scripts.category_semantic_evaluation as evaluation
+from src.weekly_report import category_semantic_provider as provider
 
-
-EXPECTED_HEAD = "c8c5c0e27bfffac61126d1a7d27c56785496311b"
-EXPECTED_CONFIGURATION_FINGERPRINT = (
-    "6282f2cb1495b6759fc4f7d81b6bad088fb609e97e6321772be80a3376259690"
-)
 PRIOR_ACCEPTED_DEPLOYMENT_FINGERPRINT = (
     "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7"
 )
-GUIDANCE_IDENTITY = "category-principal-action-v7"
-GUIDANCE_SOURCE_COMMIT = accepted_v7.V7_GUIDANCE_COMMIT
+GUIDANCE_IDENTITY = provider.CATEGORY_SEMANTIC_PROMPT_VERSION
 SEAL_ROUNDS = evaluation.FINAL_SEAL_ROUNDS
 SEAL_GROUPS_PER_ROUND = evaluation.GROUPS_PER_ROUND
 PLANNED_LOGICAL_CALLS = SEAL_ROUNDS * SEAL_GROUPS_PER_ROUND
@@ -66,9 +59,19 @@ def _current_head() -> str:
     return result.stdout.strip()
 
 
-def _prepare_configuration() -> tuple[list[dict[str, Any]], dict[tuple[str, str], dict[str, str]], dict[str, Any], str]:
-    guidance = accepted_v7._recover_exact_v7_guidance()
-    accepted_v7._apply_recovered_v7_guidance(guidance)
+def _prepare_configuration(
+    config: provider.MaiAgentCategorySemanticProviderConfig,
+) -> tuple[
+    list[dict[str, Any]],
+    dict[tuple[str, str], dict[str, str]],
+    dict[str, Any],
+    evaluation.CategoryAcceptanceConfigurationIdentity,
+    evaluation.CategoryAcceptanceConfigurationIdentity,
+    dict[str, Any],
+]:
+    production_identity, _, _, _ = evaluation._resolve_checked_in_production_configuration(
+        category_config=config
+    )
     _, fixtures = evaluation._load_population()
     specs, oracle, counts = evaluation._phase_a_reconcile(fixtures)
     leakage = evaluation._oracle_leakage_check(specs)
@@ -83,10 +86,20 @@ def _prepare_configuration() -> tuple[list[dict[str, Any]], dict[tuple[str, str]
     keys = [(spec["case_id"], spec["group"].event_id) for spec in specs]
     if len(set(keys)) != len(keys):
         raise SystemExit("FORMAL_SEAL_DUPLICATE_GROUP_ORACLE_KEY")
-    fingerprint = evaluation._configuration_fingerprint(specs, oracle)
-    if fingerprint != EXPECTED_CONFIGURATION_FINGERPRINT:
-        raise SystemExit("BLOCKED_CONFIGURATION_IDENTITY_MISMATCH")
-    return specs, oracle, {**counts, "leakage": leakage[1]}, fingerprint
+    target_identity = evaluation._target_configuration_identity(specs, oracle)
+    binding = evaluation.enforce_category_configuration_binding(
+        production=production_identity,
+        target=target_identity,
+        mode=evaluation.FORMAL_CURRENT_CONFIGURATION_SEAL,
+    )
+    return (
+        specs,
+        oracle,
+        {**counts, "leakage": leakage[1]},
+        production_identity,
+        target_identity,
+        binding,
+    )
 
 
 def _population_rows(
@@ -111,19 +124,24 @@ def _population_rows(
 def _plan(
     *,
     head: str,
-    fingerprint: str,
+    production_identity: evaluation.CategoryAcceptanceConfigurationIdentity,
+    target_identity: evaluation.CategoryAcceptanceConfigurationIdentity,
+    binding: dict[str, Any],
     deployment: dict[str, Any],
     counts: dict[str, Any],
     population: list[dict[str, Any]],
 ) -> dict[str, Any]:
     return {
         "accepted_head": head,
+        "configuration_mode": evaluation.FORMAL_CURRENT_CONFIGURATION_SEAL,
         "guidance_identity": GUIDANCE_IDENTITY,
-        "guidance_source_commit": GUIDANCE_SOURCE_COMMIT,
+        "guidance_digest": target_identity.guidance_digest,
         "response_contract_identity": provider.MAIAGENT_CATEGORY_MESSAGE_VERSION,
         "schema_identity": provider.CATEGORY_SEMANTIC_SCHEMA_VERSION,
-        "configuration_fingerprint": fingerprint,
-        "expected_configuration_fingerprint": EXPECTED_CONFIGURATION_FINGERPRINT,
+        "configuration_fingerprint": target_identity.configuration_fingerprint,
+        "production_configuration_identity": production_identity.as_mapping(),
+        "target_configuration_identity": target_identity.as_mapping(),
+        "formal_seal_binding": binding,
         "formal_seal_population_source": (
             "golden/manifest.json plus category_semantic_evaluation._phase_a_reconcile; "
             "golden/category_boundary_manifest.json is an explicit EXTENSION excluded "
@@ -187,15 +205,20 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("FORMAL_SEAL_BOOKKEEPING_ALREADY_EXISTS; refusing overwrite")
 
     head = _current_head()
-    if head != EXPECTED_HEAD:
-        raise SystemExit("BLOCKED_STARTING_HEAD_MISMATCH")
     if evaluation._proxy_blockers():
         raise SystemExit("BLOCKED_PROXY_VARIABLE_PRESENT")
     config = provider.MaiAgentCategorySemanticProviderConfig.from_environment()
     if config is None:
         raise SystemExit("BLOCKED_CATEGORY_CONFIGURATION_UNAVAILABLE")
 
-    specs, oracle, counts, fingerprint = _prepare_configuration()
+    (
+        specs,
+        oracle,
+        counts,
+        production_identity,
+        target_identity,
+        binding,
+    ) = _prepare_configuration(config)
     readback, _ = narrow._fetch_chatbot_readback(config)
     snapshot = narrow._snapshot_from_readback(readback)
     review = narrow._deployment_review(readback)
@@ -213,7 +236,9 @@ def main(argv: list[str] | None = None) -> int:
 
     plan = _plan(
         head=head,
-        fingerprint=fingerprint,
+        production_identity=production_identity,
+        target_identity=target_identity,
+        binding=binding,
         deployment=deployment,
         counts=counts,
         population=_population_rows(specs, oracle),
@@ -224,8 +249,10 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "PREFLIGHT": "PASS",
                     "ACCEPTED_HEAD": head,
-                    "CONFIGURATION_FINGERPRINT": fingerprint,
-                    "EXPECTED_CONFIGURATION_FINGERPRINT": EXPECTED_CONFIGURATION_FINGERPRINT,
+                    "CONFIGURATION_MODE": evaluation.FORMAL_CURRENT_CONFIGURATION_SEAL,
+                    "CONFIGURATION_FINGERPRINT": target_identity.configuration_fingerprint,
+                    "PRODUCTION_CONFIGURATION_FINGERPRINT": production_identity.configuration_fingerprint,
+                    "FORMAL_SEAL_BINDING": binding,
                     "DEPLOYMENT_FINGERPRINT": deployment["DEPLOYMENT_FINGERPRINT"],
                     "SAME_RUNTIME_HELPER_BINDING": deployment["SAME_RUNTIME_HELPER_BINDING"],
                     "TOTAL_GOLDEN_FIXTURES": counts["total_fixtures"],
@@ -266,7 +293,7 @@ def main(argv: list[str] | None = None) -> int:
                 "STOPPED_AFTER_ROUND": round_index,
                 "EARLIEST_FAILED_FORMAL_CRITERION": report.get("BLOCKER")
                 or report.get("FAILURE_BREAKDOWN"),
-                "CONFIGURATION_FINGERPRINT": fingerprint,
+                "CONFIGURATION_FINGERPRINT": target_identity.configuration_fingerprint,
                 "DEPLOYMENT_FINGERPRINT": deployment["DEPLOYMENT_FINGERPRINT"],
                 "ACTUAL_LOGICAL_CALLS": sum(len(item.get("RESULTS", [])) for item in reports),
                 "TRANSPORT_ATTEMPTS": total_attempts,
@@ -283,9 +310,13 @@ def main(argv: list[str] | None = None) -> int:
             "CATEGORY_FORMAL_SEAL": assessment.get("CATEGORY_V4_FINAL_SEAL"),
             "ACCEPTED_HEAD": head,
             "GUIDANCE_IDENTITY": GUIDANCE_IDENTITY,
+            "GUIDANCE_DIGEST": target_identity.guidance_digest,
             "RESPONSE_CONTRACT_IDENTITY": provider.MAIAGENT_CATEGORY_MESSAGE_VERSION,
             "SCHEMA_IDENTITY": provider.CATEGORY_SEMANTIC_SCHEMA_VERSION,
-            "EXPECTED_CONFIGURATION_FINGERPRINT": EXPECTED_CONFIGURATION_FINGERPRINT,
+            "CONFIGURATION_MODE": evaluation.FORMAL_CURRENT_CONFIGURATION_SEAL,
+            "PRODUCTION_CONFIGURATION_IDENTITY": production_identity.as_mapping(),
+            "TARGET_CONFIGURATION_IDENTITY": target_identity.as_mapping(),
+            "FORMAL_SEAL_BINDING": binding,
             "ACTUAL_LOGICAL_CALLS": sum(len(item.get("RESULTS", [])) for item in reports),
             "TRANSPORT_ATTEMPTS": total_attempts,
             "TRANSPORT_RETRIES": total_attempts - PLANNED_LOGICAL_CALLS,

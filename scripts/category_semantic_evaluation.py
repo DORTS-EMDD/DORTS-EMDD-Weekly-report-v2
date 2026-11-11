@@ -8,19 +8,24 @@ The deterministic test suite never calls a live provider.
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 import hashlib
 import json
 import os
-from pathlib import Path
 import sys
-from typing import Any, Mapping
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.weekly_report.category_semantic_provider import (  # noqa: E402
+from src.weekly_report import category_semantic_provider as category_provider_module
+from src.weekly_report import classifier as classifier_module
+from src.weekly_report.category_semantic_provider import (
+    _CATEGORY_RESPONSE_SCHEMA,
+    _MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
     CATEGORY_SEMANTIC_PROMPT_VERSION,
     CATEGORY_SEMANTIC_SCHEMA_VERSION,
     MAIAGENT_CATEGORY_MESSAGE_VERSION,
@@ -30,34 +35,69 @@ from src.weekly_report.category_semantic_provider import (  # noqa: E402
     MaiAgentCategorySemanticProviderConfig,
     MaiAgentHttpResponse,
     UrllibMaiAgentJsonTransport,
-    _CATEGORY_RESPONSE_SCHEMA,
-    _MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
+    build_maiagent_category_classifier,
 )
-from src.weekly_report.classifier import (  # noqa: E402
+from src.weekly_report.classifier import (
+    _CATEGORY_GUIDANCE,
     CategoryProposalViolation,
-    CategorySemanticResponse,
     CategorySemanticHelperResult,
     CategorySemanticRequest,
+    CategorySemanticResponse,
     Classifier,
-    _CATEGORY_GUIDANCE,
     _request_for,
 )
-from src.weekly_report.contracts import (  # noqa: E402
+from src.weekly_report.contracts import (
     CanonicalCandidate,
     CategoryResolutionReason,
     CategoryResult,
     CategoryState,
-    EvidenceResult,
-    EvidenceState,
     EventGroup,
     EventIdentityFacts,
     EventIdentityRecord,
+    EvidenceResult,
+    EvidenceState,
     IdentityMetadataSupport,
     ScopeResult,
     ScopeState,
     TemporalResult,
     UnresolvedClaim,
 )
+
+FORMAL_CURRENT_CONFIGURATION_SEAL = "FORMAL_CURRENT_CONFIGURATION_SEAL"
+CANDIDATE_EXPERIMENT = "CANDIDATE_EXPERIMENT"
+FORMAL_SEAL_PRODUCTION_CONFIGURATION_MISMATCH = (
+    "FORMAL_SEAL_PRODUCTION_CONFIGURATION_MISMATCH"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class CategoryAcceptanceConfigurationIdentity:
+    """Repository-controlled identity of one Category acceptance target."""
+
+    guidance_digest: str
+    prompt_identity: str
+    response_contract_identity: str
+    schema_identity: str
+    configuration_fingerprint: str
+
+    def as_mapping(self) -> dict[str, str]:
+        return {
+            "guidance_digest": self.guidance_digest,
+            "prompt_identity": self.prompt_identity,
+            "response_contract_identity": self.response_contract_identity,
+            "schema_identity": self.schema_identity,
+            "configuration_fingerprint": self.configuration_fingerprint,
+        }
+
+
+class CategoryConfigurationBindingError(RuntimeError):
+    """A formal seal target is not the checked-in production configuration."""
+
+    reason_code = FORMAL_SEAL_PRODUCTION_CONFIGURATION_MISMATCH
+
+    def __init__(self, mismatches: Mapping[str, Mapping[str, str]]) -> None:
+        self.mismatches = {key: dict(value) for key, value in mismatches.items()}
+        super().__init__(self.reason_code)
 
 
 class _CaptureProvider:
@@ -426,15 +466,15 @@ def _expected_for_group(fixture: dict[str, Any], group_count: int) -> dict[str, 
 
 def _collect_keys(value: Any) -> set[str]:
     if isinstance(value, dict):
-        found = set(value)
+        found: set[str] = set(value)
         for child in value.values():
             found.update(_collect_keys(child))
         return found
     if isinstance(value, list):
-        found: set[str] = set()
+        found_list: set[str] = set()
         for child in value:
-            found.update(_collect_keys(child))
-        return found
+            found_list.update(_collect_keys(child))
+        return found_list
     return set()
 
 
@@ -564,9 +604,24 @@ def _proposal_evidence(value: object) -> dict[str, Any]:
     raise ValueError("acceptance proposal evidence has an unsupported shape")
 
 
-def _configuration_fingerprint(
+def _guidance_digest(guidance: tuple[str, ...] | list[str]) -> str:
+    """Digest the exact ordered guidance body without normalizing its text."""
+
+    return hashlib.sha256(_canonical_json(list(guidance)).encode("utf-8")).hexdigest()
+
+
+def _configuration_fingerprint_for(
     specs: list[dict[str, Any]],
     oracle_mapping: Mapping[tuple[str, str], Mapping[str, str]],
+    *,
+    guidance: tuple[str, ...] | list[str],
+    prompt_identity: str,
+    response_contract_identity: str,
+    schema_identity: str,
+    authoritative_response_schema: Mapping[str, Any],
+    provider_schema_projection: Mapping[str, Any],
+    provider_identifier: str,
+    helper_version: str,
 ) -> str:
     """Hash only repository-controlled inputs that can alter acceptance."""
 
@@ -582,14 +637,14 @@ def _configuration_fingerprint(
         "acceptance_version": ACCEPTANCE_VERSION,
         "acceptance_evidence_version": ACCEPTANCE_EVIDENCE_VERSION,
         "evaluation_harness_version": EVALUATION_HARNESS_VERSION,
-        "category_prompt_version": CATEGORY_SEMANTIC_PROMPT_VERSION,
-        "category_guidance": list(_CATEGORY_GUIDANCE),
-        "authoritative_response_schema": _CATEGORY_RESPONSE_SCHEMA,
-        "provider_schema_projection": _MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
-        "provider_message_version": MAIAGENT_CATEGORY_MESSAGE_VERSION,
-        "category_schema_version": CATEGORY_SEMANTIC_SCHEMA_VERSION,
-        "provider_identifier": MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER,
-        "helper_version": MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION,
+        "category_prompt_version": prompt_identity,
+        "category_guidance": list(guidance),
+        "authoritative_response_schema": authoritative_response_schema,
+        "provider_schema_projection": provider_schema_projection,
+        "provider_message_version": response_contract_identity,
+        "category_schema_version": schema_identity,
+        "provider_identifier": provider_identifier,
+        "helper_version": helper_version,
         "prepared_request_payloads": [
             json.loads(spec["request_payload"])
             for spec in specs
@@ -604,6 +659,124 @@ def _configuration_fingerprint(
         },
     }
     return hashlib.sha256(_canonical_json(material).encode("utf-8")).hexdigest()
+
+
+def _configuration_fingerprint(
+    specs: list[dict[str, Any]],
+    oracle_mapping: Mapping[tuple[str, str], Mapping[str, str]],
+) -> str:
+    """Fingerprint the configuration currently selected by this harness."""
+
+    return _configuration_fingerprint_for(
+        specs,
+        oracle_mapping,
+        guidance=_CATEGORY_GUIDANCE,
+        prompt_identity=CATEGORY_SEMANTIC_PROMPT_VERSION,
+        response_contract_identity=MAIAGENT_CATEGORY_MESSAGE_VERSION,
+        schema_identity=CATEGORY_SEMANTIC_SCHEMA_VERSION,
+        authoritative_response_schema=_CATEGORY_RESPONSE_SCHEMA,
+        provider_schema_projection=_MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
+        provider_identifier=MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER,
+        helper_version=MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION,
+    )
+
+
+def _target_configuration_identity(
+    specs: list[dict[str, Any]],
+    oracle_mapping: Mapping[tuple[str, str], Mapping[str, str]],
+) -> CategoryAcceptanceConfigurationIdentity:
+    """Resolve the configuration the acceptance target is about to exercise."""
+
+    return CategoryAcceptanceConfigurationIdentity(
+        guidance_digest=_guidance_digest(_CATEGORY_GUIDANCE),
+        prompt_identity=CATEGORY_SEMANTIC_PROMPT_VERSION,
+        response_contract_identity=MAIAGENT_CATEGORY_MESSAGE_VERSION,
+        schema_identity=CATEGORY_SEMANTIC_SCHEMA_VERSION,
+        configuration_fingerprint=_configuration_fingerprint(specs, oracle_mapping),
+    )
+
+
+def _resolve_checked_in_production_configuration(
+    *,
+    category_config: MaiAgentCategorySemanticProviderConfig | None = None,
+) -> tuple[
+    CategoryAcceptanceConfigurationIdentity,
+    list[dict[str, Any]],
+    dict[tuple[str, str], dict[str, str]],
+    dict[str, Any],
+]:
+    """Resolve production identity through the production Category factory.
+
+    This function intentionally reads the live checked-in Classifier owner and
+    provider module, not the acceptance module's imported or overridden
+    aliases.  The factory is constructed with no transport invocation.
+    """
+
+    production_classifier = build_maiagent_category_classifier(
+        config=category_config,
+        environ={} if category_config is None else None,
+    )
+    if not isinstance(production_classifier, Classifier):
+        raise TypeError("production Category factory did not return Classifier")
+
+    _, fixtures = _load_population()
+    specs, oracle, counts = _phase_a_reconcile(fixtures)
+    identity = CategoryAcceptanceConfigurationIdentity(
+        guidance_digest=_guidance_digest(classifier_module._CATEGORY_GUIDANCE),
+        prompt_identity=category_provider_module.CATEGORY_SEMANTIC_PROMPT_VERSION,
+        response_contract_identity=category_provider_module.MAIAGENT_CATEGORY_MESSAGE_VERSION,
+        schema_identity=category_provider_module.CATEGORY_SEMANTIC_SCHEMA_VERSION,
+        configuration_fingerprint=_configuration_fingerprint_for(
+            specs,
+            oracle,
+            guidance=classifier_module._CATEGORY_GUIDANCE,
+            prompt_identity=category_provider_module.CATEGORY_SEMANTIC_PROMPT_VERSION,
+            response_contract_identity=category_provider_module.MAIAGENT_CATEGORY_MESSAGE_VERSION,
+            schema_identity=category_provider_module.CATEGORY_SEMANTIC_SCHEMA_VERSION,
+            authoritative_response_schema=category_provider_module._CATEGORY_RESPONSE_SCHEMA,
+            provider_schema_projection=category_provider_module._MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
+            provider_identifier=category_provider_module.MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER,
+            helper_version=category_provider_module.MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION,
+        ),
+    )
+    return identity, specs, oracle, counts
+
+
+def enforce_category_configuration_binding(
+    *,
+    production: CategoryAcceptanceConfigurationIdentity,
+    target: CategoryAcceptanceConfigurationIdentity,
+    mode: str,
+) -> dict[str, Any]:
+    """Fail closed for a formal seal; explicitly label candidate experiments."""
+
+    if mode not in {FORMAL_CURRENT_CONFIGURATION_SEAL, CANDIDATE_EXPERIMENT}:
+        raise ValueError(f"unsupported Category acceptance mode: {mode}")
+
+    fields = (
+        "guidance_digest",
+        "prompt_identity",
+        "response_contract_identity",
+        "schema_identity",
+        "configuration_fingerprint",
+    )
+    mismatches = {
+        field: {
+            "production": getattr(production, field),
+            "target": getattr(target, field),
+        }
+        for field in fields
+        if getattr(production, field) != getattr(target, field)
+    }
+    if mode == CANDIDATE_EXPERIMENT:
+        return {
+            "mode": mode,
+            "status": "CANDIDATE_EXPERIMENT_ALLOWED",
+            "mismatches": mismatches,
+        }
+    if mismatches:
+        raise CategoryConfigurationBindingError(mismatches)
+    return {"mode": mode, "status": "PASS", "mismatches": {}}
 
 
 _ZERO_ERROR_ROUND_EXPECTATIONS = {
@@ -652,7 +825,9 @@ _PLACEHOLDER_VALUES = frozenset({"", "unknown", "n/a", "unavailable"})
 
 def _mapping(value: object, label: str) -> Mapping[str, Any]:
     if not isinstance(value, Mapping):
-        raise ValueError(f"deployment snapshot {label} must be an object")
+        raise ValueError(  # noqa: TRY004
+            f"deployment snapshot {label} must be an object"
+        )
     return value
 
 
@@ -690,11 +865,11 @@ def _validate_deployment_snapshot(value: Mapping[str, Any]) -> dict[str, Any]:
 
     platform = _mapping(snapshot["platform"], "platform")
     _check_fields(platform, _DEPLOYMENT_PLATFORM_FIELDS, frozenset(), "platform")
-    provider = _observed_string(platform["provider"], "platform.provider")
+    _provider = _observed_string(platform["provider"], "platform.provider")
     instance_id = _observed_string(
         platform["chatbot_instance_id"], "platform.chatbot_instance_id"
     )
-    model_identifier = _observed_string(
+    _model_identifier = _observed_string(
         platform["model_identifier"], "platform.model_identifier"
     )
 
@@ -715,7 +890,7 @@ def _validate_deployment_snapshot(value: Mapping[str, Any]) -> dict[str, Any]:
         frozenset(),
         "structured_output",
     )
-    schema = _mapping(structured_output["schema"], "structured_output.schema")
+    _schema = _mapping(structured_output["schema"], "structured_output.schema")
 
     unavailable = snapshot["unavailable_platform_facts"]
     if not isinstance(unavailable, list) or any(
@@ -875,7 +1050,7 @@ def _report_has_complete_live_evidence(report: Mapping[str, Any]) -> bool:
 
 
 def _assess_final_seal_batch(
-    round_reports: list[Mapping[str, Any]],
+    round_reports: Sequence[Mapping[str, Any]],
     *,
     require_current_evidence: bool,
 ) -> dict[str, Any]:
@@ -972,14 +1147,14 @@ def _assess_final_seal_batch(
     return result
 
 
-def assess_final_seal_batch(round_reports: list[Mapping[str, Any]]) -> dict[str, Any]:
+def assess_final_seal_batch(round_reports: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     """Assess current live rounds; unbound reports cannot be current PASS evidence."""
 
     return _assess_final_seal_batch(round_reports, require_current_evidence=True)
 
 
 def assess_historical_final_seal_batch(
-    round_reports: list[Mapping[str, Any]],
+    round_reports: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
     """Assess the frozen historical seal without treating it as current acceptance."""
 
@@ -1027,7 +1202,8 @@ def _citation_details(
             spans = [span for span in canonical_spans if span.get("candidate_id") == candidate_id][:count]
             for span in spans:
                 canonical_spans.remove(span)
-            resolved = bool(spans) and isinstance(source, str)
+            resolved_source = source if bool(spans) and isinstance(source, str) else None
+            resolved = resolved_source is not None
             start = spans[0]["start"] if resolved else None
             end = spans[-1]["end"] if resolved else None
             details.append(
@@ -1037,7 +1213,13 @@ def _citation_details(
                     "sentence_ids": sentence_ids,
                     "resolved_start": start,
                     "resolved_end": end,
-                    "resolved_substring": source[start:end] if resolved else None,
+                    "resolved_substring": (
+                        resolved_source[start:end]
+                        if isinstance(resolved_source, str)
+                        and isinstance(start, int)
+                        and isinstance(end, int)
+                        else None
+                    ),
                 }
             )
     concerns: list[dict[str, Any]] = []
@@ -1234,7 +1416,7 @@ def _acceptance_evidence_for(
     configuration_fingerprint: str,
     deployment_fingerprint: str | None,
     runtime_identity_fingerprint: str | None,
-    transport_attempts: list[Mapping[str, Any]],
+    transport_attempts: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
     """Bind exact request, proposal, validation and deployment evidence."""
 

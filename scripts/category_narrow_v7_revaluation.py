@@ -12,22 +12,21 @@ import argparse
 import ast
 import hashlib
 import json
-from pathlib import Path
 import subprocess
 import sys
 import urllib.parse
 import urllib.request
+from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import scripts.category_narrow_live_control as live  # noqa: E402
-import scripts.category_semantic_evaluation as evaluation  # noqa: E402
-from src.weekly_report import category_semantic_provider as provider  # noqa: E402
-from src.weekly_report import classifier as classifier_module  # noqa: E402
-
+import scripts.category_narrow_live_control as live
+import scripts.category_semantic_evaluation as evaluation
+from src.weekly_report import category_semantic_provider as provider
+from src.weekly_report import classifier as classifier_module
 
 V7_GUIDANCE_COMMIT = "8aa225d74cf8afae52c77368298949586fc31db9"
 V7_GUIDANCE_PATH = "src/weekly_report/classifier.py"
@@ -47,7 +46,7 @@ def _recover_exact_v7_guidance() -> tuple[str, ...]:
     completed = subprocess.run(
         [
             "git",
-            f"-c",
+            "-c",
             f"safe.directory={ROOT}",
             "show",
             f"{V7_GUIDANCE_COMMIT}:{V7_GUIDANCE_PATH}",
@@ -67,6 +66,8 @@ def _recover_exact_v7_guidance() -> tuple[str, ...]:
         else:
             continue
         if any(isinstance(target, ast.Name) and target.id == "_CATEGORY_GUIDANCE" for target in targets):
+            if node.value is None:
+                continue
             value = ast.literal_eval(node.value)
             if not isinstance(value, tuple) or not all(isinstance(item, str) for item in value):
                 raise RuntimeError("recovered v7 guidance is not an exact string tuple")
@@ -97,7 +98,9 @@ def _fetch_readback(config: provider.MaiAgentCategorySemanticProviderConfig) -> 
         raw = response.read()
     data = json.loads(raw.decode("utf-8"))
     if not isinstance(data, dict):
-        raise ValueError("MaiAgent chatbot read-back must be a JSON object")
+        raise ValueError(  # noqa: TRY004
+            "MaiAgent chatbot read-back must be a JSON object"
+        )
     return data, raw
 
 
@@ -120,7 +123,10 @@ def main(argv: list[str] | None = None) -> int:
 
     guidance = _recover_exact_v7_guidance()
     control_specs, control_oracle = live._control_population()
-    new_contract_baseline_fingerprint = live._full_configuration_fingerprint()
+    production_identity, _, _, _ = evaluation._resolve_checked_in_production_configuration(
+        category_config=config
+    )
+    new_contract_baseline_fingerprint = production_identity.configuration_fingerprint
     if new_contract_baseline_fingerprint == "695988ff08b5aa792c68abc6dc4ad243aea88f01fe6b2b7caa10ca174006d749":
         raise SystemExit("response_contract_identity_did_not_change")
 
@@ -128,6 +134,18 @@ def main(argv: list[str] | None = None) -> int:
     v7_configuration_fingerprint = live._full_configuration_fingerprint()
     if v7_configuration_fingerprint == new_contract_baseline_fingerprint:
         raise SystemExit("recovered_v7_guidance_did_not_change_configuration")
+    candidate_identity = evaluation.CategoryAcceptanceConfigurationIdentity(
+        guidance_digest=evaluation._guidance_digest(evaluation._CATEGORY_GUIDANCE),
+        prompt_identity=evaluation.CATEGORY_SEMANTIC_PROMPT_VERSION,
+        response_contract_identity=evaluation.MAIAGENT_CATEGORY_MESSAGE_VERSION,
+        schema_identity=evaluation.CATEGORY_SEMANTIC_SCHEMA_VERSION,
+        configuration_fingerprint=v7_configuration_fingerprint,
+    )
+    candidate_binding = evaluation.enforce_category_configuration_binding(
+        production=production_identity,
+        target=candidate_identity,
+        mode=evaluation.CANDIDATE_EXPERIMENT,
+    )
 
     readback, raw_readback = _fetch_readback(config)
     snapshot = live._snapshot_from_readback(readback)
@@ -160,6 +178,10 @@ def main(argv: list[str] | None = None) -> int:
         "hard_cap_category_calls": HARD_CAP,
         "configuration_fingerprint": v7_configuration_fingerprint,
         "new_contract_baseline_configuration_fingerprint": new_contract_baseline_fingerprint,
+        "configuration_mode": evaluation.CANDIDATE_EXPERIMENT,
+        "production_configuration_identity": production_identity.as_mapping(),
+        "candidate_configuration_identity": candidate_identity.as_mapping(),
+        "configuration_binding": candidate_binding,
         "guidance_identity": V7_PROMPT_IDENTITY,
         "guidance_source_commit": V7_GUIDANCE_COMMIT,
         "response_contract_identity": provider.MAIAGENT_CATEGORY_MESSAGE_VERSION,
@@ -207,6 +229,10 @@ def main(argv: list[str] | None = None) -> int:
         "verdict": live._overall_conclusion(round_summaries),
         "configuration_fingerprint": v7_configuration_fingerprint,
         "new_contract_baseline_configuration_fingerprint": new_contract_baseline_fingerprint,
+        "configuration_mode": evaluation.CANDIDATE_EXPERIMENT,
+        "production_configuration_identity": production_identity.as_mapping(),
+        "candidate_configuration_identity": candidate_identity.as_mapping(),
+        "configuration_binding": candidate_binding,
         "guidance_identity": V7_PROMPT_IDENTITY,
         "guidance_source_commit": V7_GUIDANCE_COMMIT,
         "response_contract_identity": provider.MAIAGENT_CATEGORY_MESSAGE_VERSION,
