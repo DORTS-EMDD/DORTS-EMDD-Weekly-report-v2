@@ -396,7 +396,7 @@ disclosed as a technical gap.
 
 ```text
 EVENT_HELPER_CITATION = SOURCE_REF + SENTENCE_ID (Category, Taxonomy, Reportability)
-CATEGORY_SCHEMA_VERSION = category-proposal-v5
+CATEGORY_SCHEMA_VERSION = category-proposal-v6
 CATEGORY_PROMPT_VERSION = category-principal-action-v6
 TAXONOMY_SCHEMA_VERSION = taxonomy-semantic-proposal-v2
 TAXONOMY_PROMPT_VERSION = taxonomy-principal-body-v3
@@ -4614,6 +4614,9 @@ OPTIONAL_DESCRIPTIVE_SUBTYPE = YES
 
 Classifier 唯一負責 `primary_category`、`subtype` 及 `classification_reason`。
 Subtype 只描述已分類事件的性質，不形成新的 workflow lane 或第二個 Category。
+`CATEGORY_ASSIGNED` 的 subtype 是選用的描述 metadata，必須是字串或 `null`；
+`CATEGORY_UNRESOLVED` 的 subtype 必須是 `null`。Subtype 的文字內容與 lexical
+style 不屬於 Category Domain Rule，也不會單獨否決正確的 primary Category。
 
 輸出狀態為：
 
@@ -4757,13 +4760,15 @@ Rule.
     also for signalling, control, communication or power equipment.
   * Non-transport services on board, as well as at a station, are not
     `OPERATIONAL_CHANGE`.
-  * The subtype guidance states the schema's existing pattern.
+  * Subtype remains optional descriptive metadata. Assigned values are strings or
+    null, unresolved values are null, and lexical style is not a Category Domain
+    Rule.
 * **Open user decision (`BLOCKED_USER_DECISION`).** Whether a safety drill or
   training is `OPERATIONAL_CHANGE` (operational governance) or has no
   Category-defining action. Section L does not say, and v6 only says it is
   not technical development.
 * **Observation.** A Category proposal violation's TechnicalGap
-  `failure_class` names the failed predicate (`SUBTYPE_FORMAT`,
+  `failure_class` names the failed predicate (`SUBTYPE_TYPE`,
   `CATEGORY_ID`, `CATEGORY_STATE`, `RESOLUTION_REASON`, `RESPONSE_SHAPE`,
   `UNRESOLVED_ASSIGNMENT`, `CITATION_INVALID`); `PROPOSAL_INVALID` remains
   for anything else. The decision is unchanged.

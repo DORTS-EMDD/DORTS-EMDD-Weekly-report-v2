@@ -779,13 +779,8 @@ class CategoryResult:
                 raise ValueError("CATEGORY_ASSIGNED requires primary_category_id")
             if self.primary_category != category_id.display_label:
                 raise ValueError("primary_category must match the canonical display label")
-            if self.subtype is not None and (
-                not isinstance(self.subtype, str)
-                or not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", self.subtype)
-            ):
-                raise ValueError(
-                    "CATEGORY_ASSIGNED subtype must be snake_case when present"
-                )
+            if self.subtype is not None and not isinstance(self.subtype, str):
+                raise ValueError("CATEGORY_ASSIGNED subtype must be a string or null")
             if self.classification_reason != f"PRINCIPAL_ACTION_{category_id.value}":
                 raise ValueError("classification_reason must identify the principal action")
             if resolution_reason is not None:

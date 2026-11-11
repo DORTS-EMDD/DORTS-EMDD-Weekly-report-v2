@@ -296,11 +296,6 @@ class GoldenContractTests(unittest.TestCase):
                 self.assertEqual(expected["primary_category"], self.CATEGORY_LABELS[category_id])
                 if expected["subtype"] is not None:
                     self.assertIsInstance(expected["subtype"], str, fixture["case_id"])
-                    self.assertRegex(
-                        expected["subtype"],
-                        r"^[a-z][a-z0-9_]{0,63}$",
-                        fixture["case_id"],
-                    )
                 self.assertTrue(expected["classification_reason"], fixture["case_id"])
                 self.assertEqual(expected["category_resolution_reason"], "NONE", fixture["case_id"])
             elif state == "CATEGORY_UNRESOLVED":

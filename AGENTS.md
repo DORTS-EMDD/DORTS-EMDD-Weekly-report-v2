@@ -571,7 +571,7 @@ Transport retry 與 semantic correction 必須分開計算。
     * 訓練、演練，以及關於技術的會議、交流、展覽都不是技術新知；依既有規定的處分不是規範變動。
     * 已安裝系統的通車前或驗收測試仍是專案步驟。
     * 車上的非運輸服務不是營運動態。
-    * subtype 須以英文字母開頭。
+    * subtype 是選用描述 metadata；CATEGORY_ASSIGNED 可為字串或 null，CATEGORY_UNRESOLVED 必須為 null，字串格式不作為 Category Domain Rule。
   * Category 提案違約時，技術缺口簽章寫出失敗的檢查（只作觀測）。Golden G99～G101。
   * Validator：以中黑點連接的數字沒有讀法，不作依據。
   * Scope 被拒提案的 ID 形狀記入 selection audit v3（不含原文，不參與決策）。

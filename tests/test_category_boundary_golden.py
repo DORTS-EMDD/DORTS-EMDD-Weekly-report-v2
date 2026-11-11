@@ -82,12 +82,13 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         self.assertIn("statements, criticisms, demands or questions about an action", guidance)
         self.assertIn("NO_CATEGORY_DEFINING_ACTION unless the evidence shows another listed principal action", guidance)
         # RC-66: one qualified definition, the closed set of listed actions,
-        # on-board non-transport services, and the schema's subtype pattern.
+        # on-board non-transport services, and non-decision subtype metadata.
         self.assertNotIn("technical deployments, and substantive technical development", guidance)
         self.assertIn("A Category applies only when the principal action is itself one of the actions its definition lists", guidance)
         self.assertIn("are not TECHNICAL_DEVELOPMENT", guidance)
         self.assertIn("at a station or on board a train that is not transport service", guidance)
-        self.assertIn("starts with a letter a-z", guidance)
+        self.assertIn("its wording and lexical style are not Category decisions", guidance)
+        self.assertNotIn("starts with a letter a-z", guidance)
         self.assertIn("even when the tested system is signalling, train control, communication or power equipment", guidance)
         self.assertNotIn("future tense does not make it an unadopted recommendation", guidance)
         self.assertNotIn("passenger-facing service", guidance)

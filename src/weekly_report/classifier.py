@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
@@ -52,7 +51,7 @@ _CATEGORY_GUIDANCE = (
     "NO_UNIQUE_PRINCIPAL_ACTION applies when evidence consistently establishes multiple equal independent Category-defining actions but no unique principal action can be identified; sources need not contradict each other.",
     "Material disagreement about the category-defining action, or multiple equal independent actions without one principal action, requires CATEGORY_UNRESOLVED with the corresponding reason above.",
     "When CATEGORY_ASSIGNED, category_resolution_reason must be null.",
-    "Subtype is optional descriptive metadata, may be null when no useful subtype is needed, and never changes the primary Category. When present it matches the response schema pattern: lowercase snake_case that starts with a letter a-z, followed only by letters a-z, digits and underscores (spell out a leading number, for example fifth_generation_network_deployment, not 5g_network_deployment).",
+    "Subtype is optional descriptive metadata, may be null when no useful subtype is needed, and never changes the primary Category. When present it is a descriptive string only; its wording and lexical style are not Category decisions.",
     "Event identity is already decided. Do not merge or split Event Groups. Ignore discovery metadata, report period, taxonomy, and Reportability.",
 )
 
@@ -331,13 +330,10 @@ def _validate_response(
     if state is CategoryState.CATEGORY_ASSIGNED:
         if category_id is None:
             raise InvalidCategorySemanticResponse("assigned response requires a Category ID", predicate="CATEGORY_ID")
-        if subtype is not None and (
-            not isinstance(subtype, str)
-            or not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", subtype)
-        ):
+        if subtype is not None and not isinstance(subtype, str):
             raise InvalidCategorySemanticResponse(
-                "assigned response subtype must be snake_case when present",
-                predicate="SUBTYPE_FORMAT",
+                "assigned response subtype must be a string or null",
+                predicate="SUBTYPE_TYPE",
             )
         if resolution_reason is not None:
             raise InvalidCategorySemanticResponse("assigned response cannot carry a resolution reason", predicate="RESOLUTION_REASON")

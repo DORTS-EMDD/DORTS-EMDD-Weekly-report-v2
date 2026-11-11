@@ -1,0 +1,56 @@
+{
+  "configuration_fingerprint": "6282f2cb1495b6759fc4f7d81b6bad088fb609e97e6321772be80a3376259690",
+  "control_set": [
+    "G100",
+    "G101",
+    "G93",
+    "G66"
+  ],
+  "control_set_justification": {
+    "G100": "locked pre-opening signalling boundary",
+    "G101": "locked operating-subway technology deployment boundary",
+    "G66": "adjacent operating timetable control against universal technology precedence",
+    "G93": "adjacent pre-opening test control against technical pollution"
+  },
+  "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+  "expected_outcomes": {
+    "G100": {
+      "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+      "category_state": "CATEGORY_UNRESOLVED"
+    },
+    "G101": {
+      "category_state": "CATEGORY_ASSIGNED",
+      "primary_category_id": "TECHNICAL_DEVELOPMENT"
+    },
+    "G66": {
+      "category_state": "CATEGORY_ASSIGNED",
+      "primary_category_id": "OPERATIONAL_CHANGE"
+    },
+    "G93": {
+      "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+      "category_state": "CATEGORY_UNRESOLVED"
+    }
+  },
+  "guidance_identity": "category-principal-action-v7",
+  "guidance_source_commit": "8aa225d74cf8afae52c77368298949586fc31db9",
+  "hard_cap_category_calls": 12,
+  "new_category_semantic_calls_before_plan": 0,
+  "new_contract_baseline_configuration_fingerprint": "cdb7b3a625d076fd6d55dedbfba33203f572b58c1ffbd1af5484b12d4f84a5d7",
+  "old_v7_formal_acceptance": "REJECTED",
+  "planned_logical_category_calls": 12,
+  "planned_rounds": 3,
+  "platform_review": {
+    "PLATFORM_CONTEXT_MEMORY_STATUS": "PASS",
+    "PLATFORM_MODEL_STATUS": "PASS",
+    "PLATFORM_ROLE_STATUS": "PASS",
+    "PLATFORM_SCHEMA_STATUS": "PASS",
+    "PLATFORM_TOOLS_KNOWLEDGE_STATUS": "PASS",
+    "ROLE_FORBIDDEN_MARKERS": ""
+  },
+  "production_report_run": "NO",
+  "readback_sha256": "408bba4176658814f6177b83845295c8822684de6f6ddc2e16dc09927ea6f98f",
+  "response_contract_identity": "category-full-response-contract-v3",
+  "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+  "same_runtime_helper_binding": "PROVEN",
+  "schema_identity": "category-proposal-v6"
+}

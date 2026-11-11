@@ -34,10 +34,10 @@ from .maiagent_transport import (
 
 
 CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v6"
-CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v5"
+CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v6"
 MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION = "maiagent-chatbot-adapter-v2"
 MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER = "maiagent-chatbot-completions"
-MAIAGENT_CATEGORY_MESSAGE_VERSION = "category-full-response-contract-v2"
+MAIAGENT_CATEGORY_MESSAGE_VERSION = "category-full-response-contract-v3"
 _MAIAGENT_ENV_API_BASE = "MAIAGENT_API_BASE"
 _MAIAGENT_ENV_API_KEY = "MAIAGENT_API_KEY"
 _MAIAGENT_ENV_STRUCTURED_HELPER_CHATBOT_ID = "MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID"
@@ -101,13 +101,7 @@ _CATEGORY_RESPONSE_SCHEMA: dict[str, Any] = {
                 "subtype": {
                     "anyOf": [
                         {"type": "null"},
-                        # `$` may match before a final line terminator. This
-                        # lookahead requires the subtype to consume the true
-                        # end of the string, matching Classifier.fullmatch.
-                        {
-                            "type": "string",
-                            "pattern": "^[a-z][a-z0-9_]{0,63}(?![\\s\\S])",
-                        },
+                        {"type": "string"},
                     ]
                 },
                 "category_resolution_reason": {"type": "null"},

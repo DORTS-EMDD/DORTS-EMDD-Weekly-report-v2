@@ -144,8 +144,9 @@ def _top_level_assignment_count(module, name):
 
 
 class CategorySemanticProviderTests(unittest.TestCase):
-    def test_authoritative_v4_schema_and_five_field_contract(self):
-        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v5")
+    def test_authoritative_v6_schema_and_five_field_contract(self):
+        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v6")
+        self.assertEqual(MAIAGENT_CATEGORY_MESSAGE_VERSION, "category-full-response-contract-v3")
         Draft202012Validator.check_schema(_CATEGORY_RESPONSE_SCHEMA)
         validator = Draft202012Validator(_CATEGORY_RESPONSE_SCHEMA)
         expected_fields = {
@@ -187,8 +188,6 @@ class CategorySemanticProviderTests(unittest.TestCase):
             "valid_name",
             "a1",
             "a" * 64,
-        )
-        invalid_subtypes = (
             "valid\n",
             "valid\r",
             "valid\r\n",
@@ -198,6 +197,12 @@ class CategorySemanticProviderTests(unittest.TestCase):
             "valid-name",
             "",
             "a" * 65,
+        )
+        invalid_subtypes = (
+            5,
+            True,
+            [],
+            {},
         )
 
         for subtype in valid_subtypes + invalid_subtypes:
@@ -219,7 +224,7 @@ class CategorySemanticProviderTests(unittest.TestCase):
                     subtype in valid_subtypes,
                 )
 
-    def test_v4_schema_rejects_legacy_fields_and_invalid_state_shapes(self):
+    def test_v6_schema_rejects_legacy_fields_and_invalid_state_shapes(self):
         validator = Draft202012Validator(_CATEGORY_RESPONSE_SCHEMA)
         record = _record()
         assigned = _proposal(record)
@@ -235,7 +240,7 @@ class CategorySemanticProviderTests(unittest.TestCase):
                 assigned,
                 category_resolution_reason=CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION.value,
             ),
-            "invalid-subtype": dict(assigned, subtype="Invalid-Subtype"),
+            "invalid-subtype-type": dict(assigned, subtype=5),
             "unresolved-with-category": dict(
                 unresolved,
                 primary_category_id=CategoryId.PROCUREMENT.value,
@@ -546,7 +551,7 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
         self.assertEqual(result.primary_category_id, CategoryId.PROCUREMENT)
         self.assertIsNone(result.subtype)
         self.assertEqual(result.provenance["provider_identifier"], MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER)
-        self.assertEqual(result.provenance["schema_version"], "category-proposal-v5")
+        self.assertEqual(result.provenance["schema_version"], "category-proposal-v6")
         self.assertEqual(result.provenance["prompt_version"], MAIAGENT_CATEGORY_MESSAGE_VERSION)
         self.assertEqual(
             result.provenance["helper_version"],
@@ -688,7 +693,7 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
         self.assertEqual(len(transport.calls), 1)
 
     def test_maiagent_schema_projection_is_derived_from_the_authoritative_schema(self):
-        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v5")
+        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v6")
         self.assertEqual(
             _MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
             build_maiagent_category_schema(_CATEGORY_RESPONSE_SCHEMA),

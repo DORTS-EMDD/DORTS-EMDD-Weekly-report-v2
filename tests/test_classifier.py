@@ -153,11 +153,11 @@ class ClassifierTests(unittest.TestCase):
             self.assertEqual(result.subtype, "pilot")
             self.assertIsNone(result.category_resolution_reason)
 
-    def test_assigned_subtype_is_optional_and_pattern_applies_when_present(self):
+    def test_assigned_subtype_is_optional_descriptive_metadata_when_string(self):
         record = _record("C1", "The operator formally awarded a contract.")
         group = _group((record,))
 
-        for subtype in (None, "award"):
+        for subtype in (None, "award", "5g_network_deployment", "Network Deployment", ""):
             with self.subTest(subtype=subtype):
                 result = Classifier(
                     _Helper(
@@ -186,16 +186,16 @@ class ClassifierTests(unittest.TestCase):
                 event_id="event-1",
                 primary_category_id=CategoryId.PROCUREMENT,
                 primary_category=CategoryId.PROCUREMENT.display_label,
-                subtype="Invalid-Subtype",
+                subtype=5,
                 classification_reason="PRINCIPAL_ACTION_PROCUREMENT",
             )
 
-    def test_invalid_non_null_assigned_subtype_fails_closed(self):
+    def test_non_string_assigned_subtype_fails_closed(self):
         record = _record("C1", "The operator formally awarded a contract.")
         classifier = Classifier(
             _Helper(
                 lambda request: _assigned_response(
-                    request, CategoryId.PROCUREMENT, "Invalid-Subtype"
+                    request, CategoryId.PROCUREMENT, 5
                 )
             )
         )
@@ -517,8 +517,7 @@ class ClassifierTests(unittest.TestCase):
             return response
 
         cases = (
-            ("SUBTYPE_FORMAT", lambda request: assigned(request, subtype="5g_network_deployment")),
-            ("SUBTYPE_FORMAT", lambda request: assigned(request, subtype="Network Deployment")),
+            ("SUBTYPE_TYPE", lambda request: assigned(request, subtype=5)),
             ("CATEGORY_ID", lambda request: assigned(request, primary_category_id="TECHNOLOGY")),
             ("RESOLUTION_REASON", lambda request: assigned(request, category_resolution_reason="NO_CATEGORY_DEFINING_ACTION")),
             ("RESPONSE_SHAPE", lambda request: {**assigned(request), "explanation": "extra"}),
