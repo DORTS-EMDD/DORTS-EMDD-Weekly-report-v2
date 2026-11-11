@@ -134,8 +134,8 @@ schema, Golden outcome, deployment, or production logic was changed in
 response to the failure.
 
 ```text
-COMMIT = 06cd71ad835dbaf1b95dfd90a3d6d963c162b2c3 (accepted configuration)
-PUSH_STATUS = pushed non-force to release/report-quality-wip; formal-failure evidence pending
+COMMIT = 06cd71ad835dbaf1b95dfd90a3d6d963c162b2c3 (accepted configuration); formal-failure evidence a1c67af1de39567599b90d82558b76de942da7a1
+PUSH_STATUS = pushed non-force to release/report-quality-wip
 FULL_CATEGORY_SEAL_REQUIRED_NEXT = YES, after the failure is resolved by an authorized contract decision
 REAL_PRODUCTION_VALIDATED = YES (narrow Helper acceptance only; no production report)
 RELEASE_READY = NO
