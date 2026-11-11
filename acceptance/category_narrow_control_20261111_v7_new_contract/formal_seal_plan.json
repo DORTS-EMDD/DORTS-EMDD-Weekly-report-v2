@@ -1,0 +1,694 @@
+{
+  "acceptance_evidence_version": "category-acceptance-evidence-v1",
+  "acceptance_version": "category-v4-final-seal-v2",
+  "accepted_head": "c8c5c0e27bfffac61126d1a7d27c56785496311b",
+  "boundary_extension_case_count": 10,
+  "boundary_extension_formal_population_excluded": true,
+  "boundary_extension_manifest": "golden/category_boundary_manifest.json",
+  "boundary_extension_narrow_control": {
+    "controls": [
+      "G100",
+      "G101",
+      "G93",
+      "G66"
+    ],
+    "evidence": "acceptance/category_narrow_control_20261111_v7_new_contract",
+    "result": "PASS / PASS / PASS for each control"
+  },
+  "category_reached_fixture_count": 52,
+  "category_reached_fixtures": 52,
+  "configuration_fingerprint": "6282f2cb1495b6759fc4f7d81b6bad088fb609e97e6321772be80a3376259690",
+  "deployment_changed": false,
+  "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+  "deployment_snapshot_contract_version": "category-deployment-snapshot-v1",
+  "evaluation_harness_version": "category-semantic-evaluation-v4",
+  "expected_configuration_fingerprint": "6282f2cb1495b6759fc4f7d81b6bad088fb609e97e6321772be80a3376259690",
+  "formal_seal_case_count": 85,
+  "formal_seal_group_count": 53,
+  "formal_seal_population_source": "golden/manifest.json plus category_semantic_evaluation._phase_a_reconcile; golden/category_boundary_manifest.json is an explicit EXTENSION excluded from the locked formal population",
+  "guidance_identity": "category-principal-action-v7",
+  "guidance_source_commit": "8aa225d74cf8afae52c77368298949586fc31db9",
+  "new_category_semantic_calls_before_plan": 0,
+  "planned_groups_per_round": 53,
+  "planned_logical_calls": 159,
+  "planned_rounds": 3,
+  "platform_review": {
+    "PLATFORM_CONTEXT_MEMORY_STATUS": "PASS",
+    "PLATFORM_MODEL_STATUS": "PASS",
+    "PLATFORM_ROLE_STATUS": "PASS",
+    "PLATFORM_SCHEMA_STATUS": "PASS",
+    "PLATFORM_TOOLS_KNOWLEDGE_STATUS": "PASS",
+    "ROLE_FORBIDDEN_MARKERS": ""
+  },
+  "population": [
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_id": "G03",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "32c2fc3a7ad074f3a01e20b9b2f79b7c4483c15b19d5ea2c3d86d2aaaa389391"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_id": "G04",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "323effe1e65a956dfa83de3acaeac1367f6ccb76eb329b3ca0751ba6c5411cba"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_id": "G05",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "44b866cf5cc594d4cbd17b80c363f046d16d976487794ec2e057d9f1777c0314"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "INCIDENT"
+      },
+      "fixture_id": "G06",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "b0fd72dc47d9339049d7ba5a7534ce87908acd3e02c07043f9cbc3894a9986f0"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "INCIDENT"
+      },
+      "fixture_id": "G07",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "98458730496dd83a38e84bafa5fe69eff70e87011c9a937380272b019f2777e1"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE"
+      },
+      "fixture_id": "G08",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "5b4cb632576da6801d2a187aa5d6333b9adb498ac8e6eff1450295c5a417efc0"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE"
+      },
+      "fixture_id": "G09",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "0c1ff580cbefda2fb9bc7bcf782cffeaad70781a81b1582e7ad946cc460a131a"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G10",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "1f5b53a7d390e392b802b9ccda3ac951e131fb6883d462703e0814564aac5cf0"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G11",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "1b8be03362cb1892c56e6c9e3040130d59b38a7374d422d3c247459473146187"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "INCIDENT"
+      },
+      "fixture_id": "G12",
+      "member_candidate_ids": [
+        "source-1",
+        "source-2"
+      ],
+      "request_payload_sha256": "c4c29858b220cb4b2981ed04ea7cf762a69a5b3edbb4992b1593e349897c294d"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G13",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "50605423c93476955b9df89e22ae36d3291ef38abfaf2d734f36322409e54ca6"
+    },
+    {
+      "event_group_id": "evaluation-event-2",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G13",
+      "member_candidate_ids": [
+        "source-2"
+      ],
+      "request_payload_sha256": "43d2038c5e30c60e798b89ed653c20c4529112accb0f60e9d918a48f8c5d198d"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "INCIDENT"
+      },
+      "fixture_id": "G16",
+      "member_candidate_ids": [
+        "source-1",
+        "source-2"
+      ],
+      "request_payload_sha256": "ef2a3d4d91d9e00a93a4e5fba4709d2523f6c93ccfe85410f41e11ffe3d91162"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_id": "G17",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "3bc3298542249dc442c3e876f2225044f8873bc5a927fe3abd27c08a70b9f2de"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G19",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "ae9794812a9bb2c8d8d591139e26f14b654dbade8dddb23fde78565caf95b698"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G20",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "a2bdc61d5aa25d13451416874f49f61d8d02c9e2662166905d6f40c97491ff3e"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G21",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "d9a29799e8f3c59b3c82df0c9d0153e0028e1aedf7d40a55dae5f794cb5add92"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_id": "G49",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "332ac27039edff2b38949bd3d43490c1ebcf58e1754268aa38f02e869caa8c57"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_id": "G50",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "b65727102ccfc0de09acddf4e98934bdb237a9e0472298e638053593a369e2cb"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_id": "G51",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "9674efca0e370f56e1eb67c897bb19195738f6f4012b7219bcee959fcf3ddbae"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "INCIDENT"
+      },
+      "fixture_id": "G52",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "2f86e39ee1778ea3cba5846cec28a4bd40cb0ffac4cc24deb630189f41eaeef5"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "INCIDENT"
+      },
+      "fixture_id": "G53",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "1dc89664e89dc029ab2d10120d38d0cf2f6f0738e50fbaa70855919dc785c493"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE"
+      },
+      "fixture_id": "G54",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "53b5430b7a789be36b7f86889761de357c1a17bba09ace96d4a4ad61b52819a9"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE"
+      },
+      "fixture_id": "G55",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "2426f337f4d52ef7cdb1f0fdad101c532c52e2563ae1db223249504bd5c8260e"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G56",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "7573b7f0a80e2bb7d07ab06a9f19fe34e2a81842629b1faba53a6b019ba4efaf"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G57",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "467d0181231e47b105f356e2d901a29bcf7f1d6dc0da3dc134e52562b7d3409a"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G58",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "e6fe1d8b61c9740225fac19851507438d40146b1cd2b272b3fcf798f85f80fa5"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G59",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "40e471e8cafa3ec392f48ad443cb04e72a6cbb71e7525a0da1c091dca5327a31"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G60",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "70ef99a14af57ed404128ad1012573c5cd17634655fe285adbbbea8fe8acb286"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G61",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "ab6e4cd49fd84720f686de31ab6b0e31a7e1532a054315b2c89cbf5998921679"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G62",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "6d58ad733eef259166e1c2905160f58761fc610d5f450cc1fc1c242bdc5d572f"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G63",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "1b631c9df248b4fdd02329922869e53adba4db65f6514b8373ba514bd1c904ba"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_id": "G64",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "fcf36e81563e2c0f3bc0e257c7548dd0febfb2daa8b0b3a61d50ae936a9086ac"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE"
+      },
+      "fixture_id": "G65",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "d3f5635db5f87c160028bbe2dc0116305aa2eceb8fe248920479a52e2a4fe011"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE"
+      },
+      "fixture_id": "G66",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "4b60a473188ddefb3353c3f2d212e723f195326a122fd831db5ba1b52e7a5763"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE"
+      },
+      "fixture_id": "G67",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "03240ab87be6d036c0a539f8c5c64b9bf8609fb3b30ae3daf3cdaf2d695fc030"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_id": "G68",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "d0def9d6c8fda3afee096b5be59d69df035fb5efdc0765f9a21d2b2c303fd968"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "NORMATIVE_CHANGE"
+      },
+      "fixture_id": "G69",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "392705c413c4e664284edb7bf37320261efc69863578063a75ba6ababf300a38"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "NORMATIVE_CHANGE"
+      },
+      "fixture_id": "G70",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "69adfaf81ac52f8dedfe4820eca02f7bef40cb4a74c2f3734b0574930f9314ec"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "NORMATIVE_CHANGE"
+      },
+      "fixture_id": "G71",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "196cd5fee58b5ee654df5aa9b9bc09ccb97349257ed0b024dfe9ac5fd527c3f9"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "NORMATIVE_CHANGE"
+      },
+      "fixture_id": "G72",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "cb2ee062f51ae2c69386dba183d1e67e2eb266a628d1076a89f55d87e0d7c00b"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "NORMATIVE_CHANGE"
+      },
+      "fixture_id": "G73",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "360f6e19e20c73ae281f53bfcfca37a7d542785dad009cee3a4ee0329779bc18"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "NORMATIVE_CHANGE"
+      },
+      "fixture_id": "G74",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "733b8d22e82a704c9bea495a222aaecb350c40c757f1de3982ac44bb7324b572"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "RECOMMENDATION_WITHOUT_ADOPTED_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_id": "G75",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "493ec51ce5d9143a6589ba2bbbcbc309a3ed662a2ee81207811e95cebbe7c270"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "RECOMMENDATION_WITHOUT_ADOPTED_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_id": "G76",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "d288b9ed03b9432b766a86bd617477f7f350a3308ec111c901e9c7d76d76fef3"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G77",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "af17f9b76c31edc5943a0681589f919403c82de4f3f3b0387f3a56ccb8b625e8"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_id": "G78",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "a5952600420ac9cc4f798c3b3ff1bcd13af1d3fafed78cd8086771826f9e9972"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_id": "G79",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "5611b0941b389c0569c0ef7f4f21c2a9e4624f56d3af6816c87743515a30c898"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE"
+      },
+      "fixture_id": "G80",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "9540c33906672dec01208c2ae0df55a072f4f5905790fbcfaa3e94ff9e0261dc"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "CONFLICTING_CATEGORY_DEFINING_CLAIMS",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_id": "G81",
+      "member_candidate_ids": [
+        "source-1",
+        "source-2"
+      ],
+      "request_payload_sha256": "5e0d184f2fee1c89c3df9b325cdabad67cca4f122cbaf7e99a1775f18c5e58b6"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "NO_UNIQUE_PRINCIPAL_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_id": "G82",
+      "member_candidate_ids": [
+        "source-1",
+        "source-2"
+      ],
+      "request_payload_sha256": "02d702dc6aa3b4a89a479f0b30b7ad632cd43512a3a8069973be63d1f7b40214"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_id": "G84",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "29e364e8821228ba49704341789c30e6a081a0da9a19ae03ccd6dc7b8a70c173"
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "PROCUREMENT"
+      },
+      "fixture_id": "G85",
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "request_payload_sha256": "ad43fabe62e29463162f0bc0d91471a472a1f7c8c4d5d65821c5b3da5d2ff019"
+    }
+  ],
+  "prior_accepted_deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+  "production_report_run": "NO",
+  "replacement_rounds": false,
+  "response_contract_identity": "category-full-response-contract-v3",
+  "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+  "same_runtime_helper_binding": "PROVEN",
+  "schema_identity": "category-proposal-v6",
+  "semantic_retry_for_preferred_result": false,
+  "total_golden_fixtures": 85
+}

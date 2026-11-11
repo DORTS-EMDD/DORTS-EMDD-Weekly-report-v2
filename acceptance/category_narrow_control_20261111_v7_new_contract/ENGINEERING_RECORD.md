@@ -1,7 +1,7 @@
 # Category subtype-contract engineering record
 
-Status: WIP; current configuration is eligible for formal Category sealing, but
-the seal and production report are intentionally not run in this task.
+Status: WIP; the formal current-configuration Category seal was attempted and
+failed closed in round 1. No production report was run.
 
 ## Identity and decision
 
@@ -85,13 +85,58 @@ event/country/language special case, retry/voting, or EventIdentity change was
 added. G100/G101/G93/G66 and all Golden primary outcomes remain unchanged.
 
 The remaining blocker is procedural: the formal current-configuration Category
-live seal is required before any production report rerun. EventIdentity remains
-outside this task and its separate RC66-R7 decision path is unchanged.
+live seal was attempted against the current formal population and failed on
+three Category-state mismatches. EventIdentity remains outside this task and
+its separate RC66-R7 decision path is unchanged.
+
+## Formal seal attempt
+
+The current contract explicitly fixes the formal population at 85 Golden
+fixtures, 52 Category-reaching fixtures, and 53 Event Groups for three rounds.
+`golden/category_boundary_manifest.json` explicitly marks G92-G101 as an
+`EXTENSION` excluded from the locked formal population; their G100/G101/G93/G66
+behavior was already covered by the separate narrow control and was not
+silently omitted from this review.
 
 ```text
-COMMIT = 06cd71ad835dbaf1b95dfd90a3d6d963c162b2c3
-PUSH_STATUS = pushed non-force to release/report-quality-wip
-FULL_CATEGORY_SEAL_REQUIRED_NEXT = YES
+FORMAL_SEAL_POPULATION_SOURCE = golden/manifest.json + _phase_a_reconcile
+FORMAL_SEAL_CASE_COUNT = 85 fixtures (52 reached Category)
+FORMAL_SEAL_GROUP_COUNT = 53
+PLANNED_ROUNDS = 3
+PLANNED_LOGICAL_CALLS = 159
+CONFIGURATION_FINGERPRINT = 6282f2cb1495b6759fc4f7d81b6bad088fb609e97e6321772be80a3376259690
+DEPLOYMENT_FINGERPRINT = ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7
+RUNTIME_HELPER_BINDING = PROVEN
+ROUND_1 = FINDINGS (53/53 calls; 53/53 evidence chains complete)
+ROUND_2 = NOT_RUN
+ROUND_3 = NOT_RUN
+ACTUAL_LOGICAL_CALLS = 53
+TRANSPORT_ATTEMPTS = 53
+TRANSPORT_RETRIES = 0
+UNSCOREABLE_CALLS = 0
+CLASSIFIER_INVALID_RESPONSE_COUNT = 0
+CATEGORY_STATE_MISMATCH_COUNT = 3
+PRIMARY_CATEGORY_MISMATCH_COUNT = 0
+RESOLUTION_REASON_MISMATCH_COUNT = 0
+EARLIEST_FAILURE = G03, G64 and G78 returned CATEGORY_UNRESOLVED / NO_CATEGORY_DEFINING_ACTION while Golden expects CATEGORY_ASSIGNED / TECHNICAL_DEVELOPMENT
+REPLACEMENT_ROUNDS = NO
+PRODUCTION_REPORT_RUN = NO
+CATEGORY_FORMAL_SEAL = FAIL
+CURRENT_CONFIGURATION_FORMALLY_SEALED = NO
+```
+
+The canonical local round evidence is preserved at
+`docs/category-v4-final-seal/category-final-seal-round1.json` (ignored local
+evidence per the architecture contract). The predeclared population and the
+fail assessment are retained in `formal_seal_plan.json` and
+`formal_seal_assessment.json` beside this record. No guidance, contract,
+schema, Golden outcome, deployment, or production logic was changed in
+response to the failure.
+
+```text
+COMMIT = 06cd71ad835dbaf1b95dfd90a3d6d963c162b2c3 (accepted configuration)
+PUSH_STATUS = pushed non-force to release/report-quality-wip; formal-failure evidence pending
+FULL_CATEGORY_SEAL_REQUIRED_NEXT = YES, after the failure is resolved by an authorized contract decision
 REAL_PRODUCTION_VALIDATED = YES (narrow Helper acceptance only; no production report)
 RELEASE_READY = NO
 ```
