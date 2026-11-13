@@ -1,7 +1,8 @@
 """MaiAgent Structured Helper adapter for the Classifier's Category proposal.
 
 The adapter has no Category authority. It sends only CategorySemanticRequest,
-returns a strict structured proposal, and records non-decision provenance.
+returns strict cited action/lifecycle observations, and records non-decision
+provenance. The Classifier owns the Category mapping and terminal result.
 """
 
 from __future__ import annotations
@@ -16,11 +17,13 @@ from urllib.parse import quote, urlsplit
 from .classifier import (
     CategorySemanticHelperResult,
     CategorySemanticRequest,
+    _CATEGORY_ACTION_KINDS,
+    _CATEGORY_ADOPTION_STATUSES,
+    _CATEGORY_LIFECYCLE_RELATIONS,
+    _CATEGORY_SUBJECT_KINDS,
     Classifier,
     InvalidCategorySemanticResponse,
-    _DOMAIN_UNRESOLVED_REASONS,
 )
-from .contracts import CategoryId, CategoryResolutionReason, CategoryState
 from .maiagent_transport import (
     MaiAgentHttpResponse,
     MaiAgentJsonHttpTransport,
@@ -33,11 +36,11 @@ from .maiagent_transport import (
 )
 
 
-CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v6"
-CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v6"
-MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION = "maiagent-chatbot-adapter-v2"
+CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v7"
+CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-action-lifecycle-proposal-v1"
+MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION = "maiagent-chatbot-adapter-v3"
 MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER = "maiagent-chatbot-completions"
-MAIAGENT_CATEGORY_MESSAGE_VERSION = "category-full-response-contract-v3"
+MAIAGENT_CATEGORY_MESSAGE_VERSION = "category-action-lifecycle-response-contract-v1"
 _MAIAGENT_ENV_API_BASE = "MAIAGENT_API_BASE"
 _MAIAGENT_ENV_API_KEY = "MAIAGENT_API_KEY"
 _MAIAGENT_ENV_STRUCTURED_HELPER_CHATBOT_ID = "MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID"
@@ -57,68 +60,29 @@ _CITATION_SCHEMA: dict[str, Any] = {
     },
     "required": ["source_ref", "sentence_ids"],
 }
+_ACTION_PROPOSAL_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "action_id": {"type": "string", "minLength": 1},
+        "action_kind": {"type": "string", "enum": list(_CATEGORY_ACTION_KINDS)},
+        "subject_kind": {"type": "string", "enum": list(_CATEGORY_SUBJECT_KINDS)},
+        "lifecycle_relation": {"type": "string", "enum": list(_CATEGORY_LIFECYCLE_RELATIONS)},
+        "adoption_status": {"type": "string", "enum": list(_CATEGORY_ADOPTION_STATUSES)},
+        "citations": {"type": "array", "minItems": 1, "items": _CITATION_SCHEMA},
+    },
+    "required": ["action_id", "action_kind", "subject_kind", "lifecycle_relation", "adoption_status", "citations"],
+}
 _CATEGORY_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
-        "category_state": {
-            "type": "string",
-            "enum": [CategoryState.CATEGORY_ASSIGNED.value, CategoryState.CATEGORY_UNRESOLVED.value],
-        },
-        "primary_category_id": {
-            "anyOf": [
-                {"type": "string", "enum": [item.value for item in CategoryId]},
-                {"type": "null"},
-            ]
-        },
+        "actions": {"type": "array", "items": _ACTION_PROPOSAL_SCHEMA},
+        "principal_action_id": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}]},
         "subtype": {"anyOf": [{"type": "string"}, {"type": "null"}]},
-        "category_resolution_reason": {
-            "anyOf": [
-                {
-                    "type": "string",
-                    "enum": sorted(reason.value for reason in _DOMAIN_UNRESOLVED_REASONS),
-                },
-                {"type": "null"},
-            ]
-        },
-        "citations": {"type": "array", "minItems": 1, "items": _CITATION_SCHEMA},
+        "examined_citations": {"type": "array", "minItems": 1, "items": _CITATION_SCHEMA},
     },
-    "required": [
-        "category_state",
-        "primary_category_id",
-        "subtype",
-        "category_resolution_reason",
-        "citations",
-    ],
-    "oneOf": [
-        {
-            "properties": {
-                "category_state": {"const": CategoryState.CATEGORY_ASSIGNED.value},
-                "primary_category_id": {
-                    "type": "string",
-                    "enum": [item.value for item in CategoryId],
-                },
-                "subtype": {
-                    "anyOf": [
-                        {"type": "null"},
-                        {"type": "string"},
-                    ]
-                },
-                "category_resolution_reason": {"type": "null"},
-            }
-        },
-        {
-            "properties": {
-                "category_state": {"const": CategoryState.CATEGORY_UNRESOLVED.value},
-                "primary_category_id": {"type": "null"},
-                "subtype": {"type": "null"},
-                "category_resolution_reason": {
-                    "type": "string",
-                    "enum": sorted(reason.value for reason in _DOMAIN_UNRESOLVED_REASONS),
-                },
-            },
-        },
-    ],
+    "required": ["actions", "principal_action_id", "subtype", "examined_citations"],
 }
 
 

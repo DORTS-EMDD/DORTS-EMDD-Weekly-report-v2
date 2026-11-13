@@ -1,0 +1,53 @@
+{
+  "answer_mode": "reply_mode=agent;agent_mode=normal;output_mode=text",
+  "context_memory_settings": {
+    "cross_conversation_lookback_days": 90,
+    "cross_conversation_search": false,
+    "file_workspace_available": true,
+    "file_workspace_mode": "none",
+    "file_workspace_status": {
+      "folder": null,
+      "state": null
+    },
+    "member_memory_injection": false,
+    "member_memory_write": false,
+    "vector_memory": false
+  },
+  "generation_settings": {
+    "agent_timeout_seconds": 600,
+    "custom_max_llm_output_tokens": null,
+    "enable_claude_stream_retry": false,
+    "enable_size_based_tool_result_truncation": false,
+    "max_agent_iterations": 20,
+    "thinking_config": null,
+    "tool_result_max_chars": 8000
+  },
+  "knowledge_base": {
+    "state": "none configured"
+  },
+  "platform": {
+    "chatbot_instance_id": "f10272a7-82b6-4a9d-a96c-719a5e4bcaa2",
+    "model_identifier": "GPT-6 Luna",
+    "provider": "MaiAgent"
+  },
+  "role_instruction": {
+    "content": "你是「國際捷運技術週報 AI 自動產生系統」的 Generic Stateless Structured Helper。\n你的唯一職責，是依每一次 request 中明確提供的完整任務指令、輸入資料與輸出契約，產生該次任務要求的 structured proposal。\n你不是任何 Domain Decision 的 authoritative owner。所有正式判斷、驗證與結果均由 Python 中對應的 authoritative owner 決定。\n每一次 request 均為獨立且自足的任務。不得使用、延續或推測其他 request、先前對話、記憶或外部資訊。\n你只能使用當次 request 明確提供的：\n- task identity\n- task-specific instructions\n- input payload\n- authoritative response contract / response schema\n不得使用或依賴：\n- 外部知識\n- 網路搜尋\n- RAG／知識庫\n- 工具\n- 其他對話內容\n- 先前對話記憶\n- 未包含於當次 request 的事實\n- 自行推測、翻譯、正規化或補充的資訊\n不得將前一次任務的規則、schema、欄位、判斷方式或輸出格式沿用至下一次 request。\n不得修改、重新推導或取代 Python 已有的 authoritative decision。\n不得自行建立：\n- fallback\n- retry\n- rescue\n- backfill\n- 缺失值補完\n- schema 修復\n- response repair\n- 未定義欄位\n如果資料不足、衝突或無法支持某項結果，必須依當次 request 所提供的 task-specific instructions 與 authoritative response contract 處理，不得自行猜測答案。\n輸出必須嚴格符合當次 request 提供的 authoritative response contract。\n若 contract 要求 JSON，只輸出一個合法 JSON object，不得加入前言、解釋、Markdown code fence、註解或其他文字。\n若本角色指令與當次 request 的 task-specific instructions 或 authoritative response contract 在任務內容或輸出格式上有差異，以當次 request 為準。\n任何 request 均不得授權你使用外部知識、搜尋、RAG、工具、其他對話、先前記憶或未提供資料來補充事實。"
+  },
+  "skills_tools": {
+    "selected": []
+  },
+  "snapshot_contract_version": "category-deployment-snapshot-v1",
+  "structured_output": {
+    "schema": {
+      "output_mode": "text",
+      "raw_output_format": null
+    }
+  },
+  "unavailable_platform_facts": [
+    "chatbot_configuration_revision",
+    "complete_generation_parameter_set",
+    "conversation_default_state",
+    "platform_schema_identity",
+    "platform_schema_version"
+  ]
+}

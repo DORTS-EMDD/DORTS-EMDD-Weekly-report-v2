@@ -70,26 +70,19 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
                 self.assertEqual(result.subtype, expected["subtype"])
 
     def test_prompt_carries_the_section_l_boundaries(self):
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v6")
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v7")
         guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
-        self.assertIn("principal action is a specific research result, prototype, pilot, experiment, applied test, deployment or substantive development of a technology, method or material itself", guidance)
-        for step in ("groundbreaking", "pre-opening or trial test runs", "commissioning and acceptance tests"):
-            self.assertIn(step, guidance)
-        self.assertIn("concerns the passenger transport service itself", guidance)
-        self.assertIn("A planned, expected or future tender, selection or award is not a procurement action", guidance)
-        self.assertIn("ridership counts or records", guidance)
-        self.assertIn("Operational governance actions govern a passenger service that is running", guidance)
-        self.assertIn("statements, criticisms, demands or questions about an action", guidance)
-        self.assertIn("NO_CATEGORY_DEFINING_ACTION unless the evidence shows another listed principal action", guidance)
-        # RC-66: one qualified definition, the closed set of listed actions,
-        # on-board non-transport services, and non-decision subtype metadata.
-        self.assertNotIn("technical deployments, and substantive technical development", guidance)
-        self.assertIn("A Category applies only when the principal action is itself one of the actions its definition lists", guidance)
-        self.assertIn("are not TECHNICAL_DEVELOPMENT", guidance)
-        self.assertIn("at a station or on board a train that is not transport service", guidance)
-        self.assertIn("its wording and lexical style are not Category decisions", guidance)
-        self.assertNotIn("starts with a letter a-z", guidance)
-        self.assertIn("even when the tested system is signalling, train control, communication or power equipment", guidance)
+        self.assertIn("return only advisory action/lifecycle observations", guidance)
+        self.assertIn("Do not return a Category ID, Category state, unresolved reason", guidance)
+        self.assertIn("one principal current or lifecycle action only when the Evidence supports a unique principal action", guidance)
+        self.assertIn("subject_kind is TECHNOLOGY_METHOD_MATERIAL and lifecycle_relation is TECHNOLOGY_ITSELF", guidance)
+        self.assertIn("PROJECT_DELIVERY or PRE_OPENING", guidance)
+        self.assertIn("A procurement action must have taken place", guidance)
+        self.assertIn("An unadopted recommendation is RECOMMENDATION", guidance)
+        self.assertIn("leave principal_action_id null", guidance)
+        self.assertIn("Do not infer from titles, snippets, discovery intent, publisher, URL", guidance)
+        self.assertIn("Subtype is optional descriptive metadata only", guidance)
+        self.assertNotIn("TECHNOLOGY > OPERATIONAL_CHANGE", guidance)
         self.assertNotIn("future tense does not make it an unadopted recommendation", guidance)
         self.assertNotIn("passenger-facing service", guidance)
 

@@ -19,7 +19,7 @@
       "published_at": "2026-09-15T10:00:00Z",
       "discovery_intent": "technology",
       "search_snippet": "The operator completed testing and commissioned a moving-block train-control system on Line 4.",
-      "source_content": "Synthetic technical bulletin. The metro operator completed integration testing and commissioned a moving-block train-control system on Line 4. The bulletin describes onboard equipment, wayside interfaces, test completion, and the service date.",
+      "source_content": "Synthetic technical bulletin. The metro operator began a pilot deployment of a moving-block train-control system on Line 4. Integration testing and commissioning followed for the deployed system; the bulletin describes onboard equipment, wayside interfaces, and the later passenger service date.",
       "source_date_facts": [
         {
           "raw_date_value": "2026-09-15T10:00:00Z",

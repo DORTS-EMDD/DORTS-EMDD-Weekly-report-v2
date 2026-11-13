@@ -396,8 +396,8 @@ disclosed as a technical gap.
 
 ```text
 EVENT_HELPER_CITATION = SOURCE_REF + SENTENCE_ID (Category, Taxonomy, Reportability)
-CATEGORY_SCHEMA_VERSION = category-proposal-v6
-CATEGORY_PROMPT_VERSION = category-principal-action-v6
+CATEGORY_SCHEMA_VERSION = category-action-lifecycle-proposal-v1
+CATEGORY_PROMPT_VERSION = category-principal-action-v7
 TAXONOMY_SCHEMA_VERSION = taxonomy-semantic-proposal-v2
 TAXONOMY_PROMPT_VERSION = taxonomy-principal-body-v3
 REPORTABILITY_SCHEMA_VERSION = reportability-semantic-proposal-v2
@@ -4643,6 +4643,15 @@ Category precedence、數值排名、關鍵字數量、新聞價值、importance
 category-defining actions，且無唯一 principal action，必須回
 `CATEGORY_UNRESOLVED`；Category 不得 merge 或 split events。
 
+Category 的 production owner boundary 是單一 Classifier decision mechanism。
+MaiAgent／semantic Helper 只能回傳由 Evidence citations 支持的 action、subject、
+lifecycle relation、adoption status 與 optional descriptive subtype observations；
+Helper 不得回傳 Category ID、Category state 或 unresolved reason。Classifier 驗證
+該 advisory proposal，依本節既有 action/lifecycle definitions 一次套用 mapping，
+建立唯一 terminal Category result。此 mapping 不是 precedence rule，也不以公告、
+future tense 或 passenger-facing benefit 單獨推定 adoption；future procurement、
+project/pre-opening lifecycle steps 與未採納 recommendation 仍依既有邊界處理。
+
 ### Category meanings and boundaries
 
 * **`TECHNICAL_DEVELOPMENT` / 技術新知**：principal action 是具體研究成果、
@@ -4749,7 +4758,7 @@ Rule.
   * Their subtypes describe the old line.
   * Activities about a technology match no listed action, so only the old
     catch-all admitted them.
-* **Prompt `category-principal-action-v6`.**
+* **Historical prompt `category-principal-action-v6`.**
   * `TECHNICAL_DEVELOPMENT` is defined once, with a technology, method or
     material itself as its subject.
   * A Category applies only when the principal action is one its definition
@@ -4776,8 +4785,19 @@ Rule.
   tests (both `NO_CATEGORY_DEFINING_ACTION`), and G101 5G deployment on
   operating lines (`TECHNICAL_DEVELOPMENT`, a false-negative guard).
 
+**Current owner correction (2026-11-13, offline; live acceptance pending).**
+The current versioned interface is `category-principal-action-v7` with
+`category-action-lifecycle-proposal-v1`. The Helper is advisory-only and returns
+structured action/lifecycle observations with sentence citations; it never returns
+the final Category state, ID, or unresolved reason. The Classifier is the sole
+owner that validates those observations and applies the existing §L mapping once.
+This preserves G100's pre-opening/project-step boundary and G101's operating-line
+technology-deployment boundary without adding a technology-over-operations
+precedence rule or a general announcement/adoption rule. No Domain Rule or Golden
+expected outcome is changed by this owner correction.
+
 ```text
-CATEGORY_PROMPT_VERSION = category-principal-action-v6 (RC-63, RC-65, RC-66; Live not validated)
+CATEGORY_PROMPT_VERSION = category-principal-action-v7 (RC-63, RC-65, RC-66; Live acceptance pending)
 SCOPE_PROMPT_VERSION = scope-event-target-system-v13 (RC-65: focus includes the occurrence sentence)
 TECHNICAL_DEVELOPMENT_REQUIRES = A TECHNOLOGY, METHOD OR MATERIAL AS THE SUBJECT
 PROJECT_STEPS_AND_STATISTICS = NO CATEGORY-DEFINING ACTION
@@ -4863,6 +4883,12 @@ TOTAL_PLANNED_LIVE_CALLS = 159
 ```
 
 每一 round 必須個別同時符合：
+
+以下 `LIVE_CALL_COUNT` 是每個 Event Group 的 logical Category proposal
+invocation 數；RC-6 的同一 invocation 內最多一次、相同 request 的 transport
+retry 不算第二個 logical call，並以獨立的 transport-attempt accounting 保留。
+因此「不得重試單一 Event Group」只禁止 semantic re-call、preferred-result
+retry、替換 case 或補跑 round，不禁止已由 RC-6 授權且分開計算的 transport retry。
 
 ```text
 LIVE_CALL_COUNT = 53

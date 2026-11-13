@@ -30,11 +30,17 @@ class _AssignedProcurementStub:
         self.call_count += 1
         self.payloads.append(request.as_payload())
         return {
-            "category_state": CategoryState.CATEGORY_ASSIGNED.value,
-            "primary_category_id": "PROCUREMENT",
+            "actions": [{
+                "action_id": "A1",
+                "action_kind": "PROCUREMENT_AWARD",
+                "subject_kind": "PROCUREMENT_ACTION",
+                "lifecycle_relation": "PROCUREMENT_LIFECYCLE",
+                "adoption_status": "COMPLETED",
+                "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
+            }],
+            "principal_action_id": "A1",
             "subtype": None,
-            "category_resolution_reason": None,
-            "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
+            "examined_citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
         }
 
 
@@ -393,6 +399,25 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
                             "proposal_sha256": "e" * 64,
                             "validated_result_sha256": "f" * 64,
                             "chain_sha256": "0" * 64,
+                            "transport_attempts": [
+                                {
+                                    "request_body_sha256": "d" * 64,
+                                    "status_code": 200,
+                                    "response_parse_status": "PARSEABLE_RESPONSE",
+                                    "retry_authorized": False,
+                                    "retry_reason": None,
+                                }
+                            ],
+                            "transport_accounting": {
+                                "status": "PASS",
+                                "attempt_count": 1,
+                                "retry_count": 0,
+                                "retry_reasons": [],
+                                "request_body_consistent": True,
+                                "final_response_parse_status": "PARSEABLE_RESPONSE",
+                                "unauthorized_retry": False,
+                                "failure": None,
+                            },
                         }
                     }
                     for _ in range(53)
@@ -400,6 +425,13 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
                 "ROUND_INDEX": index,
                 "LIVE_CALL_COUNT": 53,
                 "HTTP_200_COUNT": 53,
+                "LOGICAL_CALL_COUNT": 53,
+                "TRANSPORT_ATTEMPT_COUNT": 53,
+                "FINAL_HTTP_200_COUNT": 53,
+                "HTTP_200_ATTEMPT_COUNT": 53,
+                "AUTHORIZED_TRANSPORT_RETRY_COUNT": 0,
+                "UNAUTHORIZED_TRANSPORT_RETRY_COUNT": 0,
+                "TRANSPORT_ACCOUNTING_STATUS": "PASS",
                 "CLASSIFIER_ACCEPTED_COUNT": 53,
                 "CLASSIFIER_INVALID_COUNT": 0,
                 "CATEGORY_STATE_MISMATCH_COUNT": 0,
@@ -451,6 +483,54 @@ class CategorySemanticEvaluationHarnessTests(unittest.TestCase):
             blocked["BLOCKER"],
             "DEPLOYMENT_PROVENANCE_IS_NOT_OBSERVED_AND_FROZEN",
         )
+
+    def test_transport_retry_accounting_accepts_authorized_rc6_retry(self):
+        request_hash = "a" * 64
+        accounting = evaluation._transport_attempt_accounting(
+            [
+                {
+                    "request_body_sha256": request_hash,
+                    "status_code": 200,
+                    "response_parse_status": "UNPARSEABLE_RESPONSE",
+                    "retry_authorized": True,
+                    "retry_reason": "UNPARSEABLE_RESPONSE",
+                },
+                {
+                    "request_body_sha256": request_hash,
+                    "status_code": 200,
+                    "response_parse_status": "PARSEABLE_RESPONSE",
+                    "retry_authorized": False,
+                    "retry_reason": None,
+                },
+            ]
+        )
+        self.assertEqual(accounting["status"], "PASS")
+        self.assertEqual(accounting["retry_count"], 1)
+        self.assertEqual(accounting["retry_reasons"], ["UNPARSEABLE_RESPONSE"])
+
+    def test_transport_retry_accounting_rejects_parseable_result_retry(self):
+        request_hash = "b" * 64
+        accounting = evaluation._transport_attempt_accounting(
+            [
+                {
+                    "request_body_sha256": request_hash,
+                    "status_code": 200,
+                    "response_parse_status": "PARSEABLE_RESPONSE",
+                    "retry_authorized": False,
+                    "retry_reason": None,
+                },
+                {
+                    "request_body_sha256": request_hash,
+                    "status_code": 200,
+                    "response_parse_status": "PARSEABLE_RESPONSE",
+                    "retry_authorized": False,
+                    "retry_reason": None,
+                },
+            ]
+        )
+        self.assertEqual(accounting["status"], "FINDINGS")
+        self.assertTrue(accounting["unauthorized_retry"])
+        self.assertEqual(accounting["failure"], "UNAUTHORIZED_TRANSPORT_RETRY")
 
     def test_deployment_snapshot_validates_and_fingerprints_observed_contract(self):
         snapshot = _deployment_snapshot()

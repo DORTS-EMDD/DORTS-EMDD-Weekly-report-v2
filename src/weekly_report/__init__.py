@@ -31,6 +31,7 @@ from .contracts import (
     TemporalResult,
 )
 from .classifier import (
+    CategoryActionProposal,
     CategoryCitation,
     CategoryEvidenceSpan,
     CategorySemanticHelper,
@@ -73,6 +74,7 @@ from .reportability import Reportability
 
 __all__ = [
     "CanonicalCandidate",
+    "CategoryActionProposal",
     "CategoryCitation",
     "CategoryEvidenceSpan",
     "CategoryId",

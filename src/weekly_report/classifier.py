@@ -25,34 +25,90 @@ from .contracts import (
 
 
 _CATEGORY_GUIDANCE = (
-    "Classify the evidenced principal current action or lifecycle action of this one Event Group.",
-    "Choose exactly one canonical Category when one principal action is supported; otherwise return CATEGORY_UNRESOLVED.",
-    "Every semantic proposal, whether CATEGORY_ASSIGNED or CATEGORY_UNRESOLVED, must include at least one citation grounded in supplied evidence.",
-    "Each source has a source_ref (M1, M2, ...) and sentences with sentence_ids assigned by Python. Each citation names one supplied source_ref and the sentence_ids of that source that support the proposal. Citations support the proposal as a whole; do not label them support or conflict citations. Never copy or retype source text or identifiers into a citation.",
-    "INCIDENT covers an actual urban-rail accident, unexpected failure, safety incident, or cybersecurity incident. An actual passenger, staff, or public safety incident in an in-scope urban-rail context remains INCIDENT even when injury is minor or no train, system, evacuation, service, or project impact occurs.",
-    "Severity and report value do not determine Category; they belong to downstream Reportability.",
-    "OPERATIONAL_CHANGE covers actual passenger or revenue service openings, service or timetable or fare changes, operating-practice changes, evidenced operational disputes, and operational governance actions.",
-    "PROCUREMENT covers formal tenders, bid invitations, supplier selections, awards, exercised options, and equivalent formal procurement actions, including innovative, first-of-kind, AI, CBTC, cybersecurity, and pilot-purpose procurements.",
-    "NORMATIVE_CHANGE covers published or revised regulations, mandatory technical rules, standards, applicable formal guidance, operator-wide specifications, and formal draft or consultation procedures.",
-    "A technology name, equipment mention, procurement object, supplier award, or delivery alone is not technical development.",
-    "TECHNICAL_DEVELOPMENT requires that the principal action is a specific research result, prototype, pilot, experiment, applied test, deployment or substantive development of a technology, method or material itself. The steps of building or opening a line, station or depot are not technical development: groundbreaking, site preparation, construction progress, track or equipment installation, pre-opening or trial test runs, commissioning and acceptance tests, and inspections. Testing the installed vehicles or systems of a line, station or depot before its opening or for its acceptance is such a step even when the tested system is signalling, train control, communication or power equipment.",
-    "OPERATIONAL_CHANGE concerns the passenger transport service itself. A facility or service at a station or on board a train that is not transport service, such as a shop, clinic or booth, is not OPERATIONAL_CHANGE. Operational governance actions govern a passenger service that is running; the reporting, publicity, staffing or management of a project before its service opens is a project step, not OPERATIONAL_CHANGE.",
-    "A Category applies only when the principal action is itself one of the actions its definition lists. An activity that uses, teaches, exercises, presents, exhibits, discusses or enforces a technology, a service, a procurement or a rule, but is not itself one of the listed actions, does not take that Category: a training session or drill that uses equipment, and a meeting, exchange or exhibition about a technology, are not TECHNICAL_DEVELOPMENT; a penalty or enforcement decision under an existing rule is not NORMATIVE_CHANGE.",
-    "PROCUREMENT requires a formal procurement action that has taken place. A planned, expected or future tender, selection or award is not a procurement action.",
-    "Project steps and plans have no Category-defining action under any Category: approvals, route or land decisions, demolition and relocation, construction stages, test runs before opening, ridership counts or records, rankings, announcements of expected future openings or tenders, and statements, criticisms, demands or questions about an action (an earlier action that such a document describes as background is not its current action). Return CATEGORY_UNRESOLVED with NO_CATEGORY_DEFINING_ACTION unless the evidence shows another listed principal action, such as a passenger service opening, a formal tender or award, or a service change.",
-    "An ordinary passenger complaint, request, feedback record, or operator log does not by itself establish OPERATIONAL_CHANGE. Without evidenced operator adoption, a service change, a formal operational decision, or another Category-defining action, return CATEGORY_UNRESOLVED with NO_CATEGORY_DEFINING_ACTION.",
-    "A completed incident investigation or report whose current principal action is publishing substantive investigation or safety-governance findings, and which establishes no new normative rule, is OPERATIONAL_CHANGE. Do not classify it as INCIDENT only because it discusses an earlier incident or failure.",
-    "RECOMMENDATION_WITHOUT_ADOPTED_ACTION applies when evidence establishes a recommendation, proposal, or suggestion, but no competent authority or operator adopted the recommended action and no other Category-defining action controls the event.",
-    "NO_CATEGORY_DEFINING_ACTION applies when the supplied content establishes no Category-defining action. Do not use it as a generic substitute when evidence positively establishes an unadopted recommendation.",
-    "INSUFFICIENT_CATEGORY_EVIDENCE applies when the supplied evidence is insufficient to determine what Category-defining action occurred; this is distinct from evidence affirmatively establishing that no Category-defining action exists.",
-    "Recommendations without adoption, procurement-specific specifications, and citations of existing standards do not by themselves establish an operational dispute or normative change.",
-    "Do not rank categories, vote by keywords, infer from source order, or prefer a canonical source. Preserve each source and its claims separately.",
-    "CONFLICTING_CATEGORY_DEFINING_CLAIMS applies only when competing evidence disagrees about the action or event fact that determines Category itself and the supplied authoritative evidence cannot resolve the disagreement. Differences only in duration, count, magnitude, exact timing, or consequence extent are not Category conflicts when the Category-defining action remains the same.",
-    "NO_UNIQUE_PRINCIPAL_ACTION applies when evidence consistently establishes multiple equal independent Category-defining actions but no unique principal action can be identified; sources need not contradict each other.",
-    "Material disagreement about the category-defining action, or multiple equal independent actions without one principal action, requires CATEGORY_UNRESOLVED with the corresponding reason above.",
-    "When CATEGORY_ASSIGNED, category_resolution_reason must be null.",
-    "Subtype is optional descriptive metadata, may be null when no useful subtype is needed, and never changes the primary Category. When present it is a descriptive string only; its wording and lexical style are not Category decisions.",
-    "Event identity is already decided. Do not merge or split Event Groups. Ignore discovery metadata, report period, taxonomy, and Reportability.",
+    "Read the supplied authoritative substantive Evidence for this one already-grouped Event Group and return only advisory action/lifecycle observations.",
+    "Do not return a Category ID, Category state, unresolved reason, confidence, ranking, or final Category decision. The Python Classifier is the sole Category owner and will apply the contract after validating your observations.",
+    "Each source has a Python-assigned source_ref (M1, M2, ...) and sentence_ids. Every action observation and every examined-evidence citation must cite supplied source_ref and sentence_ids. Never copy or retype source text or identifiers into a citation.",
+    "Return each materially relevant current action as an action observation. Use one unique action_id per observation, action_kind from the supplied closed set, subject_kind, lifecycle_relation, adoption_status, and citations.",
+    "principal_action_id is the action_id of the one principal current or lifecycle action only when the Evidence supports a unique principal action. Use null when there is no unique principal action or the evidence is insufficient. Do not use ordering, category preference, source order, or keyword counts to choose it.",
+    "action_kind values describe evidence-grounded actions, not Categories: RESEARCH_RESULT, PROTOTYPE, PILOT, EXPERIMENT, APPLIED_TECHNICAL_TEST, DEPLOYMENT, SUBSTANTIVE_TECHNICAL_DEVELOPMENT, PASSENGER_SERVICE_OPENING, SERVICE_CHANGE, TIMETABLE_CHANGE, FARE_CHANGE, OPERATING_PRACTICE_CHANGE, OPERATIONAL_GOVERNANCE, OPERATIONAL_DISPUTE, INVESTIGATION_FINDINGS, INCIDENT, PROCUREMENT_TENDER, PROCUREMENT_BID_INVITATION, PROCUREMENT_SELECTION, PROCUREMENT_AWARD, PROCUREMENT_OPTION, NORMATIVE_CHANGE, RECOMMENDATION, PROJECT_STEP, FUTURE_PLAN, STATEMENT, STATISTICS, RANKING, BACKGROUND, CONFLICTING_ACTION_CLAIMS, UNKNOWN.",
+    "subject_kind values are TECHNOLOGY_METHOD_MATERIAL, PASSENGER_SERVICE, PROCUREMENT_ACTION, NORMATIVE_DOCUMENT, INCIDENT_SUBJECT, PROJECT, RECOMMENDATION, or OTHER. lifecycle_relation values are TECHNOLOGY_ITSELF, OPERATING_SERVICE, PROJECT_DELIVERY, PRE_OPENING, PROCUREMENT_LIFECYCLE, NORMATIVE_LIFECYCLE, INCIDENT_OCCURRENCE, BACKGROUND, or NONE. adoption_status values are COMPLETED, IMPLEMENTED, ADOPTED, FORMAL, PLANNED, RECOMMENDED, ANNOUNCED, NOT_APPLICABLE, or UNKNOWN.",
+    "A technology action is about the technology, method, or material itself only when subject_kind is TECHNOLOGY_METHOD_MATERIAL and lifecycle_relation is TECHNOLOGY_ITSELF. A pilot or deployment of technology on an operating urban-rail system remains an action about the technology itself. A later acceptance or commissioning observation does not erase an evidenced completed technology deployment.",
+    "Installation, integration, testing, commissioning, acceptance, inspections, trial runs, and equipment work that are merely steps of constructing, opening, accepting, or inspecting a line, station, or depot must be represented with PROJECT_DELIVERY or PRE_OPENING and must not be presented as a technology-itself deployment.",
+    "An activity that uses, teaches, exercises, presents, exhibits, discusses, or enforces a technology, service, procurement, or rule is not itself the corresponding listed action. A training session, drill, meeting, exchange, or exhibition must not be represented as a technology-itself action.",
+    "Passenger or revenue service openings and actual service, timetable, fare, operating-practice, dispute, or operational-governance actions concern a running passenger transport service; a station shop, clinic, booth, project publicity, staffing, or project management before opening does not.",
+    "A procurement action must have taken place. A planned, expected, or future tender, selection, or award is FUTURE_PLAN with PLANNED or ANNOUNCED adoption, not a completed procurement action.",
+    "A formal normative change may be a published or revised regulation, mandatory technical rule, standard, applicable formal guidance, operator-wide specification, or formal draft/consultation. Citing an existing standard, a recommendation, a procurement specification, a penalty under an existing rule, or ordinary advice is not a normative change.",
+    "An unadopted recommendation is RECOMMENDATION with RECOMMENDED or PLANNED adoption. A completed incident investigation or safety-governance report with no new normative rule is INVESTIGATION_FINDINGS, not the earlier incident.",
+    "Project steps, plans, statistics, rankings, statements, criticisms, demands, questions, and background-only actions have no Category-defining action. When the evidence contains no unique listed principal action, leave principal_action_id null and preserve all examined citations.",
+    "Do not infer from titles, snippets, discovery intent, publisher, URL, report period, taxonomy, Reportability, outside knowledge, or a language/event/country-specific rule. Event identity is already decided; do not merge or split Event Groups.",
+    "Subtype is optional descriptive metadata only. It may be null or a concise descriptive string, but it must not express a Category decision or change the action observations.",
+)
+
+
+_CATEGORY_ACTION_KINDS = (
+    "RESEARCH_RESULT",
+    "PROTOTYPE",
+    "PILOT",
+    "EXPERIMENT",
+    "APPLIED_TECHNICAL_TEST",
+    "DEPLOYMENT",
+    "SUBSTANTIVE_TECHNICAL_DEVELOPMENT",
+    "PASSENGER_SERVICE_OPENING",
+    "SERVICE_CHANGE",
+    "TIMETABLE_CHANGE",
+    "FARE_CHANGE",
+    "OPERATING_PRACTICE_CHANGE",
+    "OPERATIONAL_GOVERNANCE",
+    "OPERATIONAL_DISPUTE",
+    "INVESTIGATION_FINDINGS",
+    "INCIDENT",
+    "PROCUREMENT_TENDER",
+    "PROCUREMENT_BID_INVITATION",
+    "PROCUREMENT_SELECTION",
+    "PROCUREMENT_AWARD",
+    "PROCUREMENT_OPTION",
+    "NORMATIVE_CHANGE",
+    "RECOMMENDATION",
+    "PROJECT_STEP",
+    "FUTURE_PLAN",
+    "STATEMENT",
+    "STATISTICS",
+    "RANKING",
+    "BACKGROUND",
+    "CONFLICTING_ACTION_CLAIMS",
+    "UNKNOWN",
+)
+_CATEGORY_SUBJECT_KINDS = (
+    "TECHNOLOGY_METHOD_MATERIAL",
+    "PASSENGER_SERVICE",
+    "PROCUREMENT_ACTION",
+    "NORMATIVE_DOCUMENT",
+    "INCIDENT_SUBJECT",
+    "PROJECT",
+    "RECOMMENDATION",
+    "OTHER",
+)
+_CATEGORY_LIFECYCLE_RELATIONS = (
+    "TECHNOLOGY_ITSELF",
+    "OPERATING_SERVICE",
+    "PROJECT_DELIVERY",
+    "PRE_OPENING",
+    "PROCUREMENT_LIFECYCLE",
+    "NORMATIVE_LIFECYCLE",
+    "INCIDENT_OCCURRENCE",
+    "BACKGROUND",
+    "NONE",
+)
+_CATEGORY_ADOPTION_STATUSES = (
+    "COMPLETED",
+    "IMPLEMENTED",
+    "ADOPTED",
+    "FORMAL",
+    "PLANNED",
+    "RECOMMENDED",
+    "ANNOUNCED",
+    "NOT_APPLICABLE",
+    "UNKNOWN",
 )
 
 
@@ -148,14 +204,25 @@ class CategoryCitation:
 
 
 @dataclass(frozen=True, slots=True)
-class CategorySemanticResponse:
-    """Untrusted structured helper response; Classifier validates it."""
+class CategoryActionProposal:
+    """Untrusted, evidence-cited action/lifecycle observation from the Helper."""
 
-    category_state: CategoryState | str
-    primary_category_id: CategoryId | str | None = None
+    action_id: str
+    action_kind: str
+    subject_kind: str
+    lifecycle_relation: str
+    adoption_status: str
+    citations: tuple[CategoryCitation, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class CategorySemanticResponse:
+    """Untrusted advisory action observations; Classifier validates and decides."""
+
+    actions: tuple[CategoryActionProposal, ...] = ()
+    principal_action_id: str | None = None
     subtype: str | None = None
-    category_resolution_reason: CategoryResolutionReason | str | None = None
-    citations: tuple[CategoryCitation, ...] = ()
+    examined_citations: tuple[CategoryCitation, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,19 +278,23 @@ class CategoryProposalViolation(ProposalContractViolation):
 
 @dataclass(frozen=True, slots=True)
 class _ValidatedCategoryResponse:
-    category_state: CategoryState
-    primary_category_id: CategoryId | None
+    actions: tuple[CategoryActionProposal, ...]
+    principal_action_id: str | None
     subtype: str | None
-    category_resolution_reason: CategoryResolutionReason | None
-    citation_spans: tuple[CategoryEvidenceSpan, ...]
+    action_citation_spans: tuple[tuple[str, tuple[CategoryEvidenceSpan, ...]], ...]
+    examined_citation_spans: tuple[CategoryEvidenceSpan, ...]
 
 
 _RESPONSE_FIELDS = frozenset(
+    {"actions", "principal_action_id", "subtype", "examined_citations"}
+)
+_ACTION_FIELDS = frozenset(
     {
-        "category_state",
-        "primary_category_id",
-        "subtype",
-        "category_resolution_reason",
+        "action_id",
+        "action_kind",
+        "subject_kind",
+        "lifecycle_relation",
+        "adoption_status",
         "citations",
     }
 )
@@ -251,6 +322,8 @@ def _citation_from_value(value: object) -> CategoryCitation:
         raise InvalidCategorySemanticResponse("citation source_ref must be a string")
     if not isinstance(sentence_ids, (list, tuple)):
         raise InvalidCategorySemanticResponse("citation sentence_ids must be an array")
+    if not sentence_ids or not all(isinstance(sentence_id, str) and sentence_id for sentence_id in sentence_ids):
+        raise InvalidCategorySemanticResponse("citation sentence_ids must contain non-empty strings")
     return CategoryCitation(source_ref, tuple(sentence_ids))
 
 
@@ -278,17 +351,90 @@ def _parse_citations(
     return tuple(spans)
 
 
+def _category_action_from_value(value: object) -> CategoryActionProposal:
+    if isinstance(value, CategoryActionProposal):
+        action = value
+    else:
+        if not isinstance(value, Mapping) or frozenset(value) != _ACTION_FIELDS:
+            raise InvalidCategorySemanticResponse("action fields do not match schema", predicate="ACTION_SHAPE")
+        raw_citations = value["citations"]
+        if not isinstance(raw_citations, Sequence) or isinstance(raw_citations, (str, bytes, bytearray)):
+            raise InvalidCategorySemanticResponse("action citations must be an array", predicate="ACTION_CITATION")
+        try:
+            action = CategoryActionProposal(
+                action_id=value["action_id"],
+                action_kind=value["action_kind"],
+                subject_kind=value["subject_kind"],
+                lifecycle_relation=value["lifecycle_relation"],
+                adoption_status=value["adoption_status"],
+                citations=tuple(_citation_from_value(item) for item in raw_citations),
+            )
+        except (KeyError, TypeError) as exc:
+            raise InvalidCategorySemanticResponse("action fields have invalid types", predicate="ACTION_SHAPE") from exc
+    if (
+        not isinstance(action.action_id, str)
+        or not action.action_id
+        or not isinstance(action.action_kind, str)
+        or action.action_kind not in _CATEGORY_ACTION_KINDS
+        or not isinstance(action.subject_kind, str)
+        or action.subject_kind not in _CATEGORY_SUBJECT_KINDS
+        or not isinstance(action.lifecycle_relation, str)
+        or action.lifecycle_relation not in _CATEGORY_LIFECYCLE_RELATIONS
+        or not isinstance(action.adoption_status, str)
+        or action.adoption_status not in _CATEGORY_ADOPTION_STATUSES
+        or not action.citations
+        or not isinstance(action.citations, (list, tuple))
+        or not all(isinstance(citation, CategoryCitation) for citation in action.citations)
+    ):
+        raise InvalidCategorySemanticResponse("action observation is outside the advisory contract", predicate="ACTION_FIELDS")
+    return action
+
+
+def _parse_action_observations(
+    value: object,
+    request: CategorySemanticRequest,
+) -> tuple[tuple[CategoryActionProposal, ...], tuple[tuple[str, tuple[CategoryEvidenceSpan, ...]], ...]]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes, bytearray)):
+        raise InvalidCategorySemanticResponse("actions must be an array", predicate="ACTION_SHAPE")
+    actions: list[CategoryActionProposal] = []
+    action_spans: list[tuple[str, tuple[CategoryEvidenceSpan, ...]]] = []
+    action_ids: set[str] = set()
+    source_text = {source.candidate_id: source.substantive_content for source in request.sources}
+    refs = request.source_refs
+    for raw_action in value:
+        action = _category_action_from_value(raw_action)
+        if action.action_id in action_ids:
+            raise InvalidCategorySemanticResponse("action_id values must be unique", predicate="ACTION_ID")
+        action_ids.add(action.action_id)
+        spans: list[CategoryEvidenceSpan] = []
+        for raw_citation in action.citations:
+            candidate_id = refs.get(raw_citation.source_ref)
+            if candidate_id is None:
+                raise InvalidCategorySemanticResponse("action citation references an unknown source", predicate="CITATION_INVALID")
+            resolved = cited_spans(source_text[candidate_id], raw_citation.sentence_ids)
+            if resolved is None:
+                raise InvalidCategorySemanticResponse("action citation sentence_ids do not resolve", predicate="CITATION_INVALID")
+            for start, end in resolved:
+                span = CategoryEvidenceSpan(candidate_id, start, end)
+                if span not in spans:
+                    spans.append(span)
+        if not spans:
+            raise InvalidCategorySemanticResponse("action observation requires a citation", predicate="ACTION_CITATION")
+        actions.append(action)
+        action_spans.append((action.action_id, tuple(spans)))
+    return tuple(actions), tuple(action_spans)
+
+
 def _validate_response(
     raw_response: object,
     request: CategorySemanticRequest,
 ) -> _ValidatedCategoryResponse:
     if isinstance(raw_response, CategorySemanticResponse):
         payload = {
-            "category_state": raw_response.category_state,
-            "primary_category_id": raw_response.primary_category_id,
+            "actions": raw_response.actions,
+            "principal_action_id": raw_response.principal_action_id,
             "subtype": raw_response.subtype,
-            "category_resolution_reason": raw_response.category_resolution_reason,
-            "citations": raw_response.citations,
+            "examined_citations": raw_response.examined_citations,
         }
     elif isinstance(raw_response, Mapping):
         payload = raw_response
@@ -297,57 +443,24 @@ def _validate_response(
 
     if frozenset(payload) != _RESPONSE_FIELDS:
         raise InvalidCategorySemanticResponse("response fields do not match schema", predicate="RESPONSE_SHAPE")
-    try:
-        state = CategoryState(payload["category_state"])
-    except (TypeError, ValueError) as exc:
-        raise InvalidCategorySemanticResponse("invalid category_state", predicate="CATEGORY_STATE") from exc
-    if state not in {CategoryState.CATEGORY_ASSIGNED, CategoryState.CATEGORY_UNRESOLVED}:
-        raise InvalidCategorySemanticResponse("helper cannot return NOT_EVALUATED", predicate="CATEGORY_STATE")
-
-    raw_category_id = payload["primary_category_id"]
-    if raw_category_id is None:
-        category_id = None
-    else:
-        try:
-            category_id = CategoryId(raw_category_id)
-        except (TypeError, ValueError) as exc:
-            raise InvalidCategorySemanticResponse("invalid primary_category_id", predicate="CATEGORY_ID") from exc
-
+    actions, action_spans = _parse_action_observations(payload["actions"], request)
+    principal_action_id = payload["principal_action_id"]
+    if principal_action_id is not None and not isinstance(principal_action_id, str):
+        raise InvalidCategorySemanticResponse("principal_action_id must be a string or null", predicate="PRINCIPAL_ACTION")
+    if principal_action_id is not None and principal_action_id not in {action.action_id for action in actions}:
+        raise InvalidCategorySemanticResponse("principal_action_id must name a supplied action", predicate="PRINCIPAL_ACTION")
     subtype = payload["subtype"]
-    raw_reason = payload["category_resolution_reason"]
-    if raw_reason is None:
-        resolution_reason = None
-    else:
-        try:
-            resolution_reason = CategoryResolutionReason(raw_reason)
-        except (TypeError, ValueError) as exc:
-            raise InvalidCategorySemanticResponse("invalid category_resolution_reason", predicate="RESOLUTION_REASON") from exc
-
-    citation_spans = _parse_citations(payload["citations"], request)
-    if not citation_spans:
-        raise InvalidCategorySemanticResponse("a semantic outcome requires at least one citation")
-
-    if state is CategoryState.CATEGORY_ASSIGNED:
-        if category_id is None:
-            raise InvalidCategorySemanticResponse("assigned response requires a Category ID", predicate="CATEGORY_ID")
-        if subtype is not None and not isinstance(subtype, str):
-            raise InvalidCategorySemanticResponse(
-                "assigned response subtype must be a string or null",
-                predicate="SUBTYPE_TYPE",
-            )
-        if resolution_reason is not None:
-            raise InvalidCategorySemanticResponse("assigned response cannot carry a resolution reason", predicate="RESOLUTION_REASON")
-    else:
-        if category_id is not None or subtype is not None:
-            raise InvalidCategorySemanticResponse("unresolved response cannot carry an assigned Category", predicate="UNRESOLVED_ASSIGNMENT")
-        if resolution_reason not in _DOMAIN_UNRESOLVED_REASONS:
-            raise InvalidCategorySemanticResponse("unresolved response requires a domain reason", predicate="RESOLUTION_REASON")
+    if subtype is not None and not isinstance(subtype, str):
+        raise InvalidCategorySemanticResponse("subtype must be a string or null", predicate="SUBTYPE_TYPE")
+    examined_spans = _parse_citations(payload["examined_citations"], request)
+    if not examined_spans:
+        raise InvalidCategorySemanticResponse("examined_citations must contain at least one supported sentence", predicate="CITATION_INVALID")
     return _ValidatedCategoryResponse(
-        category_state=state,
-        primary_category_id=category_id,
+        actions=actions,
+        principal_action_id=principal_action_id,
         subtype=subtype,
-        category_resolution_reason=resolution_reason,
-        citation_spans=citation_spans,
+        action_citation_spans=action_spans,
+        examined_citation_spans=examined_spans,
     )
 
 
@@ -442,12 +555,123 @@ def _provider_provenance(value: object) -> dict[str, str]:
     }
 
 
+_TECHNICAL_ACTION_KINDS = frozenset(
+    {
+        "RESEARCH_RESULT",
+        "PROTOTYPE",
+        "PILOT",
+        "EXPERIMENT",
+        "APPLIED_TECHNICAL_TEST",
+        "DEPLOYMENT",
+        "SUBSTANTIVE_TECHNICAL_DEVELOPMENT",
+    }
+)
+_OPERATIONAL_ACTION_KINDS = frozenset(
+    {
+        "PASSENGER_SERVICE_OPENING",
+        "SERVICE_CHANGE",
+        "TIMETABLE_CHANGE",
+        "FARE_CHANGE",
+        "OPERATING_PRACTICE_CHANGE",
+        "OPERATIONAL_GOVERNANCE",
+        "OPERATIONAL_DISPUTE",
+        "INVESTIGATION_FINDINGS",
+    }
+)
+_PROCUREMENT_ACTION_KINDS = frozenset(
+    {
+        "PROCUREMENT_TENDER",
+        "PROCUREMENT_BID_INVITATION",
+        "PROCUREMENT_SELECTION",
+        "PROCUREMENT_AWARD",
+        "PROCUREMENT_OPTION",
+    }
+)
+_COMPLETED_ACTION_STATUSES = frozenset({"COMPLETED", "IMPLEMENTED", "ADOPTED", "FORMAL"})
+_PROJECT_LIFECYCLE_RELATIONS = frozenset({"PROJECT_DELIVERY", "PRE_OPENING", "BACKGROUND"})
+
+
+def _classify_action_observation(
+    action: CategoryActionProposal,
+) -> tuple[CategoryId | None, CategoryResolutionReason]:
+    """Apply the §L mapping to one validated, advisory action observation."""
+
+    if action.action_kind in _TECHNICAL_ACTION_KINDS:
+        if (
+            action.subject_kind != "TECHNOLOGY_METHOD_MATERIAL"
+            or action.lifecycle_relation in _PROJECT_LIFECYCLE_RELATIONS
+            or action.adoption_status in {"PLANNED", "RECOMMENDED", "ANNOUNCED", "UNKNOWN"}
+        ):
+            return None, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+        return CategoryId.TECHNICAL_DEVELOPMENT, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+
+    if action.action_kind in _OPERATIONAL_ACTION_KINDS:
+        if action.action_kind == "INVESTIGATION_FINDINGS":
+            if action.adoption_status in {"PLANNED", "RECOMMENDED", "ANNOUNCED", "UNKNOWN"}:
+                return None, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+            return CategoryId.OPERATIONAL_CHANGE, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+        if (
+            action.subject_kind != "PASSENGER_SERVICE"
+            or action.lifecycle_relation != "OPERATING_SERVICE"
+            or action.adoption_status not in _COMPLETED_ACTION_STATUSES
+        ):
+            return None, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+        return CategoryId.OPERATIONAL_CHANGE, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+
+    if action.action_kind in _PROCUREMENT_ACTION_KINDS:
+        if action.adoption_status not in _COMPLETED_ACTION_STATUSES:
+            return None, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+        return CategoryId.PROCUREMENT, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+
+    if action.action_kind == "NORMATIVE_CHANGE":
+        if (
+            action.subject_kind != "NORMATIVE_DOCUMENT"
+            or action.lifecycle_relation != "NORMATIVE_LIFECYCLE"
+            or action.adoption_status not in {"COMPLETED", "IMPLEMENTED", "ADOPTED", "FORMAL", "PLANNED"}
+        ):
+            return None, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+        return CategoryId.NORMATIVE_CHANGE, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+
+    if action.action_kind == "INCIDENT":
+        if action.lifecycle_relation != "INCIDENT_OCCURRENCE" or action.adoption_status in {"PLANNED", "RECOMMENDED", "ANNOUNCED", "UNKNOWN"}:
+            return None, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+        return CategoryId.INCIDENT, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+
+    if action.action_kind == "RECOMMENDATION":
+        return None, CategoryResolutionReason.RECOMMENDATION_WITHOUT_ADOPTED_ACTION
+    if action.action_kind == "CONFLICTING_ACTION_CLAIMS":
+        return None, CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS
+    if action.action_kind == "UNKNOWN":
+        return None, CategoryResolutionReason.INSUFFICIENT_CATEGORY_EVIDENCE
+    return None, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+
+
+def _unresolved_reason_without_principal(
+    actions: tuple[CategoryActionProposal, ...],
+) -> CategoryResolutionReason:
+    if any(action.action_kind == "RECOMMENDATION" for action in actions):
+        if all(action.action_kind in {"RECOMMENDATION", "FUTURE_PLAN", "STATEMENT", "BACKGROUND"} for action in actions):
+            return CategoryResolutionReason.RECOMMENDATION_WITHOUT_ADOPTED_ACTION
+    if any(action.action_kind == "UNKNOWN" for action in actions):
+        return CategoryResolutionReason.INSUFFICIENT_CATEGORY_EVIDENCE
+    if any(action.action_kind == "CONFLICTING_ACTION_CLAIMS" for action in actions):
+        return CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS
+    actionable = [
+        action
+        for action in actions
+        if action.action_kind not in {"PROJECT_STEP", "FUTURE_PLAN", "STATEMENT", "STATISTICS", "RANKING", "BACKGROUND"}
+    ]
+    if len(actionable) > 1:
+        return CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION
+    return CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+
+
 class Classifier:
     """Sole authoritative owner of Category for an eligible Event Group.
 
-    The injected semantic helper proposes a structured interpretation of the
-    supplied source evidence. This class validates the proposal and owns the
-    terminal state. A proposal it cannot validate raises
+    The injected semantic helper proposes cited action/lifecycle observations,
+    never a Category result. This class validates those observations, applies
+    the §L mapping once, and owns the terminal state. A proposal it cannot validate raises
     :class:`CategoryProposalViolation`, a disclosed technical gap (RC-16).
     """
 
@@ -508,23 +732,30 @@ class Classifier:
             raise violation
 
         provenance = {
-            "decision_basis": "constrained_semantic_helper",
+            "decision_basis": "classifier_authoritative_domain_mechanism",
+            "helper_proposal_role": "advisory_action_lifecycle_relationships",
             "source_candidate_ids": [source.candidate_id for source in request.sources],
-            # Kept as the stable internal provenance key. Under proposal v4 it
-            # means whole-proposal citations, with no support/conflict role split.
-            "validated_support_spans": _span_provenance(response.citation_spans),
+            "validated_action_spans": {
+                action_id: _span_provenance(spans)
+                for action_id, spans in response.action_citation_spans
+            },
+            "validated_examined_spans": _span_provenance(response.examined_citation_spans),
+            "principal_action_id": response.principal_action_id,
             **helper_provenance,
         }
-        if response.category_state is CategoryState.CATEGORY_UNRESOLVED:
+        if response.principal_action_id is None:
             return self._unresolved(
                 event_group,
-                response.category_resolution_reason,
+                _unresolved_reason_without_principal(response.actions),
                 provenance,
             )
-
-        category_id = response.primary_category_id
+        action_by_id = {action.action_id: action for action in response.actions}
+        principal = action_by_id[response.principal_action_id]
+        category_id, unresolved_reason = _classify_action_observation(principal)
         if category_id is None:
-            raise CategoryProposalViolation("assigned response requires a Category ID")
+            return self._unresolved(event_group, unresolved_reason, provenance)
+        provenance["authoritative_action_kind"] = principal.action_kind
+        provenance["authoritative_lifecycle_relation"] = principal.lifecycle_relation
         return CategoryResult(
             category_state=CategoryState.CATEGORY_ASSIGNED,
             event_id=event_group.event_id,

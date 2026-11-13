@@ -1,0 +1,17 @@
+{
+  "campaign": "category_classifier_owner_mechanism_20261113/bounded_rc6_accounting_v2",
+  "status": "BLOCKED",
+  "terminated_round": 2,
+  "failure_type": "SemanticProviderTechnicalFailure",
+  "failure_class": "UNPARSEABLE_RESPONSE",
+  "attempts": 2,
+  "transient": true,
+  "shared_policy": "RC-6 bounded identical-request transport retry",
+  "round2_report_written": false,
+  "round3_run": "NO",
+  "replacement_or_semantic_retry": "NO",
+  "event_identity_calls": 0,
+  "production_report_run": "NO",
+  "email_sent": false,
+  "secret_values_recorded": false
+}

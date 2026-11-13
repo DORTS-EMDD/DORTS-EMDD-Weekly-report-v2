@@ -37,6 +37,13 @@ from src.weekly_report.category_semantic_provider import (
     UrllibMaiAgentJsonTransport,
     build_maiagent_category_classifier,
 )
+from src.weekly_report.maiagent_transport import (
+    MAIAGENT_CONFIGURATION_HTTP_STATUSES,
+    MAIAGENT_MAX_ATTEMPTS,
+    MAIAGENT_TRANSIENT_HTTP_STATUSES,
+    MaiAgentResponseError,
+    parse_maiagent_response,
+)
 from src.weekly_report.classifier import (
     _CATEGORY_GUIDANCE,
     CategoryProposalViolation,
@@ -158,7 +165,7 @@ class _CaptureProvider:
 
 
 class _RecordingMaiAgentTransport:
-    """Observe one status per adapter call without changing request behavior."""
+    """Observe transport attempts without changing the shared policy."""
 
     def __init__(self, transport):
         self.transport = transport
@@ -177,15 +184,45 @@ class _RecordingMaiAgentTransport:
                 {
                     "status_code": None,
                     "transport_error_type": type(exc).__name__,
+                    "retry_authorized": True,
+                    "retry_reason": (
+                        "TIMEOUT" if isinstance(exc, TimeoutError) else "CONNECTION"
+                    ),
                     "request_body_sha256": hashlib.sha256(body).hexdigest(),
                     "request_body_bytes": len(body),
                 }
             )
             raise
         if isinstance(response, MaiAgentHttpResponse):
+            if response.status_code == 200:
+                try:
+                    parse_maiagent_response(response.body)
+                except MaiAgentResponseError:
+                    response_parse_status = "UNPARSEABLE_RESPONSE"
+                    retry_authorized = True
+                    retry_reason = "UNPARSEABLE_RESPONSE"
+                else:
+                    response_parse_status = "PARSEABLE_RESPONSE"
+                    retry_authorized = False
+                    retry_reason = None
+            elif response.status_code in MAIAGENT_TRANSIENT_HTTP_STATUSES:
+                response_parse_status = "NOT_APPLICABLE"
+                retry_authorized = True
+                retry_reason = f"HTTP_{response.status_code}"
+            elif response.status_code in MAIAGENT_CONFIGURATION_HTTP_STATUSES:
+                response_parse_status = "NOT_APPLICABLE"
+                retry_authorized = False
+                retry_reason = f"HTTP_{response.status_code}"
+            else:
+                response_parse_status = "NOT_APPLICABLE"
+                retry_authorized = False
+                retry_reason = f"HTTP_{response.status_code}"
             self.observations.append(
                 {
                     "status_code": response.status_code,
+                    "response_parse_status": response_parse_status,
+                    "retry_authorized": retry_authorized,
+                    "retry_reason": retry_reason,
                     "request_body_sha256": hashlib.sha256(body).hexdigest(),
                     "request_body_bytes": len(body),
                     "response_body_sha256": hashlib.sha256(response.body).hexdigest(),
@@ -197,11 +234,72 @@ class _RecordingMaiAgentTransport:
                 {
                     "status_code": None,
                     "transport_error_type": "InvalidTransportResponse",
+                    "retry_authorized": True,
+                    "retry_reason": "INVALID_TRANSPORT_RESPONSE",
                     "request_body_sha256": hashlib.sha256(body).hexdigest(),
                     "request_body_bytes": len(body),
                 }
             )
         return response
+
+
+def _transport_attempt_accounting(
+    transport_attempts: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Validate RC-6 transport attempts for one logical Category call.
+
+    This is acceptance-only observation.  It does not select a response or
+    invoke a second provider path; the shared transport policy already owns
+    retry execution.
+    """
+
+    attempts = [dict(item) for item in transport_attempts]
+    result = {
+        "status": "FINDINGS",
+        "attempt_count": len(attempts),
+        "retry_count": max(0, len(attempts) - 1),
+        "retry_reasons": [],
+        "request_body_consistent": False,
+        "final_response_parse_status": None,
+        "unauthorized_retry": False,
+        "failure": None,
+    }
+    if not attempts:
+        result["failure"] = "NO_TRANSPORT_ATTEMPT"
+        return result
+    if len(attempts) > MAIAGENT_MAX_ATTEMPTS:
+        result["failure"] = "TRANSPORT_ATTEMPT_LIMIT_EXCEEDED"
+        result["unauthorized_retry"] = True
+        return result
+    request_hashes = [item.get("request_body_sha256") for item in attempts]
+    result["request_body_consistent"] = bool(request_hashes) and all(
+        isinstance(item, str) and item == request_hashes[0] for item in request_hashes
+    )
+    if not result["request_body_consistent"]:
+        result["failure"] = "RETRY_REQUEST_CHANGED"
+        result["unauthorized_retry"] = len(attempts) > 1
+        return result
+    for attempt in attempts[:-1]:
+        if attempt.get("retry_authorized") is not True:
+            result["failure"] = "UNAUTHORIZED_TRANSPORT_RETRY"
+            result["unauthorized_retry"] = True
+            return result
+        reason = attempt.get("retry_reason")
+        if not isinstance(reason, str) or not reason:
+            result["failure"] = "RETRY_REASON_NOT_RETAINED"
+            result["unauthorized_retry"] = True
+            return result
+        result["retry_reasons"].append(reason)
+    final = attempts[-1]
+    result["final_response_parse_status"] = final.get("response_parse_status")
+    if (
+        final.get("status_code") != 200
+        or final.get("response_parse_status") != "PARSEABLE_RESPONSE"
+    ):
+        result["failure"] = "FINAL_RESPONSE_NOT_PARSEABLE_HTTP_200"
+        return result
+    result["status"] = "PASS"
+    return result
 
 
 @dataclass(frozen=True, slots=True)
@@ -329,9 +427,9 @@ def _groups(upstream: _UpstreamFixture, records: tuple[EventIdentityRecord, ...]
     return tuple(output)
 
 
-ACCEPTANCE_VERSION = "category-v4-final-seal-v2"
-ACCEPTANCE_EVIDENCE_VERSION = "category-acceptance-evidence-v1"
-EVALUATION_HARNESS_VERSION = "category-semantic-evaluation-v4"
+ACCEPTANCE_VERSION = "category-v5-classifier-owner-seal-v2"
+ACCEPTANCE_EVIDENCE_VERSION = "category-acceptance-evidence-v2"
+EVALUATION_HARNESS_VERSION = "category-semantic-evaluation-v6"
 DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION = "category-deployment-snapshot-v1"
 TOTAL_GOLDEN_FIXTURES = 85
 CATEGORY_REACHED_FIXTURES = 52
@@ -576,24 +674,31 @@ def _proposal_evidence(value: object) -> dict[str, Any]:
 
     if isinstance(value, CategorySemanticResponse):
         return {
-            "category_state": getattr(value.category_state, "value", value.category_state),
-            "primary_category_id": getattr(
-                value.primary_category_id,
-                "value",
-                value.primary_category_id,
-            ),
+            "actions": [
+                {
+                    "action_id": action.action_id,
+                    "action_kind": action.action_kind,
+                    "subject_kind": action.subject_kind,
+                    "lifecycle_relation": action.lifecycle_relation,
+                    "adoption_status": action.adoption_status,
+                    "citations": [
+                        {
+                            "source_ref": citation.source_ref,
+                            "sentence_ids": list(citation.sentence_ids),
+                        }
+                        for citation in action.citations
+                    ],
+                }
+                for action in value.actions
+            ],
+            "principal_action_id": value.principal_action_id,
             "subtype": value.subtype,
-            "category_resolution_reason": getattr(
-                value.category_resolution_reason,
-                "value",
-                value.category_resolution_reason,
-            ),
-            "citations": [
+            "examined_citations": [
                 {
                     "source_ref": citation.source_ref,
                     "sentence_ids": list(citation.sentence_ids),
                 }
-                for citation in value.citations
+                for citation in value.examined_citations
             ],
         }
     if isinstance(value, Mapping):
@@ -780,6 +885,20 @@ def enforce_category_configuration_binding(
 
 
 _ZERO_ERROR_ROUND_EXPECTATIONS = {
+    "LIVE_CALL_COUNT": GROUPS_PER_ROUND,
+    "HTTP_200_COUNT": GROUPS_PER_ROUND,
+    "LOGICAL_CALL_COUNT": GROUPS_PER_ROUND,
+    "FINAL_HTTP_200_COUNT": GROUPS_PER_ROUND,
+    "TRANSPORT_ACCOUNTING_STATUS": "PASS",
+    "UNAUTHORIZED_TRANSPORT_RETRY_COUNT": 0,
+    "CLASSIFIER_ACCEPTED_COUNT": GROUPS_PER_ROUND,
+    "CLASSIFIER_INVALID_COUNT": 0,
+    "CATEGORY_STATE_MISMATCH_COUNT": 0,
+    "PRIMARY_CATEGORY_MISMATCH_COUNT": 0,
+    "RESOLUTION_REASON_MISMATCH_COUNT": 0,
+    "EXACT_CATEGORY_MATCH_COUNT": GROUPS_PER_ROUND,
+}
+_HISTORICAL_ZERO_ERROR_ROUND_EXPECTATIONS = {
     "LIVE_CALL_COUNT": GROUPS_PER_ROUND,
     "HTTP_200_COUNT": GROUPS_PER_ROUND,
     "CLASSIFIER_ACCEPTED_COUNT": GROUPS_PER_ROUND,
@@ -1128,9 +1247,14 @@ def _assess_final_seal_batch(
 
     failed_rounds: list[dict[str, Any]] = []
     for report in sorted(round_reports, key=lambda item: item["ROUND_INDEX"]):
+        expectations = (
+            _ZERO_ERROR_ROUND_EXPECTATIONS
+            if require_current_evidence
+            else _HISTORICAL_ZERO_ERROR_ROUND_EXPECTATIONS
+        )
         failures = {
             key: {"expected": expected, "actual": report.get(key)}
-            for key, expected in _ZERO_ERROR_ROUND_EXPECTATIONS.items()
+            for key, expected in expectations.items()
             if report.get(key) != expected
         }
         if report.get("CATEGORY_53_GROUP_LIVE_ACCEPTANCE") != "PASS":
@@ -1186,42 +1310,58 @@ def _citation_details(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     source_text = {source.candidate_id: source.substantive_content for source in request.sources}
     refs = request.source_refs
-    raw_citations = proposal.get("citations", ()) if isinstance(proposal, Mapping) else ()
-    canonical_spans = list(actual.provenance.get("validated_support_spans", ()))
+    citation_entries: list[tuple[str | None, object]] = []
+    if isinstance(proposal, Mapping):
+        for action in proposal.get("actions", ()):
+            if isinstance(action, Mapping):
+                action_id = action.get("action_id")
+                for citation in action.get("citations", ()):
+                    citation_entries.append((action_id if isinstance(action_id, str) else None, citation))
+        for citation in proposal.get("examined_citations", ()):
+            citation_entries.append((None, citation))
+    canonical_spans: list[dict[str, Any]] = []
+    validated_actions = actual.provenance.get("validated_action_spans", {})
+    if isinstance(validated_actions, Mapping):
+        for spans in validated_actions.values():
+            if isinstance(spans, list):
+                canonical_spans.extend(span for span in spans if isinstance(span, Mapping))
+    examined_spans = actual.provenance.get("validated_examined_spans", ())
+    if isinstance(examined_spans, list):
+        canonical_spans.extend(span for span in examined_spans if isinstance(span, Mapping))
     details: list[dict[str, Any]] = []
-    if isinstance(raw_citations, list):
-        for citation in raw_citations:
-            if not isinstance(citation, Mapping):
-                continue
-            source_ref = citation.get("source_ref")
-            sentence_ids = citation.get("sentence_ids")
-            candidate_id = refs.get(source_ref) if isinstance(source_ref, str) else None
-            source = source_text.get(candidate_id) if candidate_id is not None else None
-            # RC-16: each cited sentence is one canonical span, in order.
-            count = len(sentence_ids) if isinstance(sentence_ids, list) else 0
-            spans = [span for span in canonical_spans if span.get("candidate_id") == candidate_id][:count]
-            for span in spans:
-                canonical_spans.remove(span)
-            resolved_source = source if bool(spans) and isinstance(source, str) else None
-            resolved = resolved_source is not None
-            start = spans[0]["start"] if resolved else None
-            end = spans[-1]["end"] if resolved else None
-            details.append(
-                {
-                    "candidate_id": candidate_id,
-                    "source_ref": source_ref,
-                    "sentence_ids": sentence_ids,
-                    "resolved_start": start,
-                    "resolved_end": end,
-                    "resolved_substring": (
-                        resolved_source[start:end]
-                        if isinstance(resolved_source, str)
-                        and isinstance(start, int)
-                        and isinstance(end, int)
-                        else None
-                    ),
-                }
-            )
+    for action_id, citation in citation_entries:
+        if not isinstance(citation, Mapping):
+            continue
+        source_ref = citation.get("source_ref")
+        sentence_ids = citation.get("sentence_ids")
+        candidate_id = refs.get(source_ref) if isinstance(source_ref, str) else None
+        source = source_text.get(candidate_id) if candidate_id is not None else None
+        # RC-16: each cited sentence is one canonical span, in order.
+        count = len(sentence_ids) if isinstance(sentence_ids, list) else 0
+        spans = [span for span in canonical_spans if span.get("candidate_id") == candidate_id][:count]
+        for span in spans:
+            canonical_spans.remove(span)
+        resolved_source = source if bool(spans) and isinstance(source, str) else None
+        resolved = resolved_source is not None
+        start = spans[0]["start"] if resolved else None
+        end = spans[-1]["end"] if resolved else None
+        details.append(
+            {
+                "candidate_id": candidate_id,
+                "action_id": action_id,
+                "source_ref": source_ref,
+                "sentence_ids": sentence_ids,
+                "resolved_start": start,
+                "resolved_end": end,
+                "resolved_substring": (
+                    resolved_source[start:end]
+                    if isinstance(resolved_source, str)
+                    and isinstance(start, int)
+                    and isinstance(end, int)
+                    else None
+                ),
+            }
+        )
     concerns: list[dict[str, Any]] = []
     for citation in details:
         text = citation["resolved_substring"]
@@ -1437,6 +1577,7 @@ def _acceptance_evidence_for(
         else "CLASSIFIER_ACCEPTED"
     )
     evidence["transport_attempts"] = [dict(item) for item in transport_attempts]
+    evidence["transport_accounting"] = _transport_attempt_accounting(transport_attempts)
     latest_transport = transport_attempts[-1] if transport_attempts else {}
     evidence["provider_request_body_sha256"] = latest_transport.get(
         "request_body_sha256"
@@ -1454,6 +1595,8 @@ def _acceptance_evidence_for(
         "request_payload_sha256": evidence.get("request_payload_sha256"),
         "provider_request_body_sha256": evidence.get("provider_request_body_sha256"),
         "provider_response_body_sha256": evidence.get("provider_response_body_sha256"),
+        "transport_attempts": evidence["transport_attempts"],
+        "transport_accounting": evidence["transport_accounting"],
         "proposal_sha256": evidence.get("proposal_sha256"),
         "validated_result_sha256": evidence["validated_result_sha256"],
         "expected": dict(expected),
@@ -1473,7 +1616,16 @@ def _live_evidence_complete(evidence: Mapping[str, Any]) -> bool:
         "validated_result_sha256",
         "chain_sha256",
     )
-    return all(isinstance(evidence.get(key), str) and evidence[key] for key in required)
+    accounting = evidence.get("transport_accounting")
+    attempts = evidence.get("transport_attempts")
+    return (
+        all(isinstance(evidence.get(key), str) and evidence[key] for key in required)
+        and isinstance(attempts, list)
+        and isinstance(accounting, Mapping)
+        and accounting.get("status") == "PASS"
+        and accounting.get("attempt_count") == len(attempts)
+        and accounting.get("retry_count") == max(0, len(attempts) - 1)
+    )
 
 
 def _base_report(
@@ -1515,6 +1667,14 @@ def _base_report(
         "LIVE_CALL_BUDGET": LIVE_CALL_BUDGET,
         "LIVE_CALL_COUNT": 0,
         "HTTP_200_COUNT": 0,
+        "LOGICAL_CALL_COUNT": 0,
+        "TRANSPORT_ATTEMPT_COUNT": 0,
+        "FINAL_HTTP_200_COUNT": 0,
+        "HTTP_200_ATTEMPT_COUNT": 0,
+        "AUTHORIZED_TRANSPORT_RETRY_COUNT": 0,
+        "UNAUTHORIZED_TRANSPORT_RETRY_COUNT": 0,
+        "TRANSPORT_ACCOUNTING_STATUS": "NOT_COMPLETE",
+        "TRANSPORT_RETRY_REASON_COUNTS": {},
         "CLASSIFIER_ACCEPTED_COUNT": 0,
         "CLASSIFIER_INVALID_COUNT": 0,
         "EXACT_CATEGORY_MATCH_COUNT": 0,
@@ -1530,10 +1690,11 @@ def _base_report(
         "WRITER_CHATBOT_USED": "NO",
         "FALLBACK_PRESENT": "NO",
         "RETRY_PRESENT": "NO",
+        "SEMANTIC_RETRY_PRESENT": "NO",
         "RESCUE_PRESENT": "NO",
         "BACKFILL_PRESENT": "NO",
         "REQUEST_EVIDENCE": "EXACT_SERIALIZATION_SHA256",
-        "RESPONSE_EVIDENCE": "PARSED_PROPOSAL_AND_VALIDATED_CATEGORY_RESULT",
+        "RESPONSE_EVIDENCE": "PARSED_ACTION_LIFECYCLE_PROPOSAL_AND_CLASSIFIER_VALIDATED_CATEGORY_RESULT",
         "ACCEPTANCE_EVIDENCE_CHAIN": "REQUIRED_FOR_LIVE_SCOREABILITY",
         "ACCEPTANCE_EVIDENCE_CHAIN_STATUS": "NOT_COMPLETE",
         "ACCEPTANCE_EVIDENCE_COMPLETE_COUNT": 0,
@@ -1695,33 +1856,65 @@ def run_evaluation(
     metrics = _summarize_rows(rows)
     report.update(metrics)
     report["RESULTS"] = rows
-    report["LIVE_CALL_COUNT"] = (
-        len(recording_transport.observations) if recording_transport is not None else 0
+    all_attempts = (
+        recording_transport.observations if recording_transport is not None else []
     )
-    report["HTTP_200_COUNT"] = (
-        sum(item.get("status_code") == 200 for item in recording_transport.observations)
-        if recording_transport is not None
-        else 0
+    report["LIVE_CALL_COUNT"] = len(rows)
+    report["HTTP_200_COUNT"] = report["FINAL_HTTP_200_COUNT"] = sum(
+        bool(row.get("acceptance_evidence", {}).get("transport_attempts"))
+        and row["acceptance_evidence"]["transport_attempts"][-1].get("status_code") == 200
+        for row in rows
+    )
+    report["HTTP_200_ATTEMPT_COUNT"] = sum(
+        item.get("status_code") == 200 for item in all_attempts
+    )
+    report["LOGICAL_CALL_COUNT"] = len(rows)
+    report["TRANSPORT_ATTEMPT_COUNT"] = len(all_attempts)
+    retry_accounting = [
+        row.get("acceptance_evidence", {}).get("transport_accounting", {})
+        for row in rows
+    ]
+    retry_reasons: dict[str, int] = {}
+    for accounting in retry_accounting:
+        for reason in accounting.get("retry_reasons", []):
+            retry_reasons[reason] = retry_reasons.get(reason, 0) + 1
+    report["AUTHORIZED_TRANSPORT_RETRY_COUNT"] = sum(
+        int(item.get("retry_count", 0))
+        for item in retry_accounting
+        if item.get("status") == "PASS"
+    )
+    report["UNAUTHORIZED_TRANSPORT_RETRY_COUNT"] = sum(
+        int(item.get("unauthorized_retry", False)) for item in retry_accounting
+    )
+    report["TRANSPORT_RETRY_REASON_COUNTS"] = retry_reasons
+    report["TRANSPORT_ACCOUNTING_STATUS"] = (
+        "PASS"
+        if all(item.get("status") == "PASS" for item in retry_accounting)
+        and len(retry_accounting) == len(rows)
+        else "FINDINGS"
+    )
+    report["TRANSPORT_RETRY_PRESENT"] = (
+        "YES" if report["AUTHORIZED_TRANSPORT_RETRY_COUNT"] else "NO"
     )
     if live and (
         len(rows) != len(specs)
         or any(not _live_evidence_complete(row["acceptance_evidence"]) for row in rows)
         or report.get("SAME_RUNTIME_HELPER_BINDING") != "PROVEN"
+        or report["TRANSPORT_ACCOUNTING_STATUS"] != "PASS"
     ):
         report["CATEGORY_53_GROUP_LIVE_ACCEPTANCE"] = "BLOCKED"
-        report["BLOCKER"] = "ACCEPTANCE_EVIDENCE_CHAIN_INCOMPLETE"
+        report["BLOCKER"] = (
+            "TRANSPORT_ATTEMPT_ACCOUNTING_INCOMPLETE"
+            if report["TRANSPORT_ACCOUNTING_STATUS"] != "PASS"
+            else "ACCEPTANCE_EVIDENCE_CHAIN_INCOMPLETE"
+        )
         return report
     if live:
         report["ACCEPTANCE_EVIDENCE_CHAIN_STATUS"] = "COMPLETE"
         report["ACCEPTANCE_EVIDENCE_COMPLETE_COUNT"] = len(rows)
     if report.get("BLOCKER"):
         return report
-    if live and (
-        report["LIVE_CALL_COUNT"] != len(specs)
-        or report["HTTP_200_COUNT"] != len(specs)
-    ):
-        report["CATEGORY_53_GROUP_LIVE_ACCEPTANCE"] = "FINDINGS"
-    elif live and report["EXACT_CATEGORY_MATCH_COUNT"] == len(specs):
+    if live and report["EXACT_CATEGORY_MATCH_COUNT"] == len(specs):
         report["CATEGORY_53_GROUP_LIVE_ACCEPTANCE"] = "PASS"
     elif live:
         report["CATEGORY_53_GROUP_LIVE_ACCEPTANCE"] = "FINDINGS"

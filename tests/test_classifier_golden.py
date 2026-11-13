@@ -50,21 +50,106 @@ class _GoldenSemanticOracle:
         ]
         category_state = expected["category_state"]
         if category_state == CategoryState.CATEGORY_ASSIGNED.value:
-            return {
-                "category_state": category_state,
-                "primary_category_id": expected["primary_category_id"],
-                "subtype": expected["subtype"],
-                "category_resolution_reason": None,
+            category_id = expected["primary_category_id"]
+            action = {
+                "action_id": "A1",
+                "action_kind": {
+                    "TECHNICAL_DEVELOPMENT": "DEPLOYMENT",
+                    "OPERATIONAL_CHANGE": "TIMETABLE_CHANGE",
+                    "PROCUREMENT": "PROCUREMENT_AWARD",
+                    "NORMATIVE_CHANGE": "NORMATIVE_CHANGE",
+                    "INCIDENT": "INCIDENT",
+                }[category_id],
+                "subject_kind": {
+                    "TECHNICAL_DEVELOPMENT": "TECHNOLOGY_METHOD_MATERIAL",
+                    "OPERATIONAL_CHANGE": "PASSENGER_SERVICE",
+                    "PROCUREMENT": "PROCUREMENT_ACTION",
+                    "NORMATIVE_CHANGE": "NORMATIVE_DOCUMENT",
+                    "INCIDENT": "INCIDENT_SUBJECT",
+                }[category_id],
+                "lifecycle_relation": {
+                    "TECHNICAL_DEVELOPMENT": "TECHNOLOGY_ITSELF",
+                    "OPERATIONAL_CHANGE": "OPERATING_SERVICE",
+                    "PROCUREMENT": "PROCUREMENT_LIFECYCLE",
+                    "NORMATIVE_CHANGE": "NORMATIVE_LIFECYCLE",
+                    "INCIDENT": "INCIDENT_OCCURRENCE",
+                }[category_id],
+                "adoption_status": "IMPLEMENTED" if category_id == "OPERATIONAL_CHANGE" else "COMPLETED",
                 "citations": citations[:1],
+            }
+            return {
+                "actions": [action],
+                "principal_action_id": "A1",
+                "subtype": expected["subtype"],
+                "examined_citations": citations,
             }
         if category_state == CategoryState.CATEGORY_UNRESOLVED.value:
             reason = expected["category_resolution_reason"]
+            if reason == "RECOMMENDATION_WITHOUT_ADOPTED_ACTION":
+                actions = [{
+                    "action_id": "A1",
+                    "action_kind": "RECOMMENDATION",
+                    "subject_kind": "RECOMMENDATION",
+                    "lifecycle_relation": "NONE",
+                    "adoption_status": "RECOMMENDED",
+                    "citations": citations[:1],
+                }]
+                principal_action_id = "A1"
+            elif reason == "CONFLICTING_CATEGORY_DEFINING_CLAIMS":
+                actions = [{
+                    "action_id": "A1",
+                    "action_kind": "CONFLICTING_ACTION_CLAIMS",
+                    "subject_kind": "OTHER",
+                    "lifecycle_relation": "NONE",
+                    "adoption_status": "UNKNOWN",
+                    "citations": citations[:1],
+                }]
+                principal_action_id = None
+            elif reason == "NO_UNIQUE_PRINCIPAL_ACTION":
+                actions = [
+                    {
+                        "action_id": "A1",
+                        "action_kind": "DEPLOYMENT",
+                        "subject_kind": "TECHNOLOGY_METHOD_MATERIAL",
+                        "lifecycle_relation": "TECHNOLOGY_ITSELF",
+                        "adoption_status": "COMPLETED",
+                        "citations": citations[:1],
+                    },
+                    {
+                        "action_id": "A2",
+                        "action_kind": "TIMETABLE_CHANGE",
+                        "subject_kind": "PASSENGER_SERVICE",
+                        "lifecycle_relation": "OPERATING_SERVICE",
+                        "adoption_status": "IMPLEMENTED",
+                        "citations": citations[:1],
+                    },
+                ]
+                principal_action_id = None
+            elif reason == "INSUFFICIENT_CATEGORY_EVIDENCE":
+                actions = [{
+                    "action_id": "A1",
+                    "action_kind": "UNKNOWN",
+                    "subject_kind": "OTHER",
+                    "lifecycle_relation": "NONE",
+                    "adoption_status": "UNKNOWN",
+                    "citations": citations[:1],
+                }]
+                principal_action_id = None
+            else:
+                actions = [{
+                    "action_id": "A1",
+                    "action_kind": "PROJECT_STEP",
+                    "subject_kind": "PROJECT",
+                    "lifecycle_relation": "PRE_OPENING",
+                    "adoption_status": "COMPLETED",
+                    "citations": citations[:1],
+                }]
+                principal_action_id = "A1"
             return {
-                "category_state": category_state,
-                "primary_category_id": None,
+                "actions": actions,
+                "principal_action_id": principal_action_id,
                 "subtype": None,
-                "category_resolution_reason": reason,
-                "citations": citations,
+                "examined_citations": citations,
             }
         raise AssertionError("the semantic oracle is not called for NOT_EVALUATED fixtures")
 
@@ -213,7 +298,7 @@ class CategoryGoldenAcceptanceTests(unittest.TestCase):
                             result.category_resolution_reason.value,
                             expected["category_resolution_reason"],
                         )
-                        self.assertEqual(result.provenance["decision_basis"], "constrained_semantic_helper")
+                        self.assertEqual(result.provenance["decision_basis"], "classifier_authoritative_domain_mechanism")
                     else:
                         self.assertIsNone(result.category_resolution_reason)
                 passed += 1

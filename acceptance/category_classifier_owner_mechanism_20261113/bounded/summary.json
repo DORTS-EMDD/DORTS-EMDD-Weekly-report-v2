@@ -1,0 +1,11 @@
+{
+  "actual_logical_calls": 16,
+  "earliest_failed_round": 2,
+  "earliest_failure": [],
+  "event_identity_research_calls": 0,
+  "hard_cap": 24,
+  "planned_logical_calls": 24,
+  "production_run": "NO",
+  "transport_attempts": 17,
+  "verdict": "BOUNDED_ACCEPTANCE_FAIL"
+}

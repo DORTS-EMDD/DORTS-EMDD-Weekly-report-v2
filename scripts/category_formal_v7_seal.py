@@ -36,8 +36,6 @@ EVIDENCE_DIR = ROOT / "docs" / "category-v4-final-seal"
 TRACKED_RECORD_DIR = (
     ROOT / "acceptance" / "category_narrow_control_20261111_v7_new_contract"
 )
-PLAN_PATH = TRACKED_RECORD_DIR / "formal_seal_plan.json"
-ASSESSMENT_PATH = TRACKED_RECORD_DIR / "formal_seal_assessment.json"
 
 
 def _write_json(path: Path, value: object) -> None:
@@ -151,9 +149,9 @@ def _plan(
         "boundary_extension_case_count": 10,
         "boundary_extension_formal_population_excluded": True,
         "boundary_extension_narrow_control": {
-            "controls": ["G100", "G101", "G93", "G66"],
-            "evidence": "acceptance/category_narrow_control_20261111_v7_new_contract",
-            "result": "PASS / PASS / PASS for each control",
+            "controls": ["G03", "G64", "G78", "G84", "G100", "G101", "G93", "G66"],
+            "evidence": "current bounded 8-case acceptance is a prerequisite, not formal population evidence",
+            "result": "must be PASS / PASS / PASS for each control before formal seal",
         },
         "total_golden_fixtures": counts["total_fixtures"],
         "category_reached_fixtures": counts["category_reached_fixtures"],
@@ -195,13 +193,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+    plan_path = out_dir / "formal_seal_plan.json"
+    assessment_path = out_dir / "formal_seal_assessment.json"
     report_paths = [
         out_dir / f"category-final-seal-round{index}.json"
         for index in range(1, SEAL_ROUNDS + 1)
     ]
     if any(path.exists() for path in report_paths):
         raise SystemExit("FORMAL_SEAL_OUTPUT_ALREADY_EXISTS; refusing overwrite")
-    if PLAN_PATH.exists() or ASSESSMENT_PATH.exists():
+    if plan_path.exists() or assessment_path.exists():
         raise SystemExit("FORMAL_SEAL_BOOKKEEPING_ALREADY_EXISTS; refusing overwrite")
 
     head = _current_head()
@@ -274,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
     _write_json(out_dir / "category-deployment-snapshot-v1.json", snapshot)
-    _write_json(PLAN_PATH, plan)
+    _write_json(plan_path, plan)
 
     reports: list[dict[str, Any]] = []
     total_attempts = 0
@@ -286,7 +286,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         _write_json(report_paths[round_index - 1], report)
         reports.append(report)
-        total_attempts += int(report.get("LIVE_CALL_COUNT", 0))
+        total_attempts += int(report.get("TRANSPORT_ATTEMPT_COUNT", 0))
         if report.get("CATEGORY_53_GROUP_LIVE_ACCEPTANCE") != "PASS":
             assessment = {
                 "CATEGORY_FORMAL_SEAL": "FINDINGS",
@@ -300,7 +300,7 @@ def main(argv: list[str] | None = None) -> int:
                 "REPLACEMENT_ROUNDS": False,
                 "PRODUCTION_REPORT_RUN": "NO",
             }
-            _write_json(ASSESSMENT_PATH, assessment)
+            _write_json(assessment_path, assessment)
             print(json.dumps(assessment, ensure_ascii=False, indent=2, sort_keys=True))
             return 2
 
@@ -332,7 +332,7 @@ def main(argv: list[str] | None = None) -> int:
             "PRODUCTION_REPORT_RUN": "NO",
         }
     )
-    _write_json(ASSESSMENT_PATH, assessment)
+    _write_json(assessment_path, assessment)
     print(json.dumps(assessment, ensure_ascii=False, indent=2, sort_keys=True))
     return 0 if assessment.get("CATEGORY_V4_FINAL_SEAL") == "PASS" else 2
 
