@@ -527,11 +527,18 @@ class ShellIntegrationTests(unittest.TestCase):
 
         self.assertIn("offline-regression:", offline)
         self.assertNotIn("google_news_health_check", offline)
-        self.assertIn("needs: offline-regression", production)
-        # RC-26: a dispatch opt-in, or the weekly schedule once enabled by a repository variable.
+        self.assertIn("- offline-regression", production)
+        self.assertIn("- formal_category_seal", production)
+        self.assertIn("needs.formal_category_seal.result == 'success'", production)
+        self.assertIn("needs.formal_category_seal.result == 'skipped'", production)
+        # RC-26: a dispatch opt-in gates on the fresh formal seal; the weekly schedule remains
+        # enabled only by its repository variable and does not run the manual seal job.
         self.assertIn(
-            "if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run_production == true) || "
-            "(github.event_name == 'schedule' && vars.WEEKLY_REPORT_SCHEDULE == 'enabled') }}",
+            "if: ${{ always() && needs.offline-regression.result == 'success' && "
+            "((github.event_name == 'workflow_dispatch' && inputs.run_production == true && "
+            "needs.formal_category_seal.result == 'success') || "
+            "(github.event_name == 'schedule' && vars.WEEKLY_REPORT_SCHEDULE == 'enabled' && "
+            "needs.formal_category_seal.result == 'skipped')) }}",
             production,
         )
         self.assertEqual(production.count("python -m scripts.google_news_health_check"), 1)
@@ -541,7 +548,7 @@ class ShellIntegrationTests(unittest.TestCase):
             production.index("python main.py"),
         )
         self.assertNotIn("continue-on-error", production)
-        self.assertNotIn("if: always()", production)
+        self.assertIn("always()", production)
         self.assertNotIn("rerun", workflow.lower())
         self.assertNotIn("pacing", workflow.lower())
         self.assertNotIn("fallback", workflow.lower())
