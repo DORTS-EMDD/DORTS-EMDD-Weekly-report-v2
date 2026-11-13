@@ -3,11 +3,11 @@
 ## Gate status
 
 - Starting remote SHA: `7594eccb5e222fbda80709c1c851774599cda136`
-- Working revision: uncommitted candidate; no accepted implementation SHA exists.
+- Working revision: local checkpoint `b7260826f9f25e4d7e52ef417bb6d9ac07488e7e`;
+  bounded acceptance evidence is now recorded separately.
 - Authoritative owner: `Classifier` (`CATEGORY_AUTHORITATIVE_OWNER_COUNT = 1`)
 - Helper role: advisory action/lifecycle observations with Evidence citations only.
-- Release status: **BLOCKED at bounded live Category acceptance after an RC-6
-  transport technical gap**.
+- Release status: **BOUNDED ACCEPTANCE PASS; formal seal pending**.
 
 ## Root cause and boundary
 
@@ -72,25 +72,25 @@ The bounded population was frozen as exactly:
 `G03, G64, G78, G84, G100, G101, G93, G66`, three rounds, 24 planned logical
 calls, logical hard cap 24, and transport-attempt hard cap 48.
 
-- Round 1: **PASS**, 8/8 exact, 8 transport attempts.
-- Round 2: **FINDINGS**, 8/8 semantic outcomes exact with zero state, primary,
+- Historical pre-correction Round 1: **PASS**, 8/8 exact, 8 transport attempts.
+- Historical pre-correction Round 2: **FINDINGS**, 8/8 semantic outcomes exact with zero state, primary,
   resolution, invalid-response, or citation mismatches. G78 required a second
   provider attempt; both observed attempts returned HTTP 200 and the final
   response was scoreable. The previous strict gate's 9-attempt finding was
   corrected: RC-6 transport attempts are now separately accounted from the 8
   logical calls, and the retry reason is retained as `UNPARSEABLE_RESPONSE`.
-- Fresh campaign output: Round 1 **PASS**, 8/8 exact, 8 logical calls and 8
-  transport attempts, with accounting `PASS` and zero retries.
-- Fresh campaign Round 2 terminated after a logical call received two
-  `UNPARSEABLE_RESPONSE` outcomes; the shared RC-6 policy performed its one
-  authorized retry and raised `SemanticProviderTechnicalFailure` after the
-  second attempt. The script stopped before writing a Round 2 report; no
-  semantic result was accepted from that failed call, and Round 3 was not run.
-  The termination is recorded without response bodies or credentials in
+- Historical fresh v2 campaign: Round 1 **PASS**; Round 2 terminated after a
+  logical call received two `UNPARSEABLE_RESPONSE` outcomes. Its termination is
+  recorded without response bodies or credentials in
   `bounded_rc6_accounting_v2/termination.json`.
-- Fresh bounded verdict: **BLOCKED / TECHNICAL_GAP_AFTER_RC6_RETRY**. No
-  replacement call, semantic retry, compensating round, formal seal, or
-  production run followed.
+- Fresh v3 campaign (`bounded_rc6_accounting_v3`): **PASS**. All three rounds
+  passed with 8/8 exact results each; 24/24 logical calls and 24 transport
+  attempts were scoreable; state, primary, reason, citation and unauthorized
+  retry counts were all zero; transport accounting was `PASS`; runtime Helper
+  binding was `PROVEN`; EventIdentity research calls and production run were 0.
+- G03, G64, G78, G84, G100, G101, G93 and G66 each passed in all three rounds.
+- Bounded verdict: **PASS**. No replacement case, semantic retry or extra round
+  was used.
 
 ## Formal and production status
 
@@ -100,10 +100,10 @@ calls, logical hard cap 24, and transport-attempt hard cap 48.
 - Real production weekly report: **NOT RUN**.
 - `send_email`: `false` (no production run was performed and no email was sent).
 - Deployment fingerprint read-back target: `ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7`.
-- No commit or push was made because the fresh bounded gate failed after the
-  authorized RC-6 retry.
+- Local checkpoint commit exists; push to `release/report-quality-wip` remains
+  pending formal-seal continuation.
 
-## Files changed in the uncommitted candidate
+## Files changed in the checkpoint candidate
 
 - `docs/ARCHITECTURE_CONTRACT.md`
 - `golden/cases/g03_valid_new_technology.json`
@@ -114,6 +114,7 @@ calls, logical hard cap 24, and transport-attempt hard cap 48.
 - `src/weekly_report/category_semantic_provider.py`
 - `src/weekly_report/classifier.py`
 - Category Classifier/provider/Golden/evaluation tests
+- `acceptance/category_classifier_owner_mechanism_20261113/bounded_rc6_accounting_v3/`
 
 Architecture review: one Category owner remains; Helper final Category is not
 copied as authority; no second owner, fallback, rescue, backfill, retry voting,
@@ -131,10 +132,8 @@ parseable-result replays and changed requests fail closed. This is an
 acceptance-only observer/accounting correction; no Category owner or production
 transport behavior was added.
 
-## Earliest unresolved blocker
+## Current continuation status
 
-The strict no-extra-attempt gate is corrected, but the fresh bounded campaign
-still encountered a provider response that remained unparseable after the
-authorized RC-6 retry. This is a disclosed transport TechnicalGap, not a
-Category semantic result. The current candidate therefore remains blocked from
-formal Category seal and real production validation.
+The strict no-extra-attempt gate is corrected and the fresh checkpointed v3
+campaign passed. Formal current-configuration sealing is the next gate; no
+production run has been started.

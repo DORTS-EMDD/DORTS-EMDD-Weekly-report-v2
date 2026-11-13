@@ -1,0 +1,2459 @@
+{
+  "ACCEPTANCE_EVIDENCE_CHAIN": "REQUIRED_FOR_LIVE_SCOREABILITY",
+  "ACCEPTANCE_EVIDENCE_CHAIN_STATUS": "COMPLETE",
+  "ACCEPTANCE_EVIDENCE_COMPLETE_COUNT": 8,
+  "ACCEPTANCE_EVIDENCE_VERSION": "category-acceptance-evidence-v2",
+  "ACCEPTANCE_VERSION": "category-v5-classifier-owner-seal-v2",
+  "AUTHORIZED_TRANSPORT_RETRY_COUNT": 0,
+  "BACKFILL_PRESENT": "NO",
+  "CATEGORY_53_GROUP_LIVE_ACCEPTANCE": "PASS",
+  "CATEGORY_REACHED_FIXTURES": 8,
+  "CATEGORY_STATE_MISMATCH_COUNT": 0,
+  "CLASSIFIER_ACCEPTED_COUNT": 8,
+  "CLASSIFIER_INVALID_COUNT": 0,
+  "CONFIGURATION_FINGERPRINT": "9515bfd271c5fa254cebefedccd100d3ce826a81586a42680613f79a66086757",
+  "DEPLOYMENT_BINDING_STATUS": "SAME_RUNTIME_HELPER_PROVEN",
+  "DEPLOYMENT_FINGERPRINT": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+  "DEPLOYMENT_PROVENANCE_STATUS": "OBSERVED_AND_FROZEN",
+  "DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION": "category-deployment-snapshot-v1",
+  "DEPLOYMENT_SNAPSHOT_IDENTITY_FINGERPRINT": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+  "EXACT_CATEGORY_MATCH_COUNT": 8,
+  "FAILURE_BREAKDOWN": {
+    "CATEGORY_STATE_MISMATCH": 0,
+    "CLASSIFIER_INVALID_RESPONSE": 0,
+    "MAIAGENT_ENVELOPE_INVALID": 0,
+    "PRIMARY_CATEGORY_MISMATCH": 0,
+    "RESOLUTION_REASON_MISMATCH": 0,
+    "TRANSPORT_FAILURE": 0
+  },
+  "FALLBACK_PRESENT": "NO",
+  "FINAL_HTTP_200_COUNT": 8,
+  "GROUPS_PER_ROUND": 8,
+  "GROUP_LEVEL_ASSIGNED_EXPECTED": 6,
+  "GROUP_LEVEL_TOTAL_EXPECTED": 8,
+  "GROUP_LEVEL_UNRESOLVED_EXPECTED": 2,
+  "HTTP_200_ATTEMPT_COUNT": 8,
+  "HTTP_200_COUNT": 8,
+  "LIVE_CALL_BUDGET": 8,
+  "LIVE_CALL_COUNT": 8,
+  "LOGICAL_CALL_COUNT": 8,
+  "MAIAGENT_ADAPTER_USED": "YES",
+  "MISMATCH_DETAILS": [],
+  "ORACLE_LEAKAGE_CHECK": "PASS",
+  "ORACLE_LEAKAGE_DETAILS": [],
+  "ORACLE_MAPPING": "PASS",
+  "ORACLE_MAPPING_DETAILS": [
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G03",
+      "member_candidate_ids": [
+        "source-1"
+      ]
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G64",
+      "member_candidate_ids": [
+        "source-1"
+      ]
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G78",
+      "member_candidate_ids": [
+        "source-1"
+      ]
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G84",
+      "member_candidate_ids": [
+        "source-1"
+      ]
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G100",
+      "member_candidate_ids": [
+        "source-1"
+      ]
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G101",
+      "member_candidate_ids": [
+        "source-1"
+      ]
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G93",
+      "member_candidate_ids": [
+        "source-1"
+      ]
+    },
+    {
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G66",
+      "member_candidate_ids": [
+        "source-1"
+      ]
+    }
+  ],
+  "PLANNED_ROUNDS": 3,
+  "PREPARED_EVENT_GROUPS": 8,
+  "PRIMARY_CATEGORY_MISMATCH_COUNT": 0,
+  "REQUEST_EVIDENCE": "EXACT_SERIALIZATION_SHA256",
+  "RESCUE_PRESENT": "NO",
+  "RESOLUTION_REASON_MISMATCH_COUNT": 0,
+  "RESPONSES_ADAPTER_USED": "NO",
+  "RESPONSE_EVIDENCE": "PARSED_ACTION_LIFECYCLE_PROPOSAL_AND_CLASSIFIER_VALIDATED_CATEGORY_RESULT",
+  "RESULTS": [
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "a7e4808893e5a868e12862b79730e417a45459a740e2d27e6c1f1fb70e6ae568",
+        "configuration_fingerprint": "9515bfd271c5fa254cebefedccd100d3ce826a81586a42680613f79a66086757",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 1,
+        "proposal": {
+          "actions": [
+            {
+              "action_id": "A1",
+              "action_kind": "PILOT",
+              "adoption_status": "COMPLETED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S2"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "TECHNOLOGY_ITSELF",
+              "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+            },
+            {
+              "action_id": "A2",
+              "action_kind": "PROJECT_STEP",
+              "adoption_status": "COMPLETED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S3"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "PROJECT_DELIVERY",
+              "subject_kind": "PROJECT"
+            }
+          ],
+          "examined_citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2",
+                "S3"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "principal_action_id": "A1",
+          "subtype": null
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "847faa11298e9c965447d36e983801df88c97f6c9cb164caa42b19d21f298942",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1"
+        },
+        "provider_request_body_sha256": "4f3391d284e3512c3e0a58503b0ab012d8b0a7f94a629d9698c72be838354705",
+        "provider_response_body_sha256": "0a2eb5694d966acb994790ed6e8c3b741269e599e6abb3ebaf13798a29692cc3",
+        "request_payload_bytes": 5660,
+        "request_payload_sha256": "1580459428d94e2ebd422ea88b2dae788edf2df6209c5ec6b6ccb3bd81680d14",
+        "round_index": 2,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_accounting": {
+          "attempt_count": 1,
+          "failure": null,
+          "final_response_parse_status": "PARSEABLE_RESPONSE",
+          "request_body_consistent": true,
+          "retry_count": 0,
+          "retry_reasons": [],
+          "status": "PASS",
+          "unauthorized_retry": false
+        },
+        "transport_attempts": [
+          {
+            "request_body_bytes": 8533,
+            "request_body_sha256": "4f3391d284e3512c3e0a58503b0ab012d8b0a7f94a629d9698c72be838354705",
+            "response_body_bytes": 2201,
+            "response_body_sha256": "0a2eb5694d966acb994790ed6e8c3b741269e599e6abb3ebaf13798a29692cc3",
+            "response_parse_status": "PARSEABLE_RESPONSE",
+            "retry_authorized": false,
+            "retry_reason": null,
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": null,
+          "category_state": "CATEGORY_ASSIGNED",
+          "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+          "event_id": "evaluation-event-1",
+          "primary_category": "技術新知",
+          "primary_category_id": "TECHNICAL_DEVELOPMENT",
+          "provenance": {
+            "authoritative_action_kind": "PILOT",
+            "authoritative_lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "decision_basis": "classifier_authoritative_domain_mechanism",
+            "helper_proposal_role": "advisory_action_lifecycle_relationships",
+            "helper_version": "maiagent-chatbot-adapter-v3",
+            "principal_action_id": "A1",
+            "prompt_version": "category-action-lifecycle-response-contract-v1",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-action-lifecycle-proposal-v1",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_action_spans": {
+              "A1": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 123,
+                  "start": 30
+                }
+              ],
+              "A2": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 295,
+                  "start": 124
+                }
+              ]
+            },
+            "validated_examined_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 29,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 123,
+                "start": 30
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 295,
+                "start": 124
+              }
+            ]
+          },
+          "subtype": null
+        },
+        "validated_result_sha256": "093d271c3ff69dc4f5158f52fba85b9915a2fc88773d1085b8427407c2f04bfa",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": null,
+        "category_state": "CATEGORY_ASSIGNED",
+        "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+        "event_id": "evaluation-event-1",
+        "primary_category": "技術新知",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT",
+        "provenance": {
+          "authoritative_action_kind": "PILOT",
+          "authoritative_lifecycle_relation": "TECHNOLOGY_ITSELF",
+          "decision_basis": "classifier_authoritative_domain_mechanism",
+          "helper_proposal_role": "advisory_action_lifecycle_relationships",
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "principal_action_id": "A1",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_action_spans": {
+            "A1": [
+              {
+                "candidate_id": "source-1",
+                "end": 123,
+                "start": 30
+              }
+            ],
+            "A2": [
+              {
+                "candidate_id": "source-1",
+                "end": 295,
+                "start": 124
+              }
+            ]
+          },
+          "validated_examined_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 29,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 123,
+              "start": 30
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 295,
+              "start": 124
+            }
+          ]
+        },
+        "subtype": null
+      },
+      "citations": [
+        {
+          "action_id": "A1",
+          "candidate_id": "source-1",
+          "resolved_end": 123,
+          "resolved_start": 30,
+          "resolved_substring": "The metro operator began a pilot deployment of a moving-block train-control system on Line 4.",
+          "sentence_ids": [
+            "S2"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": "A2",
+          "candidate_id": "source-1",
+          "resolved_end": 295,
+          "resolved_start": 124,
+          "resolved_substring": "Integration testing and commissioning followed for the deployed system; the bulletin describes onboard equipment, wayside interfaces, and the later passenger service date.",
+          "sentence_ids": [
+            "S3"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": null,
+          "candidate_id": "source-1",
+          "resolved_end": 295,
+          "resolved_start": 0,
+          "resolved_substring": "Synthetic technical bulletin. The metro operator began a pilot deployment of a moving-block train-control system on Line 4. Integration testing and commissioning followed for the deployed system; the bulletin describes onboard equipment, wayside interfaces, and the later passenger service date.",
+          "sentence_ids": [
+            "S1",
+            "S2",
+            "S3"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": null,
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G03",
+      "http_status": 200,
+      "matches_golden": true,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "CORRECT_ASSIGNED",
+      "proposal": {
+        "actions": [
+          {
+            "action_id": "A1",
+            "action_kind": "PILOT",
+            "adoption_status": "COMPLETED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S2"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+          },
+          {
+            "action_id": "A2",
+            "action_kind": "PROJECT_STEP",
+            "adoption_status": "COMPLETED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S3"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "PROJECT_DELIVERY",
+            "subject_kind": "PROJECT"
+          }
+        ],
+        "examined_citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2",
+              "S3"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "principal_action_id": "A1",
+        "subtype": null
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    },
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "c4a347b2cfaeae3ff6237002cd85cbf72567452e019f40581dd3c9a4adcdf11a",
+        "configuration_fingerprint": "9515bfd271c5fa254cebefedccd100d3ce826a81586a42680613f79a66086757",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 2,
+        "proposal": {
+          "actions": [
+            {
+              "action_id": "A1",
+              "action_kind": "DEPLOYMENT",
+              "adoption_status": "COMPLETED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S1",
+                    "S3"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "TECHNOLOGY_ITSELF",
+              "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+            },
+            {
+              "action_id": "A2",
+              "action_kind": "APPLIED_TECHNICAL_TEST",
+              "adoption_status": "COMPLETED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S1",
+                    "S2"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "TECHNOLOGY_ITSELF",
+              "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+            }
+          ],
+          "examined_citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2",
+                "S3"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "principal_action_id": "A1",
+          "subtype": null
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "00a07e3447793353b7af97c62664507dcde49d2a9d6f33c3fed2a76e3881bca1",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1"
+        },
+        "provider_request_body_sha256": "8114bfe6d22067abaca1702ae09e03e0c46efd08212f1d8a68c97aafe03f7516",
+        "provider_response_body_sha256": "bb246463a8f67f9d8e29163cd23d3c922754d82f91302f946a2ab2b00f37cffc",
+        "request_payload_bytes": 5628,
+        "request_payload_sha256": "38e00053e08422dbc1f78e47956f0f4386e43ba211e72a1d9394210b5dfa06fa",
+        "round_index": 2,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_accounting": {
+          "attempt_count": 1,
+          "failure": null,
+          "final_response_parse_status": "PARSEABLE_RESPONSE",
+          "request_body_consistent": true,
+          "retry_count": 0,
+          "retry_reasons": [],
+          "status": "PASS",
+          "unauthorized_retry": false
+        },
+        "transport_attempts": [
+          {
+            "request_body_bytes": 8501,
+            "request_body_sha256": "8114bfe6d22067abaca1702ae09e03e0c46efd08212f1d8a68c97aafe03f7516",
+            "response_body_bytes": 2348,
+            "response_body_sha256": "bb246463a8f67f9d8e29163cd23d3c922754d82f91302f946a2ab2b00f37cffc",
+            "response_parse_status": "PARSEABLE_RESPONSE",
+            "retry_authorized": false,
+            "retry_reason": null,
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": null,
+          "category_state": "CATEGORY_ASSIGNED",
+          "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+          "event_id": "evaluation-event-1",
+          "primary_category": "技術新知",
+          "primary_category_id": "TECHNICAL_DEVELOPMENT",
+          "provenance": {
+            "authoritative_action_kind": "DEPLOYMENT",
+            "authoritative_lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "decision_basis": "classifier_authoritative_domain_mechanism",
+            "helper_proposal_role": "advisory_action_lifecycle_relationships",
+            "helper_version": "maiagent-chatbot-adapter-v3",
+            "principal_action_id": "A1",
+            "prompt_version": "category-action-lifecycle-response-contract-v1",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-action-lifecycle-proposal-v1",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_action_spans": {
+              "A1": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 115,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 263,
+                  "start": 186
+                }
+              ],
+              "A2": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 115,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 185,
+                  "start": 116
+                }
+              ]
+            },
+            "validated_examined_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 115,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 185,
+                "start": 116
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 263,
+                "start": 186
+              }
+            ]
+          },
+          "subtype": null
+        },
+        "validated_result_sha256": "e67b232687a7280cc6976323c75421b82b1c5fd3329e5be07ff30b654be532ba",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": null,
+        "category_state": "CATEGORY_ASSIGNED",
+        "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+        "event_id": "evaluation-event-1",
+        "primary_category": "技術新知",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT",
+        "provenance": {
+          "authoritative_action_kind": "DEPLOYMENT",
+          "authoritative_lifecycle_relation": "TECHNOLOGY_ITSELF",
+          "decision_basis": "classifier_authoritative_domain_mechanism",
+          "helper_proposal_role": "advisory_action_lifecycle_relationships",
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "principal_action_id": "A1",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_action_spans": {
+            "A1": [
+              {
+                "candidate_id": "source-1",
+                "end": 115,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 263,
+                "start": 186
+              }
+            ],
+            "A2": [
+              {
+                "candidate_id": "source-1",
+                "end": 115,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 185,
+                "start": 116
+              }
+            ]
+          },
+          "validated_examined_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 115,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 185,
+              "start": 116
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 263,
+              "start": 186
+            }
+          ]
+        },
+        "subtype": null
+      },
+      "citations": [
+        {
+          "action_id": "A1",
+          "candidate_id": "source-1",
+          "resolved_end": 263,
+          "resolved_start": 0,
+          "resolved_substring": "The operator began installing and testing the CBTC system on the pilot section under a previously awarded contract. The technical bulletin describes equipment integration and test runs. This report concerns the start of deployment, not the earlier supplier award.",
+          "sentence_ids": [
+            "S1",
+            "S3"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": "A2",
+          "candidate_id": "source-1",
+          "resolved_end": 185,
+          "resolved_start": 0,
+          "resolved_substring": "The operator began installing and testing the CBTC system on the pilot section under a previously awarded contract. The technical bulletin describes equipment integration and test runs.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": null,
+          "candidate_id": "source-1",
+          "resolved_end": 263,
+          "resolved_start": 0,
+          "resolved_substring": "The operator began installing and testing the CBTC system on the pilot section under a previously awarded contract. The technical bulletin describes equipment integration and test runs. This report concerns the start of deployment, not the earlier supplier award.",
+          "sentence_ids": [
+            "S1",
+            "S2",
+            "S3"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": null,
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G64",
+      "http_status": 200,
+      "matches_golden": true,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "CORRECT_ASSIGNED",
+      "proposal": {
+        "actions": [
+          {
+            "action_id": "A1",
+            "action_kind": "DEPLOYMENT",
+            "adoption_status": "COMPLETED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S1",
+                  "S3"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+          },
+          {
+            "action_id": "A2",
+            "action_kind": "APPLIED_TECHNICAL_TEST",
+            "adoption_status": "COMPLETED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S1",
+                  "S2"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+          }
+        ],
+        "examined_citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2",
+              "S3"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "principal_action_id": "A1",
+        "subtype": null
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    },
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "6b306ed602de3eb0e96e920ff47bbebae6b01029a843b9dbb55f6074feb14f0c",
+        "configuration_fingerprint": "9515bfd271c5fa254cebefedccd100d3ce826a81586a42680613f79a66086757",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 3,
+        "proposal": {
+          "actions": [
+            {
+              "action_id": "A1",
+              "action_kind": "DEPLOYMENT",
+              "adoption_status": "COMPLETED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S1"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "TECHNOLOGY_ITSELF",
+              "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+            },
+            {
+              "action_id": "A2",
+              "action_kind": "APPLIED_TECHNICAL_TEST",
+              "adoption_status": "PLANNED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S1"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "TECHNOLOGY_ITSELF",
+              "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+            }
+          ],
+          "examined_citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "principal_action_id": "A1",
+          "subtype": null
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "4e395a852982a290760f0a36da5efd69562112202578c708fcac75a3cb9f888e",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1"
+        },
+        "provider_request_body_sha256": "a914015a48467b2a86bb0e59707e12c3119360d87bffc919066d8ad1ce7a6e48",
+        "provider_response_body_sha256": "8bf8bb67661e2afd2a8b188ca8ce96c1b1efe73613389b60198ebeada1c524b1",
+        "request_payload_bytes": 5571,
+        "request_payload_sha256": "4f81daed25f3fc05e8578c4afa48f6b5fa6af51a544a77484a9b8e15e01533fa",
+        "round_index": 2,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_accounting": {
+          "attempt_count": 1,
+          "failure": null,
+          "final_response_parse_status": "PARSEABLE_RESPONSE",
+          "request_body_consistent": true,
+          "retry_count": 0,
+          "retry_reasons": [],
+          "status": "PASS",
+          "unauthorized_retry": false
+        },
+        "transport_attempts": [
+          {
+            "request_body_bytes": 8436,
+            "request_body_sha256": "a914015a48467b2a86bb0e59707e12c3119360d87bffc919066d8ad1ce7a6e48",
+            "response_body_bytes": 2279,
+            "response_body_sha256": "8bf8bb67661e2afd2a8b188ca8ce96c1b1efe73613389b60198ebeada1c524b1",
+            "response_parse_status": "PARSEABLE_RESPONSE",
+            "retry_authorized": false,
+            "retry_reason": null,
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": null,
+          "category_state": "CATEGORY_ASSIGNED",
+          "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+          "event_id": "evaluation-event-1",
+          "primary_category": "技術新知",
+          "primary_category_id": "TECHNICAL_DEVELOPMENT",
+          "provenance": {
+            "authoritative_action_kind": "DEPLOYMENT",
+            "authoritative_lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "decision_basis": "classifier_authoritative_domain_mechanism",
+            "helper_proposal_role": "advisory_action_lifecycle_relationships",
+            "helper_version": "maiagent-chatbot-adapter-v3",
+            "principal_action_id": "A1",
+            "prompt_version": "category-action-lifecycle-response-contract-v1",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-action-lifecycle-proposal-v1",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_action_spans": {
+              "A1": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 107,
+                  "start": 0
+                }
+              ],
+              "A2": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 107,
+                  "start": 0
+                }
+              ]
+            },
+            "validated_examined_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 107,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 236,
+                "start": 108
+              }
+            ]
+          },
+          "subtype": null
+        },
+        "validated_result_sha256": "12a49e3add0dcb454e4a0bcbe5c86c16136eb7d6f2b607eb53d87a9f3e007348",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": null,
+        "category_state": "CATEGORY_ASSIGNED",
+        "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+        "event_id": "evaluation-event-1",
+        "primary_category": "技術新知",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT",
+        "provenance": {
+          "authoritative_action_kind": "DEPLOYMENT",
+          "authoritative_lifecycle_relation": "TECHNOLOGY_ITSELF",
+          "decision_basis": "classifier_authoritative_domain_mechanism",
+          "helper_proposal_role": "advisory_action_lifecycle_relationships",
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "principal_action_id": "A1",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_action_spans": {
+            "A1": [
+              {
+                "candidate_id": "source-1",
+                "end": 107,
+                "start": 0
+              }
+            ],
+            "A2": [
+              {
+                "candidate_id": "source-1",
+                "end": 107,
+                "start": 0
+              }
+            ]
+          },
+          "validated_examined_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 107,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 236,
+              "start": 108
+            }
+          ]
+        },
+        "subtype": null
+      },
+      "citations": [
+        {
+          "action_id": "A1",
+          "candidate_id": "source-1",
+          "resolved_end": 107,
+          "resolved_start": 0,
+          "resolved_substring": "The operator completed deployment of a new radio communication system and began technical acceptance tests.",
+          "sentence_ids": [
+            "S1"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": "A2",
+          "candidate_id": "source-1",
+          "resolved_end": 107,
+          "resolved_start": 0,
+          "resolved_substring": "The operator completed deployment of a new radio communication system and began technical acceptance tests.",
+          "sentence_ids": [
+            "S1"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": null,
+          "candidate_id": "source-1",
+          "resolved_end": 236,
+          "resolved_start": 0,
+          "resolved_substring": "The operator completed deployment of a new radio communication system and began technical acceptance tests. The release cites an existing industry standard as background but announces no revision, adoption, or new normative requirement.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": null,
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G78",
+      "http_status": 200,
+      "matches_golden": true,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "CORRECT_ASSIGNED",
+      "proposal": {
+        "actions": [
+          {
+            "action_id": "A1",
+            "action_kind": "DEPLOYMENT",
+            "adoption_status": "COMPLETED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S1"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+          },
+          {
+            "action_id": "A2",
+            "action_kind": "APPLIED_TECHNICAL_TEST",
+            "adoption_status": "PLANNED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S1"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+          }
+        ],
+        "examined_citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "principal_action_id": "A1",
+        "subtype": null
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    },
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "5b4a9d96159ed61d90ceab456c9968197e1688e4026a9d3198f1e71a97ff4908",
+        "configuration_fingerprint": "9515bfd271c5fa254cebefedccd100d3ce826a81586a42680613f79a66086757",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 4,
+        "proposal": {
+          "actions": [
+            {
+              "action_id": "A1",
+              "action_kind": "DEPLOYMENT",
+              "adoption_status": "COMPLETED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S1"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "TECHNOLOGY_ITSELF",
+              "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+            },
+            {
+              "action_id": "A2",
+              "action_kind": "APPLIED_TECHNICAL_TEST",
+              "adoption_status": "COMPLETED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S2"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "TECHNOLOGY_ITSELF",
+              "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+            }
+          ],
+          "examined_citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "principal_action_id": "A1",
+          "subtype": null
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "e7978c262b5433dc670b48587834b784b7e5aeb7c49e10e88285ea9ffbc8b420",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1"
+        },
+        "provider_request_body_sha256": "6f1bdd6aeea09c282fe24c4119537782c774175908aa65d0c806b3213a0aca3f",
+        "provider_response_body_sha256": "4da893c7d9f01d44fedf4782c87d2299af7e176da90ffe69c1aec858b51cb285",
+        "request_payload_bytes": 5605,
+        "request_payload_sha256": "44169e5bcdf2bca4b3305f69034201444104dc0f190dd2713a1f03ce1f383b03",
+        "round_index": 2,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_accounting": {
+          "attempt_count": 1,
+          "failure": null,
+          "final_response_parse_status": "PARSEABLE_RESPONSE",
+          "request_body_consistent": true,
+          "retry_count": 0,
+          "retry_reasons": [],
+          "status": "PASS",
+          "unauthorized_retry": false
+        },
+        "transport_attempts": [
+          {
+            "request_body_bytes": 8470,
+            "request_body_sha256": "6f1bdd6aeea09c282fe24c4119537782c774175908aa65d0c806b3213a0aca3f",
+            "response_body_bytes": 2285,
+            "response_body_sha256": "4da893c7d9f01d44fedf4782c87d2299af7e176da90ffe69c1aec858b51cb285",
+            "response_parse_status": "PARSEABLE_RESPONSE",
+            "retry_authorized": false,
+            "retry_reason": null,
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": null,
+          "category_state": "CATEGORY_ASSIGNED",
+          "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+          "event_id": "evaluation-event-1",
+          "primary_category": "技術新知",
+          "primary_category_id": "TECHNICAL_DEVELOPMENT",
+          "provenance": {
+            "authoritative_action_kind": "DEPLOYMENT",
+            "authoritative_lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "decision_basis": "classifier_authoritative_domain_mechanism",
+            "helper_proposal_role": "advisory_action_lifecycle_relationships",
+            "helper_version": "maiagent-chatbot-adapter-v3",
+            "principal_action_id": "A1",
+            "prompt_version": "category-action-lifecycle-response-contract-v1",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-action-lifecycle-proposal-v1",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_action_spans": {
+              "A1": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 136,
+                  "start": 0
+                }
+              ],
+              "A2": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 270,
+                  "start": 137
+                }
+              ]
+            },
+            "validated_examined_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 136,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 270,
+                "start": 137
+              }
+            ]
+          },
+          "subtype": null
+        },
+        "validated_result_sha256": "d3e9f1f3fadf711f77257173e19842a6d60a58bc4247d5e79368d51f3cd14fcd",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": null,
+        "category_state": "CATEGORY_ASSIGNED",
+        "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+        "event_id": "evaluation-event-1",
+        "primary_category": "技術新知",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT",
+        "provenance": {
+          "authoritative_action_kind": "DEPLOYMENT",
+          "authoritative_lifecycle_relation": "TECHNOLOGY_ITSELF",
+          "decision_basis": "classifier_authoritative_domain_mechanism",
+          "helper_proposal_role": "advisory_action_lifecycle_relationships",
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "principal_action_id": "A1",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_action_spans": {
+            "A1": [
+              {
+                "candidate_id": "source-1",
+                "end": 136,
+                "start": 0
+              }
+            ],
+            "A2": [
+              {
+                "candidate_id": "source-1",
+                "end": 270,
+                "start": 137
+              }
+            ]
+          },
+          "validated_examined_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 136,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 270,
+              "start": 137
+            }
+          ]
+        },
+        "subtype": null
+      },
+      "citations": [
+        {
+          "action_id": "A1",
+          "candidate_id": "source-1",
+          "resolved_end": 136,
+          "resolved_start": 0,
+          "resolved_substring": "The operator completed technical deployment of an integrated system coordinating train-control signalling with traction-power switching.",
+          "sentence_ids": [
+            "S1"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": "A2",
+          "candidate_id": "source-1",
+          "resolved_end": 270,
+          "resolved_start": 137,
+          "resolved_substring": "The bulletin describes end-to-end testing and commissioning across both systems; no procurement action or rule revision is announced.",
+          "sentence_ids": [
+            "S2"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": null,
+          "candidate_id": "source-1",
+          "resolved_end": 270,
+          "resolved_start": 0,
+          "resolved_substring": "The operator completed technical deployment of an integrated system coordinating train-control signalling with traction-power switching. The bulletin describes end-to-end testing and commissioning across both systems; no procurement action or rule revision is announced.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": null,
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G84",
+      "http_status": 200,
+      "matches_golden": true,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "CORRECT_ASSIGNED",
+      "proposal": {
+        "actions": [
+          {
+            "action_id": "A1",
+            "action_kind": "DEPLOYMENT",
+            "adoption_status": "COMPLETED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S1"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+          },
+          {
+            "action_id": "A2",
+            "action_kind": "APPLIED_TECHNICAL_TEST",
+            "adoption_status": "COMPLETED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S2"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+          }
+        ],
+        "examined_citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "principal_action_id": "A1",
+        "subtype": null
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    },
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "bf5fc1677d1edb343b172e4199d46b2c5a4a57e77f6c12d109ed4e21b2295bc5",
+        "configuration_fingerprint": "9515bfd271c5fa254cebefedccd100d3ce826a81586a42680613f79a66086757",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 5,
+        "proposal": {
+          "actions": [
+            {
+              "action_id": "A1",
+              "action_kind": "APPLIED_TECHNICAL_TEST",
+              "adoption_status": "COMPLETED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S1",
+                    "S2"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "PRE_OPENING",
+              "subject_kind": "PROJECT"
+            },
+            {
+              "action_id": "A2",
+              "action_kind": "PROJECT_STEP",
+              "adoption_status": "COMPLETED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S1"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "PROJECT_DELIVERY",
+              "subject_kind": "PROJECT"
+            }
+          ],
+          "examined_citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "principal_action_id": "A1",
+          "subtype": null
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "e1b622e3563ed57c5fcf5a3934401ffa4f46582688995b20cbefa4bd53ae3fdc",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1"
+        },
+        "provider_request_body_sha256": "230a188ba17e4abde5ac2effce636451a0be95a83e5a47ac0f8df3108d7de83c",
+        "provider_response_body_sha256": "89765d8415ef28267779f94ca4dbcbce552434f27c379844d249bdb6ed4339d9",
+        "request_payload_bytes": 5585,
+        "request_payload_sha256": "2efdba58be7cb68be3d775240fce44d6783bc5345e718d16a0d640a836880c0d",
+        "round_index": 2,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_accounting": {
+          "attempt_count": 1,
+          "failure": null,
+          "final_response_parse_status": "PARSEABLE_RESPONSE",
+          "request_body_consistent": true,
+          "retry_count": 0,
+          "retry_reasons": [],
+          "status": "PASS",
+          "unauthorized_retry": false
+        },
+        "transport_attempts": [
+          {
+            "request_body_bytes": 8450,
+            "request_body_sha256": "230a188ba17e4abde5ac2effce636451a0be95a83e5a47ac0f8df3108d7de83c",
+            "response_body_bytes": 2177,
+            "response_body_sha256": "89765d8415ef28267779f94ca4dbcbce552434f27c379844d249bdb6ed4339d9",
+            "response_parse_status": "PARSEABLE_RESPONSE",
+            "retry_authorized": false,
+            "retry_reason": null,
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+          "category_state": "CATEGORY_UNRESOLVED",
+          "classification_reason": "CATEGORY_UNRESOLVED",
+          "event_id": "evaluation-event-1",
+          "primary_category": null,
+          "primary_category_id": null,
+          "provenance": {
+            "decision_basis": "classifier_authoritative_domain_mechanism",
+            "helper_proposal_role": "advisory_action_lifecycle_relationships",
+            "helper_version": "maiagent-chatbot-adapter-v3",
+            "principal_action_id": "A1",
+            "prompt_version": "category-action-lifecycle-response-contract-v1",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-action-lifecycle-proposal-v1",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_action_spans": {
+              "A1": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 135,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 250,
+                  "start": 136
+                }
+              ],
+              "A2": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 135,
+                  "start": 0
+                }
+              ]
+            },
+            "validated_examined_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 135,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 250,
+                "start": 136
+              }
+            ]
+          },
+          "subtype": null
+        },
+        "validated_result_sha256": "e1ba003d05cb8ee1b3d822f25b63b340a1546c3037eb08bb1ab70488220c93e7",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED",
+        "classification_reason": "CATEGORY_UNRESOLVED",
+        "event_id": "evaluation-event-1",
+        "primary_category": null,
+        "primary_category_id": null,
+        "provenance": {
+          "decision_basis": "classifier_authoritative_domain_mechanism",
+          "helper_proposal_role": "advisory_action_lifecycle_relationships",
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "principal_action_id": "A1",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_action_spans": {
+            "A1": [
+              {
+                "candidate_id": "source-1",
+                "end": 135,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 250,
+                "start": 136
+              }
+            ],
+            "A2": [
+              {
+                "candidate_id": "source-1",
+                "end": 135,
+                "start": 0
+              }
+            ]
+          },
+          "validated_examined_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 135,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 250,
+              "start": 136
+            }
+          ]
+        },
+        "subtype": null
+      },
+      "citations": [
+        {
+          "action_id": "A1",
+          "candidate_id": "source-1",
+          "resolved_end": 250,
+          "resolved_start": 0,
+          "resolved_substring": "Night tests of the signalling system and new switch works took place this week on the future tram line, which is due to open next year. The tests check that position detection and the control system transmit correctly before passenger service starts.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": "A2",
+          "candidate_id": "source-1",
+          "resolved_end": 135,
+          "resolved_start": 0,
+          "resolved_substring": "Night tests of the signalling system and new switch works took place this week on the future tram line, which is due to open next year.",
+          "sentence_ids": [
+            "S1"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": null,
+          "candidate_id": "source-1",
+          "resolved_end": 250,
+          "resolved_start": 0,
+          "resolved_substring": "Night tests of the signalling system and new switch works took place this week on the future tram line, which is due to open next year. The tests check that position detection and the control system transmit correctly before passenger service starts.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": null,
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G100",
+      "http_status": 200,
+      "matches_golden": true,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "CORRECT_UNRESOLVED",
+      "proposal": {
+        "actions": [
+          {
+            "action_id": "A1",
+            "action_kind": "APPLIED_TECHNICAL_TEST",
+            "adoption_status": "COMPLETED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S1",
+                  "S2"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "PRE_OPENING",
+            "subject_kind": "PROJECT"
+          },
+          {
+            "action_id": "A2",
+            "action_kind": "PROJECT_STEP",
+            "adoption_status": "COMPLETED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S1"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "PROJECT_DELIVERY",
+            "subject_kind": "PROJECT"
+          }
+        ],
+        "examined_citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "principal_action_id": "A1",
+        "subtype": null
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    },
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "3d5a1ace25715157e544307e5b415fcd4b3575bef68a46242cef81f0660f89c6",
+        "configuration_fingerprint": "9515bfd271c5fa254cebefedccd100d3ce826a81586a42680613f79a66086757",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 6,
+        "proposal": {
+          "actions": [
+            {
+              "action_id": "A1",
+              "action_kind": "DEPLOYMENT",
+              "adoption_status": "COMPLETED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S1",
+                    "S2"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "TECHNOLOGY_ITSELF",
+              "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+            }
+          ],
+          "examined_citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "principal_action_id": "A1",
+          "subtype": null
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "8e933a3b6657402526f08fbd523249a4a785786acbcdb2b561735fceda536858",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1"
+        },
+        "provider_request_body_sha256": "aac4b0970e99193deed2ec764c754c62abfee4e4ebd59358191ce5da9572754e",
+        "provider_response_body_sha256": "674b9caa1145055c975865665b31e3006afbffd9d1eac258b2616ea8fb16c0b3",
+        "request_payload_bytes": 5619,
+        "request_payload_sha256": "da1a098664f9fd6db14467171799fd983f9a45a5a420dd3bae926cc51841945c",
+        "round_index": 2,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_accounting": {
+          "attempt_count": 1,
+          "failure": null,
+          "final_response_parse_status": "PARSEABLE_RESPONSE",
+          "request_body_consistent": true,
+          "retry_count": 0,
+          "retry_reasons": [],
+          "status": "PASS",
+          "unauthorized_retry": false
+        },
+        "transport_attempts": [
+          {
+            "request_body_bytes": 8484,
+            "request_body_sha256": "aac4b0970e99193deed2ec764c754c62abfee4e4ebd59358191ce5da9572754e",
+            "response_body_bytes": 1529,
+            "response_body_sha256": "674b9caa1145055c975865665b31e3006afbffd9d1eac258b2616ea8fb16c0b3",
+            "response_parse_status": "PARSEABLE_RESPONSE",
+            "retry_authorized": false,
+            "retry_reason": null,
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": null,
+          "category_state": "CATEGORY_ASSIGNED",
+          "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+          "event_id": "evaluation-event-1",
+          "primary_category": "技術新知",
+          "primary_category_id": "TECHNICAL_DEVELOPMENT",
+          "provenance": {
+            "authoritative_action_kind": "DEPLOYMENT",
+            "authoritative_lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "decision_basis": "classifier_authoritative_domain_mechanism",
+            "helper_proposal_role": "advisory_action_lifecycle_relationships",
+            "helper_version": "maiagent-chatbot-adapter-v3",
+            "principal_action_id": "A1",
+            "prompt_version": "category-action-lifecycle-response-contract-v1",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-action-lifecycle-proposal-v1",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_action_spans": {
+              "A1": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 198,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 284,
+                  "start": 199
+                }
+              ]
+            },
+            "validated_examined_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 198,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 284,
+                "start": 199
+              }
+            ]
+          },
+          "subtype": null
+        },
+        "validated_result_sha256": "1eca066647f11d8ee9526ef18c225dd9585cb944ed6ed80445530465d6c0085a",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": null,
+        "category_state": "CATEGORY_ASSIGNED",
+        "classification_reason": "PRINCIPAL_ACTION_TECHNICAL_DEVELOPMENT",
+        "event_id": "evaluation-event-1",
+        "primary_category": "技術新知",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT",
+        "provenance": {
+          "authoritative_action_kind": "DEPLOYMENT",
+          "authoritative_lifecycle_relation": "TECHNOLOGY_ITSELF",
+          "decision_basis": "classifier_authoritative_domain_mechanism",
+          "helper_proposal_role": "advisory_action_lifecycle_relationships",
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "principal_action_id": "A1",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_action_spans": {
+            "A1": [
+              {
+                "candidate_id": "source-1",
+                "end": 198,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 284,
+                "start": 199
+              }
+            ]
+          },
+          "validated_examined_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 198,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 284,
+              "start": 199
+            }
+          ]
+        },
+        "subtype": null
+      },
+      "citations": [
+        {
+          "action_id": "A1",
+          "candidate_id": "source-1",
+          "resolved_end": 284,
+          "resolved_start": 0,
+          "resolved_substring": "A mobile carrier said it has deployed 5G base stations and antennas in the tunnels and stations of the city's operating subway lines, so that more than 70 percent of the network now has 5G coverage. The carrier describes the new radio equipment installed for the underground sections.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": null,
+          "candidate_id": "source-1",
+          "resolved_end": 284,
+          "resolved_start": 0,
+          "resolved_substring": "A mobile carrier said it has deployed 5G base stations and antennas in the tunnels and stations of the city's operating subway lines, so that more than 70 percent of the network now has 5G coverage. The carrier describes the new radio equipment installed for the underground sections.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": null,
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "TECHNICAL_DEVELOPMENT"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G101",
+      "http_status": 200,
+      "matches_golden": true,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "CORRECT_ASSIGNED",
+      "proposal": {
+        "actions": [
+          {
+            "action_id": "A1",
+            "action_kind": "DEPLOYMENT",
+            "adoption_status": "COMPLETED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S1",
+                  "S2"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "TECHNOLOGY_ITSELF",
+            "subject_kind": "TECHNOLOGY_METHOD_MATERIAL"
+          }
+        ],
+        "examined_citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "principal_action_id": "A1",
+        "subtype": null
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    },
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "a5b7dd872810a767b6028f3e9498ce061291995f2ccce999b9e60fd56edafb92",
+        "configuration_fingerprint": "9515bfd271c5fa254cebefedccd100d3ce826a81586a42680613f79a66086757",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 7,
+        "proposal": {
+          "actions": [
+            {
+              "action_id": "A1",
+              "action_kind": "PROJECT_STEP",
+              "adoption_status": "COMPLETED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S1",
+                    "S2"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "PRE_OPENING",
+              "subject_kind": "PROJECT"
+            }
+          ],
+          "examined_citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "principal_action_id": "A1",
+          "subtype": null
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "df334c62e8ac8be78ffbb2d21f3625f8e05976d669ce4ae04eed5c7f6528bdf8",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1"
+        },
+        "provider_request_body_sha256": "b7596c58f8d4d09b58ac9183003a3e7e334198bbb61335c20f89d4764c4c7dc3",
+        "provider_response_body_sha256": "db41df22cece6faa50add79e740e5131f58c99323e5063a36b2e5d1abe777f18",
+        "request_payload_bytes": 5527,
+        "request_payload_sha256": "f20eb52579797891cec1f05f7e4bb67baf633d08a2433ef9dceb2da233633bcf",
+        "round_index": 2,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_accounting": {
+          "attempt_count": 1,
+          "failure": null,
+          "final_response_parse_status": "PARSEABLE_RESPONSE",
+          "request_body_consistent": true,
+          "retry_count": 0,
+          "retry_reasons": [],
+          "status": "PASS",
+          "unauthorized_retry": false
+        },
+        "transport_attempts": [
+          {
+            "request_body_bytes": 8392,
+            "request_body_sha256": "b7596c58f8d4d09b58ac9183003a3e7e334198bbb61335c20f89d4764c4c7dc3",
+            "response_body_bytes": 1460,
+            "response_body_sha256": "db41df22cece6faa50add79e740e5131f58c99323e5063a36b2e5d1abe777f18",
+            "response_parse_status": "PARSEABLE_RESPONSE",
+            "retry_authorized": false,
+            "retry_reason": null,
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+          "category_state": "CATEGORY_UNRESOLVED",
+          "classification_reason": "CATEGORY_UNRESOLVED",
+          "event_id": "evaluation-event-1",
+          "primary_category": null,
+          "primary_category_id": null,
+          "provenance": {
+            "decision_basis": "classifier_authoritative_domain_mechanism",
+            "helper_proposal_role": "advisory_action_lifecycle_relationships",
+            "helper_version": "maiagent-chatbot-adapter-v3",
+            "principal_action_id": "A1",
+            "prompt_version": "category-action-lifecycle-response-contract-v1",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-action-lifecycle-proposal-v1",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_action_spans": {
+              "A1": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 76,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 192,
+                  "start": 77
+                }
+              ]
+            },
+            "validated_examined_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 76,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 192,
+                "start": 77
+              }
+            ]
+          },
+          "subtype": null
+        },
+        "validated_result_sha256": "6db90b07a4d5cc6f4a672e555fde5046876771e03c72b55fbfbfa52fc1bcea6b",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED",
+        "classification_reason": "CATEGORY_UNRESOLVED",
+        "event_id": "evaluation-event-1",
+        "primary_category": null,
+        "primary_category_id": null,
+        "provenance": {
+          "decision_basis": "classifier_authoritative_domain_mechanism",
+          "helper_proposal_role": "advisory_action_lifecycle_relationships",
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "principal_action_id": "A1",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_action_spans": {
+            "A1": [
+              {
+                "candidate_id": "source-1",
+                "end": 76,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 192,
+                "start": 77
+              }
+            ]
+          },
+          "validated_examined_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 76,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 192,
+              "start": 77
+            }
+          ]
+        },
+        "subtype": null
+      },
+      "citations": [
+        {
+          "action_id": "A1",
+          "candidate_id": "source-1",
+          "resolved_end": 192,
+          "resolved_start": 0,
+          "resolved_substring": "Test runs started on the new light rail line ahead of its opening next year. In this first phase the trams are towed along the new tracks at low speed before later tests under their own power.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": null,
+          "candidate_id": "source-1",
+          "resolved_end": 192,
+          "resolved_start": 0,
+          "resolved_substring": "Test runs started on the new light rail line ahead of its opening next year. In this first phase the trams are towed along the new tracks at low speed before later tests under their own power.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": null,
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+        "category_state": "CATEGORY_UNRESOLVED"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G93",
+      "http_status": 200,
+      "matches_golden": true,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "CORRECT_UNRESOLVED",
+      "proposal": {
+        "actions": [
+          {
+            "action_id": "A1",
+            "action_kind": "PROJECT_STEP",
+            "adoption_status": "COMPLETED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S1",
+                  "S2"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "PRE_OPENING",
+            "subject_kind": "PROJECT"
+          }
+        ],
+        "examined_citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "principal_action_id": "A1",
+        "subtype": null
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    },
+    {
+      "acceptance_evidence": {
+        "chain_sha256": "06ee0d188f6a0bd19d27ba20ca43668ea2268bc8ed4f7c46597ffc4c715827b6",
+        "configuration_fingerprint": "9515bfd271c5fa254cebefedccd100d3ce826a81586a42680613f79a66086757",
+        "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+        "ordinal": 8,
+        "proposal": {
+          "actions": [
+            {
+              "action_id": "A1",
+              "action_kind": "TIMETABLE_CHANGE",
+              "adoption_status": "IMPLEMENTED",
+              "citations": [
+                {
+                  "sentence_ids": [
+                    "S1",
+                    "S2"
+                  ],
+                  "source_ref": "M1"
+                }
+              ],
+              "lifecycle_relation": "OPERATING_SERVICE",
+              "subject_kind": "PASSENGER_SERVICE"
+            }
+          ],
+          "examined_citations": [
+            {
+              "sentence_ids": [
+                "S1",
+                "S2"
+              ],
+              "source_ref": "M1"
+            }
+          ],
+          "principal_action_id": "A1",
+          "subtype": "Weekday timetable change"
+        },
+        "proposal_evidence_status": "PARSED_PROPOSAL_RETAINED",
+        "proposal_sha256": "de8dedc121349374aabcbe9004631ec5bbbe30abb06f3036035ac82f3a8f0004",
+        "provider_provenance": {
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1"
+        },
+        "provider_request_body_sha256": "59086ec602f2d70a358e24266a601e94b0686f1b495a1f2127a36bc7b1c77b33",
+        "provider_response_body_sha256": "5622ee77169346e6f505d1e2f97a846be43988e60e51d2be9bb373b86ccdf477",
+        "request_payload_bytes": 5539,
+        "request_payload_sha256": "a9ede533e8033823e79a4daebd6c69b0b06485db255ba04ab7bcb2d4ddb8380e",
+        "round_index": 2,
+        "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+        "transport_accounting": {
+          "attempt_count": 1,
+          "failure": null,
+          "final_response_parse_status": "PARSEABLE_RESPONSE",
+          "request_body_consistent": true,
+          "retry_count": 0,
+          "retry_reasons": [],
+          "status": "PASS",
+          "unauthorized_retry": false
+        },
+        "transport_attempts": [
+          {
+            "request_body_bytes": 8404,
+            "request_body_sha256": "59086ec602f2d70a358e24266a601e94b0686f1b495a1f2127a36bc7b1c77b33",
+            "response_body_bytes": 1598,
+            "response_body_sha256": "5622ee77169346e6f505d1e2f97a846be43988e60e51d2be9bb373b86ccdf477",
+            "response_parse_status": "PARSEABLE_RESPONSE",
+            "retry_authorized": false,
+            "retry_reason": null,
+            "status_code": 200
+          }
+        ],
+        "validated_result": {
+          "category_resolution_reason": null,
+          "category_state": "CATEGORY_ASSIGNED",
+          "classification_reason": "PRINCIPAL_ACTION_OPERATIONAL_CHANGE",
+          "event_id": "evaluation-event-1",
+          "primary_category": "營運動態",
+          "primary_category_id": "OPERATIONAL_CHANGE",
+          "provenance": {
+            "authoritative_action_kind": "TIMETABLE_CHANGE",
+            "authoritative_lifecycle_relation": "OPERATING_SERVICE",
+            "decision_basis": "classifier_authoritative_domain_mechanism",
+            "helper_proposal_role": "advisory_action_lifecycle_relationships",
+            "helper_version": "maiagent-chatbot-adapter-v3",
+            "principal_action_id": "A1",
+            "prompt_version": "category-action-lifecycle-response-contract-v1",
+            "provider_identifier": "maiagent-chatbot-completions",
+            "schema_version": "category-action-lifecycle-proposal-v1",
+            "source_candidate_ids": [
+              "source-1"
+            ],
+            "validated_action_spans": {
+              "A1": [
+                {
+                  "candidate_id": "source-1",
+                  "end": 104,
+                  "start": 0
+                },
+                {
+                  "candidate_id": "source-1",
+                  "end": 204,
+                  "start": 105
+                }
+              ]
+            },
+            "validated_examined_spans": [
+              {
+                "candidate_id": "source-1",
+                "end": 104,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 204,
+                "start": 105
+              }
+            ]
+          },
+          "subtype": "Weekday timetable change"
+        },
+        "validated_result_sha256": "e731e8ab9608c5c76ac82e827a10384e16391a55bb088fda9e0cd2b006be88b6",
+        "validation_status": "CLASSIFIER_ACCEPTED"
+      },
+      "actual": {
+        "category_resolution_reason": null,
+        "category_state": "CATEGORY_ASSIGNED",
+        "classification_reason": "PRINCIPAL_ACTION_OPERATIONAL_CHANGE",
+        "event_id": "evaluation-event-1",
+        "primary_category": "營運動態",
+        "primary_category_id": "OPERATIONAL_CHANGE",
+        "provenance": {
+          "authoritative_action_kind": "TIMETABLE_CHANGE",
+          "authoritative_lifecycle_relation": "OPERATING_SERVICE",
+          "decision_basis": "classifier_authoritative_domain_mechanism",
+          "helper_proposal_role": "advisory_action_lifecycle_relationships",
+          "helper_version": "maiagent-chatbot-adapter-v3",
+          "principal_action_id": "A1",
+          "prompt_version": "category-action-lifecycle-response-contract-v1",
+          "provider_identifier": "maiagent-chatbot-completions",
+          "schema_version": "category-action-lifecycle-proposal-v1",
+          "source_candidate_ids": [
+            "source-1"
+          ],
+          "validated_action_spans": {
+            "A1": [
+              {
+                "candidate_id": "source-1",
+                "end": 104,
+                "start": 0
+              },
+              {
+                "candidate_id": "source-1",
+                "end": 204,
+                "start": 105
+              }
+            ]
+          },
+          "validated_examined_spans": [
+            {
+              "candidate_id": "source-1",
+              "end": 104,
+              "start": 0
+            },
+            {
+              "candidate_id": "source-1",
+              "end": 204,
+              "start": 105
+            }
+          ]
+        },
+        "subtype": "Weekday timetable change"
+      },
+      "citations": [
+        {
+          "action_id": "A1",
+          "candidate_id": "source-1",
+          "resolved_end": 204,
+          "resolved_start": 0,
+          "resolved_substring": "The operator implemented a revised weekday timetable with additional late-night train trips from Monday. The service notice lists the affected hours and stations and confirms that the change is in effect.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        },
+        {
+          "action_id": null,
+          "candidate_id": "source-1",
+          "resolved_end": 204,
+          "resolved_start": 0,
+          "resolved_substring": "The operator implemented a revised weekday timetable with additional late-night train trips from Monday. The service notice lists the affected hours and stations and confirms that the change is in effect.",
+          "sentence_ids": [
+            "S1",
+            "S2"
+          ],
+          "source_ref": "M1"
+        }
+      ],
+      "earliest_failure_type": null,
+      "event_group_id": "evaluation-event-1",
+      "expected": {
+        "category_state": "CATEGORY_ASSIGNED",
+        "primary_category_id": "OPERATIONAL_CHANGE"
+      },
+      "fixture_candidate_ids": [
+        "C1"
+      ],
+      "fixture_id": "G66",
+      "http_status": 200,
+      "matches_golden": true,
+      "member_candidate_ids": [
+        "source-1"
+      ],
+      "outcome_class": "CORRECT_ASSIGNED",
+      "proposal": {
+        "actions": [
+          {
+            "action_id": "A1",
+            "action_kind": "TIMETABLE_CHANGE",
+            "adoption_status": "IMPLEMENTED",
+            "citations": [
+              {
+                "sentence_ids": [
+                  "S1",
+                  "S2"
+                ],
+                "source_ref": "M1"
+              }
+            ],
+            "lifecycle_relation": "OPERATING_SERVICE",
+            "subject_kind": "PASSENGER_SERVICE"
+          }
+        ],
+        "examined_citations": [
+          {
+            "sentence_ids": [
+              "S1",
+              "S2"
+            ],
+            "source_ref": "M1"
+          }
+        ],
+        "principal_action_id": "A1",
+        "subtype": "Weekday timetable change"
+      },
+      "semantic_citation_concerns": [],
+      "semantic_citation_review": "HUMAN_REVIEW_REQUIRED",
+      "validation_error": null
+    }
+  ],
+  "RETRY_PRESENT": "NO",
+  "ROUND_INDEX": 2,
+  "RUNTIME_HELPER_IDENTITY_FINGERPRINT": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+  "SAME_RUNTIME_HELPER_BINDING": "PROVEN",
+  "SEMANTIC_CITATION_CONCERN_COUNT": 0,
+  "SEMANTIC_CITATION_REVIEW": "HUMAN_REVIEW_REQUIRED",
+  "SEMANTIC_RETRY_PRESENT": "NO",
+  "TOTAL_GOLDEN_FIXTURES": 8,
+  "TOTAL_PLANNED_LIVE_CALLS": 24,
+  "TRANSPORT_ACCOUNTING_STATUS": "PASS",
+  "TRANSPORT_ATTEMPT_COUNT": 8,
+  "TRANSPORT_RETRY_PRESENT": "NO",
+  "TRANSPORT_RETRY_REASON_COUNTS": {},
+  "UNAUTHORIZED_TRANSPORT_RETRY_COUNT": 0,
+  "WRITER_CHATBOT_USED": "NO"
+}

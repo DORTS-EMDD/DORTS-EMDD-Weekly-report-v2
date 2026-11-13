@@ -1,0 +1,75 @@
+{
+  "accepted_configuration_fingerprint": "9515bfd271c5fa254cebefedccd100d3ce826a81586a42680613f79a66086757",
+  "cases_per_round": 8,
+  "control_cases": [
+    "G03",
+    "G64",
+    "G78",
+    "G84",
+    "G100",
+    "G101",
+    "G93",
+    "G66"
+  ],
+  "deployment_fingerprint": "ab75a4fb9e278c8f93ee60fff8a1deaa9e0a2ef3a9db9086af09a43e8746bbe7",
+  "expected_oracle": {
+    "G03:evaluation-event-1": {
+      "category_state": "CATEGORY_ASSIGNED",
+      "primary_category_id": "TECHNICAL_DEVELOPMENT"
+    },
+    "G100:evaluation-event-1": {
+      "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+      "category_state": "CATEGORY_UNRESOLVED"
+    },
+    "G101:evaluation-event-1": {
+      "category_state": "CATEGORY_ASSIGNED",
+      "primary_category_id": "TECHNICAL_DEVELOPMENT"
+    },
+    "G64:evaluation-event-1": {
+      "category_state": "CATEGORY_ASSIGNED",
+      "primary_category_id": "TECHNICAL_DEVELOPMENT"
+    },
+    "G66:evaluation-event-1": {
+      "category_state": "CATEGORY_ASSIGNED",
+      "primary_category_id": "OPERATIONAL_CHANGE"
+    },
+    "G78:evaluation-event-1": {
+      "category_state": "CATEGORY_ASSIGNED",
+      "primary_category_id": "TECHNICAL_DEVELOPMENT"
+    },
+    "G84:evaluation-event-1": {
+      "category_state": "CATEGORY_ASSIGNED",
+      "primary_category_id": "TECHNICAL_DEVELOPMENT"
+    },
+    "G93:evaluation-event-1": {
+      "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+      "category_state": "CATEGORY_UNRESOLVED"
+    }
+  },
+  "formal_binding": {
+    "mismatches": {},
+    "mode": "FORMAL_CURRENT_CONFIGURATION_SEAL",
+    "status": "PASS"
+  },
+  "hard_cap": 24,
+  "planned_logical_calls": 24,
+  "production_configuration_identity": {
+    "configuration_fingerprint": "9515bfd271c5fa254cebefedccd100d3ce826a81586a42680613f79a66086757",
+    "guidance_digest": "03044f2d776637b58a9e42e4480430d31155c3021a7df6d35aa4aabb8fffcc11",
+    "prompt_identity": "category-principal-action-v7",
+    "response_contract_identity": "category-action-lifecycle-response-contract-v1",
+    "schema_identity": "category-action-lifecycle-proposal-v1"
+  },
+  "readback_sha256": "ea929f5a9b2f9343eb7e70d2b982735fe14b0c67b8455b529c7012f04a0b9349",
+  "rounds": 3,
+  "runtime_helper_identity_fingerprint": "3181d67bff346e0e3a99f088b143186ab1fd972116eb10d4b47b3e4fa25e13fa",
+  "same_runtime_helper_binding": "PROVEN",
+  "target_configuration_identity": {
+    "configuration_fingerprint": "9515bfd271c5fa254cebefedccd100d3ce826a81586a42680613f79a66086757",
+    "guidance_digest": "03044f2d776637b58a9e42e4480430d31155c3021a7df6d35aa4aabb8fffcc11",
+    "prompt_identity": "category-principal-action-v7",
+    "response_contract_identity": "category-action-lifecycle-response-contract-v1",
+    "schema_identity": "category-action-lifecycle-proposal-v1"
+  },
+  "transport_attempt_hard_cap": 48
+}
