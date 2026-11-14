@@ -32,6 +32,11 @@ on:
         required: true
         default: false
         type: boolean
+      run_relationship_bounded:
+        description: "Temporary validation only: run the 14-case relationship-aware Category bounded gate"
+        required: true
+        default: false
+        type: boolean
       send_email:
         description: "Email the formal report (PDF attached) to DEFAULT_RECIPIENTS"
         required: true
@@ -133,6 +138,53 @@ jobs:
         with:
           name: category-formal-seal-${{ github.run_id }}
           path: docs/category-v4-final-seal/
+          if-no-files-found: warn
+          retention-days: 90
+
+  bounded_category_relationship:
+    name: Temporary relationship-aware Category bounded acceptance
+    needs: offline-regression
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_relationship_bounded == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      MAIAGENT_API_BASE: ${{ secrets.MAIAGENT_API_BASE }}
+      MAIAGENT_API_KEY: ${{ secrets.MAIAGENT_API_KEY }}
+      MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID: ${{ secrets.MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install project dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Verify temporary validation ref
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_REF" = "refs/heads/validation/category-relationship-20261114"
+      - name: Verify required MaiAgent secrets are present
+        shell: bash
+        run: |
+          for name in MAIAGENT_API_BASE MAIAGENT_API_KEY MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID; do
+            if [ -z "${!name:-}" ]; then
+              echo "MISSING_REQUIRED_SECRET=$name" >&2
+              exit 1
+            fi
+          done
+      - name: Run 42-call relationship-aware Category bounded acceptance
+        run: |
+          env -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY \
+            -u http_proxy -u https_proxy -u all_proxy \
+            python scripts/category_bounded_live_acceptance.py
+      - name: Preserve bounded Category evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: category-relationship-bounded-${{ github.run_id }}
+          path: acceptance/category_relationship_contract_20261114/bounded/
           if-no-files-found: warn
           retention-days: 90
 
