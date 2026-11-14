@@ -82,6 +82,7 @@ class _GoldenSemanticOracle:
                 "principal_action_id": "A1",
                 "subtype": expected["subtype"],
                 "examined_citations": citations,
+                "relationships": [],
             }
         if category_state == CategoryState.CATEGORY_UNRESOLVED.value:
             reason = expected["category_resolution_reason"]
@@ -150,6 +151,7 @@ class _GoldenSemanticOracle:
                 "principal_action_id": principal_action_id,
                 "subtype": None,
                 "examined_citations": citations,
+                "relationships": [],
             }
         raise AssertionError("the semantic oracle is not called for NOT_EVALUATED fixtures")
 

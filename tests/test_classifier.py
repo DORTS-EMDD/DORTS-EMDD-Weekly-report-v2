@@ -120,12 +120,40 @@ def _proposal(
     principal_action_id: str | None,
     subtype: str | None = "pilot",
     examined_citations: list[dict[str, object]] | None = None,
+    relationships: list[dict[str, object]] | None = None,
 ) -> dict[str, object]:
     return {
         "actions": actions,
         "principal_action_id": principal_action_id,
         "subtype": subtype,
         "examined_citations": examined_citations or [{"source_ref": "M1", "sentence_ids": ["S1"]}],
+        "relationships": relationships or [],
+    }
+
+
+def _common_decision(*action_ids: str) -> dict[str, object]:
+    return {
+        "relationship_type": "COMMON_DECISION_MEMBERSHIP",
+        "member_action_ids": list(action_ids),
+        "principal_action_id": None,
+        "dependent_action_id": None,
+        "dependence_kind": None,
+        "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
+    }
+
+
+def _same_occurrence_dependence(
+    principal_action_id: str,
+    dependent_action_id: str,
+    dependence_kind: str = "CONSEQUENCE",
+) -> dict[str, object]:
+    return {
+        "relationship_type": "SAME_OCCURRENCE_DEPENDENCE",
+        "member_action_ids": [],
+        "principal_action_id": principal_action_id,
+        "dependent_action_id": dependent_action_id,
+        "dependence_kind": dependence_kind,
+        "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
     }
 
 
@@ -241,6 +269,259 @@ class ClassifierTests(unittest.TestCase):
         )
         result = Classifier(_Helper(proposal)).classify(_group((record,)), (record,))
         self.assertEqual(result.category_resolution_reason, CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION)
+
+    def test_same_category_does_not_prove_coherence(self):
+        record = _record("C1", "Two independent fare changes were adopted.")
+        proposal = _proposal(
+            [
+                _action(
+                    "A1",
+                    "FARE_CHANGE",
+                    subject_kind="PASSENGER_SERVICE",
+                    lifecycle_relation="OPERATING_SERVICE",
+                    adoption_status="ADOPTED",
+                ),
+                _action(
+                    "A2",
+                    "FARE_CHANGE",
+                    subject_kind="PASSENGER_SERVICE",
+                    lifecycle_relation="OPERATING_SERVICE",
+                    adoption_status="ADOPTED",
+                ),
+            ],
+            principal_action_id=None,
+        )
+        result = Classifier(_Helper(proposal)).classify(_group((record,)), (record,))
+        self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
+        self.assertEqual(result.category_resolution_reason, CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION)
+
+    def test_common_decision_membership_allows_same_category_components(self):
+        record = _record("C1", "One authority approval changed fares and operating hours.")
+        proposal = _proposal(
+            [
+                _action(
+                    "A1",
+                    "FARE_CHANGE",
+                    subject_kind="PASSENGER_SERVICE",
+                    lifecycle_relation="OPERATING_SERVICE",
+                    adoption_status="ADOPTED",
+                ),
+                _action(
+                    "A2",
+                    "TIMETABLE_CHANGE",
+                    subject_kind="PASSENGER_SERVICE",
+                    lifecycle_relation="OPERATING_SERVICE",
+                    adoption_status="ADOPTED",
+                ),
+            ],
+            principal_action_id=None,
+            relationships=[_common_decision("A1", "A2")],
+        )
+        result = Classifier(_Helper(proposal)).classify(_group((record,)), (record,))
+        self.assertEqual(result.category_state, CategoryState.CATEGORY_ASSIGNED)
+        self.assertEqual(result.primary_category_id, CategoryId.OPERATIONAL_CHANGE)
+
+    def test_incident_consequence_requires_explicit_same_occurrence_relationship(self):
+        record = _record("C1", "A fault suspended service, and a separate timetable change was implemented.")
+        actions = [
+            _action(
+                "A1",
+                "INCIDENT",
+                subject_kind="INCIDENT_SUBJECT",
+                lifecycle_relation="INCIDENT_OCCURRENCE",
+                adoption_status="COMPLETED",
+            ),
+            _action(
+                "A2",
+                "SERVICE_CHANGE",
+                subject_kind="PASSENGER_SERVICE",
+                lifecycle_relation="OPERATING_SERVICE",
+                adoption_status="IMPLEMENTED",
+            ),
+        ]
+        without_relation = Classifier(_Helper(_proposal(actions, principal_action_id=None))).classify(
+            _group((record,)), (record,)
+        )
+        self.assertEqual(without_relation.category_state, CategoryState.CATEGORY_UNRESOLVED)
+        self.assertEqual(
+            without_relation.category_resolution_reason,
+            CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION,
+        )
+        with_relation = Classifier(
+            _Helper(
+                _proposal(
+                    actions,
+                    principal_action_id=None,
+                    relationships=[_same_occurrence_dependence("A1", "A2")],
+                )
+            )
+        ).classify(_group((record,)), (record,))
+        self.assertEqual(with_relation.category_state, CategoryState.CATEGORY_ASSIGNED)
+        self.assertEqual(with_relation.primary_category_id, CategoryId.INCIDENT)
+
+    def test_locked_original_failures_and_adjacent_controls(self):
+        cases = {
+            "G08": (
+                [
+                    _action(
+                        "A1",
+                        "FARE_CHANGE",
+                        subject_kind="PASSENGER_SERVICE",
+                        lifecycle_relation="OPERATING_SERVICE",
+                        adoption_status="ADOPTED",
+                    ),
+                    _action(
+                        "A2",
+                        "TIMETABLE_CHANGE",
+                        subject_kind="PASSENGER_SERVICE",
+                        lifecycle_relation="OPERATING_SERVICE",
+                        adoption_status="ADOPTED",
+                    ),
+                ],
+                None,
+                [_common_decision("A1", "A2")],
+                CategoryId.OPERATIONAL_CHANGE,
+            ),
+            "G11": (
+                [
+                    _action(
+                        "A1",
+                        "PROCUREMENT_TENDER",
+                        subject_kind="PROCUREMENT_ACTION",
+                        lifecycle_relation="PROCUREMENT_LIFECYCLE",
+                    ),
+                    _action("A2", "PILOT", adoption_status="PLANNED"),
+                ],
+                None,
+                [],
+                CategoryId.PROCUREMENT,
+            ),
+            "G12": (
+                [
+                    _action(
+                        "A1",
+                        "INCIDENT",
+                        subject_kind="INCIDENT_SUBJECT",
+                        lifecycle_relation="INCIDENT_OCCURRENCE",
+                    ),
+                    _action(
+                        "A2",
+                        "SERVICE_CHANGE",
+                        subject_kind="PASSENGER_SERVICE",
+                        lifecycle_relation="OPERATING_SERVICE",
+                        adoption_status="IMPLEMENTED",
+                    ),
+                ],
+                None,
+                [_same_occurrence_dependence("A1", "A2", "RECOVERY")],
+                CategoryId.INCIDENT,
+            ),
+            "G19": (
+                [
+                    _action(
+                        "A1",
+                        "PROCUREMENT_AWARD",
+                        subject_kind="PROCUREMENT_ACTION",
+                        lifecycle_relation="PROCUREMENT_LIFECYCLE",
+                    ),
+                    _action("A2", "PILOT", adoption_status="PLANNED"),
+                ],
+                "A2",
+                [],
+                CategoryId.PROCUREMENT,
+            ),
+            "G55": (
+                [
+                    _action(
+                        "A1",
+                        "OPERATING_PRACTICE_CHANGE",
+                        subject_kind="OTHER",
+                        lifecycle_relation="OPERATING_SERVICE",
+                        adoption_status="IMPLEMENTED",
+                    ),
+                ],
+                "A1",
+                [],
+                CategoryId.OPERATIONAL_CHANGE,
+            ),
+            "G80": (
+                [
+                    _action(
+                        "A1",
+                        "OPERATING_PRACTICE_CHANGE",
+                        subject_kind="OTHER",
+                        lifecycle_relation="OPERATING_SERVICE",
+                        adoption_status="IMPLEMENTED",
+                    ),
+                ],
+                "A1",
+                [],
+                CategoryId.OPERATIONAL_CHANGE,
+            ),
+            "G03": ([_action("A1", "DEPLOYMENT")], "A1", [], CategoryId.TECHNICAL_DEVELOPMENT),
+            "G64": ([_action("A1", "DEPLOYMENT")], "A1", [], CategoryId.TECHNICAL_DEVELOPMENT),
+            "G78": ([_action("A1", "DEPLOYMENT")], "A1", [], CategoryId.TECHNICAL_DEVELOPMENT),
+            "G84": ([_action("A1", "DEPLOYMENT")], "A1", [], CategoryId.TECHNICAL_DEVELOPMENT),
+            "G101": ([_action("A1", "DEPLOYMENT")], "A1", [], CategoryId.TECHNICAL_DEVELOPMENT),
+            "G66": (
+                [
+                    _action(
+                        "A1",
+                        "TIMETABLE_CHANGE",
+                        subject_kind="PASSENGER_SERVICE",
+                        lifecycle_relation="OPERATING_SERVICE",
+                        adoption_status="IMPLEMENTED",
+                    ),
+                ],
+                "A1",
+                [],
+                CategoryId.OPERATIONAL_CHANGE,
+            ),
+        }
+        for case_id, (actions, principal, relationships, expected_category) in cases.items():
+            with self.subTest(case_id=case_id):
+                record = _record("C1", f"Offline contract fixture {case_id}.")
+                result = Classifier(
+                    _Helper(
+                        _proposal(
+                            actions,
+                            principal_action_id=principal,
+                            relationships=relationships,
+                        )
+                    )
+                ).classify(_group((record,), event_id=case_id), (record,))
+                self.assertEqual(result.category_state, CategoryState.CATEGORY_ASSIGNED)
+                self.assertEqual(result.primary_category_id, expected_category)
+
+        for case_id in ("G100", "G93"):
+            with self.subTest(case_id=case_id):
+                record = _record("C1", f"Offline project-step control {case_id}.")
+                result = Classifier(
+                    _Helper(
+                        _proposal(
+                            [_action("A1", "PROJECT_STEP", subject_kind="PROJECT", lifecycle_relation="PRE_OPENING")],
+                            principal_action_id="A1",
+                            subtype=None,
+                        )
+                    )
+                ).classify(_group((record,), event_id=case_id), (record,))
+                self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
+                self.assertEqual(result.category_resolution_reason, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION)
+
+    def test_relationship_citations_are_required_and_invalid_relationship_fails_closed(self):
+        record = _record("C1", "Two actions share no valid relationship citation.")
+        invalid = _common_decision("A1", "A2")
+        invalid["citations"] = [{"source_ref": "M1", "sentence_ids": ["S9"]}]
+        with self.assertRaises(CategoryProposalViolation):
+            Classifier(
+                _Helper(
+                    _proposal(
+                        [_action("A1", "DEPLOYMENT"), _action("A2", "DEPLOYMENT")],
+                        principal_action_id=None,
+                        relationships=[invalid],
+                    )
+                )
+            ).classify(_group((record,)), (record,))
 
     def test_legacy_final_category_response_is_rejected(self):
         record = _record("C1", "The operator completed a deployment.")

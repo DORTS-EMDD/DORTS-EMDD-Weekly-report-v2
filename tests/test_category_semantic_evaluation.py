@@ -41,6 +41,7 @@ class _AssignedProcurementStub:
             "principal_action_id": "A1",
             "subtype": None,
             "examined_citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
+            "relationships": [],
         }
 
 

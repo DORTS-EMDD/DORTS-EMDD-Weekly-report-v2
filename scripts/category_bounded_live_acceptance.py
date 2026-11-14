@@ -1,4 +1,4 @@
-"""Run the predeclared 8-case, 3-round current Category live gate.
+"""Run the predeclared 14-case, 3-round current Category live gate.
 
 This gate is deliberately smaller than the formal 53-group seal.  It binds
 the exact checked-in production configuration, freezes the current full
@@ -30,9 +30,24 @@ from src.weekly_report.category_semantic_provider import (  # noqa: E402
 from src.weekly_report.maiagent_transport import MAIAGENT_MAX_ATTEMPTS  # noqa: E402
 
 
-CONTROL_CASE_IDS = ("G03", "G64", "G78", "G84", "G100", "G101", "G93", "G66")
+BOUNDED_CASE_IDS = (
+    "G08",
+    "G11",
+    "G12",
+    "G19",
+    "G55",
+    "G80",
+    "G03",
+    "G64",
+    "G78",
+    "G84",
+    "G100",
+    "G101",
+    "G93",
+    "G66",
+)
 CONTROL_ROUNDS = 3
-CASES_PER_ROUND = len(CONTROL_CASE_IDS)
+CASES_PER_ROUND = len(BOUNDED_CASE_IDS)
 PLANNED_LOGICAL_CALLS = CONTROL_ROUNDS * CASES_PER_ROUND
 HARD_CAP = PLANNED_LOGICAL_CALLS
 TRANSPORT_ATTEMPT_HARD_CAP = PLANNED_LOGICAL_CALLS * MAIAGENT_MAX_ATTEMPTS
@@ -69,7 +84,7 @@ def _fetch_chatbot_readback(config: MaiAgentCategorySemanticProviderConfig) -> t
 def _control_population() -> tuple[list[dict[str, Any]], dict[tuple[str, str], dict[str, str]]]:
     specs: list[dict[str, Any]] = []
     oracle: dict[tuple[str, str], dict[str, str]] = {}
-    for case_id in CONTROL_CASE_IDS:
+    for case_id in BOUNDED_CASE_IDS:
         matches = sorted((ROOT / "golden" / "cases").glob(f"{case_id.lower()}_*.json"))
         if len(matches) != 1:
             raise ValueError(f"expected one fixture for {case_id}")
@@ -171,7 +186,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--out-dir",
-        default=str(ROOT / "acceptance" / "category_classifier_owner_mechanism_20261113" / "bounded"),
+        default=str(ROOT / "acceptance" / "category_relationship_contract_20261114" / "bounded"),
     )
     args = parser.parse_args(argv)
     out_dir = Path(args.out_dir)
@@ -225,7 +240,7 @@ def main(argv: list[str] | None = None) -> int:
             "production_configuration_identity": production_identity.as_mapping(),
             "target_configuration_identity": target_identity.as_mapping(),
             "formal_binding": binding,
-            "control_cases": list(CONTROL_CASE_IDS),
+            "bounded_cases": list(BOUNDED_CASE_IDS),
             "rounds": CONTROL_ROUNDS,
             "cases_per_round": CASES_PER_ROUND,
             "planned_logical_calls": PLANNED_LOGICAL_CALLS,

@@ -70,7 +70,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
                 self.assertEqual(result.subtype, expected["subtype"])
 
     def test_prompt_carries_the_section_l_boundaries(self):
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v7")
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-relationship-v8")
         guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
         self.assertIn("return only advisory action/lifecycle observations", guidance)
         self.assertIn("Do not return a Category ID, Category state, unresolved reason", guidance)
@@ -80,6 +80,9 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         self.assertIn("A procurement action must have taken place", guidance)
         self.assertIn("An unadopted recommendation is RECOMMENDATION", guidance)
         self.assertIn("leave principal_action_id null", guidance)
+        self.assertIn("COMMON_DECISION_MEMBERSHIP and SAME_OCCURRENCE_DEPENDENCE", guidance)
+        self.assertIn("relationship citations must support the relationship itself", guidance)
+        self.assertIn("Do not infer it from citation or sentence overlap", guidance)
         self.assertIn("Do not infer from titles, snippets, discovery intent, publisher, URL", guidance)
         self.assertIn("Subtype is optional descriptive metadata only", guidance)
         self.assertNotIn("TECHNOLOGY > OPERATIONAL_CHANGE", guidance)

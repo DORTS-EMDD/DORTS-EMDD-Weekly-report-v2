@@ -82,6 +82,7 @@ def _proposal(action: dict[str, object] | None = None, *, subtype: str | None = 
         "principal_action_id": "A1",
         "subtype": subtype,
         "examined_citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
+        "relationships": [],
     }
 
 
@@ -131,11 +132,11 @@ def _group(record: EventIdentityRecord) -> EventGroup:
 
 class CategorySemanticProviderTests(unittest.TestCase):
     def test_versioned_schema_contains_only_advisory_action_contract(self):
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v7")
-        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-action-lifecycle-proposal-v1")
-        self.assertEqual(MAIAGENT_CATEGORY_MESSAGE_VERSION, "category-action-lifecycle-response-contract-v1")
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-relationship-v8")
+        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-action-lifecycle-relationship-proposal-v1")
+        self.assertEqual(MAIAGENT_CATEGORY_MESSAGE_VERSION, "category-action-lifecycle-relationship-response-contract-v1")
         Draft202012Validator.check_schema(_CATEGORY_RESPONSE_SCHEMA)
-        fields = {"actions", "principal_action_id", "subtype", "examined_citations"}
+        fields = {"actions", "principal_action_id", "subtype", "examined_citations", "relationships"}
         self.assertEqual(set(_CATEGORY_RESPONSE_SCHEMA["properties"]), fields)
         self.assertEqual(set(_CATEGORY_RESPONSE_SCHEMA["required"]), fields)
         self.assertFalse(_CATEGORY_RESPONSE_SCHEMA["additionalProperties"])
@@ -161,6 +162,18 @@ class CategorySemanticProviderTests(unittest.TestCase):
         self.assertEqual(
             action_fields,
             {"action_id", "action_kind", "subject_kind", "lifecycle_relation", "adoption_status", "citations"},
+        )
+        relationship_fields = set(projected["properties"]["relationships"]["items"]["properties"])
+        self.assertEqual(
+            relationship_fields,
+            {
+                "relationship_type",
+                "member_action_ids",
+                "principal_action_id",
+                "dependent_action_id",
+                "dependence_kind",
+                "citations",
+            },
         )
 
     def test_model_input_is_request_bound_and_versioned(self):
@@ -192,7 +205,7 @@ class CategorySemanticProviderTests(unittest.TestCase):
         self.assertEqual(result.provenance["decision_basis"], "classifier_authoritative_domain_mechanism")
         self.assertEqual(result.provenance["provider_identifier"], MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER)
         self.assertEqual(result.provenance["schema_version"], CATEGORY_SEMANTIC_SCHEMA_VERSION)
-        self.assertEqual(result.provenance["prompt_version"], MAIAGENT_CATEGORY_MESSAGE_VERSION)
+        self.assertEqual(result.provenance["prompt_version"], CATEGORY_SEMANTIC_PROMPT_VERSION)
         self.assertEqual(result.provenance["helper_version"], MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION)
         self.assertEqual(len(result.provenance["validated_action_spans"]["A1"]), 1)
         self.assertEqual(len(transport.calls), 1)

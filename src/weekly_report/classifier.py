@@ -25,11 +25,15 @@ from .contracts import (
 
 
 _CATEGORY_GUIDANCE = (
-    "Read the supplied authoritative substantive Evidence for this one already-grouped Event Group and return only advisory action/lifecycle observations.",
+    "Read the supplied authoritative substantive Evidence for this one already-grouped Event Group and return only advisory action/lifecycle observations and evidence-grounded relationships.",
     "Do not return a Category ID, Category state, unresolved reason, confidence, ranking, or final Category decision. The Python Classifier is the sole Category owner and will apply the contract after validating your observations.",
     "Each source has a Python-assigned source_ref (M1, M2, ...) and sentence_ids. Every action observation and every examined-evidence citation must cite supplied source_ref and sentence_ids. Never copy or retype source text or identifiers into a citation.",
     "Return each materially relevant current action as an action observation. Use one unique action_id per observation, action_kind from the supplied closed set, subject_kind, lifecycle_relation, adoption_status, and citations.",
     "principal_action_id is the action_id of the one principal current or lifecycle action only when the Evidence supports a unique principal action. Use null when there is no unique principal action or the evidence is insufficient. Do not use ordering, category preference, source order, or keyword counts to choose it.",
+    "relationships may contain only the two evidence-grounded relationship families COMMON_DECISION_MEMBERSHIP and SAME_OCCURRENCE_DEPENDENCE. Do not return a Category decision or Category precedence in a relationship.",
+    "A COMMON_DECISION_MEMBERSHIP relationship names every action_id that the Evidence supports as a constituent aspect of one specific authority decision or principal occurrence. Do not infer it from the same Category, source, date, announcement, sentence, citation, EventGroup, or ordering.",
+    "A SAME_OCCURRENCE_DEPENDENCE relationship names principal_action_id, dependent_action_id, and dependence_kind CONSEQUENCE, RESPONSE, RECOVERY, or DESCRIPTIVE_ASPECT only when the Evidence supports that the dependent observation is part of the same principal occurrence rather than an independent defining action. Do not infer it from citation or sentence overlap, shared source, temporal proximity, EventGroup membership, keywords, or ordering.",
+    "Every relationship must carry its own citations to the supplied Evidence. The relationship citations must support the relationship itself; action citations alone do not establish coherence, containment, causation, consequence, or dependence. Use null or an empty relationship set when no relationship is supported; do not manufacture or backfill one.",
     "action_kind values describe evidence-grounded actions, not Categories: RESEARCH_RESULT, PROTOTYPE, PILOT, EXPERIMENT, APPLIED_TECHNICAL_TEST, DEPLOYMENT, SUBSTANTIVE_TECHNICAL_DEVELOPMENT, PASSENGER_SERVICE_OPENING, SERVICE_CHANGE, TIMETABLE_CHANGE, FARE_CHANGE, OPERATING_PRACTICE_CHANGE, OPERATIONAL_GOVERNANCE, OPERATIONAL_DISPUTE, INVESTIGATION_FINDINGS, INCIDENT, PROCUREMENT_TENDER, PROCUREMENT_BID_INVITATION, PROCUREMENT_SELECTION, PROCUREMENT_AWARD, PROCUREMENT_OPTION, NORMATIVE_CHANGE, RECOMMENDATION, PROJECT_STEP, FUTURE_PLAN, STATEMENT, STATISTICS, RANKING, BACKGROUND, CONFLICTING_ACTION_CLAIMS, UNKNOWN.",
     "subject_kind values are TECHNOLOGY_METHOD_MATERIAL, PASSENGER_SERVICE, PROCUREMENT_ACTION, NORMATIVE_DOCUMENT, INCIDENT_SUBJECT, PROJECT, RECOMMENDATION, or OTHER. lifecycle_relation values are TECHNOLOGY_ITSELF, OPERATING_SERVICE, PROJECT_DELIVERY, PRE_OPENING, PROCUREMENT_LIFECYCLE, NORMATIVE_LIFECYCLE, INCIDENT_OCCURRENCE, BACKGROUND, or NONE. adoption_status values are COMPLETED, IMPLEMENTED, ADOPTED, FORMAL, PLANNED, RECOMMENDED, ANNOUNCED, NOT_APPLICABLE, or UNKNOWN.",
     "A technology action is about the technology, method, or material itself only when subject_kind is TECHNOLOGY_METHOD_MATERIAL and lifecycle_relation is TECHNOLOGY_ITSELF. A pilot or deployment of technology on an operating urban-rail system remains an action about the technology itself. A later acceptance or commissioning observation does not erase an evidenced completed technology deployment.",
@@ -109,6 +113,16 @@ _CATEGORY_ADOPTION_STATUSES = (
     "ANNOUNCED",
     "NOT_APPLICABLE",
     "UNKNOWN",
+)
+_CATEGORY_RELATIONSHIP_TYPES = (
+    "COMMON_DECISION_MEMBERSHIP",
+    "SAME_OCCURRENCE_DEPENDENCE",
+)
+_CATEGORY_DEPENDENCE_KINDS = (
+    "CONSEQUENCE",
+    "RESPONSE",
+    "RECOVERY",
+    "DESCRIPTIVE_ASPECT",
 )
 
 
@@ -216,6 +230,18 @@ class CategoryActionProposal:
 
 
 @dataclass(frozen=True, slots=True)
+class CategoryRelationshipProposal:
+    """Untrusted, evidence-cited relationship between advisory observations."""
+
+    relationship_type: str
+    member_action_ids: tuple[str, ...] = ()
+    principal_action_id: str | None = None
+    dependent_action_id: str | None = None
+    dependence_kind: str | None = None
+    citations: tuple[CategoryCitation, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class CategorySemanticResponse:
     """Untrusted advisory action observations; Classifier validates and decides."""
 
@@ -223,6 +249,7 @@ class CategorySemanticResponse:
     principal_action_id: str | None = None
     subtype: str | None = None
     examined_citations: tuple[CategoryCitation, ...] = ()
+    relationships: tuple[CategoryRelationshipProposal, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -283,10 +310,12 @@ class _ValidatedCategoryResponse:
     subtype: str | None
     action_citation_spans: tuple[tuple[str, tuple[CategoryEvidenceSpan, ...]], ...]
     examined_citation_spans: tuple[CategoryEvidenceSpan, ...]
+    relationships: tuple[CategoryRelationshipProposal, ...]
+    relationship_citation_spans: tuple[tuple[CategoryRelationshipProposal, tuple[CategoryEvidenceSpan, ...]], ...]
 
 
 _RESPONSE_FIELDS = frozenset(
-    {"actions", "principal_action_id", "subtype", "examined_citations"}
+    {"actions", "principal_action_id", "subtype", "examined_citations", "relationships"}
 )
 _ACTION_FIELDS = frozenset(
     {
@@ -299,6 +328,16 @@ _ACTION_FIELDS = frozenset(
     }
 )
 _CITATION_FIELDS = frozenset({"source_ref", "sentence_ids"})
+_RELATIONSHIP_FIELDS = frozenset(
+    {
+        "relationship_type",
+        "member_action_ids",
+        "principal_action_id",
+        "dependent_action_id",
+        "dependence_kind",
+        "citations",
+    }
+)
 _DOMAIN_UNRESOLVED_REASONS = frozenset(
     {
         CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
@@ -390,6 +429,144 @@ def _category_action_from_value(value: object) -> CategoryActionProposal:
     return action
 
 
+def _category_relationship_from_value(value: object) -> CategoryRelationshipProposal:
+    if isinstance(value, CategoryRelationshipProposal):
+        relationship = value
+    else:
+        if not isinstance(value, Mapping) or frozenset(value) != _RELATIONSHIP_FIELDS:
+            raise InvalidCategorySemanticResponse(
+                "relationship fields do not match schema",
+                predicate="RELATIONSHIP_SHAPE",
+            )
+        raw_member_action_ids = value["member_action_ids"]
+        raw_citations = value["citations"]
+        try:
+            relationship = CategoryRelationshipProposal(
+                relationship_type=value["relationship_type"],
+                member_action_ids=tuple(raw_member_action_ids),
+                principal_action_id=value["principal_action_id"],
+                dependent_action_id=value["dependent_action_id"],
+                dependence_kind=value["dependence_kind"],
+                citations=tuple(_citation_from_value(item) for item in raw_citations),
+            )
+        except (KeyError, TypeError) as exc:
+            raise InvalidCategorySemanticResponse(
+                "relationship fields have invalid types",
+                predicate="RELATIONSHIP_SHAPE",
+            ) from exc
+
+    if (
+        not isinstance(relationship.relationship_type, str)
+        or relationship.relationship_type not in _CATEGORY_RELATIONSHIP_TYPES
+        or not isinstance(relationship.member_action_ids, (list, tuple))
+        or not all(isinstance(action_id, str) and action_id for action_id in relationship.member_action_ids)
+        or len(set(relationship.member_action_ids)) != len(relationship.member_action_ids)
+        or not isinstance(relationship.citations, (list, tuple))
+        or not relationship.citations
+        or not all(isinstance(citation, CategoryCitation) for citation in relationship.citations)
+    ):
+        raise InvalidCategorySemanticResponse(
+            "relationship is outside the advisory contract",
+            predicate="RELATIONSHIP_FIELDS",
+        )
+
+    if relationship.relationship_type == "COMMON_DECISION_MEMBERSHIP":
+        if (
+            len(relationship.member_action_ids) < 2
+            or relationship.principal_action_id is not None
+            or relationship.dependent_action_id is not None
+            or relationship.dependence_kind is not None
+        ):
+            raise InvalidCategorySemanticResponse(
+                "common-decision relationship has invalid endpoints",
+                predicate="RELATIONSHIP_ENDPOINT",
+            )
+    else:
+        if (
+            relationship.member_action_ids
+            or not isinstance(relationship.principal_action_id, str)
+            or not relationship.principal_action_id
+            or not isinstance(relationship.dependent_action_id, str)
+            or not relationship.dependent_action_id
+            or relationship.principal_action_id == relationship.dependent_action_id
+            or relationship.dependence_kind not in _CATEGORY_DEPENDENCE_KINDS
+        ):
+            raise InvalidCategorySemanticResponse(
+                "same-occurrence relationship has invalid endpoints",
+                predicate="RELATIONSHIP_ENDPOINT",
+            )
+    return relationship
+
+
+def _parse_relationships(
+    value: object,
+    request: CategorySemanticRequest,
+    actions: tuple[CategoryActionProposal, ...],
+) -> tuple[
+    tuple[CategoryRelationshipProposal, ...],
+    tuple[tuple[CategoryRelationshipProposal, tuple[CategoryEvidenceSpan, ...]], ...],
+]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes, bytearray)):
+        raise InvalidCategorySemanticResponse(
+            "relationships must be an array",
+            predicate="RELATIONSHIP_SHAPE",
+        )
+
+    action_ids = {action.action_id for action in actions}
+    relationships: list[CategoryRelationshipProposal] = []
+    relationship_spans: list[
+        tuple[CategoryRelationshipProposal, tuple[CategoryEvidenceSpan, ...]]
+    ] = []
+    common_memberships: set[frozenset[str]] = set()
+    dependency_pairs: dict[tuple[str, str], str] = {}
+    for raw_relationship in value:
+        relationship = _category_relationship_from_value(raw_relationship)
+        endpoints = (
+            relationship.member_action_ids
+            if relationship.relationship_type == "COMMON_DECISION_MEMBERSHIP"
+            else (relationship.principal_action_id, relationship.dependent_action_id)
+        )
+        if any(action_id not in action_ids for action_id in endpoints):
+            raise InvalidCategorySemanticResponse(
+                "relationship references an unknown action",
+                predicate="RELATIONSHIP_ENDPOINT",
+            )
+        spans = _parse_citations(relationship.citations, request)
+        if not spans:
+            raise InvalidCategorySemanticResponse(
+                "relationship requires evidence support",
+                predicate="RELATIONSHIP_CITATION",
+            )
+
+        if relationship.relationship_type == "COMMON_DECISION_MEMBERSHIP":
+            membership = frozenset(relationship.member_action_ids)
+            if membership in common_memberships:
+                raise InvalidCategorySemanticResponse(
+                    "duplicate common-decision relationship",
+                    predicate="RELATIONSHIP_CONTRADICTION",
+                )
+            common_memberships.add(membership)
+        else:
+            pair = (relationship.principal_action_id, relationship.dependent_action_id)
+            reverse = (pair[1], pair[0])
+            previous_kind = dependency_pairs.get(pair)
+            if previous_kind is not None:
+                raise InvalidCategorySemanticResponse(
+                    "duplicate or contradictory same-occurrence relationship",
+                    predicate="RELATIONSHIP_CONTRADICTION",
+                )
+            if reverse in dependency_pairs:
+                raise InvalidCategorySemanticResponse(
+                    "opposed same-occurrence relationships are contradictory",
+                    predicate="RELATIONSHIP_CONTRADICTION",
+                )
+            dependency_pairs[pair] = relationship.dependence_kind or ""
+
+        relationships.append(relationship)
+        relationship_spans.append((relationship, spans))
+    return tuple(relationships), tuple(relationship_spans)
+
+
 def _parse_action_observations(
     value: object,
     request: CategorySemanticRequest,
@@ -435,6 +612,7 @@ def _validate_response(
             "principal_action_id": raw_response.principal_action_id,
             "subtype": raw_response.subtype,
             "examined_citations": raw_response.examined_citations,
+            "relationships": raw_response.relationships,
         }
     elif isinstance(raw_response, Mapping):
         payload = raw_response
@@ -455,12 +633,29 @@ def _validate_response(
     examined_spans = _parse_citations(payload["examined_citations"], request)
     if not examined_spans:
         raise InvalidCategorySemanticResponse("examined_citations must contain at least one supported sentence", predicate="CITATION_INVALID")
+    relationships, relationship_spans = _parse_relationships(
+        payload["relationships"],
+        request,
+        actions,
+    )
+    dependent_action_ids = {
+        relationship.dependent_action_id
+        for relationship in relationships
+        if relationship.relationship_type == "SAME_OCCURRENCE_DEPENDENCE"
+    }
+    if principal_action_id is not None and principal_action_id in dependent_action_ids:
+        raise InvalidCategorySemanticResponse(
+            "principal_action_id conflicts with a dependent relationship endpoint",
+            predicate="RELATIONSHIP_CONTRADICTION",
+        )
     return _ValidatedCategoryResponse(
         actions=actions,
         principal_action_id=principal_action_id,
         subtype=subtype,
         action_citation_spans=action_spans,
         examined_citation_spans=examined_spans,
+        relationships=relationships,
+        relationship_citation_spans=relationship_spans,
     )
 
 
@@ -589,6 +784,21 @@ _PROCUREMENT_ACTION_KINDS = frozenset(
 )
 _COMPLETED_ACTION_STATUSES = frozenset({"COMPLETED", "IMPLEMENTED", "ADOPTED", "FORMAL"})
 _PROJECT_LIFECYCLE_RELATIONS = frozenset({"PROJECT_DELIVERY", "PRE_OPENING", "BACKGROUND"})
+_DIRECT_PASSENGER_OPERATIONAL_ACTION_KINDS = frozenset(
+    {
+        "PASSENGER_SERVICE_OPENING",
+        "SERVICE_CHANGE",
+        "TIMETABLE_CHANGE",
+        "FARE_CHANGE",
+        "OPERATIONAL_DISPUTE",
+    }
+)
+_OPERATING_PRACTICE_ACTION_KINDS = frozenset(
+    {
+        "OPERATING_PRACTICE_CHANGE",
+        "OPERATIONAL_GOVERNANCE",
+    }
+)
 
 
 def _classify_action_observation(
@@ -610,10 +820,16 @@ def _classify_action_observation(
             if action.adoption_status in {"PLANNED", "RECOMMENDED", "ANNOUNCED", "UNKNOWN"}:
                 return None, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
             return CategoryId.OPERATIONAL_CHANGE, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+        if action.lifecycle_relation != "OPERATING_SERVICE" or action.adoption_status not in _COMPLETED_ACTION_STATUSES:
+            return None, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
         if (
-            action.subject_kind != "PASSENGER_SERVICE"
-            or action.lifecycle_relation != "OPERATING_SERVICE"
-            or action.adoption_status not in _COMPLETED_ACTION_STATUSES
+            action.action_kind in _DIRECT_PASSENGER_OPERATIONAL_ACTION_KINDS
+            and action.subject_kind != "PASSENGER_SERVICE"
+        ):
+            return None, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+        if (
+            action.action_kind in _OPERATING_PRACTICE_ACTION_KINDS
+            and action.subject_kind not in {"PASSENGER_SERVICE", "OTHER"}
         ):
             return None, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
         return CategoryId.OPERATIONAL_CHANGE, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
@@ -656,14 +872,71 @@ def _unresolved_reason_without_principal(
         return CategoryResolutionReason.INSUFFICIENT_CATEGORY_EVIDENCE
     if any(action.action_kind == "CONFLICTING_ACTION_CLAIMS" for action in actions):
         return CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS
-    actionable = [
+    category_defining = [
         action
         for action in actions
-        if action.action_kind not in {"PROJECT_STEP", "FUTURE_PLAN", "STATEMENT", "STATISTICS", "RANKING", "BACKGROUND"}
+        if _classify_action_observation(action)[0] is not None
     ]
-    if len(actionable) > 1:
+    if len(category_defining) > 1:
         return CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION
     return CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+
+
+def _common_decision_covers(
+    relationships: tuple[CategoryRelationshipProposal, ...],
+    action_ids: set[str],
+) -> bool:
+    """Return whether one explicit relationship accounts for every action."""
+
+    if len(action_ids) < 2:
+        return False
+    return any(
+        relationship.relationship_type == "COMMON_DECISION_MEMBERSHIP"
+        and action_ids.issubset(set(relationship.member_action_ids))
+        for relationship in relationships
+    )
+
+
+def _dependent_action_ids(
+    relationships: tuple[CategoryRelationshipProposal, ...],
+    category_by_action_id: Mapping[str, CategoryId | None],
+) -> frozenset[str]:
+    """Apply only explicitly proposed same-occurrence relationships.
+
+    A dependent observation is removed from the set of competing defining
+    actions only when its named principal is itself a validated §L defining
+    action.  Citation overlap, source identity, and action ordering never
+    participate in this decision.
+    """
+
+    return frozenset(
+        relationship.dependent_action_id
+        for relationship in relationships
+        if (
+            relationship.relationship_type == "SAME_OCCURRENCE_DEPENDENCE"
+            and category_by_action_id.get(relationship.principal_action_id) is not None
+            and category_by_action_id.get(relationship.dependent_action_id) is not None
+        )
+    )
+
+
+def _relationship_provenance(
+    relationships: tuple[
+        tuple[CategoryRelationshipProposal, tuple[CategoryEvidenceSpan, ...]],
+        ...
+    ],
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "relationship_type": relationship.relationship_type,
+            "member_action_ids": list(relationship.member_action_ids),
+            "principal_action_id": relationship.principal_action_id,
+            "dependent_action_id": relationship.dependent_action_id,
+            "dependence_kind": relationship.dependence_kind,
+            "validated_spans": _span_provenance(spans),
+        }
+        for relationship, spans in relationships
+    ]
 
 
 class Classifier:
@@ -740,22 +1013,70 @@ class Classifier:
                 for action_id, spans in response.action_citation_spans
             },
             "validated_examined_spans": _span_provenance(response.examined_citation_spans),
+            "validated_relationships": _relationship_provenance(response.relationship_citation_spans),
             "principal_action_id": response.principal_action_id,
             **helper_provenance,
         }
-        if response.principal_action_id is None:
+        category_by_action_id = {
+            action.action_id: _classify_action_observation(action)[0]
+            for action in response.actions
+        }
+        dependent_action_ids = _dependent_action_ids(
+            response.relationships,
+            category_by_action_id,
+        )
+        defining_actions = tuple(
+            action
+            for action in response.actions
+            if category_by_action_id[action.action_id] is not None
+            and action.action_id not in dependent_action_ids
+        )
+        defining_categories = {
+            category_by_action_id[action.action_id]
+            for action in defining_actions
+        }
+        if not defining_categories:
             return self._unresolved(
                 event_group,
                 _unresolved_reason_without_principal(response.actions),
                 provenance,
             )
         action_by_id = {action.action_id: action for action in response.actions}
-        principal = action_by_id[response.principal_action_id]
-        category_id, unresolved_reason = _classify_action_observation(principal)
-        if category_id is None:
-            return self._unresolved(event_group, unresolved_reason, provenance)
-        provenance["authoritative_action_kind"] = principal.action_kind
-        provenance["authoritative_lifecycle_relation"] = principal.lifecycle_relation
+        selected_action = action_by_id.get(response.principal_action_id or "")
+        if (
+            selected_action is None
+            or category_by_action_id.get(selected_action.action_id) is None
+            or selected_action.action_id not in {action.action_id for action in defining_actions}
+        ):
+            selected_action = None
+
+        if len(defining_actions) > 1 and not _common_decision_covers(
+            response.relationships,
+            {action.action_id for action in defining_actions},
+        ):
+            return self._unresolved(
+                event_group,
+                CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION,
+                provenance,
+            )
+        if len(defining_categories) > 1 and selected_action is None:
+            return self._unresolved(
+                event_group,
+                CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION,
+                provenance,
+            )
+
+        category_id = (
+            category_by_action_id[selected_action.action_id]
+            if len(defining_categories) > 1 and selected_action is not None
+            else next(iter(defining_categories))
+        )
+        provenance["authoritative_action_ids"] = [action.action_id for action in defining_actions]
+        if selected_action is not None:
+            provenance["authoritative_action_kind"] = selected_action.action_kind
+            provenance["authoritative_lifecycle_relation"] = selected_action.lifecycle_relation
+        elif len(defining_actions) > 1:
+            provenance["authoritative_action_resolution"] = "COHERENT_COMMON_DECISION_ACTION_SET"
         return CategoryResult(
             category_state=CategoryState.CATEGORY_ASSIGNED,
             event_id=event_group.event_id,

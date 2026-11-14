@@ -427,9 +427,9 @@ def _groups(upstream: _UpstreamFixture, records: tuple[EventIdentityRecord, ...]
     return tuple(output)
 
 
-ACCEPTANCE_VERSION = "category-v5-classifier-owner-seal-v2"
-ACCEPTANCE_EVIDENCE_VERSION = "category-acceptance-evidence-v2"
-EVALUATION_HARNESS_VERSION = "category-semantic-evaluation-v6"
+ACCEPTANCE_VERSION = "category-v6-relationship-contract-seal-v1"
+ACCEPTANCE_EVIDENCE_VERSION = "category-acceptance-evidence-v3"
+EVALUATION_HARNESS_VERSION = "category-semantic-evaluation-v7"
 DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION = "category-deployment-snapshot-v1"
 TOTAL_GOLDEN_FIXTURES = 85
 CATEGORY_REACHED_FIXTURES = 52
@@ -699,6 +699,23 @@ def _proposal_evidence(value: object) -> dict[str, Any]:
                     "sentence_ids": list(citation.sentence_ids),
                 }
                 for citation in value.examined_citations
+            ],
+            "relationships": [
+                {
+                    "relationship_type": relationship.relationship_type,
+                    "member_action_ids": list(relationship.member_action_ids),
+                    "principal_action_id": relationship.principal_action_id,
+                    "dependent_action_id": relationship.dependent_action_id,
+                    "dependence_kind": relationship.dependence_kind,
+                    "citations": [
+                        {
+                            "source_ref": citation.source_ref,
+                            "sentence_ids": list(citation.sentence_ids),
+                        }
+                        for citation in relationship.citations
+                    ],
+                }
+                for relationship in value.relationships
             ],
         }
     if isinstance(value, Mapping):
@@ -1299,7 +1316,11 @@ def _classify_for_evaluation(classifier: Classifier, spec: dict[str, Any]) -> Ca
             event_id=spec["group"].event_id,
             classification_reason=CategoryState.CATEGORY_UNRESOLVED.value,
             category_resolution_reason=CategoryResolutionReason.SEMANTIC_HELPER_INVALID_RESPONSE,
-            provenance={"decision_basis": "proposal_contract_violation", "validation_error": str(exc)},
+            provenance={
+                "decision_basis": "proposal_contract_violation",
+                "validation_error": str(exc),
+                "validation_predicate": exc.failure_class,
+            },
         )
 
 
@@ -1319,6 +1340,11 @@ def _citation_details(
                     citation_entries.append((action_id if isinstance(action_id, str) else None, citation))
         for citation in proposal.get("examined_citations", ()):
             citation_entries.append((None, citation))
+        for relationship_index, relationship in enumerate(proposal.get("relationships", ())):
+            if isinstance(relationship, Mapping):
+                relationship_label = f"relationship:{relationship_index}:{relationship.get('relationship_type')}"
+                for citation in relationship.get("citations", ()):
+                    citation_entries.append((relationship_label, citation))
     canonical_spans: list[dict[str, Any]] = []
     validated_actions = actual.provenance.get("validated_action_spans", {})
     if isinstance(validated_actions, Mapping):
@@ -1328,6 +1354,13 @@ def _citation_details(
     examined_spans = actual.provenance.get("validated_examined_spans", ())
     if isinstance(examined_spans, list):
         canonical_spans.extend(span for span in examined_spans if isinstance(span, Mapping))
+    validated_relationships = actual.provenance.get("validated_relationships", ())
+    if isinstance(validated_relationships, list):
+        for relationship in validated_relationships:
+            if isinstance(relationship, Mapping):
+                spans = relationship.get("validated_spans", ())
+                if isinstance(spans, list):
+                    canonical_spans.extend(span for span in spans if isinstance(span, Mapping))
     details: list[dict[str, Any]] = []
     for action_id, citation in citation_entries:
         if not isinstance(citation, Mapping):
