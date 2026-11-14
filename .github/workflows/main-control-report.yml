@@ -1,3 +1,4 @@
+# Trigger-only control wrapper. Jobs below always checkout the exact main baseline SHA.
 name: Main baseline control report
 
 on:
