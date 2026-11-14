@@ -132,7 +132,7 @@ def _group(record: EventIdentityRecord) -> EventGroup:
 
 class CategorySemanticProviderTests(unittest.TestCase):
     def test_versioned_schema_contains_only_advisory_action_contract(self):
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-relationship-v8")
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-relationship-v9")
         self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-action-lifecycle-relationship-proposal-v1")
         self.assertEqual(MAIAGENT_CATEGORY_MESSAGE_VERSION, "category-action-lifecycle-relationship-response-contract-v1")
         Draft202012Validator.check_schema(_CATEGORY_RESPONSE_SCHEMA)

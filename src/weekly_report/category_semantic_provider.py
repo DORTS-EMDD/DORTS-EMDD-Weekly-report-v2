@@ -39,7 +39,7 @@ from .maiagent_transport import (
 )
 
 
-CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-relationship-v8"
+CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-relationship-v9"
 CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-action-lifecycle-relationship-proposal-v1"
 MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION = "maiagent-chatbot-adapter-v4"
 MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER = "maiagent-chatbot-completions"

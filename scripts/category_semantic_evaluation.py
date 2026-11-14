@@ -427,7 +427,7 @@ def _groups(upstream: _UpstreamFixture, records: tuple[EventIdentityRecord, ...]
     return tuple(output)
 
 
-ACCEPTANCE_VERSION = "category-v6-relationship-contract-seal-v1"
+ACCEPTANCE_VERSION = "category-v7-relationship-completeness-seal-v1"
 ACCEPTANCE_EVIDENCE_VERSION = "category-acceptance-evidence-v3"
 EVALUATION_HARNESS_VERSION = "category-semantic-evaluation-v7"
 DEPLOYMENT_SNAPSHOT_CONTRACT_VERSION = "category-deployment-snapshot-v1"

@@ -359,6 +359,57 @@ class ClassifierTests(unittest.TestCase):
         self.assertEqual(with_relation.category_state, CategoryState.CATEGORY_ASSIGNED)
         self.assertEqual(with_relation.primary_category_id, CategoryId.INCIDENT)
 
+    def test_decomposed_technical_occurrence_requires_supported_relationship(self):
+        record = _record(
+            "C1",
+            "The operator began installing and testing the CBTC system on the pilot section. "
+            "The technical bulletin describes equipment integration and test runs. "
+            "This report concerns the start of deployment.",
+        )
+        single_observation = Classifier(
+            _Helper(_proposal([_action("A1", "DEPLOYMENT")], principal_action_id="A1"))
+        ).classify(_group((record,), event_id="G64-single"), (record,))
+        self.assertEqual(single_observation.category_state, CategoryState.CATEGORY_ASSIGNED)
+        self.assertEqual(single_observation.primary_category_id, CategoryId.TECHNICAL_DEVELOPMENT)
+
+        decomposed = [
+            _action("A1", "DEPLOYMENT", adoption_status="IMPLEMENTED"),
+            _action("A2", "APPLIED_TECHNICAL_TEST", adoption_status="COMPLETED"),
+        ]
+        without_relationship = Classifier(
+            _Helper(_proposal(decomposed, principal_action_id="A1"))
+        ).classify(_group((record,), event_id="G64-decomposed-without-relation"), (record,))
+        self.assertEqual(without_relationship.category_state, CategoryState.CATEGORY_UNRESOLVED)
+        self.assertEqual(
+            without_relationship.category_resolution_reason,
+            CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION,
+        )
+
+        with_relationship = Classifier(
+            _Helper(
+                _proposal(
+                    decomposed,
+                    principal_action_id="A1",
+                    relationships=[_same_occurrence_dependence("A1", "A2", "DESCRIPTIVE_ASPECT")],
+                )
+            )
+        ).classify(_group((record,), event_id="G64-decomposed-with-relation"), (record,))
+        self.assertEqual(with_relationship.category_state, CategoryState.CATEGORY_ASSIGNED)
+        self.assertEqual(with_relationship.primary_category_id, CategoryId.TECHNICAL_DEVELOPMENT)
+
+    def test_independent_technical_actions_remain_unresolved_without_relationship(self):
+        record = _record("C1", "A deployment and a separate completed technical test were both reported.")
+        result = Classifier(
+            _Helper(
+                _proposal(
+                    [_action("A1", "DEPLOYMENT"), _action("A2", "APPLIED_TECHNICAL_TEST")],
+                    principal_action_id="A1",
+                )
+            )
+        ).classify(_group((record,), event_id="independent-technical-actions"), (record,))
+        self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
+        self.assertEqual(result.category_resolution_reason, CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION)
+
     def test_locked_original_failures_and_adjacent_controls(self):
         cases = {
             "G08": (
