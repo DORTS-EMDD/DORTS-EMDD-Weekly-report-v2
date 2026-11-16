@@ -163,3 +163,16 @@ def test_writer_request_carries_the_canonical_candidate_event_focus():
     assert request["writer_request"]["event_focus"] == [body]
     assert any("event_focus" in line for line in WRITER_INSTRUCTIONS)
     assert any("Never mix scripts" in line for line in WRITER_INSTRUCTIONS)
+
+
+def test_writer_covers_only_the_focus_occurrence_of_a_roundup_article():
+    # RC-67: a roundup or feature article that recounts several occurrences
+    # (Run 43791549550: three Daegu Line 3 failures plus a fire drill) must
+    # yield only the focus occurrence, so two report items never overlap.
+    from src.weekly_report.writer import WRITER_INSTRUCTIONS
+
+    instructions = " ".join(WRITER_INSTRUCTIONS)
+    assert "cover only the occurrence in event_focus" in instructions
+    assert "Do not list, count or summarize the other occurrences" in instructions
+    request = build_maiagent_writer_model_input(_workflow_result())
+    assert request["prompt_version"] == "formal-report-writer-v11"

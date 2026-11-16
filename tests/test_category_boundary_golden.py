@@ -27,7 +27,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         locked = json.loads((GOLDEN / "manifest.json").read_text(encoding="utf-8"))
         taxonomy = json.loads((GOLDEN / "taxonomy_manifest.json").read_text(encoding="utf-8"))
         ids = [entry["case_id"] for entry in MANIFEST["cases"]]
-        self.assertEqual(ids, ["G92", "G93", "G94", "G95", "G96", "G97", "G98", "G99", "G100", "G101"])
+        self.assertEqual(ids, ["G92", "G93", "G94", "G95", "G96", "G97", "G98", "G99", "G100", "G101", "G102", "G103", "G104"])
         self.assertEqual(MANIFEST["case_count"], len(ids))
         self.assertTrue(MANIFEST["category_acceptance_population_excluded"])
         self.assertTrue(set(ids).isdisjoint(entry["case_id"] for entry in locked["cases"]))
@@ -70,7 +70,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
                 self.assertEqual(result.subtype, expected["subtype"])
 
     def test_prompt_carries_the_section_l_boundaries(self):
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v6")
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v7")
         guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
         self.assertIn("is of a technology, method or material itself", guidance)
         for step in ("groundbreaking", "pre-opening or trial test runs", "commissioning and acceptance tests"):
@@ -86,7 +86,13 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         self.assertIn("substantive development whose subject is a technology, method or material itself", guidance)
         self.assertNotIn("technical deployments, and substantive technical development", guidance)
         self.assertIn("A Category applies only when the principal action is itself one of the actions its definition lists", guidance)
-        self.assertIn("are not TECHNICAL_DEVELOPMENT", guidance)
+        self.assertIn("is not TECHNICAL_DEVELOPMENT", guidance)
+        # RC-67 (user decision 2026-11-16, D1/D2): drills have no Category;
+        # funding, cost increases and opening-date changes are project steps.
+        self.assertIn("A drill, exercise, rehearsal or training session", guidance)
+        self.assertIn("has no Category-defining action under any Category: it is not TECHNICAL_DEVELOPMENT, not INCIDENT and not OPERATIONAL_CHANGE", guidance)
+        for step in ("funding or budget requests and decisions", "cost increases", "construction stages and progress", "changes to or forecasts of an expected opening date"):
+            self.assertIn(step, guidance)
         self.assertIn("at a station or on board a train that is not transport service", guidance)
         self.assertIn("starts with a letter a-z", guidance)
         self.assertIn("even when the tested system is signalling, train control, communication or power equipment", guidance)

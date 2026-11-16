@@ -3068,6 +3068,59 @@ WRITER_PROMPT_VERSION = formal-report-writer-v10 (RC-66)
 RC66_BLOCKED = PAID_VALIDATION (Category v6, Docomo predicate, EI R7) | USER_DECISION (drill Category, Incheon L1, historical retrospective)
 ```
 
+### A.48 RC-67 User decisions D1 and D2; Writer covers only the focus occurrence (2026-11-16)
+
+Evidence: scheduled Run 43791549550 (period 2026-11-09..15, `main`, Category
+prompt v3) delivered 12 items. Six should not have been report items or sat
+in a wrong section:
+* a fire-brigade drill and a funding request under 技術新知;
+* an opening-date forecast under 機電標案及採購動態;
+* construction progress and a ridership record under 營運動態;
+* two overlapping items on Daegu Line 3: the drill, and a feature on recent
+  failures whose summary repeated the drill.
+
+Event Identity merged every same-occurrence pair this run; no
+same-occurrence duplicate reached the report. The overlap came from Category
+and from the Writer.
+
+User decisions (2026-11-16):
+* **D1, project steps.** They have no Category-defining action, so they are
+  not report items. Section L RC-63 stands and names more steps: funding or
+  budget requests and decisions, cost increases, construction progress, and
+  changes to or forecasts of an expected opening date. Of the section N path
+  "opening or construction of a line, extension or station" only an actual
+  passenger service opening (`OPERATIONAL_CHANGE`) remains reachable.
+  Reportability's `CONSTRUCTION_MILESTONE` and
+  `DELIVERY_TEST_OR_COMMISSIONING` are unreachable and stay in the schema
+  unchanged. This resolves `SECTION_L_VS_N_PROJECT_STEPS`.
+* **D2, drills.** A drill, exercise, rehearsal or training session has no
+  Category-defining action under any Category, unless the Evidence reports an
+  actual incident of its own.
+
+Changes:
+* Category prompt `category-principal-action-v7` (`_CATEGORY_GUIDANCE` is the
+  only source). Schema, Python validation and the other owners are unchanged.
+* Writer prompt `formal-report-writer-v11`: when the Evidence recounts
+  several occurrences, every field covers only the event_focus occurrence and
+  the others are not listed, counted or summarized. This applies the existing
+  section A.14 Writer rule; no new owner.
+* Golden G102 drill, G103 funding request, G104 opening-date forecast, all
+  `NO_CATEGORY_DEFINING_ACTION`, in `category_boundary_manifest.json`.
+
+Open (`BLOCKED_ARCHITECTURE_EXPANSION`): the user also decided that two
+different events on the same line or project in one period become one report
+item. They are different occurrences, so this is not Event Identity. It needs
+a report-item owner between Ordering and the Writer, with its own design
+approval.
+
+```text
+CATEGORY_PROMPT_VERSION = category-principal-action-v7 (RC-67)
+WRITER_PROMPT_VERSION = formal-report-writer-v11 (RC-67)
+SECTION_L_VS_N_PROJECT_STEPS = RESOLVED (D1: no Category; only actual openings reach section N)
+DRILL_OR_TRAINING_CATEGORY = NO_CATEGORY_DEFINING_ACTION (D2)
+SAME_PROJECT_REPORT_ITEM_MERGE = USER_DECIDED; DESIGN PENDING (BLOCKED_ARCHITECTURE_EXPANSION)
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
@@ -4777,7 +4830,7 @@ SCOPE_PROMPT_VERSION = scope-event-target-system-v13 (RC-65: focus includes the 
 TECHNICAL_DEVELOPMENT_REQUIRES = A TECHNOLOGY, METHOD OR MATERIAL AS THE SUBJECT
 PROJECT_STEPS_AND_STATISTICS = NO CATEGORY-DEFINING ACTION
 CATEGORY_APPLIES_ONLY_TO = A LISTED PRINCIPAL ACTION (RC-66)
-DRILL_OR_TRAINING_CATEGORY = BLOCKED_USER_DECISION (not TECHNICAL_DEVELOPMENT)
+DRILL_OR_TRAINING_CATEGORY = NO_CATEGORY_DEFINING_ACTION (RC-67, D2)
 ```
 
 事故後發布的新強制規則屬 `NORMATIVE_CHANGE`，不是原事故。只發布有實質調查

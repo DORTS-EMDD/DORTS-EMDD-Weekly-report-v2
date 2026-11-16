@@ -1,0 +1,56 @@
+{
+  "case_id": "G102",
+  "name": "emergency_response_drill",
+  "description": "Synthetic Category contract case (RC-67): a fire brigade's emergency response drill on an elevated metro section.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Fire brigade holds emergency drill on elevated metro section",
+      "url": "https://fixtures.invalid/g102-emergency_response_drill-1",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-15T10:00:00Z",
+      "discovery_intent": "operations",
+      "search_snippet": "The city fire brigade and the metro operator held an emergency response drill at the line's depot on Tuesday.",
+      "source_content": "The city fire brigade and the metro operator held an emergency response drill at the line's depot on Tuesday. About 60 firefighters and metro staff rehearsed reaching a stalled train on the elevated section with an aerial ladder, extinguishing an initial fire, evacuating passengers with the on-board escape chute and cutting traction power; no actual incident occurred.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-15T10:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_UNRESOLVED",
+    "primary_category_id": null,
+    "primary_category": null,
+    "subtype": null,
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "classification_reason": "CATEGORY_UNRESOLVED",
+    "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "Category follows the supported principal action in substantive source content.",
+    "Search intent, source title, technical novelty, taxonomy, and Reportability are not Category authorities.",
+    "RC-67 (D2, user decision 2026-11-16): a drill, exercise or training session has no Category-defining action under any Category, whatever equipment it uses."
+  ]
+}

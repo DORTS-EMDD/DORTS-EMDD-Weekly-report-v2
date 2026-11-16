@@ -137,6 +137,15 @@ jobs:
           # (Delivery refuses a release on a scheduled run).
           DELIVERY_RELEASE_PERIOD: ${{ inputs.release_attempted_period }}
           DELIVERY_RELEASE_CLAIMS: ${{ inputs.release_claims }}
+      - name: Echo the formal report and its event outcomes to the job log
+        # Observation only: lets a reviewer without artifact download access
+        # read the report and each Event Group's terminal stage from the log.
+        if: ${{ !cancelled() && steps.cli.outcome != 'skipped' }}
+        run: |
+          for f in report-output/weekly-report-*.md; do [ -f "$f" ] && cat "$f"; done
+          if [ -f report-output/selection_audit.json ]; then
+            python -c "import json; a=json.load(open('report-output/selection_audit.json', encoding='utf-8')); c={x['candidate_id']: x for x in a['candidates']}; [print('EVENT', e['terminal_stage'], e['terminal_reason'], (e.get('category') or {}).get('primary_category'), '|', ' || '.join(c[m]['discovery_title'][:80] for m in e['member_candidate_ids'])) for e in a['events']]"
+          fi
       - name: Keep the formal report, run summary and selection audit
         # Only after the CLI actually ran: never after a failed health gate.
         if: ${{ !cancelled() && steps.cli.outcome != 'skipped' }}
