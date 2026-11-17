@@ -1,0 +1,56 @@
+{
+  "case_id": "G106",
+  "name": "new_line_signalling_tests_with_service_impact",
+  "description": "Synthetic Category contract case (RC-68): signalling tests and switch works for a line not yet open, which affected the evening service of a connecting running line.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-09-12",
+    "period_end": "2026-09-18",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Future tram line tests signalling at night at its junction with a running line",
+      "url": "https://fixtures.invalid/g106-new_line_signalling_tests_with_service_impact-1",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-09-15T10:00:00Z",
+      "discovery_intent": "technology",
+      "search_snippet": "Night signalling tests and new switch works took place at the junction of the future tram line.",
+      "source_content": "Night tests of the signalling system and new switch works took place at the station where the future tram line will connect to an existing line. The teams checked the switch movements, position detection and the data sent to the control system. Service on the existing line was affected from 21:30 on the three nights of the works.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-09-15T10:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_UNRESOLVED",
+    "primary_category_id": null,
+    "primary_category": null,
+    "subtype": null,
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "classification_reason": "CATEGORY_UNRESOLVED",
+    "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "Category follows the supported principal action in substantive source content.",
+    "Search intent, source title, technical novelty, taxonomy, and Reportability are not Category authorities.",
+    "RC-68: the reported news is a project step (tests and works for a line not yet open); the effect on a running line's service is its consequence, not a separate principal action (RC-63, RC-67 D1; G100 without the service effect)."
+  ]
+}

@@ -27,7 +27,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         locked = json.loads((GOLDEN / "manifest.json").read_text(encoding="utf-8"))
         taxonomy = json.loads((GOLDEN / "taxonomy_manifest.json").read_text(encoding="utf-8"))
         ids = [entry["case_id"] for entry in MANIFEST["cases"]]
-        self.assertEqual(ids, ["G92", "G93", "G94", "G95", "G96", "G97", "G98", "G99", "G100", "G101", "G102", "G103", "G104"])
+        self.assertEqual(ids, ["G92", "G93", "G94", "G95", "G96", "G97", "G98", "G99", "G100", "G101", "G102", "G103", "G104", "G105", "G106", "G107", "G108", "G109"])
         self.assertEqual(MANIFEST["case_count"], len(ids))
         self.assertTrue(MANIFEST["category_acceptance_population_excluded"])
         self.assertTrue(set(ids).isdisjoint(entry["case_id"] for entry in locked["cases"]))
@@ -52,11 +52,16 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
                 self.assertEqual(result.category_resolution_reason.value, "NO_CATEGORY_DEFINING_ACTION")
                 self.assertIsNone(result.primary_category_id)
 
-    def test_near_boundary_technology_deployment_stays_technical_development(self):
-        # RC-66: the boundary must not turn a real technology deployment into a
-        # false negative (G49, G64, G84 and the operating-line deployment G101).
+    def test_near_boundary_positive_cases_keep_their_category(self):
+        # RC-66/RC-68: the boundaries must not turn a real technology deployment
+        # (G101 operating-line 5G, G107 track monitoring in service, G108
+        # on-board 5G Wi-Fi) or a service-change notice (G109) into a false
+        # negative.
         assigned = [entry for entry in MANIFEST["cases"] if entry["category_family"] != "CATEGORY_UNRESOLVED"]
-        self.assertEqual([entry["case_id"] for entry in assigned], ["G101"])
+        self.assertEqual(
+            [(entry["case_id"], entry["category_family"]) for entry in assigned],
+            [("G101", "TECHNICAL_DEVELOPMENT"), ("G107", "TECHNICAL_DEVELOPMENT"), ("G108", "TECHNICAL_DEVELOPMENT"), ("G109", "OPERATIONAL_CHANGE")],
+        )
         for entry in assigned:
             fixture = json.loads((GOLDEN / entry["file"]).read_text(encoding="utf-8"))
             expected = fixture["expected"]
@@ -66,11 +71,38 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
                 groups = _materialize_groups(fixture, records)
                 result = Classifier(_GoldenSemanticOracle(expected)).classify(groups[0], records)
                 self.assertIs(result.category_state, CategoryState.CATEGORY_ASSIGNED)
-                self.assertEqual(result.primary_category_id.value, "TECHNICAL_DEVELOPMENT")
+                self.assertEqual(result.primary_category_id.value, entry["category_family"])
                 self.assertEqual(result.subtype, expected["subtype"])
 
+    def test_technology_deployments_land_in_the_technology_section(self):
+        # RC-40/41: the report section is the fixed projection of CategoryId;
+        # no other owner places an event in a section.
+        from src.weekly_report.contracts import CategoryId
+        from src.weekly_report.report_service import FORMAL_REPORT_SECTIONS
+
+        sections = dict(FORMAL_REPORT_SECTIONS)
+        for case_id in ("G101", "G107", "G108"):
+            entry = next(item for item in MANIFEST["cases"] if item["case_id"] == case_id)
+            expected = json.loads((GOLDEN / entry["file"]).read_text(encoding="utf-8"))["expected"]
+            with self.subTest(case_id=case_id):
+                self.assertEqual(sections[CategoryId(expected["primary_category_id"])], "技術新知")
+                self.assertEqual(expected["primary_category"], "技術新知")
+
+    def test_pre_opening_and_delivery_acceptance_tests_share_one_outcome(self):
+        # RC-67 D1 / RC-68: pre-opening test runs (G93), pre-opening signalling
+        # tests (G100), acceptance tests of newly delivered vehicles on a running
+        # network (G105) and pre-opening tests whose works affected a running
+        # line (G106) are all project steps under one rule, with no city, line
+        # or headline condition.
+        outcomes = {}
+        for case_id in ("G93", "G100", "G105", "G106"):
+            entry = next(item for item in MANIFEST["cases"] if item["case_id"] == case_id)
+            expected = json.loads((GOLDEN / entry["file"]).read_text(encoding="utf-8"))["expected"]
+            outcomes[case_id] = (expected["category_state"], expected["primary_category_id"], expected["category_resolution_reason"])
+        self.assertEqual(set(outcomes.values()), {("CATEGORY_UNRESOLVED", None, "NO_CATEGORY_DEFINING_ACTION")})
+
     def test_prompt_carries_the_section_l_boundaries(self):
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v7")
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v8")
         guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
         self.assertIn("is of a technology, method or material itself", guidance)
         for step in ("groundbreaking", "pre-opening or trial test runs", "commissioning and acceptance tests"):
@@ -96,6 +128,19 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         self.assertIn("at a station or on board a train that is not transport service", guidance)
         self.assertIn("starts with a letter a-z", guidance)
         self.assertIn("even when the tested system is signalling, train control, communication or power equipment", guidance)
+        # RC-68 (Run 43995345298): delivery acceptance tests on a running
+        # network, technology deployments that change maintenance or give an
+        # on-board amenity, and a consequence is not a principal action.
+        self.assertIn("Newly delivered vehicles or equipment go through the same kind of step before they enter passenger service, also on a network that is already running", guidance)
+        self.assertIn("A pilot or trial whose subject is a new technology, method or material itself remains technical development", guidance)
+        self.assertIn("changes to how the passenger service is operated", guidance)
+        self.assertNotIn("operating-practice changes", guidance)
+        self.assertIn("Putting a technology, method or material into use is a deployment under TECHNICAL_DEVELOPMENT", guidance)
+        self.assertIn("such as Wi-Fi or mobile network coverage", guidance)
+        self.assertIn("A passenger service opening of a new line, extension or train fleet remains OPERATIONAL_CHANGE", guidance)
+        self.assertIn("Classify the action the evidence reports as its news, not a consequence of it", guidance)
+        self.assertIn("the service effect is not a separate principal action", guidance)
+        self.assertIn("A service change is the principal action only when the evidence reports the service change itself as its news", guidance)
 
 
 

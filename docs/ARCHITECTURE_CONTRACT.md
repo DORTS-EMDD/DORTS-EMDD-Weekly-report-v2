@@ -3121,6 +3121,71 @@ DRILL_OR_TRAINING_CATEGORY = NO_CATEGORY_DEFINING_ACTION (D2)
 SAME_PROJECT_REPORT_ITEM_MERGE = USER_DECIDED; DESIGN PENDING (BLOCKED_ARCHITECTURE_EXPANSION)
 ```
 
+### A.49 RC-68 Delivery acceptance tests, deployments and consequences in the Category guidance (2026-11-17)
+
+Evidence: controlled Run 43995345298 (`ca68c4c`, prompt v7, period
+2026-10-21..28, `send_email=false`), its `selection_audit.json`. Every error
+below is a `CATEGORY_ASSIGNED` decision of the Classifier. The report section
+is the fixed projection of CategoryId (RC-40/41), and Taxonomy does not move
+an event between sections.
+
+* **Rome, newly delivered trams: gauge and EMC tests (`evt_ecf4b31b`),
+  技術新知 / `tram_testing`.** The guidance tied acceptance tests to "a line,
+  station or depot before its opening". Acceptance tests of new vehicles on
+  a running network were not covered. The open TECHNICAL_DEVELOPMENT line
+  ("applied tests") then admitted them.
+* **Lyon T10, signalling tests and switch works for a line not yet open
+  (`evt_1d886cd7`), 營運動態 / `temporary_service_suspension`.** The Evidence
+  adds that a running line was affected on the nights of the works. The
+  project-step line allows "another listed principal action, such as ... a
+  service change", and nothing said that a consequence is not a principal
+  action. Golden G100 is the same case without that sentence.
+* **Tokyo Metro, track-monitoring devices on a service train (`evt_669a2f39`)
+  and Incheon, 5G Wi-Fi on all trains (`evt_4cac4286`), 營運動態.** The
+  subtypes were `track_inspection_practice_change` and
+  `passenger_wifi_service_launch`. The OPERATIONAL_CHANGE line listed
+  unqualified "operating-practice changes" and "service openings". It did
+  not say that a technology deployment stays TECHNICAL_DEVELOPMENT when it
+  changes maintenance or gives passengers an amenity. G101 (5G on operating
+  lines) and the RC-66 on-board rule already require TECHNICAL_DEVELOPMENT.
+* **Bergamo.** Its candidates ended at Evidence (`LINK_RESOLUTION`) and never
+  reached Category. Its treatment is the pre-opening rule (G93, G100).
+
+Change: Category prompt `category-principal-action-v8` (`_CATEGORY_GUIDANCE`
+is the only source). It applies section L and RC-63/RC-66/RC-67 and adds no
+Category or Domain Rule. Schema, Python validation and the other owners are
+unchanged.
+* Newly delivered vehicles or equipment: clearance or gauge, compatibility
+  (EMC included), commissioning, type, acceptance or homologation tests
+  before entry into passenger service are project steps, also on a running
+  network. A pilot or trial of a new technology itself stays
+  TECHNICAL_DEVELOPMENT.
+* OPERATIONAL_CHANGE: "changes to how the passenger service is operated"
+  replaces "operating-practice changes". Putting a technology into use is a
+  deployment (TECHNICAL_DEVELOPMENT), also when it changes maintenance,
+  inspection or monitoring or gives an on-board or station amenity such as
+  Wi-Fi. A passenger service opening of a new line, extension or fleet
+  stays OPERATIONAL_CHANGE.
+* Category follows the action the Evidence reports as its news. A service
+  effect of a project step is not a separate principal action. A service
+  change is principal only when the Evidence reports it as its news, such as
+  a closure, suspension or timetable notice.
+
+Golden: G105 delivery acceptance tests on a running network and G106
+pre-opening tests with a service effect (both `NO_CATEGORY_DEFINING_ACTION`);
+G107 track monitoring in service and G108 on-board 5G Wi-Fi
+(`TECHNICAL_DEVELOPMENT`); G109 works-closure notice (`OPERATIONAL_CHANGE`, a
+false-negative guard for the consequence rule). The Golden harness checks
+the Python path with the expected answer; only Live runs show the helper's
+behaviour.
+
+```text
+CATEGORY_PROMPT_VERSION = category-principal-action-v8 (RC-68; Live validation pending)
+DELIVERY_ACCEPTANCE_TESTS = PROJECT STEP (also on a running network)
+TECHNOLOGY_DEPLOYMENT_CHANGING_MAINTENANCE_OR_AMENITY = TECHNICAL_DEVELOPMENT
+CONSEQUENCE_OF_AN_ACTION = NOT A SEPARATE PRINCIPAL ACTION
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：
