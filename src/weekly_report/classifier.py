@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Protocol
 
+from . import category_observation
 from .source_refs import cited_spans, source_payload, source_refs
 from .contracts import (
     ProposalContractViolation,
@@ -433,6 +434,31 @@ def _span_provenance(spans: tuple[CategoryEvidenceSpan, ...]) -> list[dict[str, 
     ]
 
 
+def _proposal_payload(raw_response: object) -> Mapping[str, Any] | None:
+    """The helper's proposal as returned, for observation only (RC-69)."""
+
+    if isinstance(raw_response, CategorySemanticResponse):
+        return {
+            "category_state": raw_response.category_state,
+            "primary_category_id": raw_response.primary_category_id,
+            "subtype": raw_response.subtype,
+            "category_resolution_reason": raw_response.category_resolution_reason,
+            "citations": raw_response.citations,
+        }
+    if isinstance(raw_response, Mapping):
+        return raw_response
+    return None
+
+
+def _observe(request: CategorySemanticRequest, outcome: str, **details: Any) -> dict[str, Any]:
+    """RC-69 observer record; built after the decision is fixed, never raises."""
+
+    try:
+        return category_observation.observe_category_exchange(request, outcome=outcome, **details)
+    except Exception:
+        return category_observation.unavailable_category_exchange()
+
+
 def _provider_provenance(value: object) -> dict[str, str]:
     allowed = {
         "provider_identifier",
@@ -474,16 +500,36 @@ class Classifier:
             return self._unresolved(
                 event_group,
                 CategoryResolutionReason.SEMANTIC_HELPER_UNAVAILABLE,
-                {"decision_basis": "semantic_helper_unavailable"},
+                {
+                    "decision_basis": "semantic_helper_unavailable",
+                    "semantic_exchange": _observe(
+                        request,
+                        category_observation.OUTCOME_NO_PROPOSAL,
+                        category_result_state=CategoryState.CATEGORY_UNRESOLVED.value,
+                    ),
+                },
             )
 
         try:
             helper_result = self._semantic_helper(request)
-        except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure):
-            # RC-6: never converted into CATEGORY_UNRESOLVED.
+        except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure) as failure:
+            # RC-6: never converted into CATEGORY_UNRESOLVED.  RC-69: the same
+            # exception object is re-raised; the observer record only rides on it.
+            category_observation.attach_category_exchange(
+                failure, _observe(request, category_observation.OUTCOME_NO_PROPOSAL)
+            )
             raise
         except InvalidCategorySemanticResponse as exc:
             violation = CategoryProposalViolation(str(exc), exc.predicate)
+            category_observation.attach_category_exchange(
+                violation,
+                _observe(
+                    request,
+                    category_observation.OUTCOME_REJECTED,
+                    provider_provenance=exc.provenance,
+                    predicate=violation.failure_class,
+                ),
+            )
         except Exception as exc:
             return self._unresolved(
                 event_group,
@@ -492,6 +538,12 @@ class Classifier:
                     "decision_basis": "semantic_helper_failure",
                     "helper_error_type": type(exc).__name__,
                     **_provider_provenance(getattr(exc, "provenance", None)),
+                    "semantic_exchange": _observe(
+                        request,
+                        category_observation.OUTCOME_NO_PROPOSAL,
+                        provider_provenance=_provider_provenance(getattr(exc, "provenance", None)),
+                        category_result_state=CategoryState.CATEGORY_UNRESOLVED.value,
+                    ),
                 },
             )
         else:
@@ -513,6 +565,16 @@ class Classifier:
         else:
             violation = None
         if violation is not None:
+            category_observation.attach_category_exchange(
+                violation,
+                _observe(
+                    request,
+                    category_observation.OUTCOME_REJECTED,
+                    proposal_payload=_proposal_payload(raw_response),
+                    provider_provenance=helper_provenance,
+                    predicate=violation.failure_class,
+                ),
+            )
             raise violation
 
         provenance = {
@@ -522,6 +584,14 @@ class Classifier:
             # means whole-proposal citations, with no support/conflict role split.
             "validated_support_spans": _span_provenance(response.citation_spans),
             **helper_provenance,
+            # RC-69, observation only: read by the selection audit, never by an owner.
+            "semantic_exchange": _observe(
+                request,
+                category_observation.OUTCOME_ACCEPTED,
+                proposal_payload=_proposal_payload(raw_response),
+                provider_provenance=helper_provenance,
+                category_result_state=response.category_state.value,
+            ),
         }
         if response.category_state is CategoryState.CATEGORY_UNRESOLVED:
             return self._unresolved(
@@ -532,7 +602,18 @@ class Classifier:
 
         category_id = response.primary_category_id
         if category_id is None:
-            raise CategoryProposalViolation("assigned response requires a Category ID")
+            violation = CategoryProposalViolation("assigned response requires a Category ID")
+            category_observation.attach_category_exchange(
+                violation,
+                _observe(
+                    request,
+                    category_observation.OUTCOME_REJECTED,
+                    proposal_payload=_proposal_payload(raw_response),
+                    provider_provenance=helper_provenance,
+                    predicate=violation.failure_class,
+                ),
+            )
+            raise violation
         return CategoryResult(
             category_state=CategoryState.CATEGORY_ASSIGNED,
             event_id=event_group.event_id,

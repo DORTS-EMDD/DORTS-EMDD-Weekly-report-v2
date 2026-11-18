@@ -242,7 +242,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-68 修訂（2026-10-20～11-17）
+### RC-3～RC-69 修訂（2026-10-20～11-18）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.47、§L、§N 與 §R。
 
@@ -614,6 +614,15 @@ Transport retry 與 semantic correction 必須分開計算。
     * 技術投入使用即使改變維修、檢查方式或提供車上 Wi-Fi 等設施，仍是技術新知；新路線、延伸段或車隊開始載客仍是營運動態。
     * 依來源報導的事件分類，不依其結果；專案步驟對營運路線的影響不是另一個主要行動；服務變更本身是新聞（停駛或時刻公告）時才是。
   * Golden G105～G109（`category_boundary_manifest.json`）；schema、Python 驗證與其他 owner 不變；Live 驗收待受控 Run。
+* RC-69（§A.50，2026-11-18，使用者核准，只作觀測）：Lyon T10、Sydney M1 的 Category 判定無法追溯（helper 提案、引用句、subtype 原值與送出的 action_facts 皆未保存）。
+  * Classifier 在決策確定後於既有出口產生 `category_exchange` 紀錄：被接受者放在 `CategoryResult.provenance`，違約、helper 無效回應或技術失敗者附在同一個例外物件上；
+    ReportApplication 只搬運（`category_gap_exchanges`），只有 selection audit（v4）讀取並投影到 `events[].category_exchange`。
+  * 所有路徑共用一個 schema：語意請求指紋與版本、guidance 雜湊、各來源 `content_sha256`、action_facts、提案列舉值與 subtype 原值、引用句 ID、驗證結果（ACCEPTED／REJECTED／NO_PROPOSAL 與 predicate）。
+  * 觀測失敗只顯示 PARTIAL／UNAVAILABLE，不改變 Category 結果、技術缺口、報告或結束碼。
+  * 公開曝露（repository 與 artifact 為 public）：只放 ID、雜湊、列舉值、版本，以及通過規則的短 action_facts 值（目前只有城市）；
+    不放文章句子、guidance 文字、provider 回應、chatbot ID、API base 或憑證；不合規的值只留雜湊並標 WITHHELD。
+  * 重放術語：指紋與版本相同且未隱藏任何值，只算 input-equivalent semantic replay；模型識別與推論參數無法觀測，exact replay 目前不可達成；provider 非確定性仍存在。
+  * 分類提示詞 v8、schema、Golden 預期與報告輸出皆不變。
 
 ## 13. Report / Delivery
 
@@ -764,5 +773,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-68 (2026-11-17; RC-68 Category prompt v8: delivery acceptance tests, deployments and consequences; RC-67 user decisions D1/D2: project steps and drills have no Category, Category prompt v7, Writer v11; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
+CONTRACT_REVISION = RC-3..RC-69 (2026-11-18; RC-69 observer-only Category exchange record, selection audit v4; RC-68 Category prompt v8: delivery acceptance tests, deployments and consequences; RC-67 user decisions D1/D2: project steps and drills have no Category, Category prompt v7, Writer v11; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```

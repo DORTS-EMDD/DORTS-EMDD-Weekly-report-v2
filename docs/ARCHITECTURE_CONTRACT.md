@@ -3186,6 +3186,75 @@ TECHNOLOGY_DEPLOYMENT_CHANGING_MAINTENANCE_OR_AMENITY = TECHNICAL_DEVELOPMENT
 CONSEQUENCE_OF_AN_ACTION = NOT A SEPARATE PRINCIPAL ACTION
 ```
 
+### A.50 RC-69 Category exchange observation (2026-11-18, user-approved, observation only)
+
+Finding (Run 44029407461, read-only audit): the Lyon T10 and Sydney M1
+Category decisions could not be traced. The helper's proposal, cited
+sentence IDs, raw subtype and the `action_facts` sent to Category were not
+kept, so no replay could show the same input.
+
+Observation added; no decision changes:
+* **Writer.** The Classifier calls
+  `category_observation.observe_category_exchange` at its existing exits,
+  after its decision is fixed. An accepted or unresolved result keeps the
+  record in `CategoryResult.provenance["semantic_exchange"]`. A rejected
+  proposal, a helper-raised invalid response or a provider technical failure
+  keeps it as the `category_exchange` attribute of the same exception object,
+  which still becomes the same TechnicalGap. The decision path, the response
+  validation, the prompt (`category-principal-action-v8`) and the schema are
+  unchanged.
+* **Carrier.** ReportApplication copies a gap's record into
+  `category_gap_exchanges`.
+* **Reader.** Only the selection audit (`selection-audit-v4`) reads it. It
+  projects `events[].category_exchange` once per Event and adds only the
+  TechnicalGap failure class to a NO_PROPOSAL record. No other module reads
+  `CategoryResult.provenance`.
+* **One schema for every path** (`category-exchange-observation-v1`):
+  `semantic_request` (fingerprint, versions, guidance hash, sources,
+  `action_facts`, unresolved claims, `input_exposure`), `provider_declared`
+  (repository constants; `model_identifier` and `inference_parameters` are
+  null for the MaiAgent Category adapter), `proposal` (enum values,
+  `subtype_raw`, cited sentence IDs; null without a parseable proposal) and
+  `validation` (`ACCEPTED` / `REJECTED` / `NO_PROPOSAL`, predicate, technical
+  failure class, result state).
+* **Failure isolation.** A builder failure yields `PARTIAL` or `UNAVAILABLE`
+  and never changes a Category result, a TechnicalGap, the report or the exit
+  status.
+
+Exposure (the repository and its run artifacts are public):
+* The record holds IDs, hashes, enum values, versions and only the short
+  structured `action_facts` and unresolved-claim values that pass the policy.
+  Today production sends at most one key, `location`, a city value.
+* A value is shown only when it is a string of at most 80 characters, with
+  no control character, not a complete source sentence and with no sentence
+  break. It must contain no URL, e-mail address, IP address, run of 8 or more
+  digits, token-like string or secret keyword.
+* Any other value keeps only `{withheld, sha256}` and sets
+  `input_exposure = WITHHELD`.
+* Never recorded: article text, Evidence sentences, guidance or prompt text,
+  provider response bodies, chatbot IDs, API base, credentials and headers.
+* The job-log echo step does not print the record.
+
+Replay terminology:
+* `semantic_request_fingerprint_sha256` is the SHA-256 of the canonical JSON
+  of `CategorySemanticRequest.as_payload()`. It proves equality of the
+  semantic request only, not of the final provider request.
+* **Input-equivalent semantic replay:** the same fingerprint and the same
+  prompt, message, schema and helper versions, with `input_exposure = FULL`.
+* **Non-equivalent replay:** any mismatch or any withheld value.
+* **Exact replay** would also need the platform-observed model identifier,
+  provider and adapter deployment and all inference parameters. These are
+  not observable (section L, Final Seal), so it is not achievable now.
+* Provider nondeterminism remains: compliance is reported as a rate over n
+  samples.
+
+```text
+CATEGORY_EXCHANGE_OBSERVATION = category-exchange-observation-v1 (RC-69; observer only)
+SELECTION_AUDIT_VERSION = selection-audit-v4
+CATEGORY_REPLAY_SCOPE = INPUT_EQUIVALENT_SEMANTIC_ONLY (exact replay not achievable)
+CATEGORY_PROMPT_VERSION = category-principal-action-v8 (unchanged by RC-69)
+```
+
 ## B. Authoritative Owners
 
 下列 responsibility 必須各自具有明確且唯一的 authoritative owner：

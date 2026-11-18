@@ -11,6 +11,13 @@ path. It makes no call, changes no result and takes part in no decision.
 Bounded and secret-free: titles and highlights are truncated, at most two
 event-focus sentences per candidate are quoted, and no article body, prompt,
 provider response or credential is included.
+
+RC-69 (section A.50): each Event carries ``category_exchange``, copied from the
+Classifier's observer record (IDs, hashes, versions, the proposal's enum
+values and raw subtype, cited sentence IDs, the validation outcome, and only
+the short ``action_facts`` values the exposure policy admits). The audit only
+adds the TechnicalGap failure class to a NO_PROPOSAL record; it computes no
+Category.
 """
 
 from __future__ import annotations
@@ -19,12 +26,14 @@ from collections import Counter
 from collections.abc import Mapping
 from datetime import date
 from hashlib import sha256
+import json
 from typing import Any
 
+from .category_observation import MAX_SERIALIZED_LENGTH, OUTCOME_NO_PROPOSAL, unavailable_category_exchange
 from .contracts import EvidenceState, ScopeState
 from .evidence_sentences import event_focus_sentences
 
-SELECTION_AUDIT_VERSION = "selection-audit-v3"
+SELECTION_AUDIT_VERSION = "selection-audit-v4"
 STAGES = (
     "EVIDENCE",
     "SCOPE",
@@ -136,6 +145,26 @@ def _identity_diagnostics(run: Any) -> tuple[dict[str, Counter], dict[str, list[
     return counts, proposals
 
 
+def _category_exchange(item: Any, gap: Any, gap_exchange: Any) -> dict[str, Any] | None:
+    """RC-69: copy the Classifier's observer record; never raises, decides nothing."""
+
+    try:
+        record = None
+        if item is not None:
+            record = dict(getattr(item, "provenance", None) or {}).get("semantic_exchange")
+        if record is None:
+            record = gap_exchange
+        if record is None:
+            return None
+        copied = json.loads(json.dumps(record, ensure_ascii=False))
+        validation = copied.get("validation")
+        if gap is not None and isinstance(validation, dict) and validation.get("outcome") == OUTCOME_NO_PROPOSAL:
+            validation["technical_failure_class"] = gap.failure_class
+        return copied
+    except Exception:
+        return unavailable_category_exchange()
+
+
 def _event_outcomes(result: Any) -> dict[str, dict[str, Any]]:
     """Each Event's downstream outcome and its earliest terminal stage."""
 
@@ -150,6 +179,10 @@ def _event_outcomes(result: Any) -> dict[str, dict[str, Any]]:
     passed = {item.metadata.event_id for item in (validation.passed if validation else ())}
     failed = {item.event_id: item for item in (validation.failed if validation else ())}
     final = {event.event_id: event for event in (result.final_report.events if result.final_report else ())}
+    try:
+        category_gap_exchanges = dict(getattr(result, "category_gap_exchanges", ()) or ())
+    except Exception:
+        category_gap_exchanges = {}
 
     outcomes: dict[str, dict[str, Any]] = {}
     for group in getattr(result.event_identity_run, "groups", ()) or ():
@@ -180,6 +213,9 @@ def _event_outcomes(result: Any) -> dict[str, dict[str, Any]]:
             if _value(item.category_state) != "CATEGORY_ASSIGNED":
                 reason = _value(item.category_resolution_reason) or _value(item.category_state)
         steps.append(("CATEGORY", reason if reason or item is not None else "NOT_REACHED"))
+        outcome["category_exchange"] = _category_exchange(
+            item, gaps.get(("Category", event_id)), category_gap_exchanges.get(event_id)
+        )
 
         flow = downstream.get(event_id)
         reason = gap_or("Taxonomy", "TAXONOMY")
@@ -388,7 +424,7 @@ def build_selection_audit(
                 entry["event"] = {
                     key: value
                     for key, value in outcome.items()
-                    if key not in {"event_id", "member_candidate_ids", "canonical_candidate_id"}
+                    if key not in {"event_id", "member_candidate_ids", "canonical_candidate_id", "category_exchange"}
                 }
                 stop(outcome["terminal_stage"], outcome["terminal_reason"])
 
@@ -437,6 +473,12 @@ def selection_audit_mapping_is_bounded(audit: Mapping[str, Any]) -> bool:
             return False
         highlights = entry.get("evidence_highlights", ())
         if len(highlights) > _HIGHLIGHT_SENTENCES or any(len(text) > _HIGHLIGHT_LIMIT for text in highlights):
+            return False
+        if "category_exchange" in entry.get("event", {}):
+            return False
+    for outcome in audit.get("events", ()):
+        exchange = outcome.get("category_exchange")
+        if exchange is not None and len(json.dumps(exchange, ensure_ascii=False)) > MAX_SERIALIZED_LENGTH:
             return False
     return True
 

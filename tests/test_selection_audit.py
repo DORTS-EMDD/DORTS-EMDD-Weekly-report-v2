@@ -12,7 +12,7 @@ from unittest.mock import patch
 from tests.event_identity_single_procedure import single_proposal_procedure  # RC-52: one procedure
 from src.weekly_report.contracts import EvidenceResult, EvidenceState, RejectReason, TechnicalGap, TechnicalGapKind
 from src.weekly_report.production_runner import ProductionRunner
-from src.weekly_report.selection_audit import STAGES, build_selection_audit, selection_audit_mapping_is_bounded
+from src.weekly_report.selection_audit import SELECTION_AUDIT_VERSION, STAGES, build_selection_audit, selection_audit_mapping_is_bounded
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from test_execution_trace import _full_app  # noqa: E402
@@ -93,7 +93,7 @@ def test_the_audit_is_deterministic_and_observer_only():
     assert broken.status == healthy.status
     assert broken.final_report == healthy.final_report
     assert broken.stage_counts == healthy.stage_counts
-    assert dict(broken.selection_audit) == {"audit_version": "selection-audit-v3", "unavailable": "RuntimeError"}
+    assert dict(broken.selection_audit) == {"audit_version": SELECTION_AUDIT_VERSION, "unavailable": "RuntimeError"}
     assert healthy.selection_audit["period"] == {"start": "2026-09-12", "end": "2026-09-18"}
 
 

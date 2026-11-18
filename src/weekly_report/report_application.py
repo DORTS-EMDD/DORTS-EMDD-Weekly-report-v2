@@ -130,6 +130,10 @@ class ReportApplicationResult:
     # RC-66, observation only: (candidate ID, IDs-only shape) of each Scope
     # proposal rejected as a contract violation. No decision reads it.
     scope_rejected_proposals: tuple[tuple[str, Mapping[str, Any]], ...] = ()
+    # RC-69, observation only: (event ID, category_exchange record) of each
+    # Category exchange that ended as a disclosed TechnicalGap. Carried for the
+    # selection audit; no decision reads it.
+    category_gap_exchanges: tuple[tuple[str, Mapping[str, Any]], ...] = ()
 
     @property
     def search_runtime_acceptance(self) -> SearchRuntimeAcceptance:
@@ -782,10 +786,12 @@ class ReportApplication:
             technical_gaps.extend(event_identity_run.technical_gaps)
             observation.observe(event_identity_run, final=True)
 
+        category_gap_exchanges: list[tuple[str, Mapping[str, Any]]] = []
         category_results = self._classify_event_groups(
             event_identity_run,
             event_identity_records,
             technical_gaps,
+            category_gap_exchanges,
         )
         downstream_results = self._run_downstream_workflow(
             event_identity_run,
@@ -824,6 +830,7 @@ class ReportApplication:
             technical_gaps=tuple(technical_gaps),
             metadata_exclusions=metadata_exclusions,
             scope_rejected_proposals=tuple(scope_rejected_proposals),
+            category_gap_exchanges=tuple(category_gap_exchanges),
         )
         if final_report is None or self._delivery is None or self._delivery_recipient is None:
             return result
@@ -1011,6 +1018,7 @@ class ReportApplication:
         event_identity_run: EventIdentityRun,
         event_identity_records: tuple[EventIdentityRecord, ...],
         technical_gaps: list[TechnicalGap] | None = None,
+        gap_exchanges: list[tuple[str, Mapping[str, Any]]] | None = None,
     ) -> tuple[CategoryResult, ...]:
         with observe_stage("Category") as observation:
             groups = event_identity_run.groups
@@ -1063,6 +1071,15 @@ class ReportApplication:
                     if technical_gaps is None:
                         raise
                     technical_gaps.append(TechnicalGap.from_failure("Category", event_group.event_id, failure))
+                    # RC-69, observation only: carry the record riding on the
+                    # failure to the selection audit; it changes nothing here.
+                    if gap_exchanges is not None:
+                        try:
+                            exchange = getattr(failure, "category_exchange", None)
+                            if isinstance(exchange, Mapping):
+                                gap_exchanges.append((event_group.event_id, exchange))
+                        except Exception:
+                            pass
                     continue
                 if not isinstance(result, CategoryResult):
                     raise TypeError("Classifier must return a CategoryResult")
