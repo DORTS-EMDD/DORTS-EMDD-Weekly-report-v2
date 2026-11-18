@@ -8,10 +8,13 @@ TechnicalGap. Only the selection audit reads it. Nothing here takes part in a
 Category, Taxonomy, Reportability, Writer, Validator or Delivery decision.
 
 The record is public (selection audit artifact of a public repository), so it
-holds IDs, hashes, enum values, versions and only the short structured
+holds IDs, hashes, allowlisted enum values, declared version identifiers, a
+raw subtype that passes the subtype policy, and only the short structured
 ``action_facts`` and unresolved-claim values that pass the exposure policy.
-It never holds article text, guidance text, a provider response body,
-credentials or provider metadata other than declared version constants.
+Those admitted values may be short fragments of source text (a city name,
+for example); a complete source sentence, guidance text, a provider response
+body, credentials and other provider metadata are never held. Every other
+value keeps only ``{withheld, sha256}``.
 
 ``semantic_request_fingerprint_sha256`` proves equality of
 ``CategorySemanticRequest.as_payload()`` only. A matching fingerprint with
@@ -30,7 +33,9 @@ from hashlib import sha256
 import json
 import re
 from typing import Any
+import unicodedata
 
+from .contracts import CategoryId, CategoryResolutionReason, CategoryState
 from .evidence_sentences import segment_evidence_sentences
 
 CATEGORY_EXCHANGE_OBSERVATION_SCHEMA = "category-exchange-observation-v1"
@@ -48,16 +53,35 @@ ALLOWED_ACTION_FACT_KEYS = frozenset(
 CLAIMS_KEY = "source_claims"
 
 VALUE_LIMIT = 80
-ENUM_LIMIT = 64
 SUBTYPE_LIMIT = 128
 CITATION_LIMIT = 8
 SENTENCE_ID_LIMIT = 40
 MAX_SERIALIZED_LENGTH = 16_000
+# Room the selection audit may add (the TechnicalGap failure class) without
+# crossing MAX_SERIALIZED_LENGTH; the builder caps records below it.
+AUDIT_HEADROOM = 128
+
+# Fail-closed allowlists for the proposal's enum fields and the validation block.
+_CATEGORY_STATES = frozenset(item.value for item in CategoryState)
+_CATEGORY_IDS = frozenset(item.value for item in CategoryId)
+_RESOLUTION_REASONS = frozenset(item.value for item in CategoryResolutionReason)
+_PREDICATES = frozenset(
+    {
+        "RESPONSE_SHAPE", "CATEGORY_STATE", "CATEGORY_ID", "SUBTYPE_FORMAT", "RESOLUTION_REASON",
+        "UNRESOLVED_ASSIGNMENT", "CITATION_INVALID", "PROPOSAL_INVALID",
+    }
+)
+_OUTCOMES = frozenset({"ACCEPTED", "REJECTED", "NO_PROPOSAL"})
+# Unicode categories never exposed: control, format (zero-width, bidi), private
+# use, surrogate, unassigned, line and paragraph separators. Any space other
+# than U+0020 (for example U+00A0 or U+3000) is also withheld.
+_DISALLOWED_CATEGORIES = frozenset({"Cc", "Cf", "Co", "Cs", "Cn", "Zl", "Zp"})
 
 _KEY_PATTERN = re.compile(r"^[a-z0-9_.]{1,64}$")
 _SOURCE_REF_PATTERN = re.compile(r"^M\d{1,3}$")
 _SENTENCE_ID_PATTERN = re.compile(r"^S\d{1,4}$")
-_CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f  ]")
+_IDENTIFIER = re.compile(r"^[a-z0-9][a-z0-9._\-]{0,127}$")
+_FAILURE_CLASS = re.compile(r"^[A-Z0-9_]{1,64}$")
 _SENTENCE_BREAK = re.compile(r"[.!?。！？]\s*\S")
 _URL = re.compile(r"(?i)(https?://|www\.)")
 _EMAIL = re.compile(r"[^\s@]+@[^\s@]+\.[^\s@]+")
@@ -66,6 +90,33 @@ _LONG_DIGITS = re.compile(r"\d{8,}")
 _DIGIT_SEPARATORS = re.compile(r"[\s\-().+/]")
 _TOKEN = re.compile(r"[A-Za-z0-9_\-]{24,}")
 _SECRET_PREFIX = re.compile(r"(?i)(\bsk-|api[-_ ]?key|bearer\s|secret|password|token)")
+
+
+def has_disallowed_character(value: str) -> bool:
+    """True for control, format, separator, private-use or non-U+0020 space characters."""
+
+    for character in value:
+        category = unicodedata.category(character)
+        if category in _DISALLOWED_CATEGORIES or (category == "Zs" and character != " "):
+            return True
+    return False
+
+
+def _sensitive_pattern(value: str) -> bool:
+    if _URL.search(value) or _EMAIL.search(value) or _IP.search(value):
+        return True
+    if _LONG_DIGITS.search(_DIGIT_SEPARATORS.sub("", value)):
+        return True
+    return bool(_SECRET_PREFIX.search(value))
+
+
+def _mixed_token(value: str) -> bool:
+    """A 24+ character run holding both a letter and a digit (keys, hex digests)."""
+
+    return any(
+        any(c.isdigit() for c in match.group()) and any(c.isalpha() for c in match.group())
+        for match in _TOKEN.finditer(value)
+    )
 
 
 def _sha256(text: str) -> str:
@@ -103,17 +154,25 @@ def exposure_violation(value: Any, source_sentences: Sequence[str] = ()) -> str 
     if len(value) > VALUE_LIMIT:
         return "SIZE_BOUND"
     stripped = value.strip()
-    if not stripped or _CONTROL.search(value):
+    if not stripped or has_disallowed_character(value):
         return "CONTENT_BOUND"
     if any(stripped == sentence.strip() for sentence in source_sentences):
         return "CONTENT_BOUND"
     if _SENTENCE_BREAK.search(stripped):
         return "CONTENT_BOUND"
-    if _URL.search(value) or _EMAIL.search(value) or _IP.search(value):
+    if _sensitive_pattern(value) or _TOKEN.search(value):
         return "CONTENT_BOUND"
-    if _LONG_DIGITS.search(_DIGIT_SEPARATORS.sub("", value)):
+    return None
+
+
+def subtype_violation(value: str) -> str | None:
+    """The exposure-policy reason a raw subtype string must be withheld, or None."""
+
+    if len(value) > SUBTYPE_LIMIT:
+        return "SIZE_BOUND"
+    if not value.strip() or has_disallowed_character(value):
         return "CONTENT_BOUND"
-    if _TOKEN.search(value) or _SECRET_PREFIX.search(value):
+    if _SENTENCE_BREAK.search(value.strip()) or _sensitive_pattern(value) or _mixed_token(value):
         return "CONTENT_BOUND"
     return None
 
@@ -198,22 +257,49 @@ def _semantic_request(payload: Mapping[str, Any], sources: Sequence[Any], unreso
     }
 
 
-def _bounded_text(value: Any, limit: int) -> Any:
+def _allowlisted(value: Any, allowed: frozenset[str]) -> Any:
+    """An enum member as itself; any other string only as {withheld, sha256}."""
+
+    value = _enum_value(value)
     if value is None:
         return None
-    if isinstance(value, str) and len(value) <= limit and not _CONTROL.search(value):
+    if not isinstance(value, str):
+        return "INVALID_VALUE"
+    if value in allowed:
         return value
+    return _withheld("NOT_ALLOWLISTED", value)
+
+
+def _identifier(value: Any) -> Any:
+    """A declared repository constant: lowercase identifier text only."""
+
+    if value is None:
+        return None
+    if isinstance(value, str) and _IDENTIFIER.match(value) and not _mixed_token(value):
+        return value
+    if isinstance(value, str):
+        return _withheld("NOT_IDENTIFIER", value)
     return "INVALID_VALUE"
+
+
+def failure_class_value(value: Any) -> Any:
+    """A TechnicalGap failure class (upper-case identifier) or {withheld, sha256}."""
+
+    if value is None:
+        return None
+    if isinstance(value, str) and _FAILURE_CLASS.match(value):
+        return value
+    return _withheld("NOT_IDENTIFIER", value)
 
 
 def _provider_declared(provenance: Mapping[str, Any] | None) -> dict[str, Any]:
     declared = dict(provenance or {})
     return {
-        "provider_identifier": _bounded_text(declared.get("provider_identifier"), SUBTYPE_LIMIT),
-        "message_version": _bounded_text(declared.get("prompt_version"), SUBTYPE_LIMIT),
-        "schema_version": _bounded_text(declared.get("schema_version"), SUBTYPE_LIMIT),
-        "helper_version": _bounded_text(declared.get("helper_version"), SUBTYPE_LIMIT),
-        "model_identifier": _bounded_text(declared.get("model_identifier"), SUBTYPE_LIMIT),
+        "provider_identifier": _identifier(declared.get("provider_identifier")),
+        "message_version": _identifier(declared.get("prompt_version")),
+        "schema_version": _identifier(declared.get("schema_version")),
+        "helper_version": _identifier(declared.get("helper_version")),
+        "model_identifier": _identifier(declared.get("model_identifier")),
         "inference_parameters": None,
     }
 
@@ -223,10 +309,9 @@ def _subtype(value: Any) -> Any:
         return None
     if not isinstance(value, str):
         return "INVALID_VALUE"
-    if len(value) > SUBTYPE_LIMIT:
-        return _withheld("SIZE_BOUND", value)
-    if _CONTROL.search(value):
-        return _withheld("CONTENT_BOUND", value)
+    reason = subtype_violation(value)
+    if reason is not None:
+        return _withheld(reason, value)
     return value
 
 
@@ -251,9 +336,9 @@ def _proposal(payload: Mapping[str, Any] | None) -> dict[str, Any] | None:
         return None
     citations, omitted = _citations(payload.get("citations"))
     return {
-        "category_state": _bounded_text(_enum_value(payload.get("category_state")), ENUM_LIMIT),
-        "primary_category_id": _bounded_text(_enum_value(payload.get("primary_category_id")), ENUM_LIMIT),
-        "category_resolution_reason": _bounded_text(_enum_value(payload.get("category_resolution_reason")), ENUM_LIMIT),
+        "category_state": _allowlisted(payload.get("category_state"), _CATEGORY_STATES),
+        "primary_category_id": _allowlisted(payload.get("primary_category_id"), _CATEGORY_IDS),
+        "category_resolution_reason": _allowlisted(payload.get("category_resolution_reason"), _RESOLUTION_REASONS),
         "subtype_raw": _subtype(payload.get("subtype")),
         "citations": citations,
         "citations_omitted": omitted,
@@ -307,17 +392,23 @@ def _build(
     except Exception:
         failed += 1
     record["validation"] = {
-        "outcome": outcome,
-        "predicate": _bounded_text(predicate, ENUM_LIMIT),
+        "outcome": _allowlisted(outcome, _OUTCOMES),
+        "predicate": _allowlisted(predicate, _PREDICATES),
         "technical_failure_class": None,
-        "category_result_state": _bounded_text(category_result_state, ENUM_LIMIT),
+        "category_result_state": _allowlisted(category_result_state, _CATEGORY_STATES),
     }
     if failed:
         record["observation_status"] = "PARTIAL"
         record["observation_error"] = "OBSERVATION_BUILD_FAILED"
-    if len(_canonical(record)) > MAX_SERIALIZED_LENGTH:
+    if serialized_length(record) > MAX_SERIALIZED_LENGTH - AUDIT_HEADROOM:
         return unavailable_category_exchange("SIZE_BOUND")
     return record
+
+
+def serialized_length(record: Any) -> int:
+    """The one length measure for the record bound (compact canonical JSON)."""
+
+    return len(_canonical(record))
 
 
 def observe_category_exchange(
@@ -354,14 +445,20 @@ def attach_category_exchange(failure: BaseException, record: Mapping[str, Any]) 
 
 
 __all__ = [
+    "AUDIT_HEADROOM",
     "CATEGORY_EXCHANGE_OBSERVATION_SCHEMA",
+    "MAX_SERIALIZED_LENGTH",
     "OUTCOME_ACCEPTED",
     "OUTCOME_NO_PROPOSAL",
     "OUTCOME_REJECTED",
     "REPLAY_SCOPE",
     "attach_category_exchange",
     "exposure_violation",
+    "failure_class_value",
+    "has_disallowed_character",
     "observe_category_exchange",
     "semantic_request_fingerprint",
+    "serialized_length",
+    "subtype_violation",
     "unavailable_category_exchange",
 ]

@@ -29,7 +29,13 @@ from hashlib import sha256
 import json
 from typing import Any
 
-from .category_observation import MAX_SERIALIZED_LENGTH, OUTCOME_NO_PROPOSAL, unavailable_category_exchange
+from .category_observation import (
+    MAX_SERIALIZED_LENGTH,
+    OUTCOME_NO_PROPOSAL,
+    failure_class_value,
+    serialized_length,
+    unavailable_category_exchange,
+)
 from .contracts import EvidenceState, ScopeState
 from .evidence_sentences import event_focus_sentences
 
@@ -155,11 +161,15 @@ def _category_exchange(item: Any, gap: Any, gap_exchange: Any) -> dict[str, Any]
         if record is None:
             record = gap_exchange
         if record is None:
-            return None
+            # A Category TechnicalGap whose failure carried no record (attach
+            # failed) is shown explicitly, not as an Event that never reached Category.
+            return unavailable_category_exchange("OBSERVATION_NOT_ATTACHED") if gap is not None else None
         copied = json.loads(json.dumps(record, ensure_ascii=False))
         validation = copied.get("validation")
         if gap is not None and isinstance(validation, dict) and validation.get("outcome") == OUTCOME_NO_PROPOSAL:
-            validation["technical_failure_class"] = gap.failure_class
+            validation["technical_failure_class"] = failure_class_value(gap.failure_class)
+        if serialized_length(copied) > MAX_SERIALIZED_LENGTH:
+            return unavailable_category_exchange("SIZE_BOUND")
         return copied
     except Exception:
         return unavailable_category_exchange()
@@ -478,7 +488,7 @@ def selection_audit_mapping_is_bounded(audit: Mapping[str, Any]) -> bool:
             return False
     for outcome in audit.get("events", ()):
         exchange = outcome.get("category_exchange")
-        if exchange is not None and len(json.dumps(exchange, ensure_ascii=False)) > MAX_SERIALIZED_LENGTH:
+        if exchange is not None and serialized_length(exchange) > MAX_SERIALIZED_LENGTH:
             return False
     return True
 

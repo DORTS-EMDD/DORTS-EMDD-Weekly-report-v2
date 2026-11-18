@@ -619,8 +619,12 @@ Transport retry 與 semantic correction 必須分開計算。
     ReportApplication 只搬運（`category_gap_exchanges`），只有 selection audit（v4）讀取並投影到 `events[].category_exchange`。
   * 所有路徑共用一個 schema：語意請求指紋與版本、guidance 雜湊、各來源 `content_sha256`、action_facts、提案列舉值與 subtype 原值、引用句 ID、驗證結果（ACCEPTED／REJECTED／NO_PROPOSAL 與 predicate）。
   * 觀測失敗只顯示 PARTIAL／UNAVAILABLE，不改變 Category 結果、技術缺口、報告或結束碼。
-  * 公開曝露（repository 與 artifact 為 public）：只放 ID、雜湊、列舉值、版本，以及通過規則的短 action_facts 值（目前只有城市）；
-    不放文章句子、guidance 文字、provider 回應、chatbot ID、API base 或憑證；不合規的值只留雜湊並標 WITHHELD。
+  * 公開曝露（repository 與 artifact 為 public）：只放 ID、雜湊、白名單內的列舉值、版本識別字、通過 subtype 規則的 subtype 原值，
+    以及通過規則的短 action_facts 值（目前只有城市；可能是來源文字的短片段，但不會是完整句子或文章本文）；
+    不放完整句子、guidance 文字、provider 回應、chatbot ID、API base 或憑證；控制、格式（零寬、bidi）字元與非一般空白一律隱藏；
+    不合規的值只留雜湊（請求輸入被隱藏時標 WITHHELD）。
+  * 上限：builder 與 audit 共用同一個長度量法（緊湊 JSON），builder 上限 16,000－128，audit 上限 16,000，超過者整筆改為 UNAVAILABLE（SIZE_BOUND）；
+    技術缺口沒有附帶紀錄時顯示 OBSERVATION_NOT_ATTACHED。
   * 重放術語：指紋與版本相同且未隱藏任何值，只算 input-equivalent semantic replay；模型識別與推論參數無法觀測，exact replay 目前不可達成；provider 非確定性仍存在。
   * 分類提示詞 v8、schema、Golden 預期與報告輸出皆不變。
 

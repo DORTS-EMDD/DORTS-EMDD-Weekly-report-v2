@@ -3219,20 +3219,42 @@ Observation added; no decision changes:
   failure class, result state).
 * **Failure isolation.** A builder failure yields `PARTIAL` or `UNAVAILABLE`
   and never changes a Category result, a TechnicalGap, the report or the exit
-  status.
+  status. A Category TechnicalGap whose failure carries no record is shown as
+  `UNAVAILABLE` / `OBSERVATION_NOT_ATTACHED`; `null` means the Event never
+  reached Category.
+* **Size.** The builder and the audit use one measure, the compact canonical
+  JSON length. The builder caps a record at 16,000 − 128 characters, leaving
+  room for the failure class the audit adds; the audit's own cap is 16,000.
+  An oversize record is replaced, not trimmed, by `UNAVAILABLE` / `SIZE_BOUND`.
 
 Exposure (the repository and its run artifacts are public):
-* The record holds IDs, hashes, enum values, versions and only the short
-  structured `action_facts` and unresolved-claim values that pass the policy.
-  Today production sends at most one key, `location`, a city value.
-* A value is shown only when it is a string of at most 80 characters, with
-  no control character, not a complete source sentence and with no sentence
-  break. It must contain no URL, e-mail address, IP address, run of 8 or more
-  digits, token-like string or secret keyword.
-* Any other value keeps only `{withheld, sha256}` and sets
-  `input_exposure = WITHHELD`.
-* Never recorded: article text, Evidence sentences, guidance or prompt text,
-  provider response bodies, chatbot IDs, API base, credentials and headers.
+* The record holds IDs, hashes, allowlisted enum values, declared version
+  identifiers, a raw subtype that passes the subtype policy, and only the short
+  structured `action_facts` and unresolved-claim values that pass the value
+  policy. Today production sends at most one `action_facts` key, `location`,
+  a city value.
+* Admitted values may be short fragments of source text, for example a city
+  name. A complete source sentence and the article body are never recorded.
+* **Value policy** (`action_facts`, claims): a string of at most 80 characters.
+  It contains no control, format (zero-width, bidi), private-use, line- or
+  paragraph-separator character and no space other than U+0020. It is not a
+  complete source sentence and has no sentence break. It contains no URL,
+  e-mail address, IP address, run of 8 or more digits, 24-character token
+  run or secret keyword. Keys outside the `_action_facts` allowlist are
+  withheld.
+* **Subtype policy:** at most 128 characters, the same character, sentence
+  and sensitive-pattern rules, and no 24-character run mixing letters and
+  digits (snake_case subtypes stay readable).
+* **Allowlists:** the proposal's `category_state`, `primary_category_id` and
+  `category_resolution_reason`, the validation outcome, predicate and result
+  state must be canonical members. Declared versions must be lowercase
+  identifiers. The audit's failure class must be an upper-case identifier.
+* Any other value keeps only `{withheld, sha256}` (`SIZE_BOUND`,
+  `CONTENT_BOUND`, `KEY_NOT_ALLOWED`, `NOT_ALLOWLISTED`, `NOT_IDENTIFIER`).
+  A withheld request value sets `input_exposure = WITHHELD`.
+* Never recorded: complete Evidence sentences, the article body, guidance or
+  prompt text, provider response bodies, chatbot IDs, API base, credentials
+  and headers.
 * The job-log echo step does not print the record.
 
 Replay terminology:

@@ -300,6 +300,12 @@ SENTENCE = "The operator launched 5G Wi-Fi on every train of its two operating l
         ("Api-Key 1234", "CONTENT_BOUND"),
         ("line\nbreak", "CONTENT_BOUND"),
         (12, "CONTENT_BOUND"),
+        ("Ly\u200bon", "CONTENT_BOUND"),
+        ("Ly\u202eon", "CONTENT_BOUND"),
+        ("Saint\u00a0Denis", "CONTENT_BOUND"),
+        ("東京\u3000駅", "CONTENT_BOUND"),
+        ("a\u2028b", "CONTENT_BOUND"),
+        ("\ufeffLyon", "CONTENT_BOUND"),
     ],
 )
 def test_the_exposure_policy(value, reason):
