@@ -152,7 +152,11 @@ no text is not a competing document unit. Exactly one remaining unit is the
 principal article; when only hyperlink reference units remain, the page stays
 ambiguous (a listing). Without a principal article, whole hyperlink-only blocks
 inside the main region are excluded from the principal body; inline anchors in
-prose and links to the same resource are kept. A nested article does not create
+prose and links to the same resource are kept. RC-71: when exactly one principal article is established, a
+collection that neither contains it nor lies inside it is related content
+outside the principal document and does not by itself make the page a
+collection; a collection containing or inside the article still counts. A
+nested article does not create
 a second principal document merely because it uses the same tag. Multiple
 sibling article cards prove a collection only when their relationships and
 surrounding structure establish multiple independent document units and do
@@ -215,6 +219,10 @@ in this sentence is retained:
 The authority awarded <a>the signalling contract</a> after evaluation.
 ```
 
+RC-71: for the generic-sibling-unit test, text owned only by hyperlinks,
+forms and interactive controls is not prose, so a form or share block inside
+the principal document is not a competing document-shaped unit.
+
 Links, buttons, and other controls do not establish substantive body when
 they are the resource's only usable content. The distinction must be derived
 from whether text participates in principal prose and whether non-control
@@ -228,7 +236,8 @@ OG or Twitter title, and the principal H1, subject to resource association and
 conflict checks.
 
 H2-H6 values do not automatically become `document_level_headlines`. They may
-remain structural facts or section headings. A page-level title or metadata
+remain structural facts or section headings. RC-71: the same title or metadata headline value stated more than once is one
+fact, not a conflict; differing values are a conflict. A page-level title or metadata
 headline that conflicts with the selected document boundary cannot be trusted
 blindly; unresolved ownership or identity conflicts make the boundary
 ambiguous.

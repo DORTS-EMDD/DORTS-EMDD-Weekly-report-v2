@@ -242,7 +242,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-70 修訂（2026-10-20～11-19）
+### RC-3～RC-71 修訂（2026-10-20～11-19）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.47、§L、§N 與 §R。
 
@@ -638,6 +638,13 @@ Transport retry 與 semantic correction 必須分開計算。
   * 只作觀測：`scripts/source_host_probe.py` 與手動 `source_probe` workflow 輸入，以 EvidenceService 自己的抓取與主文件判定
     列出專業軌道媒體（Railway Gazette、Railway PRO、Railway-News、Mass Transit、IRJ 等）的失敗原因與頁面 HTML；
     本期約 75 筆專業媒體候選全部在 Evidence 或 Temporal 階段掉件。不呼叫 MaiAgent、不參與決策。
+* RC-71（§A.52，2026-11-19）：RC-70 的來源探測（Run 44450962940，只跑 `source_probe`）還原專業媒體頁面後，確認三種結構原因使主文件判定失敗，修正在 EvidenceService 的結構判定（`evidence_document.py`，只用結構關係，不用出版者、class 名稱、用語或文字相似度）：
+  * 只有一篇主文章時，不包含它也不在它之內的集合是主文件之外的相關文件，不再使頁面成為清單；包含或位於文章內的集合仍計入。
+  * 同一個 title、og:title 或 twitter:title 值重複出現只是同一事實，不是衝突；值不同仍為衝突。
+  * 判定同層通用單元時，只含連結、表單與互動控制項的文字不是內文，文章內的訂閱表單或分享區塊不再是競爭的文件單元。
+  * 未改、待使用者決定：頁面同時有把小工具標題寫成 `<h1>`（如「Related」）且沒有集合標記時，仍為 `multiple_principal_h1`。
+  * 未改（外部）：Railway PRO、Railway Gazette、IRJ 對任何請求皆由 CDN 回 403，RSS 也是 403 或無全文，不繞過。
+  * 探測現在傳入與 EvidenceService 相同的來源身分檢查，並列出各頁面日期相關標記；先前探測的「無日期事實」是探測本身的缺漏。
 
 ## 13. Report / Delivery
 
@@ -788,5 +795,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-70 (2026-11-19; RC-70 user decisions: a road collision is reportable only with a derailment, a person struck only with a stated rail equipment failure or staff operating error, Reportability prompt v8, observer-only source host probe; RC-69 observer-only Category exchange record, selection audit v4; RC-68 Category prompt v8: delivery acceptance tests, deployments and consequences; RC-67 user decisions D1/D2: project steps and drills have no Category, Category prompt v7, Writer v11; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
+CONTRACT_REVISION = RC-3..RC-71 (2026-11-19; RC-71 principal-document detection: related collections outside the single article, repeated identical headline metadata and interactive widgets no longer make a page ambiguous, evidence_document.py only; RC-70 user decisions: a road collision is reportable only with a derailment, a person struck only with a stated rail equipment failure or staff operating error, Reportability prompt v8, observer-only source host probe; RC-69 observer-only Category exchange record, selection audit v4; RC-68 Category prompt v8: delivery acceptance tests, deployments and consequences; RC-67 user decisions D1/D2: project steps and drills have no Category, Category prompt v7, Writer v11; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```

@@ -34,6 +34,10 @@ DEFAULT_URLS = (
     "https://www.railjournal.com/",
     # Global Railway Review (DATE_PROVENANCE_INVALID)
     "https://www.globalrailwayreview.com/tracsis-completes-computer-aided-dispatch-deployment-across-watco-railroads-ahead-of-schedule-in-north-america/2137019.article",
+    # The three pages that ended at DATE_PROVENANCE_INVALID in that run.
+    "https://www.globalrailwayreview.com/thessaloniki-metro-kalamaria-extension-opens-with-hitachi-rail-driverless-signalling-technology/2136343.article",
+    "https://www.globalrailwayreview.com/alstom-launches-first-next-generation-g-class-tram-into-passenger-service-in-melbourne/2136277.article",
+    "https://www.globalrailwayreview.com/alstom-cbtc-signalling-enters-revenue-service-on-bengaluru-metro-pink-line-reach-6-priority-section/2136996.article",
 )
 
 FEEDS = (
@@ -54,7 +58,18 @@ def _probe_page(url: str, dump: bool) -> None:
         print(f"FETCH_ERROR {type(exc).__name__} {getattr(exc, 'status_code', '')} {exc}")
         return
     print(f"status={fetched.status_code} content_type={fetched.content_type} bytes={len(fetched.content)} url={fetched.url}")
-    assessment = assess_document(fetched.content, fetched.content_type, resource_url=fetched.url)
+    # The same call EvidenceService makes, including the resource-identity
+    # checker that JSON-LD date facts require (RC-71: the earlier probe omitted
+    # it and so always showed no date facts).
+    assessment = assess_document(
+        fetched.content,
+        fetched.content_type,
+        resource_url=fetched.url,
+        candidate_id="probe",
+        resource_identity_checker=lambda value: evidence_service._canonical_is_related(
+            value, fetched.url, fetched.redirect_chain
+        ),
+    )
     provenance = assessment.as_provenance()
     print("principal_document_status=", assessment.principal_document_status.value)
     print("reject_reason=", assessment.reject_reason)
@@ -63,12 +78,30 @@ def _probe_page(url: str, dump: bool) -> None:
     print("date_facts=", json.dumps(list(assessment.source_date_facts)[:5], ensure_ascii=False, default=str))
     print("provenance=", json.dumps(provenance, ensure_ascii=False, default=str)[:3000])
     print("jsonld_types=", re.findall(r'"@type"\s*:\s*"([^"]+)"', fetched.content)[:12])
+    print("date_markup=", json.dumps(_date_markup(fetched.content), ensure_ascii=False))
     if dump:
         blob = base64.b64encode(gzip.compress(fetched.content.encode("utf-8"))).decode("ascii")
         print(f"<<<HTML_GZ_B64 {url}")
         for i in range(0, len(blob), 4000):
             print(blob[i : i + 4000])
         print("HTML_GZ_B64>>>")
+
+
+def _date_markup(content: str) -> dict[str, object]:
+    """Raw date-bearing markup of a page, to explain an empty date_facts."""
+
+    return {
+        "meta_dates": re.findall(
+            r"""<meta[^>]+(?:property|name|itemprop)=["']([^"']*(?:date|time|pub)[^"']*)["'][^>]*content=["']([^"']*)""",
+            content,
+            flags=re.I,
+        )[:8],
+        "jsonld_identity_and_dates": re.findall(
+            r'"(@id|url|mainEntityOfPage|datePublished|dateModified|dateCreated)"\s*:\s*(?:"([^"]*)"|\{[^}]*\})',
+            content,
+        )[:12],
+        "time_elements": re.findall(r"<time[^>]*>", content)[:5],
+    }
 
 
 def _probe_status(url: str, user_agent: str) -> str:

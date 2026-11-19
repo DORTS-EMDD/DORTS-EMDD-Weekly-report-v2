@@ -3390,6 +3390,54 @@ PERSON_STRUCK_REPORTABLE_ONLY_WITH = STATED RAIL EQUIPMENT FAILURE OR STAFF OPER
 SOURCE_HOST_PROBE = OBSERVATION_ONLY (manual dispatch)
 ```
 
+### A.52 RC-71 Principal-document detection on specialist rail media pages (2026-11-19)
+
+Evidence: the RC-70 source probe (workflow run 44450962940, `source_probe`
+only: no MaiAgent call, no report) fetched the specialist media pages that
+ended at `PRINCIPAL_DOCUMENT` in Run 44429652572. Three pages fetched with
+status 200 and were assessed `PRINCIPAL_DOCUMENT_AMBIGUOUS` with no body; the
+page HTML restored offline reproduced each result exactly and showed three
+different structural causes. The fixes are in `evidence_document.py`
+(EvidenceService's structural owner; `docs/EVIDENCE_STRUCTURAL_DOCUMENT.md`
+§6, §10, §11) and use only structural relationships: no publisher selector,
+class name, phrase, count or text-similarity rule.
+
+* **Related documents outside the single principal article (§6).** When
+  exactly one principal article is established in the main region, a
+  collection that neither contains it nor lies inside it is a set of related
+  documents outside the principal document and no longer makes the page a
+  listing. A collection that contains the article, or lies inside it, still
+  counts, and a page without a principal article is judged as before.
+* **The same headline stated twice (§11).** Repeating the same `<title>`,
+  `og:title` or `twitter:title` value (a template and an SEO plugin) is one
+  fact stated twice, not a conflict; differing values still make the page
+  ambiguous. Only equality of the page's own metadata values is compared; no
+  Candidate text is compared.
+* **Interactive widgets are not document units (§10).** For the
+  generic-sibling-unit rule, text owned only by hyperlinks, forms and
+  interactive controls is not prose, so a newsletter form or a share block
+  inside the article is not a competing document-shaped unit. Collections and
+  explicit units are unchanged.
+* **Not changed, awaiting a user decision.** A page whose main region also
+  carries widget headings written as `<h1>` ("Related", "You may also like"),
+  with no markup-level collection, still reports `multiple_principal_h1`.
+  Choosing the document's own `<h1>` needs a rule on which `<h1>` owns the
+  document that the structural contract does not provide.
+* **Not changed (external).** Railway PRO, Railway Gazette and the
+  International Railway Journal answer every request, including a browser-like
+  one, with HTTP 403 from the CDN's bot protection; their RSS feeds are 403 or
+  carry no full text. Python cannot fix this and the protection is not bypassed.
+* **Observation.** The probe now passes the resource-identity checker that
+  EvidenceService passes, so it shows the date facts the production assessment
+  extracts, and lists the raw date-bearing markup of each page. Earlier output
+  showing no date facts was a probe artefact.
+* Search, Scope, Temporal, Category, Reportability, Writer, Validation and
+  Delivery are unchanged. Tests: `tests/test_evidence_principal_rc71.py`.
+
+```text
+EVIDENCE_STRUCTURAL_REVISION = RC-71
+```
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式

@@ -190,15 +190,23 @@ def _is_interactive_only_node(node: _Node) -> bool:
     return node.tag.casefold() in _INTERACTIVE_TAGS
 
 
-def _has_text_outside_headlines(node: _Node) -> bool:
+def _has_text_outside_headlines(node: _Node, *, ignore_controls: bool = False) -> bool:
     """Return whether a structural unit owns non-headline text.
 
     This is deliberately a relationship/ownership fact.  It does not inspect
     visible words, match a Candidate, or treat a list-item count as authority.
+
+    ``ignore_controls`` (RC-71, §10): text owned only by hyperlinks, forms and
+    interactive controls is not prose, so it does not make a unit
+    document-shaped.
     """
 
     def visit(current: _Node) -> bool:
         if current is not node and _is_excluded_region(current, node) is not None:
+            return False
+        if ignore_controls and current is not node and (
+            current.tag.casefold() in {"a", "form"} or _is_interactive_only_node(current)
+        ):
             return False
         if current is not node and _is_article_node(current):
             return False
@@ -586,8 +594,21 @@ def _has_explicit_collection(region: _Node) -> bool:
     return False
 
 
-def _collection_has_multiple_units(region: _Node) -> bool:
+def _collection_has_multiple_units(region: _Node, principal: _Node | None = None) -> bool:
+    """Whether the region holds a collection of two or more document units.
+
+    RC-71 (§6): when exactly one principal article is established, a collection
+    that neither contains it nor lies inside it is a set of related documents
+    outside the principal document and proves nothing about it.
+    """
+
     for collection in (node for node in _walk(region) if _is_collection_node(node)):
+        if (
+            principal is not None
+            and not _is_descendant(collection, principal)
+            and not _is_descendant(principal, collection)
+        ):
+            continue
         units = [
             child for child in collection.children
             if _is_explicit_collection_unit(child)
@@ -613,7 +634,7 @@ def _is_generic_document_shaped_div(node: _Node) -> bool:
         and not _is_article_node(node)
         and not _is_header_only(node)
         and _has_owned_headline(node)
-        and _has_text_outside_headlines(node)
+        and _has_text_outside_headlines(node, ignore_controls=True)
     )
 
 
@@ -768,7 +789,12 @@ def _headline_structure_conflict(
     boundary: _Node,
     root: _Node,
 ) -> tuple[bool, tuple[str, ...]]:
-    """Return structural headline conflicts without comparing headline text."""
+    """Return structural headline conflicts.
+
+    Candidate text is never compared.  Repeated metadata values are compared
+    only for equality with each other (RC-71): one value stated twice is not a
+    conflict.
+    """
 
     resource_element = _resource_element(root)
     title_nodes: list[_Node] = []
@@ -794,11 +820,18 @@ def _headline_structure_conflict(
         ):
             principal_h1_nodes.append(node)
 
+    # RC-71 (§11): the same value repeated by a template and an SEO plugin is
+    # one fact stated twice, not a conflict; only differing values conflict.
+    def _distinct_values(nodes: list[_Node], field: str) -> int:
+        if field == "title":
+            return len({_owned_headline_text(node) for node in nodes})
+        return len({_clean(node.attrs.get("content", "")) for node in nodes})
+
     reasons: list[str] = []
-    if len(title_nodes) > 1:
+    if _distinct_values(title_nodes, "title") > 1:
         reasons.append("duplicate_title_elements")
     for key, nodes in metadata_nodes.items():
-        if len(nodes) > 1:
+        if _distinct_values(nodes, "content") > 1:
             reasons.append(f"duplicate_{key.replace(':', '_')}_metadata")
     if len(principal_h1_nodes) > 1:
         reasons.append("multiple_principal_h1")
@@ -1156,7 +1189,7 @@ def _assess_tree(
 
     region = mains[0] if mains else root
     articles = _find_article_roots(region)
-    if _collection_has_multiple_units(region):
+    if _collection_has_multiple_units(region, articles[0] if len(articles) == 1 else None):
         return _assessment(
             format_name=format_name,
             parse_status=parse_status,
