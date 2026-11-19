@@ -1,6 +1,6 @@
 {
- "reference_version": "geo-reference-v5",
- "effective_date": "2026-11-08",
+ "reference_version": "geo-reference-v6",
+ "effective_date": "2026-11-19",
  "basis": {
   "region_ids": "ISO 3166-1 alpha-2 codes (HK and MO as their ISO-assigned codes).",
   "region_display_names": "Traditional Chinese names used for formal DORTS reports.",
@@ -215,7 +215,8 @@
     "紐西蘭",
     "新西兰",
     "뉴질랜드",
-    "ニュージーランド"
+    "ニュージーランド",
+    "Aotearoa"
    ]
   },
   {
@@ -245,7 +246,8 @@
     "愛爾蘭",
     "爱尔兰",
     "아일랜드",
-    "アイルランド"
+    "アイルランド",
+    "Éire"
    ]
   },
   {
@@ -294,7 +296,10 @@
     "比利時",
     "比利时",
     "벨기에",
-    "ベルギー"
+    "ベルギー",
+    "Belgien",
+    "Koninkrijk België",
+    "Royaume de Belgique"
    ]
   },
   {
@@ -399,7 +404,9 @@
     "芬蘭",
     "芬兰",
     "핀란드",
-    "フィンランド"
+    "フィンランド",
+    "Suomen tasavalta",
+    "Republiken Finland"
    ]
   },
   {
@@ -411,7 +418,10 @@
     "波蘭",
     "波兰",
     "폴란드",
-    "ポーランド"
+    "ポーランド",
+    "Rzeczpospolita Polska",
+    "Polen",
+    "Pologne"
    ]
   },
   {
@@ -423,7 +433,10 @@
     "Česko",
     "捷克",
     "체코",
-    "チェコ"
+    "チェコ",
+    "Česká republika",
+    "Tschechien",
+    "Tchéquie"
    ]
   },
   {
@@ -535,7 +548,10 @@
     "Israel",
     "以色列",
     "이스라엘",
-    "イスラエル"
+    "イスラエル",
+    "ישראל",
+    "State of Israel",
+    "מדינת ישראל"
    ]
   },
   {
@@ -1131,9 +1147,17 @@
    "region_id": "NZ",
    "cities": [
     "Auckland",
-    "Wellington"
+    "Wellington",
+    "ウェリントン",
+    "웰링턴",
+    "威靈頓",
+    "惠灵顿"
    ],
-   "systems": []
+   "systems": [
+    "Auckland Transport",
+    "City Rail Link",
+    "Auckland Light Rail"
+   ]
   },
   {
    "region_id": "GB",
@@ -1192,10 +1216,15 @@
   {
    "region_id": "IE",
    "cities": [
-    "Dublin"
+    "Dublin",
+    "Baile Átha Cliath",
+    "ダブリン",
+    "더블린",
+    "都柏林"
    ],
    "systems": [
-    "Luas"
+    "Luas",
+    "Transport Infrastructure Ireland"
    ]
   },
   {
@@ -1378,11 +1407,38 @@
     "Antwerp",
     "Antwerpen",
     "Ghent",
-    "Gent"
+    "Gent",
+    "Anvers",
+    "Gand",
+    "Liège",
+    "Luik",
+    "Lüttich",
+    "Charleroi",
+    "ブリュッセル",
+    "브뤼셀",
+    "布魯塞爾",
+    "布鲁塞尔",
+    "アントワープ",
+    "앤트워프",
+    "安特衛普",
+    "安特卫普",
+    "リエージュ",
+    "리에주",
+    "列日",
+    "シャルルロワ",
+    "샤를루아",
+    "沙勒羅瓦",
+    "沙勒罗瓦"
    ],
    "systems": [
     "STIB",
-    "De Lijn"
+    "De Lijn",
+    "MIVB",
+    "STIB-MIVB",
+    "Brussels Metro",
+    "Métro de Bruxelles",
+    "Tram de Liège",
+    "Métro léger de Charleroi"
    ]
   },
   {
@@ -1615,10 +1671,39 @@
    "cities": [
     "Helsinki",
     "Tampere",
-    "Espoo"
+    "Espoo",
+    "Helsingfors",
+    "Tammerfors",
+    "Esbo",
+    "Vantaa",
+    "Vanda",
+    "Turku",
+    "Åbo",
+    "ヘルシンキ",
+    "헬싱키",
+    "赫爾辛基",
+    "赫尔辛基",
+    "タンペレ",
+    "탐페레",
+    "坦佩雷",
+    "トゥルク",
+    "투르쿠",
+    "圖爾庫",
+    "图尔库",
+    "エスポー",
+    "에스포",
+    "埃斯波"
    ],
    "systems": [
-    "HSL"
+    "HSL",
+    "Helsinki Metro",
+    "Helsingin metro",
+    "Länsimetro",
+    "Raide-Jokeri",
+    "Tampereen ratikka",
+    "Tampere tramway",
+    "Helsingin seudun liikenne",
+    "Kaupunkiliikenne"
    ]
   },
   {
@@ -1631,10 +1716,34 @@
     "Wrocław",
     "Gdańsk",
     "Poznań",
-    "Łódź"
+    "Łódź",
+    "Cracow",
+    "Wroclaw",
+    "Gdansk",
+    "Poznan",
+    "Lodz",
+    "Szczecin",
+    "Bydgoszcz",
+    "ワルシャワ",
+    "바르샤바",
+    "華沙",
+    "华沙",
+    "クラクフ",
+    "크라쿠프",
+    "克拉科夫",
+    "ヴロツワフ",
+    "브로츠와프",
+    "弗羅茨瓦夫",
+    "弗罗茨瓦夫",
+    "グダニスク",
+    "그단스크",
+    "格但斯克"
    ],
    "systems": [
-    "Warsaw Metro"
+    "Warsaw Metro",
+    "Metro Warszawskie",
+    "Tramwaje Warszawskie",
+    "MPK Kraków"
    ]
   },
   {
@@ -1643,10 +1752,29 @@
     "Prague",
     "Praha",
     "Brno",
-    "Ostrava"
+    "Ostrava",
+    "Prag",
+    "Brünn",
+    "Plzeň",
+    "Pilsen",
+    "Olomouc",
+    "プラハ",
+    "프라하",
+    "布拉格",
+    "ブルノ",
+    "브르노",
+    "布爾諾",
+    "布尔诺",
+    "オストラヴァ",
+    "오스트라바",
+    "俄斯特拉發",
+    "俄斯特拉发"
    ],
    "systems": [
-    "Prague Metro"
+    "Prague Metro",
+    "Pražské metro",
+    "Dopravní podnik hl. m. Prahy",
+    "DPMB"
    ]
   },
   {
@@ -1754,9 +1882,38 @@
    "region_id": "IL",
    "cities": [
     "Tel Aviv",
-    "Jerusalem"
+    "Jerusalem",
+    "Tel Aviv-Yafo",
+    "Tel Aviv-Jaffa",
+    "תל אביב",
+    "תל אביב-יפו",
+    "ירושלים",
+    "Haifa",
+    "חיפה",
+    "Bat Yam",
+    "בת ים",
+    "Petah Tikva",
+    "פתח תקווה",
+    "テルアビブ",
+    "텔아비브",
+    "特拉維夫",
+    "特拉维夫",
+    "エルサレム",
+    "예루살렘",
+    "耶路撒冷",
+    "ハイファ",
+    "하이파",
+    "海法"
    ],
-   "systems": []
+   "systems": [
+    "Tel Aviv Light Rail",
+    "Jerusalem Light Rail",
+    "Carmelit",
+    "Dankal",
+    "הרכבת הקלה בתל אביב",
+    "הרכבת הקלה בירושלים",
+    "הכרמלית"
+   ]
   },
   {
    "region_id": "IR",

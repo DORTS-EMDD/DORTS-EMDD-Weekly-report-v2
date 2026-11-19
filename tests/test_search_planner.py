@@ -29,12 +29,14 @@ class SearchPlannerTests(unittest.TestCase):
     @staticmethod
     def _supported_fixture(source: dict) -> dict:
         fixture = copy.deepcopy(source)
+        # Markets without a supported edition (Denmark; Finland, RC-76) are left out.
+        unsupported = {"denmark", "finland"}
         fixture["selected_markets"] = [
-            market for market in fixture["selected_markets"] if market["market_id"] != "denmark"
+            market for market in fixture["selected_markets"] if market["market_id"] not in unsupported
         ]
-        fixture["global_targets"] = [target for target in fixture["global_targets"] if target != "denmark"]
+        fixture["global_targets"] = [target for target in fixture["global_targets"] if target not in unsupported]
         fixture["provider_profile_bindings"] = [
-            binding for binding in fixture["provider_profile_bindings"] if binding["market_id"] != "denmark"
+            binding for binding in fixture["provider_profile_bindings"] if binding["market_id"] not in unsupported
         ]
         return fixture
 
@@ -91,19 +93,18 @@ class SearchPlannerTests(unittest.TestCase):
         configured = tuple(market.market_id for market in self.production_registry.selected_markets)
         self.assertIn("denmark", configured)
         self.assertEqual(plan.coverage.configured_market_ids, configured)
-        self.assertEqual(tuple(gap.market_id for gap in plan.coverage.gaps), ("denmark",))
-        self.assertEqual(
-            plan.coverage.gaps[0].reason,
-            SearchCoverageGapReason.KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY,
-        )
-        self.assertEqual(sum(item.market_id == "denmark" for item in plan.items), 0)
-        self.assertEqual(len({item.market_id for item in plan.items}), 19)
+        self.assertEqual(tuple(gap.market_id for gap in plan.coverage.gaps), ("denmark", "finland"))
+        for gap in plan.coverage.gaps:
+            self.assertEqual(gap.reason, SearchCoverageGapReason.KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY)
+        self.assertEqual(sum(item.market_id in {"denmark", "finland"} for item in plan.items), 0)
+        self.assertEqual(len({item.market_id for item in plan.items}), 25)
 
     def test_production_global_planning_exposes_denmark_coverage_gap(self) -> None:
         plan = SearchPlanner(self.production_registry).plan("global")
         self.assertIn("denmark", plan.coverage.configured_market_ids)
-        self.assertEqual(tuple(gap.market_id for gap in plan.coverage.gaps), ("denmark",))
-        self.assertEqual(sum(item.market_id == "denmark" for item in plan.items), 0)
+        self.assertIn("finland", plan.coverage.configured_market_ids)
+        self.assertEqual(tuple(gap.market_id for gap in plan.coverage.gaps), ("denmark", "finland"))
+        self.assertEqual(sum(item.market_id in {"denmark", "finland"} for item in plan.items), 0)
 
     def test_coverage_is_in_plan_mapping_and_identity(self) -> None:
         plan = SearchPlanner(self.production_registry).plan("selected")

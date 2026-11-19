@@ -1,4 +1,4 @@
-"""Technology Search vocabulary: the seven approved concepts (search-discovery-v10).
+"""Technology Search vocabulary: the seven approved concepts (search-discovery-v10; v11 adds four profiles).
 
 The governed vocabulary is SEARCH_LANGUAGE_PROFILES.md section 5, materialized
 into search_configuration.json (parity: scripts.materialize_search_configuration).
@@ -59,6 +59,19 @@ EXPECTED = {
     "no": {"CBTC": ["CBTC"], "ATO": ["automatisk togdrift"], "無人駕駛": ["førerløs"],
            "第三軌": ["strømskinne"], "道岔": ["sporveksel"], "狀態監測": ["tilstandsovervåking"],
            "預測性維修": ["prediktivt vedlikehold"]},
+    # RC-76 (user decision 2026-11-19): the four new profiles carry the seven concepts.
+    "fi": {"CBTC": ["CBTC"], "ATO": ["automaattinen junaohjaus"], "無人駕駛": ["kuljettajaton"],
+           "第三軌": ["virtakisko"], "道岔": ["vaihde"], "狀態監測": ["kunnonvalvonta"],
+           "預測性維修": ["ennakoiva kunnossapito"]},
+    "cs": {"CBTC": ["CBTC"], "ATO": ["automatické řízení vlaku"], "無人駕駛": ["bez řidiče"],
+           "第三軌": ["třetí kolejnice"], "道岔": ["výhybka"], "狀態監測": ["monitorování stavu"],
+           "預測性維修": ["prediktivní údržba"]},
+    "pl": {"CBTC": ["CBTC"], "ATO": ["automatyczne prowadzenie pociągu"], "無人駕駛": ["bez maszynisty"],
+           "第三軌": ["trzecia szyna"], "道岔": ["rozjazd"], "狀態監測": ["monitorowanie stanu"],
+           "預測性維修": ["konserwacja predykcyjna"]},
+    "he": {"CBTC": ["CBTC"], "ATO": ["הפעלה אוטומטית של רכבת"], "無人駕駛": ["ללא נהג"],
+           "第三軌": ["מסילה שלישית"], "道岔": ["מסוט"], "狀態監測": ["ניטור מצב"],
+           "預測性維修": ["תחזוקה חזויה"]},
 }
 
 # search-discovery-v9 technology_terms, in order: every one is kept unchanged.
@@ -146,6 +159,7 @@ def test_every_new_literal_reaches_every_supported_edition_of_its_profile(regist
                 assert _quoted(literal) in queries, (market_id, profile_id, literal)
     assert all(_query_words(item.query) <= 32 for item in plan.items)
     assert "da" not in {profile for _market, profile in editions}  # Denmark: no Google News edition
+    assert "fi" not in {profile for _market, profile in editions}  # Finland (RC-76): treated like Denmark
 
 
 @pytest.mark.parametrize("mode", ["selected", "global"])
@@ -153,13 +167,15 @@ def test_request_counts(registry, mode):
     weekly = SearchPlanner(registry).plan(mode, window=WEEK)
     counts = Counter(item.intent.value for item in weekly.items)
     # v9: 122 = technology 49 + major_incident 31 + operations 21 + procurement 21.
-    assert len(weekly.items) == 140
-    assert counts == {"technology": 67, "major_incident": 31, "operations": 21, "procurement": 21}
+    # v10: 140 = technology 67 + major_incident 31 + operations 21 + procurement 21.
+    # v11 (RC-76, 27 markets): 196.
+    assert len(weekly.items) == 196
+    assert counts == {"technology": 95, "major_incident": 43, "operations": 29, "procurement": 29}
     november = MonitoredCheckMonth(date(2026, 11, 1), date(2026, 11, 30))
     monthly = SearchPlanner(registry).plan(mode, window=SearchWindow(date(2026, 11, 30), date(2026, 12, 6)),
                                            monitored_check=november)
     monitored = [item for item in monthly.items if item.intent is DiscoveryIntent.MONITORED_STANDARDS
                  and item.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]
     catalogue = [item for item in monthly.items if item.provider_target is SearchProviderId.STANDARDS_CATALOGUE]
-    assert len(monitored) == 63 and len(catalogue) == 10
-    assert len(monthly.items) == 140 + 63 + 10
+    assert len(monitored) == 87 and len(catalogue) == 10
+    assert len(monthly.items) == 196 + 87 + 10

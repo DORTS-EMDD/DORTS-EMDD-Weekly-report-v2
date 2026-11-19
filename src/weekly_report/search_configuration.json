@@ -1,5 +1,5 @@
 {
-  "configuration_version": "search-discovery-v10",
+  "configuration_version": "search-discovery-v11",
   "region_modes": [
     "selected",
     "global"
@@ -380,6 +380,139 @@
         "urban_rail_core"
       ],
       "enabled": true
+    },
+    {
+      "market_id": "finland",
+      "display_name": "Finland",
+      "region_id": "FI",
+      "primary_profiles": [
+        "fi"
+      ],
+      "secondary_profiles": [],
+      "english_supplement_profiles": [
+        "en"
+      ],
+      "locale_hints": [
+        "fi-FI"
+      ],
+      "terminology_refs": [
+        "urban_rail_core"
+      ],
+      "enabled": true
+    },
+    {
+      "market_id": "belgium",
+      "display_name": "Belgium",
+      "region_id": "BE",
+      "primary_profiles": [
+        "nl"
+      ],
+      "secondary_profiles": [
+        "fr"
+      ],
+      "english_supplement_profiles": [
+        "en"
+      ],
+      "locale_hints": [
+        "nl-BE",
+        "fr-BE"
+      ],
+      "terminology_refs": [
+        "urban_rail_core"
+      ],
+      "enabled": true
+    },
+    {
+      "market_id": "czechia",
+      "display_name": "Czechia",
+      "region_id": "CZ",
+      "primary_profiles": [
+        "cs"
+      ],
+      "secondary_profiles": [],
+      "english_supplement_profiles": [
+        "en"
+      ],
+      "locale_hints": [
+        "cs-CZ"
+      ],
+      "terminology_refs": [
+        "urban_rail_core"
+      ],
+      "enabled": true
+    },
+    {
+      "market_id": "israel",
+      "display_name": "Israel",
+      "region_id": "IL",
+      "primary_profiles": [
+        "he"
+      ],
+      "secondary_profiles": [
+        "en"
+      ],
+      "english_supplement_profiles": [],
+      "locale_hints": [
+        "he-IL",
+        "en-IL"
+      ],
+      "terminology_refs": [
+        "urban_rail_core"
+      ],
+      "enabled": true
+    },
+    {
+      "market_id": "ireland",
+      "display_name": "Ireland",
+      "region_id": "IE",
+      "primary_profiles": [
+        "en"
+      ],
+      "secondary_profiles": [],
+      "english_supplement_profiles": [],
+      "locale_hints": [
+        "en-IE"
+      ],
+      "terminology_refs": [
+        "urban_rail_core"
+      ],
+      "enabled": true
+    },
+    {
+      "market_id": "poland",
+      "display_name": "Poland",
+      "region_id": "PL",
+      "primary_profiles": [
+        "pl"
+      ],
+      "secondary_profiles": [],
+      "english_supplement_profiles": [
+        "en"
+      ],
+      "locale_hints": [
+        "pl-PL"
+      ],
+      "terminology_refs": [
+        "urban_rail_core"
+      ],
+      "enabled": true
+    },
+    {
+      "market_id": "new_zealand",
+      "display_name": "New Zealand",
+      "region_id": "NZ",
+      "primary_profiles": [
+        "en"
+      ],
+      "secondary_profiles": [],
+      "english_supplement_profiles": [],
+      "locale_hints": [
+        "en-NZ"
+      ],
+      "terminology_refs": [
+        "urban_rail_core"
+      ],
+      "enabled": true
     }
   ],
   "global_targets": [
@@ -402,7 +535,14 @@
     "spain",
     "switzerland",
     "sweden",
-    "denmark"
+    "denmark",
+    "finland",
+    "belgium",
+    "czechia",
+    "israel",
+    "ireland",
+    "poland",
+    "new_zealand"
   ],
   "global_markets": [],
   "profiles": [
@@ -2795,6 +2935,718 @@
         }
       },
       "enabled": true
+    },
+    {
+      "profile_id": "fi",
+      "display_name": "Finnish",
+      "locale": "fi",
+      "intent_vocabulary": {
+        "technology": {
+          "urban_rail_terms": [
+            "metro",
+            "raitiotie",
+            "raitiovaunu",
+            "pikaraitiotie"
+          ],
+          "technology_terms": [
+            "opastinjärjestelmä",
+            "kalusto",
+            "viestintä",
+            "ajosähkö",
+            "CBTC",
+            "ennakoiva kunnossapito",
+            "digitaalinen kaksonen",
+            "automaattinen junaohjaus",
+            "kuljettajaton",
+            "virtakisko",
+            "vaihde",
+            "kunnonvalvonta"
+          ],
+          "new_material_terms": [
+            "uusi materiaali",
+            "komposiittimateriaali",
+            "kevytmateriaali",
+            "energian varastointimateriaali"
+          ],
+          "new_method_terms": [
+            "kokeilu",
+            "pilotti",
+            "testi",
+            "käyttöönotto",
+            "modernisointi",
+            "automaatio",
+            "digitalisaatio",
+            "uusi järjestelmä",
+            "uusi laitteisto"
+          ]
+        },
+        "major_incident": {
+          "urban_rail_terms": [
+            "metro",
+            "raitiovaunu",
+            "pikaraitiotie"
+          ],
+          "accident_terms": [
+            "onnettomuus",
+            "törmäys",
+            "suistuminen",
+            "tulipalo",
+            "savu",
+            "loukkaantuneet",
+            "kuolleet"
+          ],
+          "disruption_terms": [
+            "liikennekatko",
+            "häiriö",
+            "evakuointi",
+            "liikennehäiriö"
+          ],
+          "technical_failure_terms": [
+            "sähkökatko",
+            "opastinvika",
+            "järjestelmävika",
+            "infrastruktuurivika"
+          ],
+          "safety_terms": [
+            "tekninen vika",
+            "turvallisuuspoikkeama",
+            "tutkinta",
+            "pelastustoimi"
+          ]
+        },
+        "operations": {
+          "urban_rail_terms": [
+            "metro",
+            "raitiovaunu",
+            "pikaraitiotie"
+          ],
+          "policy_terms": [
+            "linjaus",
+            "määräys",
+            "lupa",
+            "liikennöintisuunnitelma"
+          ],
+          "dispute_terms": [
+            "lakko",
+            "työtaistelu",
+            "sopimusriita",
+            "välimiesmenettely",
+            "mielenosoitus"
+          ],
+          "opening_service_terms": [
+            "linjan avaus",
+            "liikenteen aloitus",
+            "matkustajaliikenne"
+          ],
+          "fare_ticketing_terms": [
+            "taksa",
+            "lippujärjestelmä",
+            "lippu",
+            "leimauslaite"
+          ],
+          "operating_method_terms": [
+            "aikataulu",
+            "linjan jatke",
+            "liikennemuutos",
+            "kapasiteetti",
+            "johdon muutos"
+          ]
+        },
+        "procurement": {
+          "urban_rail_terms": [
+            "metro",
+            "raitiovaunu",
+            "pikaraitiotie"
+          ],
+          "tender_terms": [
+            "tarjouskilpailu",
+            "tarjous",
+            "tarjouspyyntö",
+            "puitesopimus"
+          ],
+          "procurement_terms": [
+            "hankinta",
+            "laitehankinta",
+            "järjestelmän uusiminen"
+          ],
+          "award_terms": [
+            "hankintapäätös",
+            "sopimus solmittu",
+            "tilaus"
+          ],
+          "contract_terms": [
+            "sopimus",
+            "modernisointisopimus",
+            "toimitusaikataulu"
+          ]
+        },
+        "monitored_standards": {
+          "monitored_standard_ids": [
+            "EN 50126",
+            "EN 50128",
+            "EN 50129",
+            "IEEE 1474.1",
+            "EN 13674-1",
+            "UIC 860-0",
+            "IEC 61373",
+            "EN 50122",
+            "EN 50122-2",
+            "EN 50327",
+            "EN 50328",
+            "EN 50329",
+            "IEC 62271-100",
+            "IEC 62271-102",
+            "IEC 60947-1",
+            "IEC 60850",
+            "NFPA 130",
+            "ASTM E119",
+            "IEC 60754-1",
+            "IEC 60754-2",
+            "IEC 60332-1",
+            "ASTM E662",
+            "NFPA 258",
+            "NFPA 70",
+            "IEC 60076",
+            "IEC 60076-11",
+            "IEC 62695"
+          ]
+        }
+      },
+      "enabled": true
+    },
+    {
+      "profile_id": "cs",
+      "display_name": "Czech",
+      "locale": "cs",
+      "intent_vocabulary": {
+        "technology": {
+          "urban_rail_terms": [
+            "metro",
+            "tramvaj",
+            "tramvajová trať",
+            "rychlodráha"
+          ],
+          "technology_terms": [
+            "zabezpečovací zařízení",
+            "vozidla",
+            "komunikace",
+            "trakční napájení",
+            "CBTC",
+            "prediktivní údržba",
+            "digitální dvojče",
+            "automatické řízení vlaku",
+            "bez řidiče",
+            "třetí kolejnice",
+            "výhybka",
+            "monitorování stavu"
+          ],
+          "new_material_terms": [
+            "nový materiál",
+            "kompozitní materiál",
+            "lehký materiál",
+            "materiál pro akumulaci energie"
+          ],
+          "new_method_terms": [
+            "zkouška",
+            "pilotní provoz",
+            "test",
+            "uvedení do provozu",
+            "modernizace",
+            "automatizace",
+            "digitalizace",
+            "nový systém",
+            "nové zařízení"
+          ]
+        },
+        "major_incident": {
+          "urban_rail_terms": [
+            "metro",
+            "tramvaj",
+            "rychlodráha"
+          ],
+          "accident_terms": [
+            "nehoda",
+            "srážka",
+            "vykolejení",
+            "požár",
+            "kouř",
+            "zranění",
+            "mrtví"
+          ],
+          "disruption_terms": [
+            "přerušení provozu",
+            "výluka",
+            "evakuace",
+            "omezení provozu"
+          ],
+          "technical_failure_terms": [
+            "výpadek proudu",
+            "porucha zabezpečovacího zařízení",
+            "porucha systému",
+            "porucha infrastruktury"
+          ],
+          "safety_terms": [
+            "technická závada",
+            "bezpečnostní incident",
+            "vyšetřování",
+            "zásah záchranářů"
+          ]
+        },
+        "operations": {
+          "urban_rail_terms": [
+            "metro",
+            "tramvaj",
+            "rychlodráha"
+          ],
+          "policy_terms": [
+            "koncepce",
+            "vyhláška",
+            "povolení",
+            "plán provozu"
+          ],
+          "dispute_terms": [
+            "stávka",
+            "pracovní spor",
+            "smluvní spor",
+            "arbitráž",
+            "protest"
+          ],
+          "opening_service_terms": [
+            "otevření trati",
+            "zahájení provozu",
+            "osobní doprava"
+          ],
+          "fare_ticketing_terms": [
+            "jízdné",
+            "odbavovací systém",
+            "jízdenka",
+            "validátor"
+          ],
+          "operating_method_terms": [
+            "jízdní řád",
+            "prodloužení trati",
+            "změna provozu",
+            "kapacita",
+            "změna vedení"
+          ]
+        },
+        "procurement": {
+          "urban_rail_terms": [
+            "metro",
+            "tramvaj",
+            "rychlodráha"
+          ],
+          "tender_terms": [
+            "veřejná zakázka",
+            "nabídka",
+            "výzva k podání nabídek",
+            "rámcová dohoda"
+          ],
+          "procurement_terms": [
+            "nákup",
+            "nákup zařízení",
+            "výměna systému"
+          ],
+          "award_terms": [
+            "zadání zakázky",
+            "uzavřená smlouva",
+            "objednávka"
+          ],
+          "contract_terms": [
+            "smlouva",
+            "smlouva o modernizaci",
+            "harmonogram dodávek"
+          ]
+        },
+        "monitored_standards": {
+          "monitored_standard_ids": [
+            "EN 50126",
+            "EN 50128",
+            "EN 50129",
+            "IEEE 1474.1",
+            "EN 13674-1",
+            "UIC 860-0",
+            "IEC 61373",
+            "EN 50122",
+            "EN 50122-2",
+            "EN 50327",
+            "EN 50328",
+            "EN 50329",
+            "IEC 62271-100",
+            "IEC 62271-102",
+            "IEC 60947-1",
+            "IEC 60850",
+            "NFPA 130",
+            "ASTM E119",
+            "IEC 60754-1",
+            "IEC 60754-2",
+            "IEC 60332-1",
+            "ASTM E662",
+            "NFPA 258",
+            "NFPA 70",
+            "IEC 60076",
+            "IEC 60076-11",
+            "IEC 62695"
+          ]
+        }
+      },
+      "enabled": true
+    },
+    {
+      "profile_id": "pl",
+      "display_name": "Polish",
+      "locale": "pl",
+      "intent_vocabulary": {
+        "technology": {
+          "urban_rail_terms": [
+            "metro",
+            "tramwaj",
+            "szybki tramwaj",
+            "linia tramwajowa"
+          ],
+          "technology_terms": [
+            "sterowanie ruchem",
+            "tabor",
+            "łączność",
+            "zasilanie trakcyjne",
+            "CBTC",
+            "konserwacja predykcyjna",
+            "cyfrowy bliźniak",
+            "automatyczne prowadzenie pociągu",
+            "bez maszynisty",
+            "trzecia szyna",
+            "rozjazd",
+            "monitorowanie stanu"
+          ],
+          "new_material_terms": [
+            "nowy materiał",
+            "materiał kompozytowy",
+            "lekki materiał",
+            "materiał do magazynowania energii"
+          ],
+          "new_method_terms": [
+            "próba",
+            "pilotaż",
+            "test",
+            "uruchomienie",
+            "modernizacja",
+            "automatyzacja",
+            "cyfryzacja",
+            "nowy system",
+            "nowe urządzenia"
+          ]
+        },
+        "major_incident": {
+          "urban_rail_terms": [
+            "metro",
+            "tramwaj",
+            "szybki tramwaj"
+          ],
+          "accident_terms": [
+            "wypadek",
+            "zderzenie",
+            "wykolejenie",
+            "pożar",
+            "dym",
+            "ranni",
+            "ofiary śmiertelne"
+          ],
+          "disruption_terms": [
+            "wstrzymanie ruchu",
+            "przerwa w kursowaniu",
+            "ewakuacja",
+            "utrudnienia"
+          ],
+          "technical_failure_terms": [
+            "awaria zasilania",
+            "awaria sygnalizacji",
+            "awaria systemu",
+            "awaria infrastruktury"
+          ],
+          "safety_terms": [
+            "awaria techniczna",
+            "incydent bezpieczeństwa",
+            "dochodzenie",
+            "akcja ratunkowa"
+          ]
+        },
+        "operations": {
+          "urban_rail_terms": [
+            "metro",
+            "tramwaj",
+            "szybki tramwaj"
+          ],
+          "policy_terms": [
+            "polityka",
+            "rozporządzenie",
+            "zezwolenie",
+            "plan przewozów"
+          ],
+          "dispute_terms": [
+            "strajk",
+            "spór zbiorowy",
+            "spór umowny",
+            "arbitraż",
+            "protest"
+          ],
+          "opening_service_terms": [
+            "otwarcie linii",
+            "uruchomienie linii",
+            "przewozy pasażerskie"
+          ],
+          "fare_ticketing_terms": [
+            "taryfa",
+            "system biletowy",
+            "bilet",
+            "kasownik"
+          ],
+          "operating_method_terms": [
+            "rozkład jazdy",
+            "przedłużenie linii",
+            "zmiana kursowania",
+            "przepustowość",
+            "zmiana zarządu"
+          ]
+        },
+        "procurement": {
+          "urban_rail_terms": [
+            "metro",
+            "tramwaj",
+            "szybki tramwaj"
+          ],
+          "tender_terms": [
+            "przetarg",
+            "oferta",
+            "zapytanie ofertowe",
+            "umowa ramowa"
+          ],
+          "procurement_terms": [
+            "zakup",
+            "zakup urządzeń",
+            "wymiana systemu"
+          ],
+          "award_terms": [
+            "rozstrzygnięcie przetargu",
+            "podpisanie umowy",
+            "zamówienie"
+          ],
+          "contract_terms": [
+            "umowa",
+            "umowa na modernizację",
+            "harmonogram dostaw"
+          ]
+        },
+        "monitored_standards": {
+          "monitored_standard_ids": [
+            "EN 50126",
+            "EN 50128",
+            "EN 50129",
+            "IEEE 1474.1",
+            "EN 13674-1",
+            "UIC 860-0",
+            "IEC 61373",
+            "EN 50122",
+            "EN 50122-2",
+            "EN 50327",
+            "EN 50328",
+            "EN 50329",
+            "IEC 62271-100",
+            "IEC 62271-102",
+            "IEC 60947-1",
+            "IEC 60850",
+            "NFPA 130",
+            "ASTM E119",
+            "IEC 60754-1",
+            "IEC 60754-2",
+            "IEC 60332-1",
+            "ASTM E662",
+            "NFPA 258",
+            "NFPA 70",
+            "IEC 60076",
+            "IEC 60076-11",
+            "IEC 62695"
+          ]
+        }
+      },
+      "enabled": true
+    },
+    {
+      "profile_id": "he",
+      "display_name": "Hebrew",
+      "locale": "he",
+      "intent_vocabulary": {
+        "technology": {
+          "urban_rail_terms": [
+            "רכבת קלה",
+            "מטרו",
+            "רכבת תחתית",
+            "חשמלית"
+          ],
+          "technology_terms": [
+            "איתות",
+            "ציוד נייד",
+            "תקשורת",
+            "הזנת חשמל",
+            "CBTC",
+            "תחזוקה חזויה",
+            "תאום דיגיטלי",
+            "הפעלה אוטומטית של רכבת",
+            "ללא נהג",
+            "מסילה שלישית",
+            "מסוט",
+            "ניטור מצב"
+          ],
+          "new_material_terms": [
+            "חומר חדש",
+            "חומר מרוכב",
+            "חומר קל משקל",
+            "חומר לאגירת אנרגיה"
+          ],
+          "new_method_terms": [
+            "ניסוי",
+            "פיילוט",
+            "בדיקה",
+            "הפעלה",
+            "שדרוג",
+            "אוטומציה",
+            "דיגיטציה",
+            "מערכת חדשה",
+            "ציוד חדש"
+          ]
+        },
+        "major_incident": {
+          "urban_rail_terms": [
+            "רכבת קלה",
+            "מטרו",
+            "חשמלית"
+          ],
+          "accident_terms": [
+            "תאונה",
+            "התנגשות",
+            "ירידה מהפסים",
+            "שריפה",
+            "עשן",
+            "פצועים",
+            "הרוגים"
+          ],
+          "disruption_terms": [
+            "הפסקת שירות",
+            "השבתה",
+            "פינוי",
+            "שיבושים"
+          ],
+          "technical_failure_terms": [
+            "הפסקת חשמל",
+            "תקלת איתות",
+            "תקלת מערכת",
+            "תקלת תשתית"
+          ],
+          "safety_terms": [
+            "תקלה טכנית",
+            "אירוע בטיחות",
+            "חקירה",
+            "כוחות הצלה"
+          ]
+        },
+        "operations": {
+          "urban_rail_terms": [
+            "רכבת קלה",
+            "מטרו",
+            "חשמלית"
+          ],
+          "policy_terms": [
+            "מדיניות",
+            "תקנות",
+            "רישיון",
+            "תוכנית הפעלה"
+          ],
+          "dispute_terms": [
+            "שביתה",
+            "סכסוך עבודה",
+            "סכסוך חוזי",
+            "בוררות",
+            "מחאה"
+          ],
+          "opening_service_terms": [
+            "פתיחת קו",
+            "תחילת הפעלה",
+            "שירות נוסעים"
+          ],
+          "fare_ticketing_terms": [
+            "תעריף",
+            "כרטוס",
+            "כרטיס",
+            "מאמת"
+          ],
+          "operating_method_terms": [
+            "לוח זמנים",
+            "הארכת קו",
+            "שינוי שירות",
+            "קיבולת",
+            "החלפת הנהלה"
+          ]
+        },
+        "procurement": {
+          "urban_rail_terms": [
+            "רכבת קלה",
+            "מטרו",
+            "חשמלית"
+          ],
+          "tender_terms": [
+            "מכרז",
+            "הצעה",
+            "בקשה להצעות",
+            "הסכם מסגרת"
+          ],
+          "procurement_terms": [
+            "רכש",
+            "רכש ציוד",
+            "החלפת מערכת"
+          ],
+          "award_terms": [
+            "זכייה במכרז",
+            "חוזה שנחתם",
+            "הזמנה"
+          ],
+          "contract_terms": [
+            "חוזה",
+            "חוזה שדרוג",
+            "לוח זמני אספקה"
+          ]
+        },
+        "monitored_standards": {
+          "monitored_standard_ids": [
+            "EN 50126",
+            "EN 50128",
+            "EN 50129",
+            "IEEE 1474.1",
+            "EN 13674-1",
+            "UIC 860-0",
+            "IEC 61373",
+            "EN 50122",
+            "EN 50122-2",
+            "EN 50327",
+            "EN 50328",
+            "EN 50329",
+            "IEC 62271-100",
+            "IEC 62271-102",
+            "IEC 60947-1",
+            "IEC 60850",
+            "NFPA 130",
+            "ASTM E119",
+            "IEC 60754-1",
+            "IEC 60754-2",
+            "IEC 60332-1",
+            "ASTM E662",
+            "NFPA 258",
+            "NFPA 70",
+            "IEC 60076",
+            "IEC 60076-11",
+            "IEC 62695"
+          ]
+        }
+      },
+      "enabled": true
     }
   ],
   "discovery_intents": [
@@ -2823,25 +3675,37 @@
     {"market_id": "australia", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-AU", "gl": "AU", "ceid": "AU:en"}},
     {"market_id": "austria", "language_profile_id": "de", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "de", "gl": "AT", "ceid": "AT:de"}},
     {"market_id": "austria", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "belgium", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "belgium", "language_profile_id": "fr", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "fr", "gl": "BE", "ceid": "BE:fr"}},
+    {"market_id": "belgium", "language_profile_id": "nl", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "nl", "gl": "BE", "ceid": "BE:nl"}},
     {"market_id": "canada", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-CA", "gl": "CA", "ceid": "CA:en"}},
     {"market_id": "canada", "language_profile_id": "fr", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "fr-CA", "gl": "CA", "ceid": "CA:fr"}},
+    {"market_id": "czechia", "language_profile_id": "cs", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "cs", "gl": "CZ", "ceid": "CZ:cs"}},
+    {"market_id": "czechia", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "denmark", "language_profile_id": "da", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "denmark", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "finland", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "finland", "language_profile_id": "fi", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "france", "language_profile_id": "fr", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "fr", "gl": "FR", "ceid": "FR:fr"}},
     {"market_id": "france", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "germany", "language_profile_id": "de", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "de", "gl": "DE", "ceid": "DE:de"}},
     {"market_id": "germany", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "hong_kong", "language_profile_id": "zh", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "zh-HK", "gl": "HK", "ceid": "HK:zh-Hant"}},
     {"market_id": "hong_kong", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
-    {"market_id": "taiwan", "language_profile_id": "zh", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "zh-TW", "gl": "TW", "ceid": "TW:zh-Hant"}},
+    {"market_id": "ireland", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-IE", "gl": "IE", "ceid": "IE:en"}},
+    {"market_id": "israel", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-IL", "gl": "IL", "ceid": "IL:en"}},
+    {"market_id": "israel", "language_profile_id": "he", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "he", "gl": "IL", "ceid": "IL:he"}},
     {"market_id": "italy", "language_profile_id": "it", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "it", "gl": "IT", "ceid": "IT:it"}},
     {"market_id": "italy", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "japan", "language_profile_id": "ja", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "ja", "gl": "JP", "ceid": "JP:ja"}},
     {"market_id": "japan", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "netherlands", "language_profile_id": "nl", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "nl", "gl": "NL", "ceid": "NL:nl"}},
     {"market_id": "netherlands", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "new_zealand", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-NZ", "gl": "NZ", "ceid": "NZ:en"}},
     {"market_id": "norway", "language_profile_id": "no", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "no", "gl": "NO", "ceid": "NO:no"}},
     {"market_id": "norway", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "poland", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "poland", "language_profile_id": "pl", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "pl", "gl": "PL", "ceid": "PL:pl"}},
     {"market_id": "portugal", "language_profile_id": "pt", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "pt-PT", "gl": "PT", "ceid": "PT:pt-150"}},
     {"market_id": "portugal", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "singapore", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-SG", "gl": "SG", "ceid": "SG:en"}},
@@ -2855,6 +3719,7 @@
     {"market_id": "switzerland", "language_profile_id": "fr", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "fr", "gl": "CH", "ceid": "CH:fr"}},
     {"market_id": "switzerland", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "switzerland", "language_profile_id": "it", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "taiwan", "language_profile_id": "zh", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "zh-TW", "gl": "TW", "ceid": "TW:zh-Hant"}},
     {"market_id": "united_kingdom", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-GB", "gl": "GB", "ceid": "GB:en"}},
     {"market_id": "united_states", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "en-US", "gl": "US", "ceid": "US:en"}}
   ],

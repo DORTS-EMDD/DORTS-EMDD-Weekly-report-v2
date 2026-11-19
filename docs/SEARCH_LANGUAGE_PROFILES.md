@@ -10,7 +10,7 @@ other downstream owner.
 
 ## 1. Scope and authority
 
-The authoritative selected-market registry is the 20-market list in the
+The authoritative selected-market registry is the 27-market list in the
 Architecture Contract. `region_mode=selected` uses that registry;
 `region_mode=global` is a separate configured target mode. It is not limited to
 the selected 19 markets and may include additional V2 governed/supported
@@ -37,14 +37,18 @@ The profile list and mapping were recovered from repository evidence:
 V1 is evidence for discovery material only. V1 Scope, Evidence, Date,
 selection, rescue, and fallback decisions are not imported into V2.
 
-The 13 selected-market profiles are therefore:
+The 17 selected-market profiles are therefore:
 
 ```text
-en, zh, ja, ko, de, fr, es, it, pt, nl, sv, da, no
+en, zh, ja, ko, de, fr, es, it, pt, nl, sv, da, no, fi, cs, pl, he
 ```
 
+RC-76 (user decision 2026-11-19) added `fi`, `cs`, `pl` and `he` for the new
+selected markets Finland, Czechia, Poland and Israel; their vocabulary follows
+the existing profiles group by group.
+
 The V1 `ru` profile remains available as non-selected/global reference
-material, but is not one of the 13 profiles in this selected-market contract.
+material, but is not one of the 17 profiles in this selected-market contract.
 
 The five discovery intents use one canonical machine-ID mapping:
 
@@ -118,24 +122,35 @@ market is implied.
 | Switzerland | `de` | `fr`, `it` | `en` |
 | Sweden | `sv` | — | `en` |
 | Denmark | `da` | — | `en` |
+| Finland | `fi` | — | `en` |
+| Belgium | `nl` | `fr` | `en` |
+| Czechia | `cs` | — | `en` |
+| Israel | `he` | `en` | — |
+| Ireland | `en` | — | — |
+| Poland | `pl` | — | `en` |
+| New Zealand | `en` | — | — |
 
 The profile-level market registry is:
 
 | Profile ID | Display name | Language / script | Primary markets | Secondary applicable markets |
 | --- | --- | --- | --- | --- |
-| `en` | English | English / Latin | United Kingdom, Canada, Singapore, Australia, United States | South Korea, Hong Kong, Germany, Netherlands, Italy, Austria, Norway, Portugal, Japan, France, Spain, Switzerland, Sweden, Denmark |
+| `en` | English | English / Latin | United Kingdom, Canada, Singapore, Australia, United States, Ireland, New Zealand | South Korea, Hong Kong, Germany, Netherlands, Italy, Austria, Norway, Portugal, Japan, France, Spain, Switzerland, Sweden, Denmark, Finland, Belgium, Czechia, Israel, Poland |
 | `zh` | Chinese | Traditional and Simplified Chinese / Han | Taiwan, Hong Kong | — |
 | `ja` | Japanese | Japanese / Kanji and Kana | Japan | — |
 | `ko` | Korean | Korean / Hangul | South Korea | — |
 | `de` | German | German / Latin | Germany, Austria, Switzerland | — |
-| `fr` | French | French / Latin | France | Canada, Switzerland |
+| `fr` | French | French / Latin | France | Canada, Switzerland, Belgium |
 | `es` | Spanish | Spanish / Latin | Spain | — |
 | `it` | Italian | Italian / Latin | Italy | Switzerland |
 | `pt` | Portuguese | Portuguese / Latin | Portugal | — |
-| `nl` | Dutch | Dutch / Latin | Netherlands | — |
+| `nl` | Dutch | Dutch / Latin | Netherlands, Belgium | — |
 | `sv` | Swedish | Swedish / Latin | Sweden | — |
 | `da` | Danish | Danish / Latin | Denmark | — |
 | `no` | Norwegian | Norwegian / Latin | Norway | — |
+| `fi` | Finnish | Finnish / Latin | Finland | — |
+| `cs` | Czech | Czech / Latin | Czechia | — |
+| `pl` | Polish | Polish / Latin | Poland | — |
+| `he` | Hebrew | Hebrew / Hebrew | Israel | — |
 
 `Switzerland → de, fr, it` is a bounded applicable mapping, not permission
 to issue every profile for every query. `Singapore` remains English-primary
@@ -329,6 +344,38 @@ unchanged.
 * `major_incident`: `urban_rail_terms=T-bane, trikk, bybane`; `accident_terms=ulykke, kollisjon, avsporing, brann, røyk, skadde, omkomne`; `disruption_terms=driftsstans, driftsforstyrrelse, evakuering, trafikkforstyrrelse`; `technical_failure_terms=strømbrudd, signalfeil, systemfeil, infrastrukturfeil`; `safety_terms=teknisk hendelse, sikkerhetshendelse, gransking, beredskap`.
 * `operations`: `urban_rail_terms=T-bane, trikk, bybane`; `policy_terms=politikk, forskrift, godkjenning, driftsplan`; `dispute_terms=streik, arbeidskonflikt, kontraktstvist, voldgift, protest`; `opening_service_terms=linjeåpning, trafikkstart, passasjertrafikk`; `fare_ticketing_terms=takst, billett, billettering, adgangskontroll`; `operating_method_terms=rutetabell, linjeforlengelse, driftsendring, kapasitet, ledelsesendring`.
 * `procurement`: `urban_rail_terms=T-bane, trikk, bybane`; `tender_terms=anbud, tilbud, forespørsel om forslag, rammeavtale`; `procurement_terms=anskaffelse, utstyrsanskaffelse, systemutskifting`; `award_terms=tildeling, tildelt kontrakt, bestilling`; `contract_terms=kontrakt, moderniseringskontrakt, leveringsplan`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
+
+### `fi` — Finnish
+
+* `technology`: `urban_rail_terms=metro, raitiotie, raitiovaunu, pikaraitiotie`; `technology_terms=opastinjärjestelmä, kalusto, viestintä, ajosähkö, CBTC, ennakoiva kunnossapito, digitaalinen kaksonen, automaattinen junaohjaus, kuljettajaton, virtakisko, vaihde, kunnonvalvonta`; `new_material_terms=uusi materiaali, komposiittimateriaali, kevytmateriaali, energian varastointimateriaali`; `new_method_terms=kokeilu, pilotti, testi, käyttöönotto, modernisointi, automaatio, digitalisaatio, uusi järjestelmä, uusi laitteisto`.
+* `major_incident`: `urban_rail_terms=metro, raitiovaunu, pikaraitiotie`; `accident_terms=onnettomuus, törmäys, suistuminen, tulipalo, savu, loukkaantuneet, kuolleet`; `disruption_terms=liikennekatko, häiriö, evakuointi, liikennehäiriö`; `technical_failure_terms=sähkökatko, opastinvika, järjestelmävika, infrastruktuurivika`; `safety_terms=tekninen vika, turvallisuuspoikkeama, tutkinta, pelastustoimi`.
+* `operations`: `urban_rail_terms=metro, raitiovaunu, pikaraitiotie`; `policy_terms=linjaus, määräys, lupa, liikennöintisuunnitelma`; `dispute_terms=lakko, työtaistelu, sopimusriita, välimiesmenettely, mielenosoitus`; `opening_service_terms=linjan avaus, liikenteen aloitus, matkustajaliikenne`; `fare_ticketing_terms=taksa, lippujärjestelmä, lippu, leimauslaite`; `operating_method_terms=aikataulu, linjan jatke, liikennemuutos, kapasiteetti, johdon muutos`.
+* `procurement`: `urban_rail_terms=metro, raitiovaunu, pikaraitiotie`; `tender_terms=tarjouskilpailu, tarjous, tarjouspyyntö, puitesopimus`; `procurement_terms=hankinta, laitehankinta, järjestelmän uusiminen`; `award_terms=hankintapäätös, sopimus solmittu, tilaus`; `contract_terms=sopimus, modernisointisopimus, toimitusaikataulu`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
+
+### `cs` — Czech
+
+* `technology`: `urban_rail_terms=metro, tramvaj, tramvajová trať, rychlodráha`; `technology_terms=zabezpečovací zařízení, vozidla, komunikace, trakční napájení, CBTC, prediktivní údržba, digitální dvojče, automatické řízení vlaku, bez řidiče, třetí kolejnice, výhybka, monitorování stavu`; `new_material_terms=nový materiál, kompozitní materiál, lehký materiál, materiál pro akumulaci energie`; `new_method_terms=zkouška, pilotní provoz, test, uvedení do provozu, modernizace, automatizace, digitalizace, nový systém, nové zařízení`.
+* `major_incident`: `urban_rail_terms=metro, tramvaj, rychlodráha`; `accident_terms=nehoda, srážka, vykolejení, požár, kouř, zranění, mrtví`; `disruption_terms=přerušení provozu, výluka, evakuace, omezení provozu`; `technical_failure_terms=výpadek proudu, porucha zabezpečovacího zařízení, porucha systému, porucha infrastruktury`; `safety_terms=technická závada, bezpečnostní incident, vyšetřování, zásah záchranářů`.
+* `operations`: `urban_rail_terms=metro, tramvaj, rychlodráha`; `policy_terms=koncepce, vyhláška, povolení, plán provozu`; `dispute_terms=stávka, pracovní spor, smluvní spor, arbitráž, protest`; `opening_service_terms=otevření trati, zahájení provozu, osobní doprava`; `fare_ticketing_terms=jízdné, odbavovací systém, jízdenka, validátor`; `operating_method_terms=jízdní řád, prodloužení trati, změna provozu, kapacita, změna vedení`.
+* `procurement`: `urban_rail_terms=metro, tramvaj, rychlodráha`; `tender_terms=veřejná zakázka, nabídka, výzva k podání nabídek, rámcová dohoda`; `procurement_terms=nákup, nákup zařízení, výměna systému`; `award_terms=zadání zakázky, uzavřená smlouva, objednávka`; `contract_terms=smlouva, smlouva o modernizaci, harmonogram dodávek`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
+
+### `pl` — Polish
+
+* `technology`: `urban_rail_terms=metro, tramwaj, szybki tramwaj, linia tramwajowa`; `technology_terms=sterowanie ruchem, tabor, łączność, zasilanie trakcyjne, CBTC, konserwacja predykcyjna, cyfrowy bliźniak, automatyczne prowadzenie pociągu, bez maszynisty, trzecia szyna, rozjazd, monitorowanie stanu`; `new_material_terms=nowy materiał, materiał kompozytowy, lekki materiał, materiał do magazynowania energii`; `new_method_terms=próba, pilotaż, test, uruchomienie, modernizacja, automatyzacja, cyfryzacja, nowy system, nowe urządzenia`.
+* `major_incident`: `urban_rail_terms=metro, tramwaj, szybki tramwaj`; `accident_terms=wypadek, zderzenie, wykolejenie, pożar, dym, ranni, ofiary śmiertelne`; `disruption_terms=wstrzymanie ruchu, przerwa w kursowaniu, ewakuacja, utrudnienia`; `technical_failure_terms=awaria zasilania, awaria sygnalizacji, awaria systemu, awaria infrastruktury`; `safety_terms=awaria techniczna, incydent bezpieczeństwa, dochodzenie, akcja ratunkowa`.
+* `operations`: `urban_rail_terms=metro, tramwaj, szybki tramwaj`; `policy_terms=polityka, rozporządzenie, zezwolenie, plan przewozów`; `dispute_terms=strajk, spór zbiorowy, spór umowny, arbitraż, protest`; `opening_service_terms=otwarcie linii, uruchomienie linii, przewozy pasażerskie`; `fare_ticketing_terms=taryfa, system biletowy, bilet, kasownik`; `operating_method_terms=rozkład jazdy, przedłużenie linii, zmiana kursowania, przepustowość, zmiana zarządu`.
+* `procurement`: `urban_rail_terms=metro, tramwaj, szybki tramwaj`; `tender_terms=przetarg, oferta, zapytanie ofertowe, umowa ramowa`; `procurement_terms=zakup, zakup urządzeń, wymiana systemu`; `award_terms=rozstrzygnięcie przetargu, podpisanie umowy, zamówienie`; `contract_terms=umowa, umowa na modernizację, harmonogram dostaw`.
+* `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
+
+### `he` — Hebrew
+
+* `technology`: `urban_rail_terms=רכבת קלה, מטרו, רכבת תחתית, חשמלית`; `technology_terms=איתות, ציוד נייד, תקשורת, הזנת חשמל, CBTC, תחזוקה חזויה, תאום דיגיטלי, הפעלה אוטומטית של רכבת, ללא נהג, מסילה שלישית, מסוט, ניטור מצב`; `new_material_terms=חומר חדש, חומר מרוכב, חומר קל משקל, חומר לאגירת אנרגיה`; `new_method_terms=ניסוי, פיילוט, בדיקה, הפעלה, שדרוג, אוטומציה, דיגיטציה, מערכת חדשה, ציוד חדש`.
+* `major_incident`: `urban_rail_terms=רכבת קלה, מטרו, חשמלית`; `accident_terms=תאונה, התנגשות, ירידה מהפסים, שריפה, עשן, פצועים, הרוגים`; `disruption_terms=הפסקת שירות, השבתה, פינוי, שיבושים`; `technical_failure_terms=הפסקת חשמל, תקלת איתות, תקלת מערכת, תקלת תשתית`; `safety_terms=תקלה טכנית, אירוע בטיחות, חקירה, כוחות הצלה`.
+* `operations`: `urban_rail_terms=רכבת קלה, מטרו, חשמלית`; `policy_terms=מדיניות, תקנות, רישיון, תוכנית הפעלה`; `dispute_terms=שביתה, סכסוך עבודה, סכסוך חוזי, בוררות, מחאה`; `opening_service_terms=פתיחת קו, תחילת הפעלה, שירות נוסעים`; `fare_ticketing_terms=תעריף, כרטוס, כרטיס, מאמת`; `operating_method_terms=לוח זמנים, הארכת קו, שינוי שירות, קיבולת, החלפת הנהלה`.
+* `procurement`: `urban_rail_terms=רכבת קלה, מטרו, חשמלית`; `tender_terms=מכרז, הצעה, בקשה להצעות, הסכם מסגרת`; `procurement_terms=רכש, רכש ציוד, החלפת מערכת`; `award_terms=זכייה במכרז, חוזה שנחתם, הזמנה`; `contract_terms=חוזה, חוזה שדרוג, לוח זמני אספקה`.
 * `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ## 6. Intent and profile rules

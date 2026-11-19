@@ -59,7 +59,9 @@ class FormalRegionSetTests(TestCase):
         self.assertEqual(
             REGISTRY.formal_region_ids,
             frozenset({"TW", "KR", "HK", "GB", "DE", "CA", "NL", "IT", "AT", "NO",
-                       "PT", "JP", "SG", "AU", "FR", "US", "ES", "CH", "SE", "DK"}),
+                       "PT", "JP", "SG", "AU", "FR", "US", "ES", "CH", "SE", "DK",
+                       # RC-76 (user decision 2026-11-19)
+                       "FI", "BE", "CZ", "IL", "IE", "PL", "NZ"}),
         )
         self.assertEqual(len(REGISTRY.formal_region_ids), REGISTRY.selected_market_count)
 

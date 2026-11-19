@@ -386,6 +386,7 @@ class ProductionRunnerTests(unittest.TestCase):
         self.assertEqual(result.search_failure_details[1].http_status, 503)
         summary = result.summary()
         self.assertIn("search_failure_count=2", summary)
+        self.assertIn("search_rate_limit_failures=0", summary)  # RC-76: shown even when zero
         self.assertIn("search_failure_classes=INVALID_RESPONSE=1,TIMEOUT=1", summary)
         self.assertIn("search_failure_reasons=HTTP_OTHER_NON_200=1,UNKNOWN=1", summary)
         self.assertIn("search_failure_http_statuses=503=1", summary)

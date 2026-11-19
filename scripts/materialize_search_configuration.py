@@ -141,7 +141,7 @@ def _validate_governance_documents(registry: RegionRegistry) -> None:
     architecture = _ARCHITECTURE_CONTRACT.read_text(encoding="utf-8")
     language = _LANGUAGE_PROFILE_CONTRACT.read_text(encoding="utf-8")
     for marker in (
-        "目前 selected mode 包含上述 20 個市場",
+        "目前 selected mode 包含上述 27 個市場",
         r"GLOBAL_MODE_TAIWAN_BEHAVIOR\s*=\s*INCLUDE_DISCOVERY",
         r"TAIWAN_SELECTED_SEARCH_PLAN_ITEMS\s*=\s*ALLOWED",
         r"TAIWAN_GLOBAL_SEARCH_PLAN_ITEMS\s*=\s*ALLOWED",
@@ -152,13 +152,13 @@ def _validate_governance_documents(registry: RegionRegistry) -> None:
         r"REDIRECT_FOLLOW_COUNT\s*=\s*0",
         r"PAGINATION\s*=\s*ONE_PROVIDER_REQUEST_PAGE_ONLY",
         r"EXECUTION_CONCURRENCY\s*=\s*SEQUENTIAL",
-        r"SEARCH_CONFIGURATION_VERSION\s*=\s*search-discovery-v10",
+        r"SEARCH_CONFIGURATION_VERSION\s*=\s*search-discovery-v11",
         r"PROVIDER_PROFILE_ELIGIBILITY_OWNER\s*=\s*RegionRegistry",
     ):
         if re.search(marker, architecture) is None:
             raise ValueError(f"Architecture Contract marker missing: {marker}")
     for marker in (
-        "The 13 selected-market profiles are therefore:",
+        "The 17 selected-market profiles are therefore:",
         "It is not failure-triggered fallback, retry, alternate-provider rescue",
         "The profile list and mapping were recovered from repository evidence",
         "It **MUST** enforce a configured query budget",
@@ -168,7 +168,7 @@ def _validate_governance_documents(registry: RegionRegistry) -> None:
             raise ValueError(f"Search language contract marker missing: {marker}")
 
     profile_block = re.search(
-        r"The 13 selected-market profiles are therefore:\s*```text\s*([^\n]+)", language
+        r"The 17 selected-market profiles are therefore:\s*```text\s*([^\n]+)", language
     )
     if profile_block is None:
         raise ValueError("selected profile ID block is missing")

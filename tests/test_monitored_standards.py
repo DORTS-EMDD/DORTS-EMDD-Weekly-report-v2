@@ -357,7 +357,7 @@ def _supported(registry, markets):
 def test_a_weekly_plan_has_no_monitored_standard_request(registry):
     week = SearchWindow(date(2026, 11, 16), date(2026, 11, 22))
     plan = SearchPlanner(registry).plan("selected", window=week)
-    assert len(plan.items) == 140  # search-discovery-v10 technology vocabulary
+    assert len(plan.items) == 196  # search-discovery-v11: 27 markets (RC-76)
     assert all(item.intent is not DiscoveryIntent.MONITORED_STANDARDS for item in plan.items)
     with pytest.raises(ValueError):
         SearchPlanner(registry).plan("selected", intents=(DiscoveryIntent.MONITORED_STANDARDS,), window=week)
@@ -372,7 +372,7 @@ def test_the_monthly_plan_searches_every_identifier_over_the_whole_month(registr
                  and item.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]
     catalogue = [item for item in plan.items if item.provider_target is SearchProviderId.STANDARDS_CATALOGUE]
     others = [item for item in plan.items if item.intent is not DiscoveryIntent.MONITORED_STANDARDS]
-    assert len(others) == 140 and len(monitored) == 63 and len(catalogue) == 10  # RC-60: one per configured record
+    assert len(others) == 196 and len(monitored) == 87 and len(catalogue) == 10  # RC-60: one per configured record
     assert {(item.market_id, item.language_profile) for item in monitored} == _supported(registry, markets)
     assert {item.search_window for item in monitored} == {SearchWindow(date(2026, 11, 1), date(2026, 11, 30))}
     assert {item.search_window for item in others} == {week}
@@ -412,7 +412,7 @@ def test_the_search_configuration_identifiers_are_a_materialized_copy_of_the_lis
     for profile in registry.profiles:
         assert dict(profile.intent_vocabulary["monitored_standards"]) == {"monitored_standard_ids": identifiers}
     language = (ROOT / "docs" / "SEARCH_LANGUAGE_PROFILES.md").read_text(encoding="utf-8")
-    assert language.count("`monitored_standard_ids=@monitored_standards`") == 13
+    assert language.count("`monitored_standard_ids=@monitored_standards`") == 17
 
 
 def test_report_application_derives_the_check_from_the_period_and_passes_it_on():

@@ -22,9 +22,10 @@ class RegionRegistryTests(unittest.TestCase):
 
     def test_locked_membership_profiles_and_mappings(self) -> None:
         # RC-27: domestic (Taiwan) plus international markets.
-        self.assertEqual(self.registry.selected_market_count, 20)
-        self.assertEqual(self.registry.global_target_count, 20)
-        self.assertEqual(len(self.registry.selected_profile_ids), 13)
+        # RC-76 (user decision 2026-11-19): 27 markets, 17 profiles.
+        self.assertEqual(self.registry.selected_market_count, 27)
+        self.assertEqual(self.registry.global_target_count, 27)
+        self.assertEqual(len(self.registry.selected_profile_ids), 17)
         self.assertIn("taiwan", {market.market_id for market in self.registry.selected_markets})
         self.assertIn("taiwan", set(self.registry.global_targets))
         self.assertEqual(self.registry.market("taiwan").primary_profiles, ("zh",))

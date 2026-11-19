@@ -39,6 +39,15 @@ SUPPORTED_ENCODINGS = {
     ("switzerland", "fr"): ("fr", "CH", "CH:fr"),
     ("united_kingdom", "en"): ("en-GB", "GB", "GB:en"),
     ("united_states", "en"): ("en-US", "US", "US:en"),
+    # RC-76 (user decision 2026-11-19): the new markets' editions.
+    ("belgium", "nl"): ("nl", "BE", "BE:nl"),
+    ("belgium", "fr"): ("fr", "BE", "BE:fr"),
+    ("czechia", "cs"): ("cs", "CZ", "CZ:cs"),
+    ("israel", "he"): ("he", "IL", "IL:he"),
+    ("israel", "en"): ("en-IL", "IL", "IL:en"),
+    ("ireland", "en"): ("en-IE", "IE", "IE:en"),
+    ("poland", "pl"): ("pl", "PL", "PL:pl"),
+    ("new_zealand", "en"): ("en-NZ", "NZ", "NZ:en"),
 }
 
 UNSUPPORTED_KEYS = {
@@ -58,6 +67,12 @@ UNSUPPORTED_KEYS = {
     ("sweden", "en"),
     ("switzerland", "en"),
     ("switzerland", "it"),
+    # RC-76: Finland like Denmark (no Google News edition assumed until verified).
+    ("finland", "fi"),
+    ("finland", "en"),
+    ("belgium", "en"),
+    ("czechia", "en"),
+    ("poland", "en"),
 }
 
 
@@ -96,17 +111,17 @@ class ProviderCapabilityTests(unittest.TestCase):
                 ProviderProfileEligibility.UNSUPPORTED, encoding,
             )
 
-    def test_materialized_population_is_exactly_37_with_21_supported(self) -> None:
+    def test_materialized_population_is_exactly_50_with_29_supported(self) -> None:
         registry = RegionRegistry.from_mapping(self.source)
-        self.assertEqual(registry.configuration_version, "search-discovery-v10")
-        self.assertEqual(len(registry.provider_profile_bindings), 37)
+        self.assertEqual(registry.configuration_version, "search-discovery-v11")
+        self.assertEqual(len(registry.provider_profile_bindings), 50)
         self.assertEqual(
             sum(binding.eligibility is ProviderProfileEligibility.SUPPORTED for binding in registry.provider_profile_bindings),
-            21,
+            29,
         )
         self.assertEqual(
             sum(binding.eligibility is ProviderProfileEligibility.UNSUPPORTED for binding in registry.provider_profile_bindings),
-            16,
+            21,
         )
         self.assertTrue(
             all(
@@ -216,9 +231,10 @@ class ProviderCapabilityTests(unittest.TestCase):
     def test_configured_market_without_supported_binding_is_observable_gap(self) -> None:
         registry = RegionRegistry.from_mapping(self.source)
         plan = SearchPlanner(registry).plan("selected")
-        self.assertEqual(tuple(gap.market_id for gap in plan.coverage.gaps), ("denmark",))
-        self.assertEqual(plan.coverage.gaps[0].reason.value, "KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY")
-        self.assertEqual(sum(item.market_id == "denmark" for item in plan.items), 0)
+        self.assertEqual(tuple(gap.market_id for gap in plan.coverage.gaps), ("denmark", "finland"))
+        for gap in plan.coverage.gaps:
+            self.assertEqual(gap.reason.value, "KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY")
+        self.assertEqual(sum(item.market_id in {"denmark", "finland"} for item in plan.items), 0)
 
 
 if __name__ == "__main__":

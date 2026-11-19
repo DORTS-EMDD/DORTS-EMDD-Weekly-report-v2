@@ -838,7 +838,8 @@ only, and no owner compared it with the approved list.
 
 * **Rule (locked by the user).** A formal report covers only events located
   in the designated regions: the regions of the approved selected markets of
-  the Search configuration (20, including Taiwan). This is a formal
+  the Search configuration (20, including Taiwan; 27 since RC-76, section
+  A.57). This is a formal
   eligibility rule, not a Search priority, and it is the same in `selected`
   and `global` mode and for every entry point (CLI, GitHub Actions,
   Streamlit), which share one production composition.
@@ -3654,6 +3655,60 @@ SCOPE_SYSTEM_RELATION_BOUND = TARGET_SYSTEM MAY LEAVE THE FOCUS (RC-75 a+b+c)
 SCOPE_CORRECTION = ONE REQUEST PER PROPOSAL, COUNTED APART FROM TRANSPORT RETRY
 ```
 
+### A.57 RC-76 Designated regions: 27 markets (2026-11-19, user decision)
+
+**Decision (revises the list RC-28 locked).** The principle is technologically
+advanced countries. Mainland China is not designated; Hong Kong stays designated.
+Seven markets are added: Finland (FI), Belgium (BE), Czechia (CZ), Israel (IL),
+Ireland (IE), Poland (PL) and New Zealand (NZ). The designated set is still
+`RegionRegistry.formal_region_ids` (the selected markets' regions), now 27; the
+RC-28 rule, owner and outcomes are unchanged.
+
+* **Search (`search-discovery-v11`).** Market languages: Finland `fi`; Belgium `nl`
+  with secondary `fr`; Czechia `cs`; Israel `he` with secondary `en`; Poland `pl`;
+  Ireland and New Zealand `en`. New profiles `fi`, `cs`, `pl` and `he` follow the
+  existing profiles group by group, carry the seven technology concepts, and are
+  governed in `docs/SEARCH_LANGUAGE_PROFILES.md` section 5 (17 profiles). A
+  non-English market's `en` supplement is `UNSUPPORTED` as for the others.
+  Google News editions: `BE:nl`, `BE:fr`, `CZ:cs`, `IL:he`, `IL:en`, `PL:pl`,
+  `IE:en`, `NZ:en`. Finland, like Denmark, is configured with both bindings
+  `UNSUPPORTED`: no Search request and a disclosed
+  `KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY` coverage gap; Finnish events still
+  enter through other editions and the trade press, and are eligible. After the
+  recall test, one `ceid=FI:fi` request and one Danish request verify the two
+  editions (user decision); a market found to have an edition becomes `SUPPORTED`
+  with a test and a note here.
+* **Plan size.** Weekly 140 -> 196 requests (technology 95, major_incident 43,
+  operations 29, procurement 29); the monthly check adds 87 monitored-standard
+  requests (was 63) and the 10 catalogue reads.
+* **Health check.** The six probe ordinals follow the plan as
+  (1, 10, N/2, N/2+5, N-7, N): `(1, 10, 98, 103, 189, 196)`. The RC-72 rule
+  (at least four successes, only `RATE_LIMIT` failures tolerated, one 45-minute
+  retry) is unchanged.
+* **Rate limiting watch.** The run summary always carries
+  `search_rate_limit_failures` (zero included) next to `search_failure_count`. If
+  production runs on the 196-request plan show clearly more HTTP 429, that is
+  reported to the user before any request spacing is considered.
+* **Geographic reference `geo-reference-v6`.** The seven regions and their
+  urban-rail cities gain local, Korean, Japanese and Chinese names (for example
+  Helsingfors, Tammerfors, Turku/Åbo; Liège/Luik, Charleroi; Prag, Plzeň; Hebrew
+  תל אביב and ירושלים, Haifa; Baile Átha Cliath; Wroclaw, Gdansk, Szczecin;
+  Wellington) and their systems (Helsinki Metro, Raide-Jokeri, STIB-MIVB, Pražské
+  metro, Tel Aviv and Jerusalem Light Rail, Carmelit, Metro Warszawskie, Auckland
+  Transport, City Rail Link). Names shared with another place (for example the
+  Japanese and Korean spellings of Auckland, which are also Oakland's) are left
+  out, as the reference requires.
+* **Tests.** `tests/test_designated_regions_rc76.py` locks the 27 regions, that a
+  mainland China location stays `NON_DESIGNATED_REGION` and Hong Kong stays
+  designated, the new cities' resolution, Finland's coverage gap and the probe
+  spacing; the count tests of earlier sections move to the new plan.
+
+```text
+SEARCH_CONFIGURATION_VERSION = search-discovery-v11
+DESIGNATED_REGIONS = 27 (RC-76; CN not designated, HK designated)
+HEALTH_PROBE_ORDINALS = (1, 10, 98, 103, 189, 196)
+```
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式
@@ -3750,7 +3805,7 @@ HIDDEN_TRANSPORT_RETRY = FORBIDDEN
 REDIRECT_FOLLOW_COUNT = 0
 PAGINATION = ONE_PROVIDER_REQUEST_PAGE_ONLY
 EXECUTION_CONCURRENCY = SEQUENTIAL
-SEARCH_CONFIGURATION_VERSION = search-discovery-v10
+SEARCH_CONFIGURATION_VERSION = search-discovery-v11 (RC-76: 27 markets, 17 profiles)
 PROVIDER_PROFILE_ELIGIBILITY_OWNER = RegionRegistry
 ```
 
@@ -3943,8 +3998,16 @@ selected
 * 瑞士
 * 瑞典
 * 丹麥
+* 芬蘭（RC-76）
+* 比利時（RC-76）
+* 捷克（RC-76）
+* 以色列（RC-76）
+* 愛爾蘭（RC-76）
+* 波蘭（RC-76）
+* 紐西蘭（RC-76）
 
-目前 selected mode 包含上述 20 個市場。正式週報只收錄位於這 20 個國家／地區的事件（RC-28，§A.22），
+RC-76（§A.57，使用者決定 2026-11-19）修訂 RC-28 鎖定的名單：原則是技術先進國家；中國大陸不列入；香港保留；
+新增上列 7 國。目前 selected mode 包含上述 27 個市場。正式週報只收錄位於這 27 個國家／地區的事件（RC-28，§A.22），
 此為正式收錄資格，不只是搜尋優先順序。`global` 是獨立的 configured target
 mode，不等於 selected 19，也不等於 unrestricted worldwide exploratory
 discovery。Global target set 可以包含 selected 19 以外的額外市場，但每個

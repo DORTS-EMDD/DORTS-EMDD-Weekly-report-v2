@@ -75,9 +75,10 @@ from .validator import Validator
 
 
 PRODUCTION_METADATA_MODEL = "GPT-OSS-120B"
-# Six probes spread across the weekly 122-request plan (RC-12; the monthly
-# monitored-standards requests of RC-59 are not in the health-check plan).
-HEALTH_PROBE_ORDINALS = (1, 10, 60, 65, 115, 122)
+# Six probes spread across the weekly plan as (1, 10, N/2, N/2+5, N-7, N): the
+# 196-request plan of RC-76 (27 markets). The monthly monitored-standards
+# requests of RC-59 are not in the health-check plan.
+HEALTH_PROBE_ORDINALS = (1, 10, 98, 103, 189, 196)
 # RC-72 (section A.53, user decision 2026-11-19): at least four of the six
 # probes succeed and every failure is Google News rate limiting (HTTP 429);
 # otherwise wait 45 minutes and run the whole set once more.
@@ -507,6 +508,10 @@ class ProductionRunResult:
             parts.append(f"diagnostic={self.diagnostic}")
         if self.search_failure_count is not None:
             parts.append(f"search_failure_count={self.search_failure_count}")
+            # RC-76: Google News rate limiting is always shown, zero included, so
+            # runs on the larger 27-market plan can be compared.
+            rate_limited = dict(self.search_failure_class_distribution or {}).get("RATE_LIMIT", 0)
+            parts.append(f"search_rate_limit_failures={rate_limited}")
             if self.search_failure_class_distribution:
                 parts.append(
                     "search_failure_classes="
