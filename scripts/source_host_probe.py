@@ -20,6 +20,7 @@ from urllib.request import Request, urlopen
 
 from src.weekly_report import evidence_service
 from src.weekly_report.evidence_document import assess_document
+from src.weekly_report.temporal_rule import TemporalRule
 
 DEFAULT_URLS = (
     # Railway-News (PRINCIPAL_DOCUMENT in Run 44429652572)
@@ -38,6 +39,23 @@ DEFAULT_URLS = (
     "https://www.globalrailwayreview.com/thessaloniki-metro-kalamaria-extension-opens-with-hitachi-rail-driverless-signalling-technology/2136343.article",
     "https://www.globalrailwayreview.com/alstom-launches-first-next-generation-g-class-tram-into-passenger-service-in-melbourne/2136277.article",
     "https://www.globalrailwayreview.com/alstom-cbtc-signalling-enters-revenue-service-on-bengaluru-metro-pink-line-reach-6-priority-section/2136996.article",
+    # Query-list hosts with no candidate in that run. railtech.com and
+    # intelligenttransport.com redirect to other publishers (the probe prints
+    # the final url); railway-technology.com is given one article.
+    "https://www.railtech.com/",
+    "https://www.intelligenttransport.com/",
+    "https://www.railway-technology.com/news/alstom-urbalis-flo-cbtc-melbourne-metro-tunnel-project/",
+    # Hosts with the most DATE_PROVENANCE_INVALID in that run (one page each).
+    "https://tw.news.yahoo.com/%E5%9F%BA%E9%9A%86%E6%8D%B7%E9%81%8B%E6%AD%A3%E5%BC%8F%E9%96%8B%E5%B7%A5-%E4%BE%AF%E5%8F%8B%E5%AE%9C%E5%8A%9B%E6%8B%9A2033%E5%B9%B4%E5%AE%8C%E5%B7%A5%E9%80%9A%E8%BB%8A-101553376.html",
+    "https://www.kyeonggi.com/article/20261102580350",
+    "https://j.people.com.cn/n3/2026/1030/c94638-20514129.html",
+    "https://jp.news.cn/20261031/12cfe1ffe30d4b188d9b18a4fc0e4863/c.html",
+    # Hosts with the most PRINCIPAL_DOCUMENT failures in that run (one page each).
+    "https://www.yna.co.kr/view/AKR20261019059100057",
+    "https://www.infobae.com/colombia/2026/09/07/metro-de-bogota-arranco-segundo-intento-de-licitacion-de-la-linea-2-ya-habilito-la-entrega-de-documentos-para-empresas-interesadas/",
+    "https://www.yonhapnewstv.co.kr/news/AKR20260922210611qDJ",
+    "https://www.newspim.com/news/view/20260922001267",
+    "https://imnews.imbc.com/news/2026/society/article/6850242_36918.html",
 )
 
 FEEDS = (
@@ -72,6 +90,13 @@ def _probe_page(url: str, dump: bool) -> None:
     )
     provenance = assessment.as_provenance()
     print("principal_document_status=", assessment.principal_document_status.value)
+    print("structural_diagnostics=", json.dumps(
+        {k: v for k, v in assessment.diagnostics.items() if k != "parse_diagnostics"}, ensure_ascii=False, default=str))
+    temporal = TemporalRule().evaluate(
+        "probe", assessment.source_date_facts, "2000-01-01", "2100-12-31", source_type="news"
+    )
+    print("temporal=", temporal.date_valid, getattr(temporal.diagnostic, "value", temporal.diagnostic),
+          temporal.controlling_calendar_date)
     print("reject_reason=", assessment.reject_reason)
     print("body_chars=", len(assessment.body_text))
     print("headlines=", list(assessment.document_level_headlines)[:3])
