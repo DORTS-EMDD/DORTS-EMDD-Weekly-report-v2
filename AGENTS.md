@@ -679,10 +679,14 @@ Transport retry 與 semantic correction 必須分開計算。
   中國大陸不列入、香港保留；新增芬蘭、比利時、捷克、以色列、愛爾蘭、波蘭、紐西蘭。搜尋設定 `search-discovery-v11`：
   比利時 nl＋fr、捷克 cs、以色列 he＋en、波蘭 pl、愛爾蘭與紐西蘭 en；新增 `fi`、`cs`、`pl`、`he` 四個 profile（共 17 個，
   詞彙比照既有 profile，含七個技術概念）。芬蘭比照丹麥：binding 為 UNSUPPORTED、計畫中是公開的 coverage gap，召回測試後
-  各送 1 次 FI:fi 與丹麥請求驗證，有版本就改 SUPPORTED。週計畫 140 → 196 次（月檢多 87 次標準查詢，原 63）；健康檢查探針
-  依慣例改為 (1, 10, 98, 103, 189, 196)，RC-72 規則不變；run summary 一律記錄 `search_rate_limit_failures`（含 0），
+  各送 1 次 FI:fi 與丹麥請求驗證，有版本就改 SUPPORTED。週計畫 140 → 196 次，補運具詞變化形後為 210 次（月檢多 87 次標準查詢，原 63）；健康檢查探針
+  依慣例改為 (1, 10, 105, 110, 203, 210)，RC-72 規則不變；run summary 一律記錄 `search_rate_limit_failures`（含 0），
   429 明顯變多時先回報使用者再考慮查詢間隔。地理參照表 `geo-reference-v6` 補七國城市與系統的各語言名稱（與其他地名
   重名者不列）。測試另鎖定「中國大陸地點仍為 NON_DESIGNATED_REGION、香港為指定地區」。
+  運具詞補變化形（使用者決定，標題必須含運具詞）：cs、pl、fi 各補同一詞的格變化，he 補 הרכבת הקלה、ברכבת הקלה、המטרו、
+  הרכבת התחתית；特拉維夫線名（紅線、紫線、綠線）不加，因 he 運具詞組會佔滿 32 字查詢上限，且 הקו האדום 也是政治「紅線」慣用語
+  （RC-14 同類）。另修 cs 得標詞（vítěz tendru、zakázku získala）與招標詞（tendr、soutěž）、he 驗票機（מתקף）與 חשמול、
+  fi ajovirta。週計畫因此為 210 次，探針 (1, 10, 105, 110, 203, 210)。
 
 ## 13. Report / Delivery
 

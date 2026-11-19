@@ -194,7 +194,9 @@ class SearchPlannerTests(unittest.TestCase):
         # The query is deliberately broad: no intent vocabulary is added.
         self.assertTrue(all(item.query.startswith('(metro OR subway OR tram OR "light rail" OR monorail) (site:') for item in trade))
         self.assertTrue(all(_query_words(item.query) <= 32 for item in plan.items))
-        self.assertLess(len(plan.items), 207)
+        # RC-12 brought 20 markets below 207 requests; RC-76 (27 markets, user
+        # decision 2026-11-19) is 210, locked exactly in test_technology_vocabulary.
+        self.assertEqual(len(plan.items), 210)
 
     def test_query_generation_is_bounded(self) -> None:
         source = copy.deepcopy(self.source)

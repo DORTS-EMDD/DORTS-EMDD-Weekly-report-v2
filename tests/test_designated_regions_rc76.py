@@ -97,7 +97,7 @@ def test_finland_is_a_disclosed_coverage_gap_like_denmark():
 
 def test_health_probes_are_spread_over_the_new_plan():
     size = len(SearchPlanner(REGISTRY).plan("selected").items)
-    assert size == 196
+    assert size == 210
     assert HEALTH_PROBE_ORDINALS == (1, 10, size // 2, size // 2 + 5, size - 7, size)
 
 

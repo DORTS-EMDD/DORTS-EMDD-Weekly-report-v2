@@ -3678,16 +3678,33 @@ RC-28 rule, owner and outcomes are unchanged.
   recall test, one `ceid=FI:fi` request and one Danish request verify the two
   editions (user decision); a market found to have an edition becomes `SUPPORTED`
   with a test and a note here.
-* **Plan size.** Weekly 140 -> 196 requests (technology 95, major_incident 43,
-  operations 29, procurement 29); the monthly check adds 87 monitored-standard
+* **Plan size.** Weekly 140 -> 210 requests (technology 102, major_incident 47,
+  operations 29, procurement 32); the monthly check adds 87 monitored-standard
   requests (was 63) and the 10 catalogue reads.
+* **Inflected mode words (user decision, same day).** A title must contain a
+  mode word (`urban_rail_terms`), and Czech, Polish, Finnish and Hebrew titles
+  inflect them, so each new profile also lists the common inflected forms of
+  the same words: cs `tramvaje, tramvají, tramvajové, metra, metru, metrem`; pl
+  `tramwaju, tramwaje, tramwajów, tramwajowa, metra, metrze, metrem`; fi
+  `metron, metrossa, metroon, raitiovaunun, raitiovaunut, raitiotien,
+  raitiotiellä`; he `הרכבת הקלה, ברכבת הקלה, המטרו, הרכבת התחתית`. These are forms
+  of the same word, not a wider meaning (the RC-14 lesson). The Tel Aviv line
+  names `הקו האדום`, `הקו הסגול` and `הקו הירוק` are not added (user decision): the
+  Hebrew mode group would take 26 to 29 of the 32 words a query may hold, so the
+  plan could not be built, and `הקו האדום` is also the everyday phrase for a
+  political "red line". Wording fixes: cs award terms `vítěz tendru`,
+  `zakázku získala` (replacing `zadání zakázky`, which names the tender
+  specification, and `uzavřená smlouva`), cs tender terms add `tendr`, `soutěž`;
+  he fare term `מתקף` replaces `מאמת`, he technology adds `חשמול`; fi technology
+  `ajovirta` replaces `ajosähkö`. More mode words leave fewer words per query for
+  intent terms, so cs, pl and he need more requests.
 * **Health check.** The six probe ordinals follow the plan as
-  (1, 10, N/2, N/2+5, N-7, N): `(1, 10, 98, 103, 189, 196)`. The RC-72 rule
+  (1, 10, N/2, N/2+5, N-7, N): `(1, 10, 105, 110, 203, 210)`. The RC-72 rule
   (at least four successes, only `RATE_LIMIT` failures tolerated, one 45-minute
   retry) is unchanged.
 * **Rate limiting watch.** The run summary always carries
   `search_rate_limit_failures` (zero included) next to `search_failure_count`. If
-  production runs on the 196-request plan show clearly more HTTP 429, that is
+  production runs on the 210-request plan show clearly more HTTP 429, that is
   reported to the user before any request spacing is considered.
 * **Geographic reference `geo-reference-v6`.** The seven regions and their
   urban-rail cities gain local, Korean, Japanese and Chinese names (for example
@@ -3706,7 +3723,7 @@ RC-28 rule, owner and outcomes are unchanged.
 ```text
 SEARCH_CONFIGURATION_VERSION = search-discovery-v11
 DESIGNATED_REGIONS = 27 (RC-76; CN not designated, HK designated)
-HEALTH_PROBE_ORDINALS = (1, 10, 98, 103, 189, 196)
+HEALTH_PROBE_ORDINALS = (1, 10, 105, 110, 203, 210)
 ```
 
 ### Shared production workflow
