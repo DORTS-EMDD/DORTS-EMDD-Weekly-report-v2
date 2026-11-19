@@ -1,5 +1,5 @@
 {
-  "configuration_version": "search-discovery-v11",
+  "configuration_version": "search-discovery-v12",
   "region_modes": [
     "selected",
     "global"
@@ -579,7 +579,12 @@
             "conductor rail",
             "switches and crossings",
             "track switch",
-            "condition monitoring"
+            "condition monitoring",
+            "AI",
+            "artificial intelligence",
+            "maintenance",
+            "remote monitoring",
+            "sensor"
           ],
           "new_material_terms": [
             "advanced material",
@@ -774,7 +779,12 @@
             "第三軌/第三轨",
             "道岔",
             "狀態監測/状态监测",
-            "預測性維修/预测性维修"
+            "預測性維修/预测性维修",
+            "AI",
+            "人工智慧/人工智能",
+            "維修/维修",
+            "遠端監測/远程监测",
+            "感測器/传感器"
           ],
           "new_material_terms": [
             "新材料",
@@ -971,7 +981,11 @@
             "第三軌条",
             "分岐器",
             "状態監視",
-            "予知保全"
+            "予知保全",
+            "AI",
+            "人工知能",
+            "保守",
+            "遠隔監視"
           ],
           "new_material_terms": [
             "新材料",
@@ -1157,7 +1171,9 @@
             "제3궤조",
             "분기기",
             "상태감시",
-            "예측정비"
+            "예측정비",
+            "AI",
+            "인공지능"
           ],
           "new_material_terms": [
             "신소재",
@@ -1339,7 +1355,12 @@
             "fahrerlos",
             "Stromschiene",
             "Weiche",
-            "vorausschauende Instandhaltung"
+            "vorausschauende Instandhaltung",
+            "KI",
+            "künstliche Intelligenz",
+            "Instandhaltung",
+            "Fernüberwachung",
+            "Sensor"
           ],
           "new_material_terms": [
             "neuer Werkstoff",
@@ -1522,7 +1543,12 @@
             "sans conducteur",
             "troisième rail",
             "aiguillage",
-            "surveillance conditionnelle"
+            "surveillance conditionnelle",
+            "IA",
+            "intelligence artificielle",
+            "maintenance",
+            "télésurveillance",
+            "capteur"
           ],
           "new_material_terms": [
             "nouveau matériau",
@@ -1701,7 +1727,9 @@
             "sin conductor",
             "tercer carril",
             "cambio de agujas",
-            "monitorización de estado"
+            "monitorización de estado",
+            "IA",
+            "inteligencia artificial"
           ],
           "new_material_terms": [
             "nuevo material",
@@ -1879,7 +1907,12 @@
             "senza conducente",
             "terza rotaia",
             "deviatoio",
-            "monitoraggio delle condizioni"
+            "monitoraggio delle condizioni",
+            "IA",
+            "intelligenza artificiale",
+            "manutenzione",
+            "monitoraggio remoto",
+            "sensore"
           ],
           "new_material_terms": [
             "nuovo materiale",
@@ -2061,7 +2094,12 @@
             "sem condutor",
             "terceiro carril",
             "aparelho de mudança de via",
-            "monitorização do estado"
+            "monitorização do estado",
+            "IA",
+            "inteligência artificial",
+            "manutenção",
+            "monitorização remota",
+            "sensor"
           ],
           "new_material_terms": [
             "novo material",
@@ -2242,7 +2280,10 @@
             "zonder bestuurder",
             "derde rail",
             "wissels",
-            "conditiemonitoring"
+            "conditiemonitoring",
+            "AI",
+            "kunstmatige intelligentie",
+            "onderhoud"
           ],
           "new_material_terms": [
             "nieuw materiaal",
@@ -2421,7 +2462,12 @@
             "förarlös",
             "strömskena",
             "spårväxel",
-            "prediktivt underhåll"
+            "prediktivt underhåll",
+            "AI",
+            "artificiell intelligens",
+            "underhåll",
+            "fjärrövervakning",
+            "sensor"
           ],
           "new_material_terms": [
             "nytt material",
@@ -2600,7 +2646,12 @@
             "strømskinne",
             "sporskifte",
             "tilstandsovervågning",
-            "prædiktiv vedligeholdelse"
+            "prædiktiv vedligeholdelse",
+            "AI",
+            "kunstig intelligens",
+            "vedligeholdelse",
+            "fjernovervågning",
+            "sensor"
           ],
           "new_material_terms": [
             "nyt materiale",
@@ -2782,7 +2833,12 @@
             "strømskinne",
             "sporveksel",
             "tilstandsovervåking",
-            "prediktivt vedlikehold"
+            "prediktivt vedlikehold",
+            "KI",
+            "kunstig intelligens",
+            "vedlikehold",
+            "fjernovervåking",
+            "sensor"
           ],
           "new_material_terms": [
             "nytt materiale",
@@ -2967,7 +3023,12 @@
             "kuljettajaton",
             "virtakisko",
             "vaihde",
-            "kunnonvalvonta"
+            "kunnonvalvonta",
+            "tekoäly",
+            "AI",
+            "kunnossapito",
+            "etävalvonta",
+            "anturi"
           ],
           "new_material_terms": [
             "uusi materiaali",
@@ -3172,7 +3233,12 @@
             "bez řidiče",
             "třetí kolejnice",
             "výhybka",
-            "monitorování stavu"
+            "monitorování stavu",
+            "AI",
+            "umělá inteligence",
+            "údržba",
+            "dálkový monitoring",
+            "senzor"
           ],
           "new_material_terms": [
             "nový materiál",
@@ -3377,7 +3443,11 @@
             "bez maszynisty",
             "trzecia szyna",
             "rozjazd",
-            "monitorowanie stanu"
+            "monitorowanie stanu",
+            "AI",
+            "sztuczna inteligencja",
+            "utrzymanie",
+            "czujnik"
           ],
           "new_material_terms": [
             "nowy materiał",
@@ -3581,7 +3651,11 @@
             "מסילה שלישית",
             "מסוט",
             "ניטור מצב",
-            "חשמול"
+            "חשמול",
+            "AI",
+            "בינה מלאכותית",
+            "תחזוקה",
+            "ניטור מרחוק"
           ],
           "new_material_terms": [
             "חומר חדש",

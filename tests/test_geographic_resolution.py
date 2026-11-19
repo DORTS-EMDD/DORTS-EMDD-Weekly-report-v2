@@ -82,7 +82,7 @@ class DesignatedUrbanRailCitiesV5Tests(unittest.TestCase):
 class GeographicReferenceTests(unittest.TestCase):
     def test_reference_is_versioned_and_matches_whole_values_only(self):
         reference = default_geographic_reference()
-        self.assertEqual(reference.version, "geo-reference-v6")
+        self.assertEqual(reference.version, "geo-reference-v7")
         self.assertEqual(reference.lookup("vietnam").kind, GeographicMatchKind.REGION)
         self.assertEqual(reference.lookup("Hanoi Metro").kind, GeographicMatchKind.SYSTEM)
         self.assertEqual(reference.lookup("Hanoi").kind, GeographicMatchKind.CITY)
@@ -119,7 +119,7 @@ class RegionResolutionTests(unittest.TestCase):
         resolution = _resolve(system="Hanoi Metro")
         self.assertEqual(
             (resolution.basis, resolution.region_id, resolution.source_field, resolution.reference_version),
-            (RegionResolutionBasis.REFERENCE_MAPPED, "VN", "transit_system_name", "geo-reference-v6"),
+            (RegionResolutionBasis.REFERENCE_MAPPED, "VN", "transit_system_name", "geo-reference-v7"),
         )
 
     def test_conflicting_regions_are_unresolved_without_choosing(self):

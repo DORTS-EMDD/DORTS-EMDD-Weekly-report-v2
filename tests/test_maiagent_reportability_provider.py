@@ -332,7 +332,10 @@ class ReportabilityCriteriaTests(unittest.TestCase):
         from src.weekly_report.maiagent_reportability_provider import PROMPT_VERSION, REPORTABILITY_INSTRUCTIONS
 
         instructions = " ".join(REPORTABILITY_INSTRUCTIONS)
-        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v8")
+        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v9")
+        # RC-77 (user decision 2026-11-19): routine operations reporting is low value.
+        self.assertIn("Routine operations reporting is NOT_REPORTABLE", instructions)
+        self.assertIn("normal operation despite severe weather", instructions)
         self.assertIn("Accepted value paths", instructions)
         self.assertIn("substantive technical research, testing, pilots or deployments", instructions)
         self.assertIn("procurement, demonstration or trial activity", instructions)

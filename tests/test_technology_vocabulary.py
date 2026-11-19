@@ -17,6 +17,7 @@ from scripts.materialize_search_configuration import validate_configuration
 from src.weekly_report.contracts import DiscoveryIntent, MonitoredCheckMonth, SearchProviderId, SearchWindow
 from src.weekly_report.region_registry import RegionRegistry
 from src.weekly_report.search_planner import SearchPlanner, _query_words
+from tests.test_ai_vocabulary_rc77 import RC77_TECHNOLOGY_TERMS
 
 CONCEPTS = ("CBTC", "ATO", "無人駕駛", "第三軌", "道岔", "狀態監測", "預測性維修")
 
@@ -130,6 +131,9 @@ def test_every_v9_term_is_kept_in_order_and_only_the_concepts_are_added(registry
         assert terms[: len(before)] == before, profile_id
         added = terms[len(before):]
         approved = {literal for literals in EXPECTED[profile_id].values() for literal in literals}
+        # RC-77 (user decision 2026-11-19): AI terms and, where they fit, general
+        # maintenance, remote-monitoring and sensor terms (test_ai_vocabulary_rc77).
+        approved |= set(RC77_TECHNOLOGY_TERMS[profile_id])
         assert set(added) <= approved and len(added) == len(set(added)), (profile_id, added)
         assert approved <= set(terms), profile_id
         assert len(terms) == len(set(terms)), profile_id
@@ -169,8 +173,9 @@ def test_request_counts(registry, mode):
     # v9: 122 = technology 49 + major_incident 31 + operations 21 + procurement 21.
     # v10: 140 = technology 67 + major_incident 31 + operations 21 + procurement 21.
     # v11 (RC-76, 27 markets): 210.
-    assert len(weekly.items) == 210
-    assert counts == {"technology": 102, "major_incident": 47, "operations": 29, "procurement": 32}
+    # v12 (RC-77, AI terms): 221; en, zh and cs gain one technology request per market.
+    assert len(weekly.items) == 221
+    assert counts == {"technology": 113, "major_incident": 47, "operations": 29, "procurement": 32}
     november = MonitoredCheckMonth(date(2026, 11, 1), date(2026, 11, 30))
     monthly = SearchPlanner(registry).plan(mode, window=SearchWindow(date(2026, 11, 30), date(2026, 12, 6)),
                                            monitored_check=november)
@@ -178,4 +183,4 @@ def test_request_counts(registry, mode):
                  and item.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]
     catalogue = [item for item in monthly.items if item.provider_target is SearchProviderId.STANDARDS_CATALOGUE]
     assert len(monitored) == 87 and len(catalogue) == 10
-    assert len(monthly.items) == 210 + 87 + 10
+    assert len(monthly.items) == 221 + 87 + 10

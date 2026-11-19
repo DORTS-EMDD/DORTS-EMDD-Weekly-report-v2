@@ -3726,6 +3726,63 @@ DESIGNATED_REGIONS = 27 (RC-76; CN not designated, HK designated)
 HEALTH_PROBE_ORDINALS = (1, 10, 105, 110, 203, 210)
 ```
 
+### A.58 RC-77 Recall gold answer; routine operations; AI search terms; three city names (2026-11-19, user decisions)
+
+**Selection principle (user decision).** Events are rated by their reference
+value to the Taipei rapid transit department: three stars or more are
+included; two stars are included only in the operations or incident section;
+one star is not included. The principle is the yardstick of the recall gold
+answer below; it creates no Reportability or Category rule by itself.
+
+* **Recall gold answer `acceptance/gold/recall_v1.json`.** The 17 Events of
+  the recall test Run 44468386445 (four periods), each with its period, title,
+  star rating, expected inclusion and expected section, as the user rated them
+  in the project document 「週報取捨規則與標準答案」; item 15 is the same event
+  as item 11 and item 16 the same as item 14 (`merge_into`).
+  `scripts/recall_score.py` scores any selection audit (or a recall-test job log)
+  against it: per gold group CORRECT, MISSED, WRONG_SECTION or FALSE_INCLUSION,
+  the inclusion accuracy, duplicates (more than one included Event for a group)
+  and included Events the gold does not cover. It reads the section through
+  ReportService's `FORMAL_REPORT_SECTIONS` and decides nothing. The recall-test
+  job log also carries the selection audit as gzip+base64 `AUDIT_B64` lines,
+  so a reader without artifact access can rebuild it.
+* **Reportability: routine operations (user decision).** An article whose news
+  is that service ran as usual (for example normal operation despite severe
+  weather), with no service change, no incident and no technical content, is
+  `NOT_REPORTABLE`. A suspension, reduced or altered service, an incident or a
+  safety measure stays under the accepted value paths. Reportability prompt
+  `reportability-principal-body-v9`; schema and Python unchanged.
+* **Search vocabulary (`search-discovery-v12`).** Every one of the 17 profiles'
+  `technology_terms` gains AI terms in its own language (`AI`; `IA` in fr, es,
+  it, pt; `KI` in de and no; `tekoäly` in fi; plus the full phrase, for example
+  人工知能, 인공지능, 人工智慧/人工智能). The bare `AI` is not used in fr and it,
+  where "ai" is an ordinary word. General maintenance, remote-monitoring and
+  sensor terms are added only where they fit without a request beyond the one
+  the AI terms need (the 32-word query limit): all three in en, zh, de, fr, it,
+  pt, sv, da, no, fi and cs; 保守 and 遠隔監視 in ja; onderhoud in nl;
+  utrzymanie and czujnik in pl; תחזוקה and ניטור מרחוק in he; none in ko and es.
+  The weekly plan grows 210 -> 221 (en, zh and cs each gain one technology
+  request per market); health probes follow it as `(1, 10, 110, 115, 214, 221)`.
+  Discovery vocabulary only: Search intent is not Category.
+* **Geographic reference `geo-reference-v7`.** Root causes of three
+  `REGION_NOT_ESTABLISHED` events in Run 44468386445: `Frankfurt` was listed in
+  `ambiguous_names` although every Frankfurt with urban rail is in Germany, and
+  the city adjective `Frankfurter` was missing; Kitchener (ION LRT, Region of
+  Waterloo) was not in the reference; Spain listed only `Vitoria-Gasteiz`, not
+  `Vitoria` or `Gasteiz`. The names are added and `Frankfurt` leaves the
+  ambiguous list; `Waterloo` and `Victoria` stay ambiguous. The matching rule is
+  unchanged.
+
+Tests: `tests/test_recall_score.py`, `tests/test_ai_vocabulary_rc77.py`,
+`tests/test_geographic_reference_rc77.py`, `tests/test_maiagent_reportability_provider.py`.
+
+```text
+REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v9 (RC-77)
+SEARCH_CONFIGURATION_VERSION = search-discovery-v12 (RC-77: AI terms, 221 weekly requests)
+GEOGRAPHIC_REFERENCE_VERSION = geo-reference-v7 (RC-77)
+HEALTH_PROBE_ORDINALS = (1, 10, 110, 115, 214, 221)
+```
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式
@@ -6015,6 +6072,11 @@ of a line, extension or station is a concrete service or engineering change.
 These accepted value paths are part of the `reportability_semantic_proposal`
 instructions (prompt `reportability-principal-body-v2`); before RC-10 the
 helper received no selection criteria.
+
+RC-77 (2026-11-19, user decision; section A.58): routine operations reporting,
+an article whose news is that service ran as usual (for example normal
+operation despite severe weather) with no service change, no incident and no
+technical content, is `NOT_REPORTABLE`.
 
 Source quality and evidence readiness remain owned by EvidenceService.
 Reportability uses only the complete authoritative substantive content of

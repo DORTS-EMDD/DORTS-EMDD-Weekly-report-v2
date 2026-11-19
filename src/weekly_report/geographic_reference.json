@@ -1,5 +1,5 @@
 {
- "reference_version": "geo-reference-v6",
+ "reference_version": "geo-reference-v7",
  "effective_date": "2026-11-19",
  "basis": {
   "region_ids": "ISO 3166-1 alpha-2 codes (HK and MO as their ISO-assigned codes).",
@@ -1300,6 +1300,8 @@
     "München",
     "Hamburg",
     "Frankfurt am Main",
+    "Frankfurt",
+    "Frankfurter",
     "Cologne",
     "Köln",
     "Stuttgart",
@@ -1519,6 +1521,8 @@
     "畢爾包",
     "Barcelone",
     "Vitoria-Gasteiz",
+    "Vitoria",
+    "Gasteiz",
     "Alicante",
     "Murcia",
     "Santa Cruz de Tenerife",
@@ -2054,6 +2058,10 @@
     "Ottawa",
     "Calgary",
     "Edmonton",
+    "Kitchener",
+    "Kitchener-Waterloo",
+    "Waterloo Region",
+    "Region of Waterloo",
     "토론토",
     "トロント",
     "多倫多",
@@ -2074,6 +2082,8 @@
     "TTC",
     "Metrolinx",
     "OC Transpo",
+    "ION LRT",
+    "Grand River Transit",
     "Réseau express métropolitain"
    ]
   },
@@ -2141,7 +2151,6 @@
   "Victoria",
   "Washington",
   "Newcastle",
-  "Frankfurt",
   "Santiago",
   "Valencia",
   "Metrolink",

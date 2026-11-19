@@ -195,8 +195,9 @@ class SearchPlannerTests(unittest.TestCase):
         self.assertTrue(all(item.query.startswith('(metro OR subway OR tram OR "light rail" OR monorail) (site:') for item in trade))
         self.assertTrue(all(_query_words(item.query) <= 32 for item in plan.items))
         # RC-12 brought 20 markets below 207 requests; RC-76 (27 markets, user
-        # decision 2026-11-19) is 210, locked exactly in test_technology_vocabulary.
-        self.assertEqual(len(plan.items), 210)
+        # decision 2026-11-19) is 210; RC-77 (AI terms) is 221, locked exactly in
+        # test_technology_vocabulary.
+        self.assertEqual(len(plan.items), 221)
 
     def test_query_generation_is_bounded(self) -> None:
         source = copy.deepcopy(self.source)

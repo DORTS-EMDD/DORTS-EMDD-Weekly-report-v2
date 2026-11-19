@@ -100,3 +100,23 @@ def test_candidate_listing_has_every_candidate_with_its_stage_and_category():
         "CANDIDATE | FINAL_REPORT | INCLUDED | category=TECHNOLOGY_DEVELOPMENT | publisher=P | title=A",
         "CANDIDATE | EVIDENCE | NOT_REACHED | category=- | publisher=- | title=B",
     ]
+
+
+def test_the_log_carries_the_audit_and_the_score_tool_rebuilds_it(tmp_path, capsys):
+    from scripts import recall_candidates
+    from scripts.recall_score import load_audit
+
+    audit = {"period": {"start": "2026-10-27", "end": "2026-10-29"}, "candidate_count": 1, "event_count": 0,
+             "final_report_event_count": 0, "terminal_reason_distribution": {},
+             "candidates": [{"candidate_id": "c1", "discovery_title": "東京メトロ", "publisher": "P",
+                             "terminal_stage": "EVIDENCE", "terminal_reason": "NOT_REACHED"}], "events": []}
+    path = tmp_path / "selection_audit.json"
+    path.write_text(json.dumps(audit, ensure_ascii=False), encoding="utf-8")
+    assert recall_candidates.main(["x", str(path)]) == 0
+    log = tmp_path / "job.log"
+    log.write_text("\n".join("2026-11-19T11:20:11.7Z " + line for line in capsys.readouterr().out.splitlines()),
+                   encoding="utf-8")
+    assert load_audit(log) == audit
+    wrapped = tmp_path / "job.json"
+    wrapped.write_text(json.dumps({"logs_content": log.read_text(encoding="utf-8")}), encoding="utf-8")
+    assert load_audit(wrapped) == audit
