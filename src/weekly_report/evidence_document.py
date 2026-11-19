@@ -1058,6 +1058,30 @@ def _source_date_facts(
                     continue
                 jsonld_values.append((value, f"jsonld[{node.node_id}]"))
 
+    # RC-71 (§17): schema.org allows JSON-LD in the body.  Such a block is used
+    # only through the entity's own resource identity (an identity that is not
+    # this resource yields no fact), so its position is not an ownership
+    # signal; scripts in excluded regions (navigation, complementary, footer,
+    # comments) are still ignored.
+    for node in _walk(root):
+        if (
+            node.tag.casefold() != "script"
+            or node.attrs.get("type", "").casefold().split(";", 1)[0].strip() != "application/ld+json"
+            or _has_ancestor_tag(node, "head")
+            or node.parent is None
+            or _is_excluded_region(node.parent) is not None
+            or _is_comment_node(node.parent)
+        ):
+            continue
+        raw_json = "".join(node.text_parts).strip()
+        if not raw_json:
+            continue
+        try:
+            value = json.loads(raw_json)
+        except (TypeError, ValueError):
+            continue
+        jsonld_values.append((value, f"jsonld[{node.node_id}]"))
+
     for value, provenance in jsonld_values:
         facts.extend(
             _jsonld_date_facts(

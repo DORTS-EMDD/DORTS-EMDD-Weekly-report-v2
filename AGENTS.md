@@ -642,6 +642,8 @@ Transport retry 與 semantic correction 必須分開計算。
   * 只有一篇主文章時，不包含它也不在它之內的集合是主文件之外的相關文件，不再使頁面成為清單；包含或位於文章內的集合仍計入。
   * 同一個 title、og:title 或 twitter:title 值重複出現只是同一事實，不是衝突；值不同仍為衝突。
   * 判定同層通用單元時，只含連結、表單與互動控制項的文字不是內文，文章內的訂閱表單或分享區塊不再是競爭的文件單元。
+  * schema.org JSON-LD 區塊在 `<body>` 而非 `<head>` 時（Global Railway Review 三篇舊文章 `DATE_PROVENANCE_INVALID` 的原因）也會讀取；只有實體自己的資源身分指向本頁才產生日期事實，所以位置不是歸屬依據，排除區域（導覽、側欄、頁尾、留言）內的區塊仍忽略。
+  * 使用者提議的「只含連結的區塊其 `<h1>` 不是文件標題」已試作：解決「You May Also Like」但不解決「Related」（區塊內還有每則連結旁的公司名稱），未採用。
   * 未改、待使用者決定：頁面同時有把小工具標題寫成 `<h1>`（如「Related」）且沒有集合標記時，仍為 `multiple_principal_h1`。
   * 未改（外部）：Railway PRO、Railway Gazette、IRJ 對任何請求皆由 CDN 回 403，RSS 也是 403 或無全文，不繞過。
   * 探測現在傳入與 EvidenceService 相同的來源身分檢查，並列出各頁面日期相關標記；先前探測的「無日期事實」是探測本身的缺漏。

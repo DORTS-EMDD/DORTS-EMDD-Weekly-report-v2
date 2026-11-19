@@ -3418,6 +3418,22 @@ class name, phrase, count or text-similarity rule.
   interactive controls is not prose, so a newsletter form or a share block
   inside the article is not a competing document-shaped unit. Collections and
   explicit units are unchanged.
+* **Structured dates outside the head (§17).** Global Railway Review articles
+  ended at `DATE_PROVENANCE_INVALID` with no date fact although each carries a
+  schema.org `Article` with `datePublished` and a `mainEntityOfPage` equal to
+  the page URL: the block is a direct child of `<body>` and only `<head>`
+  blocks were read. A JSON-LD block outside the head is now read too; it yields
+  date facts only through the entity's own resource identity (an identity that
+  is not this resource gives none), so its position is not an ownership
+  signal, and blocks inside excluded regions (navigation, complementary,
+  footer, comments) are ignored. Temporal is unchanged and receives the same
+  fact kinds as for head blocks. Other hosts that end at
+  `DATE_PROVENANCE_INVALID` were not re-assessed.
+* **Link-only `<h1>` widget headings (user proposal, 2026-11-19, tried).** An
+  `<h1>` whose enclosing block holds nothing but links, forms and controls is
+  not a document headline. It resolved the "You May Also Like" block but not
+  "Related": that block also holds short non-link labels (company names) beside
+  each linked title, so it is not link-only. Not adopted; pending a decision.
 * **Not changed, awaiting a user decision.** A page whose main region also
   carries widget headings written as `<h1>` ("Related", "You may also like"),
   with no markup-level collection, still reports `multiple_principal_h1`.
@@ -3429,8 +3445,9 @@ class name, phrase, count or text-similarity rule.
   carry no full text. Python cannot fix this and the protection is not bypassed.
 * **Observation.** The probe now passes the resource-identity checker that
   EvidenceService passes, so it shows the date facts the production assessment
-  extracts, and lists the raw date-bearing markup of each page. Earlier output
-  showing no date facts was a probe artefact.
+  extracts, and lists the raw date-bearing markup of each page. The earlier
+  "no date facts" for Railway-News and Urban Transport Magazine pages was a
+  probe artefact; for Global Railway Review it was real (see above).
 * Search, Scope, Temporal, Category, Reportability, Writer, Validation and
   Delivery are unchanged. Tests: `tests/test_evidence_principal_rc71.py`.
 

@@ -113,3 +113,47 @@ class InteractiveWidgetsInsideTheArticleTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+RESOURCE = "https://news.example/articles/doors"
+
+
+def _jsonld(identity: str) -> str:
+    return (
+        '<script type="application/ld+json">'
+        '{"@type":"Article","datePublished":"2026-08-28","dateModified":"2026-08-29",'
+        f'"mainEntityOfPage":{{"@type":"WebPage","@id":"{identity}"}}}}'
+        "</script>"
+    )
+
+
+def _dated(body_tail: str, head_tail: str = "") -> object:
+    html = (
+        f"<html><head><title>t</title>{head_tail}</head><body><main><article><h1>Doors commissioned</h1>{BODY}</article></main>"
+        f"{body_tail}</body></html>"
+    )
+    return assess_document(
+        html,
+        "text/html",
+        resource_url=RESOURCE,
+        candidate_id="c1",
+        resource_identity_checker=lambda value: value == RESOURCE,
+    )
+
+
+class JsonLdOutsideTheHeadTests(unittest.TestCase):
+    def test_a_body_level_block_that_names_this_resource_gives_date_facts(self):
+        result = _dated(_jsonld(RESOURCE))
+        kinds = {fact["date_kind"]: fact["raw_date_value"] for fact in result.source_date_facts}
+        self.assertEqual(kinds, {"ORIGINAL_PUBLICATION": "2026-08-28", "MODIFIED": "2026-08-29"})
+
+    def test_a_block_that_names_another_resource_gives_none(self):
+        self.assertEqual(_dated(_jsonld("https://news.example/articles/other")).source_date_facts, ())
+
+    def test_a_block_inside_an_excluded_region_gives_none(self):
+        self.assertEqual(_dated(f"<aside>{_jsonld(RESOURCE)}</aside>").source_date_facts, ())
+        self.assertEqual(_dated(f"<footer>{_jsonld(RESOURCE)}</footer>").source_date_facts, ())
+
+    def test_a_head_block_is_still_read_once(self):
+        result = _dated("", _jsonld(RESOURCE))
+        self.assertEqual(len(result.source_date_facts), 2)
