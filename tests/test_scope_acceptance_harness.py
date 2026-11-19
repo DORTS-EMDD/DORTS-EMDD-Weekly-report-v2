@@ -253,10 +253,21 @@ def test_nonempty_optional_citation_is_still_validated():
 
 
 def test_positive_relation_cannot_borrow_system_from_another_event():
+    # RC-75 (user decision 2026-11-19) replaced the RC-17 bound for the system
+    # relation: it may cite sentences outside the focus when the action-to-target
+    # relation is established inside it and names the same target label. What
+    # still cannot borrow: a relation whose target is a different reference, an
+    # action-to-target relation outside the focus, and every other relation.
     source = "The Metro line renewed signalling equipment. The port installed cargo monitors for harbor businesses."
     proposal = _semantic_proposal(source, target="cargo monitors")
     proposal["event_focus"]["sentence_ids"] = ["S2"]
     proposal["action_target"]["sentence_ids"] = ["S2"]
+    proposal["target_system"]["sentence_ids"] = ["S1", "S2"]
+    proposal["target_system"]["target_reference"] = "harbor businesses"
+    assert _violation(proposal, source) == "EVENT_FOCUS_CONTAINMENT"
+    proposal = _semantic_proposal(source, target="cargo monitors")
+    proposal["event_focus"]["sentence_ids"] = ["S2"]
+    proposal["action_target"]["sentence_ids"] = ["S1", "S2"]
     proposal["target_system"]["sentence_ids"] = ["S1", "S2"]
     assert _violation(proposal, source) == "EVENT_FOCUS_CONTAINMENT"
 

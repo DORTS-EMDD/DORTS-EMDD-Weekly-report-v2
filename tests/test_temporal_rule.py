@@ -178,6 +178,63 @@ class TemporalRuleTests(unittest.TestCase):
                 scope_result=ScopeResult("C1", ScopeState.OUT_OF_SCOPE),
             )
 
+    def test_english_month_name_dates_are_read_as_written(self):
+        for raw in (
+            "Nov 12th 2026",
+            "Nov. 12th 2026",
+            "November 12, 2026",
+            "November 12th, 2026",
+            "12th November 2026",
+            "12 Nov 2026",
+            "nov  12   2026",
+        ):
+            result = self.rule.evaluate(
+                "C1", [_fact(raw, SourceDateKind.ORIGINAL_PUBLICATION)], "2026-11-09", "2026-11-15"
+            )
+            self.assertTrue(result.date_valid, raw)
+            self.assertEqual(result.controlling_calendar_date.isoformat(), "2026-11-12", raw)
+
+    def test_the_same_day_written_two_ways_is_not_a_conflict(self):
+        result = self.rule.evaluate(
+            "C1",
+            [
+                _fact("Nov 12th 2026", SourceDateKind.ORIGINAL_PUBLICATION),
+                _fact("2026-11-12", SourceDateKind.ORIGINAL_PUBLICATION),
+            ],
+            "2026-11-09",
+            "2026-11-15",
+        )
+        self.assertTrue(result.date_valid)
+        different = self.rule.evaluate(
+            "C1",
+            [
+                _fact("Nov 13th 2026", SourceDateKind.ORIGINAL_PUBLICATION),
+                _fact("2026-11-12", SourceDateKind.ORIGINAL_PUBLICATION),
+            ],
+            "2026-11-09",
+            "2026-11-15",
+        )
+        self.assertEqual(different.diagnostic, TemporalDiagnostic.DATE_CONFLICT)
+
+    def test_other_written_forms_stay_unparseable(self):
+        for raw in (
+            "Nov 12th",  # no year
+            "12th 2026",  # no month
+            "Nov 31st 2026",  # no such day
+            "Foo 12th 2026",  # not a month
+            "Nov 12th 2026 10:30",  # time part is not read
+            "yesterday",
+            "12/11/2026",
+        ):
+            result = self.rule.evaluate(
+                "C1", [_fact(raw, SourceDateKind.ORIGINAL_PUBLICATION)], "2026-11-09", "2026-11-15"
+            )
+            self.assertEqual(result.diagnostic, TemporalDiagnostic.DATE_UNPARSEABLE, raw)
+
+    def test_a_named_month_is_not_accepted_as_a_period_boundary(self):
+        with self.assertRaises(ValueError):
+            self.rule.validate_period("Nov 9th 2026", "2026-11-15")
+
     def test_golden_temporal_cases(self):
         manifest = json.loads((ROOT / "golden/manifest.json").read_text(encoding="utf-8"))
         for entry in manifest["cases"]:

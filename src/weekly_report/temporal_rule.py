@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from datetime import date, datetime
+import re
 from typing import Any
 
 from .contracts import (
@@ -34,6 +35,60 @@ _FORMAL_NOTICE_SOURCE_TYPES = {
     "tender_notice",
 }
 _UNKNOWN_SOURCE_TYPES = {"", "web_source"}
+
+
+_MONTHS = {
+    name: number
+    for number, names in enumerate(
+        (
+            ("jan", "january"), ("feb", "february"), ("mar", "march"), ("apr", "april"),
+            ("may",), ("jun", "june"), ("jul", "july"), ("aug", "august"),
+            ("sep", "sept", "september"), ("oct", "october"), ("nov", "november"),
+            ("dec", "december"),
+        ),
+        start=1,
+    )
+    for name in names
+}
+_DAY = r"(?P<day>[0-3]?\d)(?:st|nd|rd|th)?"
+_MONTH = r"(?P<month>[A-Za-z]{3,9})\.?"
+_YEAR = r"(?P<year>\d{4})"
+# English month name (abbreviated or full), day with an optional ordinal suffix
+# and a four-digit year, in either order: "Nov 12th 2026", "November 12, 2026",
+# "12th November 2026".  Nothing else is read as a date (RC-74).
+_NAMED_MONTH_PATTERNS = (
+    re.compile(rf"^{_MONTH}\s+{_DAY}\s*,?\s+{_YEAR}$"),
+    re.compile(rf"^{_DAY}\s+{_MONTH}\s*,?\s+{_YEAR}$"),
+)
+
+
+def _named_month_date(raw: str) -> date | None:
+    """Parse an English month-name calendar date exactly as the source wrote it."""
+
+    text = " ".join(raw.split())
+    for pattern in _NAMED_MONTH_PATTERNS:
+        match = pattern.match(text)
+        if match is None:
+            continue
+        month = _MONTHS.get(match.group("month").casefold())
+        if month is None:
+            return None
+        try:
+            return date(int(match.group("year")), month, int(match.group("day")))
+        except ValueError:
+            return None
+    return None
+
+
+def _source_calendar_date(value: object) -> date | None:
+    """Parse a source date fact: ISO forms, or an English month-name date."""
+
+    parsed = _calendar_date(value)
+    if parsed is not None:
+        return parsed
+    if isinstance(value, (date, datetime)):
+        return None
+    return _named_month_date(str(value or "").strip())
 
 
 def _calendar_date(value: object) -> date | None:
@@ -158,7 +213,7 @@ class TemporalRule:
 
         parsed: list[tuple[SourceDateFact, SourceDateKind, date]] = []
         for fact, kind in controlling:
-            parsed_date = _calendar_date(fact.raw_date_value)
+            parsed_date = _source_calendar_date(fact.raw_date_value)
             if parsed_date is None:
                 return self._invalid(
                     candidate_id,

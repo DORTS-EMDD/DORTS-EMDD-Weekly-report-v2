@@ -130,6 +130,10 @@ class ReportApplicationResult:
     # RC-66, observation only: (candidate ID, IDs-only shape) of each Scope
     # proposal rejected as a contract violation. No decision reads it.
     scope_rejected_proposals: tuple[tuple[str, Mapping[str, Any]], ...] = ()
+    # RC-75, observation only: (candidate ID, IDs-only record) of each Scope
+    # correction request and its outcome. Counted apart from RC-6 transport
+    # retries; no decision reads it.
+    scope_corrections: tuple[tuple[str, Mapping[str, Any]], ...] = ()
     # RC-69, observation only: (event ID, category_exchange record) of each
     # Category exchange that ended as a disclosed TechnicalGap. Carried for the
     # selection audit; no decision reads it.
@@ -679,6 +683,7 @@ class ReportApplication:
 
         technical_gaps: list[TechnicalGap] = []
         scope_rejected_proposals: list[tuple[str, Mapping[str, Any]]] = []
+        scope_corrections: list[tuple[str, Mapping[str, Any]]] = []
         with observe_stage("Evidence", len(normalized.normalized_candidates)) as observation:
             evidence_results: list[EvidenceResult] = []
             for normalized_candidate in normalized.normalized_candidates:
@@ -726,6 +731,9 @@ class ReportApplication:
                     shape = getattr(failure, "observation", None)
                     if isinstance(shape, Mapping):
                         scope_rejected_proposals.append((normalized_candidate.candidate.candidate_id, shape))
+                    correction = getattr(failure, "scope_correction", None)
+                    if isinstance(correction, Mapping):
+                        scope_corrections.append((normalized_candidate.candidate.candidate_id, correction))
                     continue
                 if not isinstance(scope, ScopeResult):
                     raise TypeError("ScopeClassifier must return a ScopeResult")
@@ -733,6 +741,9 @@ class ReportApplication:
                     raise TypeError("ScopeResult state must be a ScopeState")
                 if scope.candidate_id != normalized_candidate.candidate.candidate_id:
                     raise ValueError("ScopeResult candidate_id does not match candidate")
+                correction = scope.provenance.get("scope_correction") if isinstance(scope.provenance, Mapping) else None
+                if isinstance(correction, Mapping):
+                    scope_corrections.append((scope.candidate_id, correction))
                 scope_results.append(scope)
                 observation.observe(scope_results)
 
@@ -830,6 +841,7 @@ class ReportApplication:
             technical_gaps=tuple(technical_gaps),
             metadata_exclusions=metadata_exclusions,
             scope_rejected_proposals=tuple(scope_rejected_proposals),
+            scope_corrections=tuple(scope_corrections),
             category_gap_exchanges=tuple(category_gap_exchanges),
         )
         if final_report is None or self._delivery is None or self._delivery_recipient is None:

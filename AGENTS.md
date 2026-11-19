@@ -242,7 +242,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-73 修訂（2026-10-20～11-19）
+### RC-3～RC-75 修訂（2026-10-20～11-19）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.47、§L、§N 與 §R。
 
@@ -661,6 +661,18 @@ Transport retry 與 semantic correction 必須分開計算。
 * RC-73（§A.54，使用者決定 2026-11-19）：`concurrency`（group `weekly-report-production`、`cancel-in-progress: false`）
   由 workflow 層移到 `production` 與 `recall-test` 兩個 job（同一 group），其餘 job（`source-probe`、`delivery-check`、離線閘門、
   召回計畫）不再排在長時間召回測試之後；兩者之間仍不重疊。不改任何 Domain 規則。
+* RC-74（§A.55，使用者決定 2026-11-19）：TemporalRule 的來源日期事實接受英文月份（縮寫或全名）加可帶序數的日與四位數年
+  （`Nov 12th 2026`、`November 12, 2026`、`12th November 2026`），只改解析；缺年、不存在的日、帶時間、純數字斜線寫法仍為
+  `DATE_UNPARSEABLE`；日期歸屬、衝突與期間邊界（仍只收 ISO）不變。`rail_trade_press` 移除 railtechnologymagazine.com
+  （頁面沒有任何日期標記）。輪播含自己那張卡片使主文件判定模糊，記為已知限制，不修。
+* RC-75（§A.56，使用者決定 2026-11-19）：Scope 兩項。C：焦點已確定時，`target_system` 關係可引用焦點外、同一文件的句子，
+  條件是 (a) 動作—目標關係成立且在焦點內，(b) 系統關係的目標標籤與該動作—目標關係的目標標籤相同（`target_reference`
+  省略或相等）；其餘關係與事件焦點本身不變，取代 RC-17 對這一種關係的限制。已記錄的張力：(a)(b) 比較同一提案的兩個關係，
+  不能證明該句描述同一事件，RC-17 的「不得借用另一事件」守護測試改寫為這兩個條件；以 Run 44462316932 的九筆形狀離線估計
+  可救回五筆，若再要求焦點外句子含目標標籤則只救回一筆。E：Scope 提案違反有明訂規則的契約條件時，送一次更正請求
+  （`correction`：違約條件、違約欄位、規則文字、helper 自己被拒的提案），更正後仍違約才是技術缺口；不是 RC-6 傳輸重試，
+  run summary 另計 `scope_correction_requests`／`scope_correction_accepted`，selection audit 記 `scope.correction`
+  （只有條件、欄位名稱與結果）。Scope 提示詞 v13、schema 不變；月檢標準請求不更正。
 
 ## 13. Report / Delivery
 
@@ -811,5 +823,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-73 (2026-11-19; RC-73 workflow concurrency moved to the production and recall-test jobs; RC-72 Google News health gate: at least 4 of 6 probes succeed with only RATE_LIMIT failures, otherwise one 45-minute wait and one full re-run, plus the email-free recall-test workflow; RC-71 principal-document detection: related collections outside the single article, repeated identical headline metadata and interactive widgets no longer make a page ambiguous, evidence_document.py only; RC-70 user decisions: a road collision is reportable only with a derailment, a person struck only with a stated rail equipment failure or staff operating error, Reportability prompt v8, observer-only source host probe; RC-69 observer-only Category exchange record, selection audit v4; RC-68 Category prompt v8: delivery acceptance tests, deployments and consequences; RC-67 user decisions D1/D2: project steps and drills have no Category, Category prompt v7, Writer v11; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
+CONTRACT_REVISION = RC-3..RC-75 (2026-11-19; RC-75 Scope system relation may leave the focus under two conditions, and one correction request per violated proposal; RC-74 named-month source dates and trade-press site list; RC-73 workflow concurrency moved to the production and recall-test jobs; RC-72 Google News health gate: at least 4 of 6 probes succeed with only RATE_LIMIT failures, otherwise one 45-minute wait and one full re-run, plus the email-free recall-test workflow; RC-71 principal-document detection: related collections outside the single article, repeated identical headline metadata and interactive widgets no longer make a page ambiguous, evidence_document.py only; RC-70 user decisions: a road collision is reportable only with a derailment, a person struck only with a stated rail equipment failure or staff operating error, Reportability prompt v8, observer-only source host probe; RC-69 observer-only Category exchange record, selection audit v4; RC-68 Category prompt v8: delivery acceptance tests, deployments and consequences; RC-67 user decisions D1/D2: project steps and drills have no Category, Category prompt v7, Writer v11; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```

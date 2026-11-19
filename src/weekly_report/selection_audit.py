@@ -319,6 +319,7 @@ def build_selection_audit(
     }
     identity_diagnostics, identity_proposals = _identity_diagnostics(run)
     rejected_scope = dict(getattr(result, "scope_rejected_proposals", ()) or ())
+    scope_corrections = dict(getattr(result, "scope_corrections", ()) or ())
     rejected_members = _rejected_members(run)
     events = _event_outcomes(result)
 
@@ -362,6 +363,9 @@ def build_selection_audit(
                 if candidate_id in rejected_scope:
                     # RC-66: IDs-only shape of the rejected proposal.
                     entry["scope"]["rejected_proposal"] = dict(rejected_scope[candidate_id])
+                if candidate_id in scope_corrections:
+                    # RC-75: IDs-only record of the one correction request.
+                    entry["scope"]["correction"] = dict(scope_corrections[candidate_id])
                 stop("SCOPE", f"TECHNICAL_GAP:{_value(gap.kind)}:{gap.failure_class}")
             elif judged is None:
                 stop("SCOPE", "NOT_REACHED")
@@ -372,6 +376,8 @@ def build_selection_audit(
                     "diagnostic": _value(judged.diagnostic),
                     "event_focus_sentence_ids": sentence_ids,
                 }
+                if candidate_id in scope_corrections:
+                    entry["scope"]["correction"] = dict(scope_corrections[candidate_id])
                 entry["evidence_highlights"] = highlights
                 if judged.state is not ScopeState.IN_SCOPE:
                     stop("SCOPE", f"{_value(judged.state)}|{_value(judged.diagnostic)}")

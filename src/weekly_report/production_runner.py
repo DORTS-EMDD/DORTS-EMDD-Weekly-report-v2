@@ -677,6 +677,11 @@ def _stage_counts(result: ReportApplicationResult) -> dict[str, int]:
         key = f"technical_gaps_{gap.stage.lower()}"
         values[key] = values.get(key, 0) + 1
     values["metadata_exclusions"] = len(tuple(getattr(result, "metadata_exclusions", ()) or ()))
+    # RC-75: Scope correction requests, counted apart from RC-6 transport retries.
+    corrections = tuple(getattr(result, "scope_corrections", ()) or ())
+    if corrections:
+        values["scope_correction_requests"] = len(corrections)
+        values["scope_correction_accepted"] = sum(1 for _, record in corrections if record.get("outcome") == "ACCEPTED")
     return values
 
 

@@ -41,6 +41,44 @@ class ScopeSupportSpan:
     end: int
 
 
+_CORRECTION_INSTRUCTION = (
+    "Your previous proposal broke the rule named in violated_rule, in the fields listed in fields_at_fault. "
+    "Return one complete proposal, in the same schema, that obeys that rule. Keep every conclusion the source "
+    "supports; change only what the rule requires and what follows from it. Cite only sentence_ids and copy "
+    "labels exactly from one sentence. Do not explain."
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ScopeCorrection:
+    """RC-75: what the one correction request tells the helper.
+
+    Python names the contract predicate it rejected, the fields at fault and
+    the rule in words, and returns the helper's own rejected proposal. The
+    helper is stateless, so it needs its earlier answer to correct it. The
+    text is Python's; no source text is added.
+    """
+
+    predicate: str
+    fields: tuple[str, ...]
+    rule: str
+    rejected_proposal: Mapping[str, Any]
+
+    def as_payload(self) -> dict[str, Any]:
+        return {
+            "violated_rule": self.predicate,
+            "fields_at_fault": list(self.fields),
+            "rule": self.rule,
+            "instruction": _CORRECTION_INSTRUCTION,
+            "rejected_proposal": dict(self.rejected_proposal),
+        }
+
+    def record(self, outcome: str) -> dict[str, Any]:
+        """IDs-only observation of this correction: no source or proposal text."""
+
+        return {"predicate": self.predicate, "fields": list(self.fields), "outcome": outcome}
+
+
 @dataclass(frozen=True, slots=True)
 class ScopeSemanticRequest:
     candidate_id: str
@@ -49,17 +87,22 @@ class ScopeSemanticRequest:
     source_metadata: Mapping[str, Any]
     # RC-9: the helper reads and cites Python-segmented sentences.
     principal_sentences: tuple[EvidenceSentence, ...] = field(init=False)
+    # RC-75: present only on the one correction request.
+    correction: ScopeCorrection | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "principal_sentences", segment_evidence_sentences(self.principal_content))
 
     def as_payload(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "candidate_id": self.candidate_id,
             "candidate_title": self.candidate_title,
             "principal_sentences": [sentence.as_mapping() for sentence in self.principal_sentences],
             "source_metadata": dict(self.source_metadata),
         }
+        if self.correction is not None:
+            payload["correction"] = self.correction.as_payload()
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,6 +195,8 @@ class ScopeValidationObservation:
     response_status: str
     scope_state: ScopeState | None
     diagnostic: ScopeDiagnostic | None
+    # RC-75: the predicate that caused the one correction request, if any.
+    correction_predicate: str | None = None
 
 
 class ScopeProposalViolation(ProposalContractViolation):
@@ -161,11 +206,18 @@ class ScopeProposalViolation(ProposalContractViolation):
     helper defect must not be presented as news that failed the Scope rule.
     """
 
-    def __init__(self, predicate: str, observation: Mapping[str, Any] | None = None) -> None:
+    def __init__(
+        self,
+        predicate: str,
+        observation: Mapping[str, Any] | None = None,
+        correction: Mapping[str, Any] | None = None,
+    ) -> None:
         self.failure_class = predicate
         # RC-66, observation only: the rejected proposal's structure with
         # sentence IDs and no source text (see ``_rejected_proposal_shape``).
         self.observation = observation
+        # RC-75, observation only: the correction request that preceded this gap.
+        self.scope_correction = correction
         super().__init__(f"Scope proposal violated its contract: {predicate}")
 
 
@@ -264,9 +316,79 @@ _POSITIVE_TARGET_SYSTEM_RELATIONS = frozenset({"BELONGS_TO", "PART_OF", "FUNCTIO
 
 
 class _Violation(Exception):
-    def __init__(self, predicate: str) -> None:
+    def __init__(self, predicate: str, fields: tuple[str, ...] | None = None) -> None:
         super().__init__(predicate)
         self.predicate = predicate
+        # The proposal fields at fault, when the check can name them (RC-75).
+        self.fields = fields
+
+
+# RC-75: the rule in words and the default fields, per contract predicate. A
+# check that can name the exact fields passes them to ``_Violation`` instead.
+_CORRECTION_RULES: dict[str, tuple[tuple[str, ...], str]] = {
+    "TOP_LEVEL_SHAPE": (("proposal",), "The proposal must contain exactly the top-level fields of the response schema and no others."),
+    "CANDIDATE_ID": (("candidate_id",), "candidate_id must equal the candidate_id of the request exactly."),
+    "SCHEMA_VERSION": (("schema_version",), "schema_version must be the value the response schema requires."),
+    "MODE_FAMILY": (("eligible_mode_family",), "eligible_mode_family must be one of the values the response schema lists."),
+    "EVENT_STATUS": (("event_status",), "event_status must be one of the values the response schema lists."),
+    "NONELIGIBLE_KIND": (("noneligible_kind",), "noneligible_kind must be one of the values the response schema lists."),
+    "DECISION_ENUM": (("decision",), "decision must be one of the values the response schema lists."),
+    "NESTED_RECORD_SHAPE": (
+        ("event_focus", "action", "target", "system", "action_target", "target_system", "ambiguity", "noneligible_relation"),
+        "Each nested record must contain exactly the fields the response schema lists for it, and sentence_ids must be a list.",
+    ),
+    "STATUS_CONSISTENCY": (
+        ("event_focus.status", "action_target.status", "target_system.status", "ambiguity.status", "noneligible_relation.status"),
+        "Each status must be one of the values the response schema lists for that record.",
+    ),
+    "RELATION_TYPE": (("action_target.relation", "target_system.relation"), "Each relation must be one of the values the response schema lists for that record."),
+    "CITATION_MISSING": (("sentence_ids",), "A record whose status requires a citation must cite at least one sentence_id."),
+    "CITATION_INVALID": (("sentence_ids",), "Every cited sentence_id must be one of the principal_sentences ids of the request."),
+    "NONELIGIBLE_CONSISTENCY": (
+        ("noneligible_kind", "noneligible_relation.status", "eligible_mode_family"),
+        "noneligible_kind must be NONE exactly when noneligible_relation is ABSENT; PRESENT needs EXCLUDED_TRANSPORT_MODE or NON_URBAN_RAIL with a NON_ELIGIBLE or UNKNOWN mode family.",
+    ),
+    "ENDPOINT_LABEL": (
+        ("action.label", "target.label", "system.label"),
+        "Every label must be a non-empty exact substring of one source sentence, copied character for character in the source's own language and form; do not translate, paraphrase or conjugate it.",
+    ),
+    "ENDPOINT_ROLE_DISTINCTNESS": (("action.label", "target.label", "system.label"), "action.label must differ from target.label and system.label."),
+    "EVENT_FOCUS_CONTAINMENT": (
+        ("event_focus.sentence_ids", "action_target.sentence_ids", "target_system.sentence_ids"),
+        "Every sentence cited by action_target must lie within the range from the first to the last event_focus sentence. Sentences cited by target_system must too, unless target_system names the same target as action_target (target_reference omitted or equal to target.label); then target_system may cite other sentences of the document that state which system that target belongs to.",
+    ),
+    "NONELIGIBLE_EVENT_FOCUS": (
+        ("event_focus.sentence_ids", "noneligible_relation.sentence_ids"),
+        "Every sentence cited by noneligible_relation must lie within the range from the first to the last event_focus sentence.",
+    ),
+    "ACTION_TARGET_CONTAINMENT": (
+        ("action.label", "target.label", "action_target.sentence_ids", "event_focus.sentence_ids"),
+        "The sentences cited by action_target must contain the action label or the target label, and both labels must lie within the event_focus sentences.",
+    ),
+    "TARGET_SYSTEM_CONTAINMENT": (
+        ("target_system.target_reference", "target.label", "system.label", "target_system.sentence_ids"),
+        "The sentences cited by target_system must contain the target label (or target_reference) and the system label; when target_reference differs from the target label, both must also lie within the event_focus sentences.",
+    ),
+    "TARGET_REFERENCE_CONTEXT": (("target_system.target_reference", "event_focus.status"), "A target_reference different from target.label needs a RESOLVED event_focus."),
+    "NONELIGIBLE_RELATION_ENDPOINT": (
+        ("noneligible_relation.sentence_ids", "target.label", "system.label"),
+        "The sentences cited by noneligible_relation must contain the target label or the system label.",
+    ),
+}
+
+
+def _correction_for(rejected: "_Violation", proposal: Mapping[str, Any]) -> ScopeCorrection | None:
+    """Build the one correction request for a rejected proposal, or None.
+
+    Only a predicate with a stated rule is corrected; every correctable
+    predicate names the fields at fault.
+    """
+
+    entry = _CORRECTION_RULES.get(rejected.predicate)
+    if entry is None:
+        return None
+    default_fields, rule = entry
+    return ScopeCorrection(rejected.predicate, tuple(rejected.fields or default_fields), rule, dict(proposal))
 
 
 def _strict_record(value: object, keys: tuple[str, ...]) -> Mapping[str, Any] | None:
@@ -362,14 +484,14 @@ def _proposal_support(proposal: Mapping[str, Any], request: ScopeSemanticRequest
     for name, record in records.items():
         ids = record["sentence_ids"]  # type: ignore[index]
         if not isinstance(ids, (list, tuple)):
-            raise _Violation("NESTED_RECORD_SHAPE")
+            raise _Violation("NESTED_RECORD_SHAPE", (f"{name}.sentence_ids",))
         if not ids:
             if citation_required[name]:
-                raise _Violation("CITATION_MISSING")
+                raise _Violation("CITATION_MISSING", (f"{name}.sentence_ids",))
             continue
         resolved = resolve_sentence_ids(sentences, ids)
         if resolved is None:
-            raise _Violation("CITATION_INVALID")
+            raise _Violation("CITATION_INVALID", (f"{name}.sentence_ids",))
         cited[name] = resolved
 
     if statuses["noneligible_relation"] == "ABSENT" and kind != "NONE":
@@ -381,13 +503,22 @@ def _proposal_support(proposal: Mapping[str, Any], request: ScopeSemanticRequest
     labels = {"action": _text(action["label"]), "target": _text(target["label"]), "system": _text(system["label"]), "target_reference": _text(target_system.get("target_reference"))}
     if labels["target_reference"] is None and target_system_claimed:
         labels["target_reference"] = labels["target"]
-    if labels["action"] is None or labels["target"] is None or (target_system_claimed and labels["system"] is None):
-        raise _Violation("ENDPOINT_LABEL")
+    empty_roles = tuple(
+        f"{role}.label"
+        for role, required in (("action", True), ("target", True), ("system", target_system_claimed))
+        if required and labels[role] is None
+    )
+    if empty_roles:
+        raise _Violation("ENDPOINT_LABEL", empty_roles)
     # A label not anchored by a claimed relation asserts nothing, but it must
     # still be source text.
-    for label in labels.values():
-        if label is not None and not _within(label, content):
-            raise _Violation("ENDPOINT_LABEL")
+    not_source = tuple(
+        "target_system.target_reference" if role == "target_reference" else f"{role}.label"
+        for role, label in labels.items()
+        if label is not None and not _within(label, content)
+    )
+    if not_source:
+        raise _Violation("ENDPOINT_LABEL", not_source)
     action_label, target_label, system_label, target_reference = labels["action"], labels["target"], labels["system"], labels["target_reference"]
     # The action must be distinguishable from what it acts on.  Target and
     # system may name the same entity when the action affects the system itself.
@@ -395,13 +526,31 @@ def _proposal_support(proposal: Mapping[str, Any], request: ScopeSemanticRequest
         raise _Violation("ENDPOINT_ROLE_DISTINCTNESS")
 
     # Every relation lies inside the resolved Candidate focus: no borrowing
-    # from a separate event in the same document.
+    # from a separate event in the same document. RC-75 (user decision
+    # 2026-11-19): the one exception is a target_system relation that states
+    # which system the focus action's own target belongs to. It may cite other
+    # sentences of the same document when the action-to-target relation is
+    # established inside the focus and the relation's target is that same
+    # target label; the sentence then describes the same target, not another
+    # event. Nothing else leaves the focus.
+    system_outside_focus = False
     if statuses["event_focus"] == "RESOLVED":
         focus_sentences = cited["event_focus"]
         first, last = focus_sentences[0].start, focus_sentences[-1].end
         for name in ("action_target", "target_system", "noneligible_relation"):
             if name in cited and any(sentence.start < first or sentence.end > last for sentence in cited[name]):
-                raise _Violation("NONELIGIBLE_EVENT_FOCUS" if name == "noneligible_relation" else "EVENT_FOCUS_CONTAINMENT")
+                if (
+                    name == "target_system"
+                    and target_system_claimed
+                    and action_target_claimed
+                    and labels["target_reference"] is not None
+                    and labels["target_reference"].casefold() == labels["target"].casefold()
+                ):
+                    system_outside_focus = True
+                    continue
+                if name == "noneligible_relation":
+                    raise _Violation("NONELIGIBLE_EVENT_FOCUS")
+                raise _Violation("EVENT_FOCUS_CONTAINMENT", (f"{name}.sentence_ids", "event_focus.sentence_ids"))
 
     # Same-context rule (RC-8, RC-17): a relation's cited sentences contain at
     # least one of its endpoints, and every endpoint lies inside the resolved
@@ -415,7 +564,9 @@ def _proposal_support(proposal: Mapping[str, Any], request: ScopeSemanticRequest
 
     def anchored(relation: str, endpoints: tuple[str, ...]) -> bool:
         text = cited_text(cited[relation])
-        if not focus_range:
+        if not focus_range or (relation == "target_system" and system_outside_focus):
+            # Without a focus, or for the RC-75 system relation that leaves it,
+            # the relation's own sentences must contain every endpoint.
             return all(_within(endpoint, text) for endpoint in endpoints)
         return any(_within(endpoint, text) for endpoint in endpoints) and all(_within(endpoint, focus_text) for endpoint in endpoints)
 
@@ -453,11 +604,15 @@ def _proposal_support(proposal: Mapping[str, Any], request: ScopeSemanticRequest
     }
     # Endpoint provenance records the label inside its establishing context:
     # the resolved focus range (RC-17), otherwise the relation's sentences.
+    system_context = (focus_range or cited.get("target_system", ())) if target_system_claimed else ()
+    if system_outside_focus:
+        # RC-75: the system relation's own sentences establish the system label.
+        system_context = tuple(sorted({*focus_range, *cited["target_system"]}, key=lambda sentence: sentence.start))
     endpoint_contexts = {
         "action": (focus_range or cited.get("action_target", ())) if action_target_claimed else (),
         "target": (focus_range or cited.get("action_target", ())) if action_target_claimed else (),
-        "target_reference": (focus_range or cited.get("target_system", ())) if target_system_claimed else (),
-        "system": (focus_range or cited.get("target_system", ())) if target_system_claimed else (),
+        "target_reference": system_context,
+        "system": system_context,
     }
     for role, contexts in endpoint_contexts.items():
         if contexts and labels[role] is not None:
@@ -505,7 +660,12 @@ class ScopeClassifier:
         observation_hook: Callable[[ScopeValidationObservation], None] | None = None,
         monitored_check: MonitoredCheckMonth | None = None,
     ) -> ScopeResult:
-        def observe(result: ScopeResult | None, first_rejection: str | None, response_status: str) -> None:
+        def observe(
+            result: ScopeResult | None,
+            first_rejection: str | None,
+            response_status: str,
+            correction_predicate: str | None = None,
+        ) -> None:
             if observation_hook is None:
                 return
             try:
@@ -515,6 +675,7 @@ class ScopeClassifier:
                         response_status,
                         None if result is None else result.state,
                         None if result is None else result.diagnostic,
+                        correction_predicate,
                     )
                 )
             except Exception:
@@ -583,18 +744,78 @@ class ScopeClassifier:
             raise violation("PROVIDER_FAILURE") from None
         if response is None or response.proposal is None:
             raise violation("PROPOSAL_MISSING")
+        correction_record: dict[str, Any] | None = None
         try:
             support, diagnostic, provenance, first_rejection = _proposal_support(response.proposal, request)
         except _Violation as rejected:
-            raise violation(rejected.predicate, _rejected_proposal_shape(response.proposal, request)) from None
+            correction = _correction_for(rejected, response.proposal)
+            if correction is None:
+                raise violation(rejected.predicate, _rejected_proposal_shape(response.proposal, request)) from None
+            # RC-75 (user decision 2026-11-19): like the Validator's one rewrite,
+            # a contract violation gets one correction request that names the
+            # rule and the fields at fault. It is not an RC-6 transport retry
+            # and is counted apart from it. A second violation is the gap.
+            corrected_request = ScopeSemanticRequest(
+                request.candidate_id,
+                request.candidate_title,
+                request.principal_content,
+                request.source_metadata,
+                correction,
+            )
+            try:
+                second = _coerce_response(self._semantic_helper(corrected_request))
+            except (SemanticProviderTechnicalFailure, SemanticProviderConfigurationFailure) as failure:
+                failure.scope_correction = correction.record("TRANSPORT_FAILURE")  # type: ignore[attr-defined]
+                raise
+            except Exception:
+                raise self._corrected_violation(
+                    observe, "PROVIDER_FAILURE", None, correction.record("PROVIDER_FAILURE"), rejected.predicate
+                ) from None
+            if second is None or second.proposal is None:
+                raise self._corrected_violation(
+                    observe, "PROPOSAL_MISSING", None, correction.record("PROPOSAL_MISSING"), rejected.predicate
+                ) from None
+            try:
+                support, diagnostic, provenance, first_rejection = _proposal_support(second.proposal, corrected_request)
+            except _Violation as again:
+                raise self._corrected_violation(
+                    observe,
+                    again.predicate,
+                    _rejected_proposal_shape(second.proposal, corrected_request),
+                    {**correction.record("STILL_VIOLATED"), "second_predicate": again.predicate},
+                    rejected.predicate,
+                ) from None
+            except Exception:
+                raise self._corrected_violation(
+                    observe, "VALIDATOR_EXCEPTION", None, correction.record("VALIDATOR_EXCEPTION"), rejected.predicate
+                ) from None
+            correction_record = correction.record("ACCEPTED")
         except Exception:
             raise violation("VALIDATOR_EXCEPTION") from None
+        if correction_record is not None:
+            provenance = {**provenance, "scope_correction": correction_record}
         if support is ScopeSemanticSupport.IN_SCOPE_SUPPORT:
             result = ScopeResult(candidate_id=evidence.candidate_id, state=ScopeState.IN_SCOPE, provenance=provenance)
         else:
             result = self._out_of_scope(evidence.candidate_id, diagnostic, provenance)
-        observe(result, first_rejection, "OWNER_VALIDATED")
+        observe(
+            result,
+            first_rejection,
+            "OWNER_VALIDATED",
+            None if correction_record is None else correction_record["predicate"],
+        )
         return result
+
+    @staticmethod
+    def _corrected_violation(
+        observe: Callable[..., None],
+        predicate: str,
+        shape: Mapping[str, Any] | None,
+        correction: Mapping[str, Any],
+        first_predicate: str,
+    ) -> ScopeProposalViolation:
+        observe(None, predicate, "PROPOSAL_VIOLATION", first_predicate)
+        return ScopeProposalViolation(predicate, shape, correction)
 
     evaluate = classify
 
@@ -603,4 +824,4 @@ class ScopeClassifier:
         return ScopeResult(candidate_id=candidate_id, state=ScopeState.OUT_OF_SCOPE, diagnostic=diagnostic, provenance=dict(provenance))
 
 
-__all__ = ["MONITORED_STANDARD_PROPOSAL_FIELDS", "MonitoredStandardScopeRequest", "SCOPE_PROPOSAL_SCHEMA_VERSION", "SCOPE_SEMANTIC_RESPONSE_SCHEMA", "SUPPORTED_SCOPE_MODE_FAMILIES", "ScopeClassifier", "ScopeProposalViolation", "ScopeSemanticHelper", "ScopeSemanticRequest", "ScopeSemanticResponse", "ScopeSemanticSupport", "ScopeSupportSpan", "ScopeValidationObservation"]
+__all__ = ["MONITORED_STANDARD_PROPOSAL_FIELDS", "MonitoredStandardScopeRequest", "SCOPE_PROPOSAL_SCHEMA_VERSION", "SCOPE_SEMANTIC_RESPONSE_SCHEMA", "SUPPORTED_SCOPE_MODE_FAMILIES", "ScopeClassifier", "ScopeCorrection", "ScopeProposalViolation", "ScopeSemanticHelper", "ScopeSemanticRequest", "ScopeSemanticResponse", "ScopeSemanticSupport", "ScopeSupportSpan", "ScopeValidationObservation"]

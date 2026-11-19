@@ -180,13 +180,14 @@ class SearchPlannerTests(unittest.TestCase):
         self.assertEqual({(item.market_id, item.intent.value) for item in trade}, {("united_kingdom", "technology")})
         self.assertEqual(len(trade), 2)
         # RC-71: only hosts EvidenceService can read; Railway PRO, Railway
-        # Gazette and IRJ (CDN 403) and the two redirect-only domains are gone.
+        # Gazette and IRJ (CDN 403), the two redirect-only domains and (RC-74) the
+        # dateless railtechnologymagazine.com are gone.
         hosts = {host for item in trade for host in re.findall(r"site:([a-z.-]+)", item.query)}
         self.assertEqual(
             hosts,
             {
                 "globalrailwayreview.com", "urban-transport-magazine.com", "railway-technology.com",
-                "railway.supply", "railway-news.com", "masstransitmag.com", "railtechnologymagazine.com",
+                "railway.supply", "railway-news.com", "masstransitmag.com",
             },
         )
         # The query is deliberately broad: no intent vocabulary is added.

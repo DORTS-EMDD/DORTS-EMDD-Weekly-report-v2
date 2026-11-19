@@ -429,6 +429,8 @@ both endpoints inside the helper's own resolved event focus.
 * Labels remain exact source-surface text; a label absent from the content is
   still `ENDPOINT_LABEL`. The page headline is not citable Evidence.
 * Endpoint provenance records the label inside the focus range.
+* RC-75 (section A.56) lets the `target_system` relation, and only it, cite
+  sentences outside the focus under two conditions; the rest of this rule stands.
 
 ```text
 SCOPE_ENDPOINT_CONTEXT = RELATION_ANCHOR + EVENT_FOCUS_RANGE (resolved focus)
@@ -3548,6 +3550,105 @@ group. The jobs that touch neither (`offline-regression`, `recall-plan`,
 `source-probe`, `delivery-check`) no longer queue behind a long recall test.
 Production and recall-test jobs still never overlap. No Domain rule, secret or
 input changes; `tests/test_workflow_concurrency_rc73.py` locks the placement.
+
+### A.55 RC-74 Named-month source dates; trade-press site list (2026-11-19, user decision)
+
+* **TemporalRule parsing only.** A source date fact written with an English
+  month name is read as the source wrote it: an abbreviated or full month, a day
+  with an optional ordinal suffix, and a four-digit year, in either order
+  (`Nov 12th 2026`, `Nov. 12 2026`, `November 12, 2026`, `12th November 2026`).
+  Anything else that is not an ISO date (a missing year, a day that does not
+  exist, a time part, numeric `12/11/2026`) stays `DATE_UNPARSEABLE`. Date
+  ownership, the controlling-kind rule, conflicts, the period check and the
+  period boundaries are unchanged: two facts that name the same day are not a
+  conflict, two that name different days still are, and a period boundary is
+  still ISO only. Evidence: Run 44462316932 and probe Run 44469348684: a Mass
+  Transit page carried `article:published_time` `Nov 12th 2026` beside JSON-LD
+  `2026-11-12` and ended at `DATE_UNPARSEABLE`.
+* **`rail_trade_press` site list.** `railtechnologymagazine.com` is removed from
+  the second request (user decision). Its article pages carry no date anywhere in
+  their markup (no JSON-LD, meta or `<time>`), so every candidate would end at
+  `DATE_PROVENANCE_INVALID`. The request count stays 2 and the configuration
+  version is unchanged. The six pages that ended at
+  `PRINCIPAL_DOCUMENT_AMBIGUOUS` stay unfixed; the cause is a known limit.
+* **Known limit (not fixed).** A page whose carousel or recommendation block holds
+  a card for the page's own article keeps two competing `<article>` units: the
+  card is a whole-unit hyperlink, but to this same resource, and only a link to
+  another resource makes a unit a reference (EVIDENCE_STRUCTURAL_DOCUMENT section
+  6/8). Seen on Rail Technology Magazine.
+
+```text
+TEMPORAL_SOURCE_DATE_FORMATS = ISO 8601 + ENGLISH MONTH NAME (RC-74)
+```
+
+### A.56 RC-75 Scope: a system relation may leave the focus; one correction request (2026-11-19, user decision)
+
+Run 44462316932 had 26 Scope technical gaps in 146 Scope results (18% in both
+that run and the 11/16 baseline). Their selection-audit shapes (RC-66) showed
+two groups: nine `EVENT_FOCUS_CONTAINMENT`, every one with the action-to-target
+relation inside a one-to-three sentence focus and the system relation citing a
+sentence outside it; and seven `ENDPOINT_LABEL`, six with an action label that is
+not text of the source. Both are RC-65/RC-66 mechanics, not a Scope Domain
+change.
+
+**C. The system relation may cite sentences outside the focus (user decision;
+supersedes RC-17 for this one relation).** Under a `RESOLVED` focus,
+`target_system` may cite other sentences of the same document when both hold:
+
+* (a) the action-to-target relation is established and lies inside the focus
+  (this check is unchanged and runs first);
+* (b) the target of the system relation is the same target label as the focus
+  action-to-target relation: `target_reference` is omitted or equals
+  `target.label` (case-insensitive). A different reference keeps the RC-17 bound.
+
+Then the system relation's own cited sentences must contain every endpoint (the
+target label and the system label; the system label only when it differs from the
+target), and the system label is located inside those sentences. Unchanged: the
+event focus (the Candidate event Event Identity and the Writer read) stays the
+cited focus sentences, `action_target` and `noneligible_relation` must still lie
+inside it, labels are still exact source text, and a system relation inside the
+focus follows the RC-17 rule as before.
+
+* **Tension recorded with the user decision.** Conditions (a) and (b) compare two
+  relations of one proposal; they do not prove that the cited system sentence
+  describes the same event. The RC-17 guard test that a system sentence of
+  another event cannot be borrowed is therefore rewritten to the two decided
+  conditions (`tests/test_scope_acceptance_harness.py`). Offline against Run
+  44462316932's nine `EVENT_FOCUS_CONTAINMENT` shapes, (a)+(b) lift five (the
+  other four use a different target reference or lack the system label in the
+  cited sentences); requiring the outside sentence to name the target label
+  as well would lift one.
+
+**E. One correction request per Scope proposal (user decision; same shape as the
+Validator's one rewrite).** When a parseable proposal violates a contract
+predicate that has a stated rule (every predicate of `_proposal_support` except
+`PROPOSAL_MISSING`, `PROVIDER_FAILURE` and `VALIDATOR_EXCEPTION`), ScopeClassifier
+sends the same task once more: the same request plus a `correction` object with
+the predicate (`violated_rule`), the fields at fault, the rule in words, a fixed
+instruction and the helper's own rejected proposal.
+
+* The second answer is validated by the same checks. Accepted, it is the Scope
+  decision, and its provenance carries `scope_correction` (predicate, fields,
+  `ACCEPTED`). A second violation is the `PROPOSAL_CONTRACT_VIOLATION` technical
+  gap of the second predicate (never a third request); a transport failure on
+  the correction request is the usual transport technical gap (RC-6).
+* It is not an RC-6 transport retry and is counted apart: run summary
+  `scope_correction_requests` and `scope_correction_accepted` (only when at least
+  one occurred) and `selection_audit.json` `candidates[].scope.correction`
+  (predicate, field names, outcome; no source or proposal text). Transport
+  retries keep their own count inside the provider.
+* The Scope prompt `scope-event-target-system-v13`, schema and instructions are
+  unchanged; the correction text is Python's and lives in the request payload,
+  which only the correction request carries. `ScopeValidationObservation`
+  gains the optional `correction_predicate`.
+* The monthly monitored-standard request (RC-59) is not corrected.
+* Not done: the Scope exchange record (observation A). The next execution's
+  technical-gap count is the check.
+
+```text
+SCOPE_SYSTEM_RELATION_BOUND = TARGET_SYSTEM MAY LEAVE THE FOCUS (RC-75 a+b)
+SCOPE_CORRECTION = ONE REQUEST PER PROPOSAL, COUNTED APART FROM TRANSPORT RETRY
+```
 
 ### Shared production workflow
 

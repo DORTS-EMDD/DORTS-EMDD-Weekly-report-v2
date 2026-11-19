@@ -2880,7 +2880,7 @@
       "family_id": "rail_trade_press",
       "templates": [
         "(metro OR subway OR tram OR \"light rail\" OR monorail) (site:globalrailwayreview.com OR site:urban-transport-magazine.com OR site:railway-technology.com OR site:railway.supply)",
-        "(metro OR subway OR tram OR \"light rail\" OR monorail) (site:railway-news.com OR site:masstransitmag.com OR site:railtechnologymagazine.com)"
+        "(metro OR subway OR tram OR \"light rail\" OR monorail) (site:railway-news.com OR site:masstransitmag.com)"
       ],
       "anchor_terms": [],
       "vocabulary_groups": {
