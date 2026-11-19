@@ -157,3 +157,102 @@ class JsonLdOutsideTheHeadTests(unittest.TestCase):
     def test_a_head_block_is_still_read_once(self):
         result = _dated("", _jsonld(RESOURCE))
         self.assertEqual(len(result.source_date_facts), 2)
+
+
+HEADLINE = "Doors commissioned on Line 2"
+
+
+def _declared_page(
+    *,
+    entities: tuple[str, ...] | None = None,
+    headline: str = f" {HEADLINE} ",
+    identity: str = RESOURCE,
+    h1s: tuple[str, ...] = (HEADLINE, "Related", "You may also like"),
+    types: str = '"NewsArticle"',
+    outside: str = "",
+) -> str:
+    entity = (
+        f'{{"@type":{types},"headline":"{headline}",'
+        f'"mainEntityOfPage":{{"@type":"WebPage","@id":"{identity}"}}}}'
+    )
+    blocks = "".join(
+        f'<script type="application/ld+json">{item}</script>' for item in (entities if entities is not None else (entity,))
+    )
+    widgets = "".join(
+        f"<div><h1>{text}</h1><div><a href='https://news.example/o{index}'>Other story</a></div></div>"
+        for index, text in enumerate(h1s[1:])
+    )
+    return (
+        f"<html><head><title>t</title>{blocks}</head><body>{outside}<main>"
+        f"<div><h1>{h1s[0]}</h1>{BODY}</div>{widgets}</main></body></html>"
+    )
+
+
+def _assess_declared(html: str, *, checker: bool = True):
+    return assess_document(
+        html,
+        "text/html",
+        resource_url=RESOURCE,
+        candidate_id="c1",
+        resource_identity_checker=(lambda value: value == RESOURCE) if checker else None,
+    )
+
+
+class DeclaredDocumentHeadlineTests(unittest.TestCase):
+    def test_the_declared_h1_wins_and_the_widget_headings_do_not_compete(self):
+        result = _assess_declared(_declared_page())
+        self.assertIs(result.principal_document_status, ESTABLISHED)
+        self.assertEqual([item for item in result.document_level_headlines if item == HEADLINE], [HEADLINE])
+        self.assertNotIn("Related", result.document_level_headlines)
+
+    def test_a_type_list_that_includes_article_counts(self):
+        result = _assess_declared(_declared_page(types='["WebPage","Article"]'))
+        self.assertIs(result.principal_document_status, ESTABLISHED)
+
+    def test_without_the_structured_data_it_stays_ambiguous(self):
+        self.assertIs(_assess_declared(_declared_page(entities=())).principal_document_status, AMBIGUOUS)
+
+    def test_without_an_identity_checker_it_stays_ambiguous(self):
+        self.assertIs(_assess_declared(_declared_page(), checker=False).principal_document_status, AMBIGUOUS)
+
+    def test_an_entity_that_names_another_resource_resolves_nothing(self):
+        html = _declared_page(identity="https://news.example/articles/other")
+        self.assertIs(_assess_declared(html).principal_document_status, AMBIGUOUS)
+
+    def test_two_article_entities_resolve_nothing(self):
+        entity = (
+            f'{{"@type":"Article","headline":"{HEADLINE}",'
+            f'"mainEntityOfPage":{{"@type":"WebPage","@id":"{RESOURCE}"}}}}'
+        )
+        other = '{"@type":"NewsArticle","headline":"Other","mainEntityOfPage":"https://news.example/other"}'
+        html = _declared_page(entities=(entity, other))
+        self.assertIs(_assess_declared(html).principal_document_status, AMBIGUOUS)
+
+    def test_a_headline_that_differs_in_any_character_resolves_nothing(self):
+        for headline in (HEADLINE.lower(), HEADLINE + ".", "Doors commissioned on Line 2 today"):
+            html = _declared_page(headline=headline)
+            self.assertIs(_assess_declared(html).principal_document_status, AMBIGUOUS, headline)
+
+    def test_two_h1_with_the_declared_text_resolve_nothing(self):
+        html = _declared_page(h1s=(HEADLINE, HEADLINE, "Related"))
+        self.assertIs(_assess_declared(html).principal_document_status, AMBIGUOUS)
+
+    def test_a_declared_h1_outside_the_principal_region_resolves_nothing(self):
+        html = _declared_page(outside=f"<header><h1>{HEADLINE}</h1></header>", h1s=("Another", "Related", "More"))
+        self.assertIs(_assess_declared(html).principal_document_status, AMBIGUOUS)
+
+    def test_structured_data_in_an_excluded_region_is_ignored(self):
+        entity = (
+            f'{{"@type":"NewsArticle","headline":"{HEADLINE}",'
+            f'"mainEntityOfPage":{{"@type":"WebPage","@id":"{RESOURCE}"}}}}'
+        )
+        html = _declared_page(entities=(), outside=f'<aside><script type="application/ld+json">{entity}</script></aside>')
+        self.assertIs(_assess_declared(html).principal_document_status, AMBIGUOUS)
+
+    def test_a_listing_with_declared_data_is_still_a_listing(self):
+        html = (
+            "<html><head><title>t</title><script type=\"application/ld+json\">"
+            f'{{"@type":"NewsArticle","headline":"{HEADLINE}","mainEntityOfPage":"{RESOURCE}"}}'
+            f"</script></head><body><main><h1>{HEADLINE}</h1>{_cards(4)}</main></body></html>"
+        )
+        self.assertIs(_assess_declared(html).principal_document_status, AMBIGUOUS)

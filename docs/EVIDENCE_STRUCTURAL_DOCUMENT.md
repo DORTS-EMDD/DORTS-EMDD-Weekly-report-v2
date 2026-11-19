@@ -236,7 +236,15 @@ OG or Twitter title, and the principal H1, subject to resource association and
 conflict checks.
 
 H2-H6 values do not automatically become `document_level_headlines`. They may
-remain structural facts or section headings. RC-71: the same title or metadata headline value stated more than once is one
+remain structural facts or section headings. RC-71: when several `h1` elements compete, the publisher's structured data
+may name the document's `h1`: exactly one JSON-LD `Article` or `NewsArticle`
+entity, every resource identity it declares being this resource, and its
+`headline` (whitespace normalised only) equal to the text of exactly one `h1`
+that is a principal candidate. Then that `h1` is the document headline and the
+others do not compete; any unmet condition leaves the conflict. No fuzzy
+matching and no Candidate text is used.
+
+RC-71: the same title or metadata headline value stated more than once is one
 fact, not a conflict; differing values are a conflict. A page-level title or metadata
 headline that conflicts with the selected document boundary cannot be trusted
 blindly; unresolved ownership or identity conflicts make the boundary

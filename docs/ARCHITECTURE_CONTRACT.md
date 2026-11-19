@@ -3429,16 +3429,28 @@ class name, phrase, count or text-similarity rule.
   footer, comments) are ignored. Temporal is unchanged and receives the same
   fact kinds as for head blocks. Other hosts that end at
   `DATE_PROVENANCE_INVALID` were not re-assessed.
-* **Link-only `<h1>` widget headings (user proposal, 2026-11-19, tried).** An
-  `<h1>` whose enclosing block holds nothing but links, forms and controls is
-  not a document headline. It resolved the "You May Also Like" block but not
-  "Related": that block also holds short non-link labels (company names) beside
-  each linked title, so it is not link-only. Not adopted; pending a decision.
-* **Not changed, awaiting a user decision.** A page whose main region also
-  carries widget headings written as `<h1>` ("Related", "You may also like"),
-  with no markup-level collection, still reports `multiple_principal_h1`.
-  Choosing the document's own `<h1>` needs a rule on which `<h1>` owns the
-  document that the structural contract does not provide.
+* **Link-only `<h1>` widget headings (user proposal, 2026-11-19, tried, not
+  adopted).** An `<h1>` whose enclosing block holds nothing but links, forms and
+  controls is not a document headline. It resolved the "You May Also Like"
+  block but not "Related": that block also holds short non-link labels
+  (company names) beside each linked title, so it is not link-only. Relaxing
+  the rule for labels beside links was ruled out by the user.
+* **Declared document headline (user decision, 2026-11-19, §11, §17).** When a
+  page has several competing `<h1>` elements, the publisher's own structured
+  data may name the document's `<h1>`, the same kind of evidence as a unique
+  schema.org `articleBody` (RC-13). All of these must hold, otherwise nothing is
+  resolved and the page stays ambiguous: (1) the page has exactly one JSON-LD
+  entity of type `Article` or `NewsArticle` (outside excluded regions); (2)
+  every resource identity that entity declares (`@id`, `url`,
+  `mainEntityOfPage`) is this resource, by the same resource-identity check
+  used for date facts; (3) its `headline`, with only whitespace normalised,
+  equals the text of exactly one `<h1>` on the page, and that `<h1>` is one of
+  the principal `<h1>` candidates. When it holds, that `<h1>` is the document
+  headline and the other `<h1>` elements neither compete nor become
+  document-level headlines. Equality only: no fuzzy match, no similarity score,
+  no Candidate text. Collection and article rules run first, so a listing stays
+  a listing. Known limit: when the widget block also carries non-link labels,
+  its short texts can remain in the body after the article text.
 * **Not changed (external).** Railway PRO, Railway Gazette and the
   International Railway Journal answer every request, including a browser-like
   one, with HTTP 403 from the CDN's bot protection; their RSS feeds are 403 or

@@ -732,8 +732,90 @@ def _metadata_carrier_is_owned(
     return current is head
 
 
-def _headlines_for(boundary: _Node, root: _Node) -> tuple[tuple[str, ...], tuple[str, ...]]:
+_DECLARED_ARTICLE_TYPES = frozenset({"Article", "NewsArticle"})
+
+
+def _declared_document_h1(
+    root: _Node,
+    candidates: list[_Node],
+    resource_identity_checker: Callable[[str], bool] | None,
+) -> _Node | None:
+    """Return the one ``h1`` the publisher's own structured data declares.
+
+    RC-71 (§11, §17), the same kind of evidence as a unique schema.org
+    ``articleBody``.  All of these must hold, otherwise nothing is resolved:
+    the page has exactly one JSON-LD entity of type ``Article`` or
+    ``NewsArticle`` (outside excluded regions); every resource identity it
+    declares (``@id``, ``url``, ``mainEntityOfPage``) is this resource; and its
+    ``headline``, with only whitespace normalised, equals the text of exactly
+    one ``h1`` on the page, which must be one of the principal ``h1``
+    candidates.  Equality only: no fuzzy match and no similarity.
+    """
+
+    if resource_identity_checker is None or len(candidates) < 2:
+        return None
+    entities: list[dict[str, Any]] = []
+    for node in _walk(root):
+        if (
+            node.tag.casefold() != "script"
+            or node.attrs.get("type", "").casefold().split(";", 1)[0].strip() != "application/ld+json"
+            or node.parent is None
+            or _is_excluded_region(node.parent) is not None
+        ):
+            continue
+        try:
+            value = json.loads("".join(node.text_parts).strip())
+        except (TypeError, ValueError):
+            continue
+        for unit, _path in _jsonld_entity_units(value):
+            declared = unit.get("@type")
+            types = declared if isinstance(declared, list) else [declared]
+            if any(isinstance(item, str) and item in _DECLARED_ARTICLE_TYPES for item in types):
+                entities.append(unit)
+    if len(entities) != 1:
+        return None
+    unit = entities[0]
+    identities, unsupported = _jsonld_resource_identities(unit)
+    if unsupported or not identities or not all(resource_identity_checker(item) for item in identities):
+        return None
+    headline = unit.get("headline")
+    wanted = _clean(headline) if isinstance(headline, str) else ""
+    if not wanted:
+        return None
+    matches = [
+        node for node in _walk(root)
+        if node.tag.casefold() == "h1" and _owned_headline_text(node) == wanted
+    ]
+    if len(matches) != 1 or not any(matches[0] is node for node in candidates):
+        return None
+    return matches[0]
+
+
+def _principal_h1_nodes(
+    boundary: _Node,
+    root: _Node,
+    resource_identity_checker: Callable[[str], bool] | None,
+) -> list[_Node]:
+    """The ``h1`` elements that compete as the principal document's headline."""
+
+    nodes = [
+        node for node in _walk(root)
+        if node.tag.casefold() == "h1"
+        and _is_descendant(node, boundary)
+        and _is_excluded_region(node, boundary) is None
+        and not _has_ancestor(node, _is_article_node, boundary)
+    ]
+    declared = _declared_document_h1(root, nodes, resource_identity_checker)
+    return [declared] if declared is not None else nodes
+
+
+def _headlines_for(
+    boundary: _Node,
+    root: _Node,
+    resource_identity_checker: Callable[[str], bool] | None = None,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
     primary: list[str] = []
+    principal_h1 = _principal_h1_nodes(boundary, root, resource_identity_checker)
     secondary: list[str] = []
     resource_element = _resource_element(root)
     # Metadata and <title> belong to the fetched resource or positively owned
@@ -758,6 +840,8 @@ def _headlines_for(boundary: _Node, root: _Node) -> tuple[tuple[str, ...], tuple
             and _is_excluded_region(node, boundary) is None
             and not _has_ancestor(node, _is_article_node, boundary)
         ):
+            if node.tag.casefold() == "h1" and not any(node is item for item in principal_h1):
+                continue
             value = _owned_headline_text(node)
             if not value:
                 continue
@@ -788,6 +872,7 @@ def _has_ancestor_tag(node: _Node, tag: str) -> bool:
 def _headline_structure_conflict(
     boundary: _Node,
     root: _Node,
+    resource_identity_checker: Callable[[str], bool] | None = None,
 ) -> tuple[bool, tuple[str, ...]]:
     """Return structural headline conflicts.
 
@@ -799,8 +884,6 @@ def _headline_structure_conflict(
     resource_element = _resource_element(root)
     title_nodes: list[_Node] = []
     metadata_nodes: dict[str, list[_Node]] = {"og:title": [], "twitter:title": []}
-    principal_h1_nodes: list[_Node] = []
-
     for node in _walk(root):
         tag = node.tag.casefold()
         if tag == "title":
@@ -812,13 +895,8 @@ def _headline_structure_conflict(
                 continue
             if _metadata_carrier_is_owned(node, boundary, resource_element):
                 metadata_nodes[key].append(node)
-        elif (
-            tag == "h1"
-            and _is_descendant(node, boundary)
-            and _is_excluded_region(node, boundary) is None
-            and not _has_ancestor(node, _is_article_node, boundary)
-        ):
-            principal_h1_nodes.append(node)
+
+    principal_h1_nodes = _principal_h1_nodes(boundary, root, resource_identity_checker)
 
     # RC-71 (§11): the same value repeated by a template and an SEO plugin is
     # one fact stated twice, not a conflict; only differing values conflict.
@@ -1140,7 +1218,7 @@ def _assessment(
         body, has_noninteractive, has_any = _collect_principal_body(
             boundary, excluded, reference_blocks
         )
-        primary, secondary = _headlines_for(boundary, root)
+        primary, secondary = _headlines_for(boundary, root, resource_identity_checker)
         if body and has_any and has_noninteractive:
             body_segments = (DocumentSegment("body-0001", body),)
             source_date_facts = _source_date_facts(
@@ -1370,7 +1448,9 @@ def _assess_tree(
                 excluded.append(f"{node.node_id}:outside_principal_boundary")
 
     canonical_values = _canonical_values(root, boundary) if format_name == "html" else ()
-    headline_conflict, headline_conflict_reasons = _headline_structure_conflict(boundary, root)
+    headline_conflict, headline_conflict_reasons = _headline_structure_conflict(
+        boundary, root, resource_identity_checker
+    )
     if headline_conflict:
         return _assessment(
             format_name=format_name,
