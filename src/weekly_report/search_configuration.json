@@ -2879,8 +2879,8 @@
     {
       "family_id": "rail_trade_press",
       "templates": [
-        "(metro OR subway OR tram OR \"light rail\" OR monorail) (site:railwaygazette.com OR site:railjournal.com OR site:railway-technology.com OR site:railway-news.com OR site:masstransitmag.com)",
-        "(metro OR subway OR tram OR \"light rail\" OR monorail) (site:globalrailwayreview.com OR site:railwaypro.com OR site:railtech.com OR site:intelligenttransport.com OR site:urban-transport-magazine.com)"
+        "(metro OR subway OR tram OR \"light rail\" OR monorail) (site:globalrailwayreview.com OR site:urban-transport-magazine.com OR site:railway-technology.com OR site:railway.supply)",
+        "(metro OR subway OR tram OR \"light rail\" OR monorail) (site:railway-news.com OR site:masstransitmag.com OR site:railtechnologymagazine.com)"
       ],
       "anchor_terms": [],
       "vocabulary_groups": {

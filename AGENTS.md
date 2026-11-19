@@ -645,6 +645,7 @@ Transport retry 與 semantic correction 必須分開計算。
   * schema.org JSON-LD 區塊在 `<body>` 而非 `<head>` 時（Global Railway Review 三篇舊文章 `DATE_PROVENANCE_INVALID` 的原因）也會讀取；只有實體自己的資源身分指向本頁才產生日期事實，所以位置不是歸屬依據，排除區域（導覽、側欄、頁尾、留言）內的區塊仍忽略。
   * 使用者提議的「只含連結的區塊其 `<h1>` 不是文件標題」已試作：解決「You May Also Like」但不解決「Related」（區塊內還有每則連結旁的公司名稱），未採用；放寬「連結旁短標籤」的方向由使用者排除。
   * 使用者決定（2026-11-19）：多個 `<h1>` 競爭時，以出版者自己的結構化資料指定文件標題，條件全部成立才採用，否則維持 ambiguous：頁面上只有一個 JSON-LD `Article`／`NewsArticle` 實體；它宣告的所有資源身分（`@id`、`url`、`mainEntityOfPage`）都是本頁；它的 `headline` 只正規化空白後與頁面上「恰好一個」`<h1>` 的文字完全相同，且該 `<h1>` 是主要候選之一。成立時其他 `<h1>` 不競爭也不成為文件標題；只比對相等，不做模糊比對或相似度；集合與文章規則先判，列表頁仍是 ambiguous。已知限制：區塊內有非連結標籤時，短文字仍可能留在本文尾端。
+  * `rail_trade_press` 的 `site:` 清單（使用者決定）：移除 Railway PRO、Railway Gazette、IRJ（該次 44 筆全部 `FETCH_TRANSPORT`）與兩個只轉址的網域 railtech.com（轉到 railwaygazette.com）、intelligenttransport.com（轉到 globalrailwayreview.com）；加入 railway.supply、railtechnologymagazine.com；不加 uktram.org。查詢刻意不加意圖詞（作為廣泛來源），契約 §A.6 原本「carrying the new-technology priority」的說法與模板不符，已改正；仍為 2 次請求。
   * 未改（外部）：Railway PRO、Railway Gazette、IRJ 對任何請求皆由 CDN 回 403，RSS 也是 403 或無全文，不繞過。
   * 探測現在傳入與 EvidenceService 相同的來源身分檢查，並列出各頁面日期相關標記；先前探測的「無日期事實」是探測本身的缺漏。
 

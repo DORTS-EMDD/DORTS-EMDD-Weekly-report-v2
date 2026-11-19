@@ -256,9 +256,13 @@ produced, many unrelated ("Metro" newspapers, "metro area", municipal
   opening/service terms, and award/tender terms. Broad policy, dispute, fare,
   disruption and generic method words are no longer discovery terms.
 * `rail_trade_press` adds two requests on the UK English edition for the
-  technology intent, restricted to specialist rail media, carrying the
-  new-technology and new-method priority. A query family may now be limited to
-  configured `market_ids` and `intents`.
+  technology intent, restricted to specialist rail media. The query is
+  deliberately broad: it carries the governed mode terms and the `site:` list
+  and no intent vocabulary, so one specialist-media query reaches technology,
+  procurement and opening news alike (user decision, 2026-11-19; an earlier
+  wording here said the query carried the new-technology priority, which the
+  template never did). A query family may now be limited to configured
+  `market_ids` and `intents`.
 * The selected plan is 122 requests (v4: 207; v3: 449).
 
 ```text
@@ -3451,9 +3455,24 @@ class name, phrase, count or text-similarity rule.
   no Candidate text. Collection and article rules run first, so a listing stays
   a listing. Known limit: when the widget block also carries non-link labels,
   its short texts can remain in the body after the article text.
+* **`rail_trade_press` site list (user decision, 2026-11-19; the query text
+  stays broad, see §A.6).** Evidence: Run 44429652572 and three probe runs.
+  Removed: Railway PRO, Railway Gazette and IRJ (44 of 44 candidates ended at
+  `FETCH_TRANSPORT`, CDN HTTP 403 from the GitHub runner; a later probe did
+  receive HTTP 200 once from `railwaygazette.com`, so the block is not
+  constant, but the run result stands), `railtech.com` (redirects to
+  `railwaygazette.com`) and `intelligenttransport.com` (redirects to
+  `globalrailwayreview.com`, already listed). Added: `railway.supply` and
+  `railtechnologymagazine.com` (Evidence READY in that run). Kept:
+  `globalrailwayreview.com`, `urban-transport-magazine.com`,
+  `railway-news.com`, `masstransitmag.com`, `railway-technology.com`
+  (fetchable, but its article page still ends ambiguous because collections
+  sit inside the article). `uktram.org` is not added by decision. The two
+  requests stay; the configuration version is unchanged.
 * **Not changed (external).** Railway PRO, Railway Gazette and the
-  International Railway Journal answer every request, including a browser-like
-  one, with HTTP 403 from the CDN's bot protection; their RSS feeds are 403 or
+  International Railway Journal answered every request in the first two probes,
+  including a browser-like one, with HTTP 403 from the CDN's bot protection (the
+  third probe once received 200 from `railwaygazette.com`); their RSS feeds are 403 or
   carry no full text. Python cannot fix this and the protection is not bypassed.
 * **Observation.** The probe now passes the resource-identity checker that
   EvidenceService passes, so it shows the date facts the production assessment

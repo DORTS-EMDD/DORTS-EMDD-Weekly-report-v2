@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import re
 import json
 import unittest
 from dataclasses import FrozenInstanceError
@@ -178,7 +179,18 @@ class SearchPlannerTests(unittest.TestCase):
         trade = [item for item in plan.items if item.query_family_id == "rail_trade_press"]
         self.assertEqual({(item.market_id, item.intent.value) for item in trade}, {("united_kingdom", "technology")})
         self.assertEqual(len(trade), 2)
-        self.assertTrue(all("site:railwaygazette.com" in item.query or "site:railwaypro.com" in item.query for item in trade))
+        # RC-71: only hosts EvidenceService can read; Railway PRO, Railway
+        # Gazette and IRJ (CDN 403) and the two redirect-only domains are gone.
+        hosts = {host for item in trade for host in re.findall(r"site:([a-z.-]+)", item.query)}
+        self.assertEqual(
+            hosts,
+            {
+                "globalrailwayreview.com", "urban-transport-magazine.com", "railway-technology.com",
+                "railway.supply", "railway-news.com", "masstransitmag.com", "railtechnologymagazine.com",
+            },
+        )
+        # The query is deliberately broad: no intent vocabulary is added.
+        self.assertTrue(all(item.query.startswith('(metro OR subway OR tram OR "light rail" OR monorail) (site:') for item in trade))
         self.assertTrue(all(_query_words(item.query) <= 32 for item in plan.items))
         self.assertLess(len(plan.items), 207)
 
