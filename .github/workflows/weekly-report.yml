@@ -45,6 +45,11 @@ on:
         description: "RC-55 release: <entry reference>@<run_id> claims from a run summary, comma separated"
         required: false
         type: string
+      source_probe:
+        description: "Observation only: probe specialist rail media hosts with EvidenceService's fetcher and structural assessment (no MaiAgent calls, no report)"
+        required: false
+        default: false
+        type: boolean
       delivery_check:
         description: "RC-55 live check instead of a report: l1-l2 (ledger), l3 (one email to the sending account)"
         required: true
@@ -155,6 +160,22 @@ jobs:
           path: report-output/
           if-no-files-found: warn
           retention-days: 90
+
+  source-probe:
+    # Observation only: prints fetch status, the production structural
+    # assessment and the page HTML (gzip+base64) of specialist rail media
+    # hosts, so their Evidence failures can be reproduced offline.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.source_probe == true }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install project dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Probe specialist rail media hosts
+        run: python -m scripts.source_host_probe --dump
 
   delivery-check:
     # RC-55 live checks (L1-L3): manual only, never on the schedule, and never

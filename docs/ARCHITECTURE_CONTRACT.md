@@ -3353,6 +3353,43 @@ streamlit_app.py
 
 Entry point 可以不同，Production Domain Logic 只能有一套。任何 entry point-specific workaround 都不得成為第二個 owner 或第二套 source of truth。
 
+### A.51 RC-70 Road collisions need a derailment; persons struck need a rail system cause; specialist media source probe (2026-11-19)
+
+Evidence: Run 44429652572 (2026-07-01..11-19, branch
+`quality/report-dedup-20261116`, 55 items). About 10 of the 25 incident items
+were tram or light-rail collisions with cars, trucks, buses or pedestrians.
+
+* **User decision (2026-11-19, extends RC-20 and section N).** A collision
+  between a tram or light-rail vehicle and a road user is REPORTABLE only when
+  the Evidence reports that the rail vehicle derailed. Injuries, deaths,
+  damage, a service suspension or a police investigation alone do not make it
+  REPORTABLE. A rail safety measure adopted in response is its own occurrence
+  and is judged under the other value paths.
+* **User decision (2026-11-19).** A person struck by a train or entering the
+  track (trespass, suicide or attempt, a fall or deliberate entry from the
+  platform) is NOT_REPORTABLE, even with deaths, injuries or a suspension,
+  unless the Evidence states a cause in the rail system itself: a failure of
+  its own equipment (signal or train control, platform screen door or train
+  door) or an operating error by its staff (driver, dispatcher, station staff).
+  "Track intrusion" is removed from the incident examples.
+* Reportability prompt `reportability-principal-body-v8`. Schema, Python
+  validation and the other owners are unchanged.
+* **Observation only.** `scripts/source_host_probe.py` and the manual-only
+  `source_probe` workflow input print EvidenceService's own fetch status,
+  structural assessment and page HTML for specialist rail media hosts (Railway
+  Gazette, Railway PRO, Railway-News, Mass Transit, IRJ, Urban Transport
+  Magazine, Global Railway Review). In this run about 75 of their candidates
+  ended at Evidence (`FETCH_TRANSPORT`, `PRINCIPAL_DOCUMENT`) or Temporal
+  (`DATE_PROVENANCE_INVALID`), none reached the report. The probe makes no
+  MaiAgent call and takes no production decision.
+
+```text
+REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v8 (RC-70)
+ROAD_COLLISION_REPORTABLE_ONLY_WITH = DERAILMENT (RC-70, user decision)
+PERSON_STRUCK_REPORTABLE_ONLY_WITH = STATED RAIL EQUIPMENT FAILURE OR STAFF OPERATING ERROR (RC-70, user decision)
+SOURCE_HOST_PROBE = OBSERVATION_ONLY (manual dispatch)
+```
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式

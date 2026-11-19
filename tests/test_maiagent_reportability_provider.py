@@ -332,7 +332,7 @@ class ReportabilityCriteriaTests(unittest.TestCase):
         from src.weekly_report.maiagent_reportability_provider import PROMPT_VERSION, REPORTABILITY_INSTRUCTIONS
 
         instructions = " ".join(REPORTABILITY_INSTRUCTIONS)
-        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v7")
+        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v8")
         self.assertIn("Accepted value paths", instructions)
         self.assertIn("substantive technical research, testing, pilots or deployments", instructions)
         self.assertIn("procurement, demonstration or trial activity", instructions)
@@ -352,4 +352,13 @@ def test_instructions_name_the_general_low_value_classes():
     assert "Awards, rankings, media praise" in text
     assert "civic groups or commentators are NOT_REPORTABLE unless" in text
     assert "without reporting a new occurrence of their own" in text
-    assert "minor collision with only a brief local disruption is NOT_REPORTABLE" in text
+    # RC-70 (user decision 2026-11-19): of tram or light-rail collisions with
+    # road users, only a derailment is worth the weekly's space.
+    assert "is REPORTABLE only when the evidence reports that the rail vehicle derailed" in text
+    assert "Without a derailment it is NOT_REPORTABLE even when the evidence reports injuries, deaths" in text
+    # RC-70: a person struck on the track is reportable only when the evidence
+    # states a failure of the rail system's own equipment as the cause.
+    assert "A person struck by a train or entering the track" in text
+    assert "unless the evidence attributes it to the rail system itself: a failure of its own equipment" in text
+    assert "or an operating error by its staff" in text
+    assert "track intrusion" not in text

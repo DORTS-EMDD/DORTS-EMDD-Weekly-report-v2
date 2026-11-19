@@ -242,7 +242,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-69 修訂（2026-10-20～11-18）
+### RC-3～RC-70 修訂（2026-10-20～11-19）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.47、§L、§N 與 §R。
 
@@ -627,6 +627,17 @@ Transport retry 與 semantic correction 必須分開計算。
     技術缺口沒有附帶紀錄時顯示 OBSERVATION_NOT_ATTACHED。
   * 重放術語：指紋與版本相同且未隱藏任何值，只算 input-equivalent semantic replay；模型識別與推論參數無法觀測，exact replay 目前不可達成；provider 非確定性仍存在。
   * 分類提示詞 v8、schema、Golden 預期與報告輸出皆不變。
+* RC-70（§A.51，使用者決定 2026-11-19）：
+  * 根因：Run 44429652572（07-01～11-19，55 則）事故章節 25 則中約 10 則是電車與汽車、卡車、巴士或行人的路口碰撞。
+  * 決定：電車／輕軌與道路使用者的碰撞，只有 Evidence 報導列車出軌才成報；只有受傷、死亡、損壞、停駛或警方調查都不成報。
+    營運者或主管機關因此採取的軌道安全措施，另依其他價值路徑判斷。
+  * 決定：有人被列車撞擊或進入軌道（闖入、自殺或企圖自殺、從月臺跌落或跳下）屬人為因素，即使有死傷或停駛也不成報；
+    只有 Evidence 明載原因在軌道系統本身才成報：設備失效（號誌或列車控制、月臺門或車門故障）或人員操作失誤（司機員、行控、站務）；不得推測原因。
+    事故價值路徑的例示移除「track intrusion」。
+  * Reportability 提示詞 v8；schema、Python 驗證與其他 owner 不變。
+  * 只作觀測：`scripts/source_host_probe.py` 與手動 `source_probe` workflow 輸入，以 EvidenceService 自己的抓取與主文件判定
+    列出專業軌道媒體（Railway Gazette、Railway PRO、Railway-News、Mass Transit、IRJ 等）的失敗原因與頁面 HTML；
+    本期約 75 筆專業媒體候選全部在 Evidence 或 Temporal 階段掉件。不呼叫 MaiAgent、不參與決策。
 
 ## 13. Report / Delivery
 
@@ -777,5 +788,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-69 (2026-11-18; RC-69 observer-only Category exchange record, selection audit v4; RC-68 Category prompt v8: delivery acceptance tests, deployments and consequences; RC-67 user decisions D1/D2: project steps and drills have no Category, Category prompt v7, Writer v11; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
+CONTRACT_REVISION = RC-3..RC-70 (2026-11-19; RC-70 user decisions: a road collision is reportable only with a derailment, a person struck only with a stated rail equipment failure or staff operating error, Reportability prompt v8, observer-only source host probe; RC-69 observer-only Category exchange record, selection audit v4; RC-68 Category prompt v8: delivery acceptance tests, deployments and consequences; RC-67 user decisions D1/D2: project steps and drills have no Category, Category prompt v7, Writer v11; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```
