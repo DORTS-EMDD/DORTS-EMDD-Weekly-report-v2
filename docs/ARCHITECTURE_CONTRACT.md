@@ -3592,14 +3592,20 @@ not text of the source. Both are RC-65/RC-66 mechanics, not a Scope Domain
 change.
 
 **C. The system relation may cite sentences outside the focus (user decision;
-supersedes RC-17 for this one relation).** Under a `RESOLVED` focus,
-`target_system` may cite other sentences of the same document when both hold:
+supersedes RC-17 for this one relation; tightened by the user the same day).**
+Under a `RESOLVED` focus, `target_system` may cite other sentences of the same
+document when all of these hold:
 
 * (a) the action-to-target relation is established and lies inside the focus
   (this check is unchanged and runs first);
 * (b) the target of the system relation is the same target label as the focus
   action-to-target relation: `target_reference` is omitted or equals
-  `target.label` (case-insensitive). A different reference keeps the RC-17 bound.
+  `target.label` (case-insensitive). A different reference keeps the RC-17 bound;
+* (c) every cited sentence outside the focus contains the target label itself.
+  User decision (tightened 2026-11-19): the reason is to keep RC-17's guarantee
+  that a relation cannot borrow a sentence of another event. (a) and (b) compare
+  two relations of one proposal and cannot show that the system sentence is about
+  the same event; a sentence that names the same target is.
 
 Then the system relation's own cited sentences must contain every endpoint (the
 target label and the system label; the system label only when it differs from the
@@ -3609,15 +3615,13 @@ cited focus sentences, `action_target` and `noneligible_relation` must still lie
 inside it, labels are still exact source text, and a system relation inside the
 focus follows the RC-17 rule as before.
 
-* **Tension recorded with the user decision.** Conditions (a) and (b) compare two
-  relations of one proposal; they do not prove that the cited system sentence
-  describes the same event. The RC-17 guard test that a system sentence of
-  another event cannot be borrowed is therefore rewritten to the two decided
-  conditions (`tests/test_scope_acceptance_harness.py`). Offline against Run
-  44462316932's nine `EVENT_FOCUS_CONTAINMENT` shapes, (a)+(b) lift five (the
-  other four use a different target reference or lack the system label in the
-  cited sentences); requiring the outside sentence to name the target label
-  as well would lift one.
+* **Recall cost, accepted by the user.** Offline against Run 44462316932's nine
+  `EVENT_FOCUS_CONTAINMENT` shapes, (a)+(b) alone would lift five; adding (c)
+  lifts one, because most system sentences name the system and not the target.
+  The recall is recovered by E: a proposal that stays inside the focus after the
+  correction request is accepted as before. The RC-17 guard test that a system
+  sentence of another event cannot be borrowed (`tests/test_scope_acceptance_harness.py`)
+  keeps its original expectation.
 
 **E. One correction request per Scope proposal (user decision; same shape as the
 Validator's one rewrite).** When a parseable proposal violates a contract
@@ -3646,7 +3650,7 @@ instruction and the helper's own rejected proposal.
   technical-gap count is the check.
 
 ```text
-SCOPE_SYSTEM_RELATION_BOUND = TARGET_SYSTEM MAY LEAVE THE FOCUS (RC-75 a+b)
+SCOPE_SYSTEM_RELATION_BOUND = TARGET_SYSTEM MAY LEAVE THE FOCUS (RC-75 a+b+c)
 SCOPE_CORRECTION = ONE REQUEST PER PROPOSAL, COUNTED APART FROM TRANSPORT RETRY
 ```
 

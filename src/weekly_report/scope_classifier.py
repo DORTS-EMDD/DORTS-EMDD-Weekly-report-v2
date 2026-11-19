@@ -355,7 +355,7 @@ _CORRECTION_RULES: dict[str, tuple[tuple[str, ...], str]] = {
     "ENDPOINT_ROLE_DISTINCTNESS": (("action.label", "target.label", "system.label"), "action.label must differ from target.label and system.label."),
     "EVENT_FOCUS_CONTAINMENT": (
         ("event_focus.sentence_ids", "action_target.sentence_ids", "target_system.sentence_ids"),
-        "Every sentence cited by action_target must lie within the range from the first to the last event_focus sentence. Sentences cited by target_system must too, unless target_system names the same target as action_target (target_reference omitted or equal to target.label); then target_system may cite other sentences of the document that state which system that target belongs to.",
+        "Every sentence cited by action_target must lie within the range from the first to the last event_focus sentence. Sentences cited by target_system must too, unless target_system names the same target as action_target (target_reference omitted or equal to target.label); then target_system may cite other sentences of the document, each of which must contain target.label, that state which system that target belongs to.",
     ),
     "NONELIGIBLE_EVENT_FOCUS": (
         ("event_focus.sentence_ids", "noneligible_relation.sentence_ids"),
@@ -545,6 +545,14 @@ def _proposal_support(proposal: Mapping[str, Any], request: ScopeSemanticRequest
                     and action_target_claimed
                     and labels["target_reference"] is not None
                     and labels["target_reference"].casefold() == labels["target"].casefold()
+                    # User decision (tightened 2026-11-19): each sentence outside
+                    # the focus names the focus target itself, so it describes
+                    # that target and not another event (the RC-17 guarantee).
+                    and all(
+                        _within(labels["target"], sentence.text)
+                        for sentence in cited[name]
+                        if sentence.start < first or sentence.end > last
+                    )
                 ):
                     system_outside_focus = True
                     continue

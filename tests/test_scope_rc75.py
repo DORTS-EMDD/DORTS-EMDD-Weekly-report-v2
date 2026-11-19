@@ -93,16 +93,21 @@ def test_the_system_sentence_outside_the_focus_is_accepted_for_the_same_target()
     assert {"start": system_at, "end": system_at + len("Metro system")} in result.provenance["relation_support"]["system"]
 
 
-def test_the_conditions_are_the_two_the_user_decided_and_nothing_stricter():
-    # (a) the action-to-target relation is inside the focus and (b) the system
-    # relation's target is that same target label. The system sentence need not
-    # repeat the target label: the relation is read across the cited sentences.
+def test_a_system_sentence_outside_the_focus_must_name_the_focus_target():
+    # RC-17 guarantee kept (user decision): a sentence outside the focus that does
+    # not contain the target label may describe another event.
     source = (
         "The port installed cargo monitors for harbor businesses. "
         "The Metro line renewed signalling equipment."
     )
     proposal = _proposal(
         action="installed", target="cargo monitors", system="Metro line", target_system=("S1", "S2")
+    )
+    assert _predicate(proposal, source) == "EVENT_FOCUS_CONTAINMENT"
+    # The same relation is accepted once the outside sentence names the target.
+    source = (
+        "The port installed cargo monitors for harbor businesses. "
+        "The cargo monitors serve the Metro line."
     )
     assert _classify(proposal, source).state is ScopeState.IN_SCOPE
 
@@ -129,8 +134,12 @@ def test_the_noneligible_relation_never_leaves_the_focus():
 
 
 def test_the_system_label_must_be_in_the_cited_system_sentences():
-    # S1 and S2 do not hold the system label; S3 does but is not cited.
-    assert _predicate(_proposal(target_system=("S1", "S2"))) == "TARGET_SYSTEM_CONTAINMENT"
+    # The outside sentence names the target but neither cited sentence holds the system label.
+    source = (
+        "The operator opened the Tram Line 4 extension to passengers. "
+        "The Tram Line 4 extension is busy. The network is called Metro system."
+    )
+    assert _predicate(_proposal(target_system=("S1", "S2")), source) == "TARGET_SYSTEM_CONTAINMENT"
     # A label that is not source text at all is an endpoint violation.
     assert _predicate(_proposal(target_system=("S3",), system="Tram system")) == "ENDPOINT_LABEL"
 
