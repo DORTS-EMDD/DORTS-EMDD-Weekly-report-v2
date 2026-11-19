@@ -242,7 +242,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-72 修訂（2026-10-20～11-19）
+### RC-3～RC-73 修訂（2026-10-20～11-19）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.47、§L、§N 與 §R。
 
@@ -658,6 +658,9 @@ Transport retry 與 semantic correction 必須分開計算。
   RC-72 健康檢查；job 寫死 `LIVE_EMAIL_SEND=0` 且不傳入 SMTP、收件者與交付紀錄 secrets，不可能寄信；每組把報告
   Markdown 與全部候選（標題、出版者、最終階段、終止原因、分類）印到 log，artifact 名稱帶期間。Delivery、報告週期、
   排程與 production job 不變。
+* RC-73（§A.54，使用者決定 2026-11-19）：`concurrency`（group `weekly-report-production`、`cancel-in-progress: false`）
+  由 workflow 層移到 `production` 與 `recall-test` 兩個 job（同一 group），其餘 job（`source-probe`、`delivery-check`、離線閘門、
+  召回計畫）不再排在長時間召回測試之後；兩者之間仍不重疊。不改任何 Domain 規則。
 
 ## 13. Report / Delivery
 
@@ -808,5 +811,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-72 (2026-11-19; RC-72 Google News health gate: at least 4 of 6 probes succeed with only RATE_LIMIT failures, otherwise one 45-minute wait and one full re-run, plus the email-free recall-test workflow; RC-71 principal-document detection: related collections outside the single article, repeated identical headline metadata and interactive widgets no longer make a page ambiguous, evidence_document.py only; RC-70 user decisions: a road collision is reportable only with a derailment, a person struck only with a stated rail equipment failure or staff operating error, Reportability prompt v8, observer-only source host probe; RC-69 observer-only Category exchange record, selection audit v4; RC-68 Category prompt v8: delivery acceptance tests, deployments and consequences; RC-67 user decisions D1/D2: project steps and drills have no Category, Category prompt v7, Writer v11; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
+CONTRACT_REVISION = RC-3..RC-73 (2026-11-19; RC-73 workflow concurrency moved to the production and recall-test jobs; RC-72 Google News health gate: at least 4 of 6 probes succeed with only RATE_LIMIT failures, otherwise one 45-minute wait and one full re-run, plus the email-free recall-test workflow; RC-71 principal-document detection: related collections outside the single article, repeated identical headline metadata and interactive widgets no longer make a page ambiguous, evidence_document.py only; RC-70 user decisions: a road collision is reportable only with a derailment, a person struck only with a stated rail equipment failure or staff operating error, Reportability prompt v8, observer-only source host probe; RC-69 observer-only Category exchange record, selection audit v4; RC-68 Category prompt v8: delivery acceptance tests, deployments and consequences; RC-67 user decisions D1/D2: project steps and drills have no Category, Category prompt v7, Writer v11; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```

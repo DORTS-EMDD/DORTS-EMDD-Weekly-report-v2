@@ -736,7 +736,7 @@ left the CLI exit code green.
   `LIVE_EMAIL_SEND=1` for scheduled runs; otherwise `LIVE_EMAIL_SEND=0`. The
   delivery record persists between runs through the Actions cache (replaced by
   section A.39), production
-  runs never overlap (`concurrency`), and workflow inputs reach the shell only
+  runs never overlap (`concurrency` on the `production` and `recall-test` jobs, section A.54), and workflow inputs reach the shell only
   through environment variables.
 
 ```text
@@ -3538,6 +3538,16 @@ HEALTH_RETRY_WAIT_SECONDS = 2700
 HEALTH_GATE_ATTEMPTS = 2
 RECALL_TEST_EMAIL = NEVER (LIVE_EMAIL_SEND=0, no SMTP or ledger secret)
 ```
+
+### A.54 RC-73 Workflow concurrency on the jobs that need it (2026-11-19, user decision)
+
+The `concurrency` declaration (group `weekly-report-production`,
+`cancel-in-progress: false`) moves from the workflow to the two jobs that call
+Google News and MaiAgent, `production` and `recall-test`, which keep one shared
+group. The jobs that touch neither (`offline-regression`, `recall-plan`,
+`source-probe`, `delivery-check`) no longer queue behind a long recall test.
+Production and recall-test jobs still never overlap. No Domain rule, secret or
+input changes; `tests/test_workflow_concurrency_rc73.py` locks the placement.
 
 ### Shared production workflow
 

@@ -72,11 +72,11 @@ on:
 permissions:
   contents: read
 
-# One production run at a time. RC-55: the delivery ledger (a private
-# repository written by compare-and-swap) does not rely on this.
-concurrency:
-  group: weekly-report-production
-  cancel-in-progress: false
+# One production or recall-test job at a time, in one shared group declared on
+# those two jobs (RC-73). It is not declared on the workflow, so jobs that never
+# touch Google News or MaiAgent (source-probe, delivery-check, the offline gate,
+# the recall plan) do not queue behind a long recall test. RC-55: the delivery
+# ledger (a private repository written by compare-and-swap) does not rely on this.
 
 jobs:
   offline-regression:
@@ -94,6 +94,9 @@ jobs:
         run: python -m pytest -q
 
   production:
+    concurrency:
+      group: weekly-report-production
+      cancel-in-progress: false
     needs: offline-regression
     if: ${{ (github.event_name == 'workflow_dispatch' && inputs.run_production == true) || (github.event_name == 'schedule' && vars.WEEKLY_REPORT_SCHEDULE == 'enabled') }}
     runs-on: ubuntu-latest
@@ -193,6 +196,9 @@ jobs:
     # other, entirely on GitHub Actions. It can never send email: the job pins
     # LIVE_EMAIL_SEND to 0 and is given no SMTP, recipient or delivery-ledger
     # secret. Each period is independent (fail-fast off).
+    concurrency:
+      group: weekly-report-production
+      cancel-in-progress: false
     needs: recall-plan
     if: ${{ needs.recall-plan.result == 'success' }}
     runs-on: ubuntu-latest

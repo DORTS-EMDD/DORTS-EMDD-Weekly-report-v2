@@ -56,6 +56,17 @@ DEFAULT_URLS = (
     "https://www.yonhapnewstv.co.kr/news/AKR20260922210611qDJ",
     "https://www.newspim.com/news/view/20260922001267",
     "https://imnews.imbc.com/news/2026/society/article/6850242_36918.html",
+    # Run 44462316932 (2026-11-09..15): Rail Technology Magazine pages that ended at
+    # PRINCIPAL_DOCUMENT_AMBIGUOUS (six) or DATE_PROVENANCE_INVALID (the Vossloh page).
+    "https://www.railtechnologymagazine.com/articles/gbr-anglia-plans-100000-miles-track-treatment-boost-rail-resilience-autumn-and-winter",
+    "https://www.railtechnologymagazine.com/articles/northern-and-caf-partnership-delivers-major-reliability-boost-class-331-fleet",
+    "https://www.railtechnologymagazine.com/articles/podcast-episode-82-inclusion-and-diversity-tracks",
+    "https://www.railtechnologymagazine.com/articles/alstoms-next-generation-tgv-m-enters-passenger-service-france",
+    "https://www.railtechnologymagazine.com/articles/network-rail-forecasts-ps149bn-station-spending-boom-wellness-and-leisure-transform",
+    "https://www.railtechnologymagazine.com/articles/stadler-lands-first-finnish-tram-contract-helsinki-order-worth-183-vehicles",
+    "https://www.railtechnologymagazine.com/articles/vossloh-wins-contract-supply-booted-sleepers-sydney-metro-west",
+    # Mass Transit page whose two ORIGINAL_PUBLICATION facts ended at DATE_UNPARSEABLE.
+    "https://www.masstransitmag.com/rail/infrastructure/news/55418425/the-austin-transit-partnership-austin-transit-partnership-advances-planning-for-future-extension-of-austin-light-rail-to-austin-bergstrom-international-airport",
 )
 
 FEEDS = (
