@@ -3486,6 +3486,59 @@ class name, phrase, count or text-similarity rule.
 EVIDENCE_STRUCTURAL_REVISION = RC-71
 ```
 
+### A.53 RC-72 Google News health gate rule and recall-test workflow (2026-11-19, user decision)
+
+Domain Rule (user decision 2026-11-19). The Google News RSS health check runs
+the six probes of the weekly plan (`HEALTH_PROBE_ORDINALS`, unchanged):
+
+* PASS requires at least four successful probes **and** every failed probe
+  failing with the Search technical failure class `RATE_LIMIT` (HTTP 429). A
+  failure of any other class (`NETWORK`, `TIMEOUT`, `AUTHENTICATION`,
+  `INVALID_RESPONSE` including an unparsable response or a non-429 HTTP error,
+  `UNKNOWN`) makes the set FAIL, whatever the number of successes.
+* A set that does not PASS is not final: wait 45 minutes (2,700 seconds) and
+  run **all six** probes once more. The second set decides; it is judged by the
+  same rule. There is no third set. A final FAIL is disclosed (the gate prints
+  both attempts) and the job fails.
+
+Owner: `production_runner.GoogleNewsHealthCheck` (`run` judges one set, `run_gated`
+adds the single retry). `scripts/google_news_health_check.py` and every
+workflow job use it; no second copy of the rule exists. The health check only
+observes Google News availability; it decides no Search, Evidence, Scope,
+Category or Reportability outcome and the probes, plan and provider are
+unchanged. The earlier rule (all six succeed, no retry) is replaced.
+
+Recall test (orchestration only). `weekly-report.yml` gains the manual inputs
+`recall_periods` (`START:END,START:END`, at most eight, validated by
+`scripts/recall_matrix.py`) and `recall_wait_first`, and the `recall-test` job:
+
+* one matrix entry per period with `max-parallel: 1` and `fail-fast: false`
+  (periods run in order, one failure does not stop the others); every period
+  after the first, and the first too when `recall_wait_first` is set, waits
+  3,600 seconds before its health check, to avoid Google News rate limiting;
+* each period runs the same `python main.py` production CLI with that period's
+  start and end dates (no second workflow, no domain logic in the workflow),
+  the RC-72 health gate first;
+* the job pins `LIVE_EMAIL_SEND=0` and receives only the four MaiAgent secrets:
+  no SMTP, recipient or delivery-ledger secret, so it cannot send mail
+  (`tests/test_recall_workflow_rc72.py` locks this);
+* each period prints the report Markdown and every candidate (title, publisher,
+  terminal stage, terminal reason, Category when its Event reached one; copied
+  from `selection_audit.json` by `scripts/recall_candidates.py`, observation
+  only) to the job log, and uploads `recall-<start>_<end>-<run_id>`.
+
+Delivery (RC-55), the reporting week (RC-56), the schedule and the production
+job are unchanged. Tests: `tests/test_health_gate_rc72.py`,
+`tests/test_recall_workflow_rc72.py`.
+
+```text
+HEALTH_MIN_SUCCESS_COUNT = 4
+HEALTH_TOLERATED_FAILURE_CLASS = RATE_LIMIT
+HEALTH_RETRY_WAIT_SECONDS = 2700
+HEALTH_GATE_ATTEMPTS = 2
+RECALL_TEST_EMAIL = NEVER (LIVE_EMAIL_SEND=0, no SMTP or ledger secret)
+```
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式

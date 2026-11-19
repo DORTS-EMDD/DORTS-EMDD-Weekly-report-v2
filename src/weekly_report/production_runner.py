@@ -9,11 +9,12 @@ policy of its own.
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from enum import StrEnum
 import os
+import time
 from types import MappingProxyType
 from typing import Any, Protocol
 
@@ -77,6 +78,12 @@ PRODUCTION_METADATA_MODEL = "GPT-OSS-120B"
 # Six probes spread across the weekly 122-request plan (RC-12; the monthly
 # monitored-standards requests of RC-59 are not in the health-check plan).
 HEALTH_PROBE_ORDINALS = (1, 10, 60, 65, 115, 122)
+# RC-72 (section A.53, user decision 2026-11-19): at least four of the six
+# probes succeed and every failure is Google News rate limiting (HTTP 429);
+# otherwise wait 45 minutes and run the whole set once more.
+HEALTH_MIN_SUCCESS_COUNT = 4
+HEALTH_TOLERATED_FAILURE_CLASS = "RATE_LIMIT"
+HEALTH_RETRY_WAIT_SECONDS = 45 * 60
 
 
 class ProductionConfigurationError(RuntimeError):
@@ -989,6 +996,27 @@ class GoogleNewsHealthCheckResult:
         return self.status == "PASS"
 
 
+@dataclass(frozen=True, slots=True)
+class GoogleNewsHealthGateResult:
+    """RC-72: the one or two full probe sets behind a single health decision."""
+
+    attempts: tuple[GoogleNewsHealthCheckResult, ...]
+
+    @property
+    def final(self) -> GoogleNewsHealthCheckResult:
+        return self.attempts[-1]
+
+    @property
+    def passed(self) -> bool:
+        return self.final.passed
+
+
+_SUCCESS_STATUSES = frozenset({
+    SearchTerminalStatus.SUCCESS_WITH_RESULTS.value,
+    SearchTerminalStatus.SUCCESS_ZERO_RESULTS.value,
+})
+
+
 class GoogleNewsHealthCheck:
     """Six-probe operational diagnostic over the authoritative Search plan."""
 
@@ -1025,27 +1053,55 @@ class GoogleNewsHealthCheck:
                     failure,
                 )
             )
-        success_count = sum(
-            item.status in {
-                SearchTerminalStatus.SUCCESS_WITH_RESULTS.value,
-                SearchTerminalStatus.SUCCESS_ZERO_RESULTS.value,
-            }
+        success_count = sum(item.status in _SUCCESS_STATUSES for item in probes)
+        failure_count = len(probes) - success_count
+        # RC-72: tolerate only rate limiting. Any other failure class (network,
+        # timeout, unparsable response, non-429 HTTP error) is a FAIL.
+        only_rate_limited = all(
+            item.status in _SUCCESS_STATUSES
+            or (
+                item.status == SearchTerminalStatus.TECHNICAL_FAILURE.value
+                and item.technical_failure_class == HEALTH_TOLERATED_FAILURE_CLASS
+            )
             for item in probes
         )
-        failure_count = len(probes) - success_count
         return GoogleNewsHealthCheckResult(
             len(plan.items),
             HEALTH_PROBE_ORDINALS,
             tuple(probes),
             success_count,
             failure_count,
-            "PASS" if success_count == len(HEALTH_PROBE_ORDINALS) else "FAIL",
+            "PASS" if success_count >= HEALTH_MIN_SUCCESS_COUNT and only_rate_limited else "FAIL",
         )
+
+    def run_gated(
+        self,
+        sleep: Callable[[float], None] = time.sleep,
+        observe: Callable[[int, GoogleNewsHealthCheckResult], None] | None = None,
+    ) -> GoogleNewsHealthGateResult:
+        """RC-72: one probe set; if it misses the rule, wait 45 minutes and run all six once more.
+
+        ``observe`` only reports each finished attempt; it takes part in no decision.
+        """
+
+        attempts: list[GoogleNewsHealthCheckResult] = []
+        for number in (1, 2):
+            result = self.run()
+            attempts.append(result)
+            if observe is not None:
+                observe(number, result)
+            if result.passed or number == 2:
+                break
+            sleep(HEALTH_RETRY_WAIT_SECONDS)
+        return GoogleNewsHealthGateResult(tuple(attempts))
 
 
 __all__ = [
     "GoogleNewsHealthCheck",
     "GoogleNewsHealthCheckResult",
+    "GoogleNewsHealthGateResult",
+    "HEALTH_MIN_SUCCESS_COUNT",
+    "HEALTH_RETRY_WAIT_SECONDS",
     "HEALTH_PROBE_ORDINALS",
     "HealthProbeResult",
     "PRODUCTION_METADATA_MODEL",

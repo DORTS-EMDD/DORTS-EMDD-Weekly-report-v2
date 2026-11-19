@@ -50,6 +50,15 @@ on:
         required: false
         default: false
         type: boolean
+      recall_periods:
+        description: "Recall test instead of a report: START:END,START:END (YYYY-MM-DD, at most 8). Runs each period in turn, never emails"
+        required: false
+        type: string
+      recall_wait_first:
+        description: "Recall test: also wait 3600 s before the first period (queue behind a run that has just used Google News)"
+        required: false
+        default: false
+        type: boolean
       delivery_check:
         description: "RC-55 live check instead of a report: l1-l2 (ledger), l3 (one email to the sending account)"
         required: true
@@ -160,6 +169,95 @@ jobs:
           path: report-output/
           if-no-files-found: warn
           retention-days: 90
+
+  recall-plan:
+    # Orchestration only: validates recall_periods and builds the matrix.
+    needs: offline-regression
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.recall_periods != '' }}
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build the period matrix
+        id: plan
+        run: python -m scripts.recall_matrix
+        env:
+          RECALL_PERIODS: ${{ inputs.recall_periods }}
+
+  recall-test:
+    # Recall test: the same production CLI over past periods, one after the
+    # other, entirely on GitHub Actions. It can never send email: the job pins
+    # LIVE_EMAIL_SEND to 0 and is given no SMTP, recipient or delivery-ledger
+    # secret. Each period is independent (fail-fast off).
+    needs: recall-plan
+    if: ${{ needs.recall-plan.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      # The placeholder only keeps the matrix valid when recall-plan was skipped.
+      matrix: ${{ fromJSON(needs.recall-plan.outputs.matrix || '{"include":[{"start":"","end":""}]}') }}
+    name: recall ${{ matrix.start }}..${{ matrix.end }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install project dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Install the embedded PDF font
+        run: sudo apt-get update && sudo apt-get install -y fonts-wqy-zenhei
+      - name: Wait one hour so Google News does not rate-limit consecutive periods
+        # Every period after the first; the first too when recall_wait_first is set.
+        if: ${{ strategy.job-index != 0 || inputs.recall_wait_first == true }}
+        run: sleep 3600
+      - name: Google News RSS six-probe health check (RC-72 rule, one 45-minute retry)
+        run: python -m scripts.google_news_health_check
+      - name: Run shared production CLI for this period
+        id: cli
+        run: |
+          code=0
+          python main.py --region-mode "$REGION_MODE" --output-dir report-output \
+            --period-start "$PERIOD_START" --period-end "$PERIOD_END" || code=$?
+          if [ -f report-output/run_summary.txt ]; then
+            { echo '```'; cat report-output/run_summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          # Exit 2 = produced with disclosed technical gaps: a warning, as in production.
+          if [ "$code" -eq 2 ]; then
+            echo "::warning title=Recall test::Produced with disclosed technical gaps (SUCCESS_WITH_TECHNICAL_GAPS)"
+            exit 0
+          fi
+          exit "$code"
+        env:
+          PERIOD_START: ${{ matrix.start }}
+          PERIOD_END: ${{ matrix.end }}
+          REGION_MODE: ${{ inputs.region_mode || 'selected' }}
+          MAIAGENT_API_BASE: ${{ secrets.MAIAGENT_API_BASE }}
+          MAIAGENT_API_KEY: ${{ secrets.MAIAGENT_API_KEY }}
+          MAIAGENT_CHATBOT_ID: ${{ secrets.MAIAGENT_CHATBOT_ID }}
+          MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID: ${{ secrets.MAIAGENT_STRUCTURED_HELPER_CHATBOT_ID }}
+          LIVE_EMAIL_SEND: "0"
+      - name: Print the report and every candidate to the job log
+        # Observation only, for readers who cannot download the artifact.
+        if: ${{ !cancelled() && steps.cli.outcome != 'skipped' }}
+        run: |
+          echo "===== REPORT MARKDOWN ====="
+          for f in report-output/weekly-report-*.md; do [ -f "$f" ] && cat "$f"; done
+          echo "===== CANDIDATES (title, publisher, final stage, reason, category) ====="
+          python -m scripts.recall_candidates report-output/selection_audit.json
+      - name: Keep the report, run summary and selection audit
+        if: ${{ !cancelled() && steps.cli.outcome != 'skipped' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: recall-${{ matrix.start }}_${{ matrix.end }}-${{ github.run_id }}
+          path: report-output/
+          if-no-files-found: warn
+          retention-days: 30
 
   source-probe:
     # Observation only: prints fetch status, the production structural
