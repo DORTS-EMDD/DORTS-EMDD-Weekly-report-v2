@@ -5,8 +5,9 @@
 AUDIT is a ``selection_audit.json`` or a recall-test job log (plain text, or the
 JSON a log download returns) that carries the audit as ``AUDIT_B64`` lines.
 
-A gold item names a period, a candidate title, a star rating, whether it is
-expected in the report, and its expected section. An item with ``merge_into``
+A gold item names a period, a title (plus candidate-title aliases and keyword
+sets that identify the same story), a star rating, whether it is expected in
+the report, and its expected section (or several acceptable sections). An item with ``merge_into``
 is the same event as the item it names: they form one gold group, and more than
 one included Event for a group counts as a duplicate. The decision rule
 (user decision 2026-11-19, rated by reference value to the Taipei rapid transit
@@ -64,24 +65,47 @@ def load_gold(path: str | Path) -> dict[str, Any]:
         raise ValueError("gold item ids must be unique")
     by_id = {item["id"]: item for item in items}
     for item in items:
-        stars, expected, section = item["stars"], item["expected"], item.get("expected_section")
+        target = item.get("merge_into")
+        if target is not None:
+            # A duplicate of another item: it carries no rating of its own.
+            if target not in by_id or by_id[target].get("merge_into") is not None:
+                raise ValueError(f"item {item['id']}: merge_into must name an unmerged item")
+            if by_id[target]["period"] != item["period"]:
+                raise ValueError(f"item {item['id']}: merged items share one period")
+            continue
+        stars, expected = item["stars"], item["expected"]
+        sections = expected_sections(item)
         if stars not in (1, 2, 3, 4, 5):
             raise ValueError(f"item {item['id']}: stars must be 1..5")
         if expected not in ("INCLUDE", "EXCLUDE"):
             raise ValueError(f"item {item['id']}: expected must be INCLUDE or EXCLUDE")
         if (expected == "INCLUDE") != (stars >= 2):
             raise ValueError(f"item {item['id']}: expected contradicts the star rule")
-        if expected == "INCLUDE" and section not in _SECTIONS:
-            raise ValueError(f"item {item['id']}: expected_section must be a formal report section")
-        if stars == 2 and expected == "INCLUDE" and section not in _TWO_STAR_SECTIONS:
+        if expected == "INCLUDE" and (not sections or not set(sections) <= _SECTIONS):
+            raise ValueError(f"item {item['id']}: expected_section must name formal report sections")
+        if stars == 2 and expected == "INCLUDE" and not set(sections) <= _TWO_STAR_SECTIONS:
             raise ValueError(f"item {item['id']}: a two-star item belongs only in operations or incidents")
-        target = item.get("merge_into")
-        if target is not None:
-            if target not in by_id or by_id[target].get("merge_into") is not None:
-                raise ValueError(f"item {item['id']}: merge_into must name an unmerged item")
-            if by_id[target]["period"] != item["period"]:
-                raise ValueError(f"item {item['id']}: merged items share one period")
     return gold
+
+
+def expected_sections(item: dict[str, Any]) -> list[str]:
+    """One section, or several acceptable ones (for example operations or incidents)."""
+
+    value = item.get("expected_section")
+    if value is None:
+        return []
+    return [value] if isinstance(value, str) else list(value)
+
+
+def item_matches(item: dict[str, Any], title: Any) -> bool:
+    """A candidate title is the item's title or alias, or contains one keyword set."""
+
+    key = _norm(title)
+    if not key:
+        return False
+    if key in {_norm(text) for text in [item["title"], *item.get("aliases", ())]}:
+        return True
+    return any(all(_norm(word) in key for word in words) for words in item.get("keywords", ()))
 
 
 def _audit_from_log(text: str) -> dict[str, Any]:
@@ -127,18 +151,13 @@ def score(gold: dict[str, Any], audit: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("audit has no period")
     groups = _groups(gold, period)
     candidates = {entry["candidate_id"]: entry for entry in audit.get("candidates", ())}
-    title_to_group: dict[str, int] = {}
-    for root, items in groups.items():
-        for item in items:
-            for title in [item["title"], *item.get("aliases", ())]:
-                title_to_group[_norm(title)] = root
-
     included = [event for event in audit.get("events", ()) if event.get("final_report_included")]
     events_by_group: dict[int, list[dict[str, Any]]] = {}
     unlabeled = []
     for event in included:
         titles = [candidates.get(member, {}).get("discovery_title") for member in event.get("member_candidate_ids", ())]
-        roots = {title_to_group[_norm(title)] for title in titles if _norm(title) in title_to_group}
+        roots = {root for root, items in groups.items()
+                 if any(item_matches(item, title) for item in items for title in titles)}
         label = (event.get("category") or {}).get("primary_category")
         record = {"event_id": event.get("event_id"), "section": _SECTION_BY_LABEL.get(label, label),
                   "titles": [title for title in titles if title]}
@@ -149,14 +168,14 @@ def score(gold: dict[str, Any], audit: dict[str, Any]) -> dict[str, Any]:
 
     rows, correct, duplicates = [], 0, 0
     for root, items in sorted(groups.items()):
-        head = next(item for item in items if item["id"] == root) if any(item["id"] == root for item in items) else items[0]
+        head = next(item for item in items if item["id"] == root)
         found = events_by_group.get(root, [])
         expected = head["expected"]
         if expected == "INCLUDE":
             sections = {record["section"] for record in found}
             if not found:
                 outcome = "MISSED"
-            elif head["expected_section"] in sections:
+            elif sections & set(expected_sections(head)):
                 outcome = "CORRECT"
             else:
                 outcome = "WRONG_SECTION"
@@ -167,12 +186,12 @@ def score(gold: dict[str, Any], audit: dict[str, Any]) -> dict[str, Any]:
         stage = None
         if not found:
             # Where the gold titles stopped in this run (observation from the audit).
-            wanted = {_norm(title) for item in items for title in [item["title"], *item.get("aliases", ())]}
             stops = sorted({f"{entry['terminal_stage']}:{entry['terminal_reason']}" for entry in candidates.values()
-                            if _norm(entry.get("discovery_title")) in wanted})
+                            if any(item_matches(item, entry.get("discovery_title")) for item in items)})
             stage = stops or ["NOT_A_CANDIDATE"]
         rows.append({"gold_id": root, "merged_ids": [item["id"] for item in items if item["id"] != root],
-                     "stars": head["stars"], "expected": expected, "expected_section": head.get("expected_section"),
+                     "stars": head["stars"], "expected": expected, "expected_section": expected_sections(head),
+                     "kind": head.get("kind", "report"),
                      "outcome": outcome, "included_events": len(found),
                      "included_sections": sorted({record["section"] for record in found}), "stopped_at": stage,
                      "title": head["title"]})
@@ -187,6 +206,9 @@ def score(gold: dict[str, Any], audit: dict[str, Any]) -> dict[str, Any]:
         "wrong_section": sum(row["outcome"] == "WRONG_SECTION" for row in rows),
         "false_inclusions": sum(row["outcome"] == "FALSE_INCLUSION" for row in rows),
         "duplicates": duplicates,
+        # Recall targets: items the user expected that the source run did not report.
+        "recall_targets_found": sum(row["kind"] == "recall_target" and row["outcome"] == "CORRECT" for row in rows),
+        "recall_targets": sum(row["kind"] == "recall_target" for row in rows),
         "included_events": len(included),
         "unlabeled_included_events": unlabeled,
         "rows": rows,
@@ -210,10 +232,11 @@ def main(argv: Iterable[str] | None = None) -> int:
         print(f"== {period}  accuracy={result['correct']}/{result['gold_groups']} ({result['accuracy']})"
               f"  missed={result['missed']} wrong_section={result['wrong_section']}"
               f"  false_inclusions={result['false_inclusions']} duplicates={result['duplicates']}"
+              f"  recall_targets={result['recall_targets_found']}/{result['recall_targets']}"
               f"  included_events={result['included_events']} unlabeled={len(result['unlabeled_included_events'])}")
         for row in result["rows"]:
             note = "" if row["outcome"] == "CORRECT" else f"  stopped_at={row['stopped_at']}" if row["stopped_at"] else f"  sections={row['included_sections']}"
-            print(f"  #{row['gold_id']:<3} {'★' * row['stars']:<5} {row['expected']:<7} {row['outcome']:<15}"
+            print(f"  {row['gold_id']!s:<4} {'★' * row['stars']:<5} {row['expected']:<7} {row['outcome']:<15}"
                   f" x{row['included_events']} {row['title'][:60]}{note}")
         for record in result["unlabeled_included_events"]:
             print(f"  NEW  {record['section']}  {record['titles'][0][:70] if record['titles'] else record['event_id']}")

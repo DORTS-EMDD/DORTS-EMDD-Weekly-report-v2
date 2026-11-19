@@ -83,3 +83,15 @@ def test_gold_must_follow_the_star_rule(tmp_path, bad):
     item = {**_item(1, "A", 3, "技術新知"), **bad}
     with pytest.raises(ValueError):
         _gold(tmp_path, [item])
+
+
+def test_recall_v1_gold_matches_the_user_answer():
+    gold = load_gold(ROOT / "acceptance" / "gold" / "recall_v1.json")
+    items = {item["id"]: item for item in gold["items"]}
+    assert sorted(items) == list(range(1, 23))
+    assert [i for i, item in items.items() if item["kind"] == "recall_target"] == [18, 19, 20, 21, 22]
+    assert items[15]["merge_into"] == 11 and items[16]["merge_into"] == 14
+    assert {i for i, item in items.items() if item.get("expected") == "EXCLUDE"} == {1, 6, 13}
+    assert items[7]["stars"] == 5 and items[7]["expected_section"] == "技術新知"
+    assert set(items[3]["expected_section"]) == {"營運動態", "事故及安全事件"}
+    assert set(items[10]["expected_section"]) == {"營運動態", "事故及安全事件"}

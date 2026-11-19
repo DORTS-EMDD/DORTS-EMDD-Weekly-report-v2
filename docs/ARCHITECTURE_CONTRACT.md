@@ -3738,7 +3738,12 @@ answer below; it creates no Reportability or Category rule by itself.
   the recall test Run 44468386445 (four periods), each with its period, title,
   star rating, expected inclusion and expected section, as the user rated them
   in the project document 「週報取捨規則與標準答案」; item 15 is the same event
-  as item 11 and item 16 the same as item 14 (`merge_into`).
+  as item 11 and item 16 the same as item 14 (`merge_into`). Items 18 to 22 are
+  recall targets the run missed (`kind = recall_target`; the stars of 19 to 22
+  are inferred from the principle). `acceptance/gold/README.md` records the
+  principle and the exclusion rules the answer follows (project steps, drills,
+  road collisions only with a derailment, track intrusion, non-transport
+  services, normal operation in bad weather).
   `scripts/recall_score.py` scores any selection audit (or a recall-test job log)
   against it: per gold group CORRECT, MISSED, WRONG_SECTION or FALSE_INCLUSION,
   the inclusion accuracy, duplicates (more than one included Event for a group)

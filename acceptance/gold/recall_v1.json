@@ -1,0 +1,577 @@
+{
+ "version": "recall-v1",
+ "source_run_id": 44468386445,
+ "selection_rule": "Rated by reference value to the Taipei rapid transit department: 3 stars or more included; 2 stars included only in 營運動態 or 事故及安全事件; 1 star not included. See README.md.",
+ "items": [
+  {
+   "id": 1,
+   "kind": "report",
+   "period": {
+    "start": "2026-02-04",
+    "end": "2026-02-06"
+   },
+   "title": "柏林電車在凍雨期間於週四上午啟動營運",
+   "stars": 1,
+   "expected": "EXCLUDE",
+   "expected_section": null,
+   "note": "天候下照常營運",
+   "aliases": [
+    "Eisregen legt Berlin lahm: Ausgerechnet die Tram beißt sich diesmal durch - Berliner Zeitung"
+   ],
+   "keywords": [
+    [
+     "Eisregen",
+     "Berlin"
+    ]
+   ]
+  },
+  {
+   "id": 2,
+   "kind": "report",
+   "period": {
+    "start": "2026-02-04",
+    "end": "2026-02-06"
+   },
+   "title": "神戶市營地下鐵海岸線調整停車時間與列車班距",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "營運動態",
+   "aliases": [
+    "国内屈指の「本数が少ない地下鉄」に！ ラッシュ時以外は極限まで減便へ 有数の大都市を通る路線に異変 - 乗りものニュース"
+   ],
+   "keywords": [
+    [
+     "海岸線",
+     "減便"
+    ],
+    [
+     "海岸線",
+     "神戸"
+    ]
+   ]
+  },
+  {
+   "id": 3,
+   "kind": "report",
+   "period": {
+    "start": "2026-05-26",
+    "end": "2026-05-28"
+   },
+   "title": "斯德哥爾摩地鐵紅線與綠線發生重大營運干擾",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": [
+    "營運動態",
+    "事故及安全事件"
+   ],
+   "aliases": [
+    "Stora störningar i Stockholms tunnelbana - Västerbottens-Kuriren",
+    "Stora störningar i Stockholms tunnelbana - Aftonbladet"
+   ],
+   "keywords": [
+    [
+     "störningar",
+     "tunnelbana"
+    ]
+   ]
+  },
+  {
+   "id": 4,
+   "kind": "report",
+   "period": {
+    "start": "2026-05-26",
+    "end": "2026-05-28"
+   },
+   "title": "格拉茲首列 Flexity 電車「Theodora」載客上路",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "營運動態",
+   "aliases": [
+    "„Theodora“ startet in Graz: Neue Flexity-Straßenbahn nimmt Fahrgastbetrieb auf - Inside Graz",
+    "Erste \"Flexity\"-Tram seit heute unterwegs - Holding Graz",
+    "Graz Linien Neuheit: Erste Flexity-Straßenbahn fährt ab sofort mit Fahrgästen durch Graz - MeinBezirk.at",
+    "Erste neue Flexity-Straßenbahn fährt jetzt durch Graz - 5 Minuten"
+   ],
+   "keywords": [
+    [
+     "Flexity",
+     "Graz"
+    ],
+    [
+     "Theodora",
+     "Graz"
+    ]
+   ]
+  },
+  {
+   "id": 5,
+   "kind": "report",
+   "period": {
+    "start": "2026-05-26",
+    "end": "2026-05-28"
+   },
+   "title": "洛杉磯地鐵D線第一期向西延伸約6.3公里",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "營運動態",
+   "aliases": [
+    "米ロサンゼルスの地下鉄Dラインが延伸開業、ダウンタウン／ビバリーヒルズ間が直通20分に（トラベルボイス） - Yahoo!ニュース"
+   ],
+   "keywords": [
+    [
+     "Dライン",
+     "延伸"
+    ],
+    [
+     "D Line",
+     "extension"
+    ]
+   ]
+  },
+  {
+   "id": 6,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-08",
+    "end": "2026-10-10"
+   },
+   "title": "波隆那紅線電車由博爾戈帕尼加萊車庫啟動分段技術測試",
+   "stars": 1,
+   "expected": "EXCLUDE",
+   "expected_section": null,
+   "note": "專案步驟",
+   "aliases": [
+    "Tram, in corso i test notturni: quando arriverà in centro - BolognaToday"
+   ],
+   "keywords": [
+    [
+     "Bologna",
+     "collaud"
+    ],
+    [
+     "Borgo Panigale",
+     "tram"
+    ],
+    [
+     "test notturni",
+     "tram"
+    ]
+   ]
+  },
+  {
+   "id": 7,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-08",
+    "end": "2026-10-10"
+   },
+   "title": "東京メトロ東西線05系導入同步磁阻馬達與超小型VVVF變頻器主回路系統",
+   "stars": 5,
+   "expected": "INCLUDE",
+   "expected_section": "技術新知",
+   "aliases": [
+    "東京メトロ東西線の新車両は20～30％省エネ、世界初の主回路システムで実現：鉄道技術 - MONOist",
+    "東京メトロと三菱電機、新たな主回路システムを東西線05系車両に導入 - 日本経済新聞",
+    "東京メトロ東西線05系「超小型VVVF」など新たな主回路システム導入 - マイナビニュース"
+   ],
+   "keywords": [
+    [
+     "05系",
+     "主回路"
+    ],
+    [
+     "東西線",
+     "主回路"
+    ],
+    [
+     "東京メトロ",
+     "VVVF"
+    ]
+   ]
+  },
+  {
+   "id": 8,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-08",
+    "end": "2026-10-10"
+   },
+   "title": "廣島市中心部路面電車與巴士相撞，電車脫軌",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "aliases": [
+    "【事故】広島市中心部で路面電車とバスが衝突 女性1人軽傷 (中国新聞デジタル) - Yahoo!ニュース",
+    "バスと衝突 路面電車が脱線 広島市中心部（2026年10月10日掲載）｜広テレ！NEWS NNN - 日テレNEWS NNN",
+    "【速報】広島市中心部で路面電車がバスと接触し脱線 60代女性が腹部の痛み訴える - HOME広島ホームテレビ",
+    "【事故】広島市中心部で路面電車とバスが衝突 女性1人軽傷（中国新聞デジタル） - Yahoo!ニュース",
+    "【速報】路面電車とバスが衝突 電車が脱線 広島市中心部（2026年10月10日掲載） - 日テレNEWS NNN",
+    "広島市中心部で路面電車とバスが衝突、６０歳代女性が軽傷…乗り合わせた読売新聞社員「急ブレーキに女性客らが悲鳴」 - 読売新聞",
+    "【速報】路面電車とバスが衝突 電車が脱線 広島市中心部 - Infoseek"
+   ],
+   "keywords": [
+    [
+     "広島",
+     "路面電車",
+     "脱線"
+    ],
+    [
+     "広島",
+     "路面電車",
+     "衝突"
+    ]
+   ]
+  },
+  {
+   "id": 9,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-08",
+    "end": "2026-10-10"
+   },
+   "title": "都靈16號線電車與廂型車事故後出軌",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "aliases": [
+    "Scontro tra tram e furgone a Torino, quattro feriti - ANSA",
+    "Paura in corso Einaudi, tram deraglia dopo lo scontro con un furgone. Ci sono feriti lievi - La Stampa",
+    "Torino, tram deraglia in corso Einaudi dopo incidente con un furgone: feriti lievi - Il Sole 24 ORE"
+   ],
+   "keywords": [
+    [
+     "tram",
+     "Einaudi"
+    ],
+    [
+     "Torino",
+     "tram",
+     "deraglia"
+    ],
+    [
+     "Torino",
+     "tram",
+     "furgone"
+    ]
+   ]
+  },
+  {
+   "id": 10,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-08",
+    "end": "2026-10-10"
+   },
+   "title": "三鶯線龍埔站至台北大學站完成供電修復與測試並恢復正常營運",
+   "stars": 4,
+   "expected": "INCLUDE",
+   "expected_section": [
+    "事故及安全事件",
+    "營運動態"
+   ],
+   "aliases": [
+    "新北捷運三鶯線斷電漏夜搶修 龍埔至台北大學今晨8點恢復營運 - 自由時報"
+   ],
+   "keywords": [
+    [
+     "三鶯線"
+    ]
+   ]
+  },
+  {
+   "id": 11,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-27",
+    "end": "2026-10-29"
+   },
+   "title": "東京地下鐵公開東西線線路設備監測列車「ぱとれーる」",
+   "stars": 4,
+   "expected": "INCLUDE",
+   "expected_section": "技術新知",
+   "aliases": [
+    "東京メトロ東西線「ぱとれーる」公開「もぐぱくん」車体ラッピング (マイナビニュース) - Yahoo!ニュース",
+    "東京メトロ東西線に「ぱとれーる」登場！ 子どもたちにも伝えたい「見えない仕事」とは？ (鉄道コム) - Yahoo!ニュース",
+    "東京メトロ東西線「ぱとれーる」公開「もぐぱくん」車体ラッピング（マイナビニュース） - Yahoo!ニュース",
+    "東京メトロ東西線に「ぱとれーる」登場！ 子どもたちにも伝えたい「見えない仕事」とは？（鉄道コム） - Yahoo!ニュース",
+    "東京メトロ、営業車両で線路設備を点検 保守人材の不足補う - 日本経済新聞"
+   ],
+   "keywords": [
+    [
+     "ぱとれーる"
+    ],
+    [
+     "東京メトロ",
+     "線路設備",
+     "点検"
+    ]
+   ]
+  },
+  {
+   "id": 12,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-27",
+    "end": "2026-10-29"
+   },
+   "title": "MoniRail獲Innovate UK合約，推進量子導航系統商用化",
+   "stars": 3,
+   "expected": "INCLUDE",
+   "expected_section": "技術新知",
+   "aliases": [
+    "UK Rail SME MoniRail Secures Share of £50 Million as Part of the UK Government’s Investment in Quantum Technologies - Railway-News"
+   ],
+   "keywords": [
+    [
+     "MoniRail"
+    ]
+   ]
+  },
+  {
+   "id": 13,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-27",
+    "end": "2026-10-29"
+   },
+   "title": "大阪Metro西梅田站設置免預約線上診療個室亭",
+   "stars": 1,
+   "expected": "EXCLUDE",
+   "expected_section": null,
+   "note": "非運輸服務",
+   "aliases": [
+    "地下鉄の駅構内で医師の診察や服薬指導 大阪メトロが個室ブース設置 予約不要、すきま時間活用 - 日テレNEWS NNN"
+   ],
+   "keywords": [
+    [
+     "大阪メトロ",
+     "診察"
+    ],
+    [
+     "大阪メトロ",
+     "診療"
+    ],
+    [
+     "西梅田",
+     "個室"
+    ]
+   ]
+  },
+  {
+   "id": 14,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-27",
+    "end": "2026-10-29"
+   },
+   "title": "東京地下鐵宣布將於夜間線路維修車輛導入「ポイントAI」駕駛輔助系統",
+   "stars": 4,
+   "expected": "INCLUDE",
+   "expected_section": "技術新知",
+   "aliases": [
+    "東京メトロ、夜間の線路保守作業車に運転者支援システム「ポイントAI」を導入へ AI画像認識で事故を防止 - LIGARE（リガーレ）",
+    "東京メトロ，夜間線路保守車両にAI運転者支援システム「ポイントAI」を導入へ - 鉄道ファン・railf.jp",
+    "東京メトロ、保守作業車にAI搭載の支援システム - Impress Watch",
+    "東京メトロ、保守作業車両にAI画像認識技術による支援システム搭載 - マイナビニュース",
+    "東京メトロ、AI画像認識の運転者支援システム「ポイントAI」を夜間線路保守車両に導入へ - クラウド Watch",
+    "東京メトロ、保守作業車に運転者支援システム導入 ポイント事故や障害物との衝突防止に - Tetsudo.com（鉄道コム）"
+   ],
+   "keywords": [
+    [
+     "ポイントAI"
+    ],
+    [
+     "東京メトロ",
+     "保守作業車"
+    ],
+    [
+     "東京メトロ",
+     "保守車両"
+    ]
+   ]
+  },
+  {
+   "id": 15,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-27",
+    "end": "2026-10-29"
+   },
+   "title": "東京メトロ東西線「ぱとれーる」搭載線路設備監測裝置車輛公開",
+   "merge_into": 11,
+   "note": "重複，應與 #11 合併"
+  },
+  {
+   "id": 16,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-27",
+    "end": "2026-10-29"
+   },
+   "title": "東京メトロ將為夜間線路保守作業車導入「ポイントAI」駕駛支援系統",
+   "merge_into": 14,
+   "note": "重複，應與 #14 合併"
+  },
+  {
+   "id": 17,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-27",
+    "end": "2026-10-29"
+   },
+   "title": "五個機構與路線共有118起電扶梯停運逾30日案例",
+   "stars": 3,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "aliases": [
+    "철도·지하철 에스컬레이터 한 달 넘게 멈춘 사례 118건…최장 297일, 노후·부품 공급이 관건 - 창업일보"
+   ],
+   "keywords": [
+    [
+     "에스컬레이터",
+     "118"
+    ]
+   ]
+  },
+  {
+   "id": 18,
+   "kind": "recall_target",
+   "period": {
+    "start": "2026-05-26",
+    "end": "2026-05-28"
+   },
+   "title": "東京メトロ 變電所・電気室の保守を遠隔化・CBM化（センシング・AI）",
+   "stars": 4,
+   "expected": "INCLUDE",
+   "expected_section": "技術新知",
+   "note": "漏在搜尋（技術詞缺 AI）",
+   "aliases": [],
+   "keywords": [
+    [
+     "東京メトロ",
+     "変電所"
+    ],
+    [
+     "東京メトロ",
+     "電気室"
+    ],
+    [
+     "東京メトロ",
+     "CBM"
+    ]
+   ],
+   "stars_basis": "user"
+  },
+  {
+   "id": 19,
+   "kind": "recall_target",
+   "period": {
+    "start": "2026-05-26",
+    "end": "2026-05-28"
+   },
+   "title": "Tram im Frankfurter Bahnhofsviertel entgleist – vier Verletzte",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "note": "漏在地區判斷",
+   "aliases": [
+    "Tram im Frankfurter Bahnhofsviertel entgleist – vier Verletzte - hessenschau.de"
+   ],
+   "keywords": [
+    [
+     "Frankfurt",
+     "entgleist"
+    ],
+    [
+     "Frankfurter",
+     "entgleist"
+    ]
+   ],
+   "stars_basis": "inferred from the selection rule (user may adjust)"
+  },
+  {
+   "id": 20,
+   "kind": "recall_target",
+   "period": {
+    "start": "2026-05-26",
+    "end": "2026-05-28"
+   },
+   "title": "LRT train derailed by Kitchener collision",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "note": "漏在地區判斷",
+   "aliases": [
+    "LRT train derailed by Kitchener collision - CTV News"
+   ],
+   "keywords": [
+    [
+     "Kitchener",
+     "LRT"
+    ],
+    [
+     "Kitchener",
+     "derail"
+    ]
+   ],
+   "stars_basis": "inferred from the selection rule (user may adjust)"
+  },
+  {
+   "id": 21,
+   "kind": "recall_target",
+   "period": {
+    "start": "2026-02-04",
+    "end": "2026-02-06"
+   },
+   "title": "현대로템 캐나다 에드먼턴 경전철 수주",
+   "stars": 3,
+   "expected": "INCLUDE",
+   "expected_section": "機電標案及採購動態",
+   "note": "漏在讀取內文與日期",
+   "aliases": [
+    "현대로템, 3200억 규모 캐나다 경전철 수주…'조기 납품' 경험 - 철도경제신문",
+    "현대로템, 캐나다 에드먼턴 경전철 모두 따냈다 [biz-플러스] - 서울경제",
+    "현대로템, 캐나다 에드먼턴 경전철 수주 | 뉴스 | 현대자동차그룹 - Hyundai Motor Group"
+   ],
+   "keywords": [
+    [
+     "현대로템",
+     "에드먼턴"
+    ],
+    [
+     "현대로템",
+     "캐나다",
+     "경전철"
+    ],
+    [
+     "Hyundai Rotem",
+     "Edmonton"
+    ]
+   ],
+   "stars_basis": "inferred from the selection rule (user may adjust)"
+  },
+  {
+   "id": 22,
+   "kind": "recall_target",
+   "period": {
+    "start": "2026-02-04",
+    "end": "2026-02-06"
+   },
+   "title": "CAF to Manufacture Nine Extra-Long Trams for Vitoria",
+   "stars": 3,
+   "expected": "INCLUDE",
+   "expected_section": "機電標案及採購動態",
+   "note": "漏在地區判斷",
+   "aliases": [
+    "CAF to Manufacture Nine Extra-Long Trams for Operaton in Vitoria - Railway-News"
+   ],
+   "keywords": [
+    [
+     "CAF",
+     "Vitoria"
+    ]
+   ],
+   "stars_basis": "inferred from the selection rule (user may adjust)"
+  }
+ ]
+}
