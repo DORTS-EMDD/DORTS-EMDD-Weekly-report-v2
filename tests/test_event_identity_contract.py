@@ -74,10 +74,11 @@ def _record(
     in_scope: bool = True,
     date_valid: bool = True,
     focus: tuple[str, ...] | None = None,
+    title: str = "Metro event report",
 ) -> EventIdentityRecord:
     candidate = CanonicalCandidate(
         candidate_id=candidate_id,
-        title="Metro event report",
+        title=title,
         url=url or f"https://fixtures.invalid/{candidate_id}",
         publisher=publisher,
         published_at=published_at,

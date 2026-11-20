@@ -173,10 +173,17 @@ def replay(audit: Mapping[str, Any]) -> EventIdentityRun:
 
     exchanges = audit.get("event_identity_exchanges") or ()
     procedures = recorded_procedures(exchanges)
+    # RC-79 (section A.60): the replayed records carry no source text, so the
+    # run's recorded Python candidate pairs are nominated as recorded (none for
+    # runs before RC-79).
+    recorded_pairs = {
+        tuple(sorted(pair)): 1 for pair in audit.get("event_identity_python_candidates") or ()
+    }
     with patch.multiple(
         event_identity_module,
         AGREEMENT_PROCEDURES=procedures,
         AGREEMENT_REQUIRED=min(event_identity_module.AGREEMENT_REQUIRED, procedures),
+        candidate_pairs=lambda *args, **kwargs: dict(recorded_pairs),
     ):
         return EventIdentity(RecordedAdvisor(exchanges)).evaluate(records_from_audit(audit))
 

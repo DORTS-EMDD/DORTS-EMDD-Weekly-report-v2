@@ -471,6 +471,13 @@ def build_selection_audit(
         # Section A.34 (observation only): every helper exchange, IDs only, for
         # an exact offline replay (scripts/event_identity_replay.py).
         "event_identity_exchanges": [dict(exchange) for exchange in getattr(run, "proposal_exchanges", ()) or ()],
+        # RC-79 (section A.60): the Python candidate pairs (IDs only), so a
+        # replay nominates exactly the pairs the run nominated.
+        "event_identity_python_candidates": sorted(
+            list(diagnostic.candidate_ids)
+            for diagnostic in getattr(run, "diagnostics", ()) or ()
+            if diagnostic.reason == "PYTHON_CANDIDATE"
+        ),
         "event_identity_technical_gaps": sorted(
             f"{gap.subject_id}:{_value(gap.kind)}:{gap.failure_class}"
             for gap in result.technical_gaps

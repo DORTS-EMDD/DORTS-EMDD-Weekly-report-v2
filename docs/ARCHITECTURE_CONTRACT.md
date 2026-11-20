@@ -1911,6 +1911,8 @@ Complete-link grouping is unchanged.
   * the same city, country, system, topic or project alone.
 * A generic name with no matching detail keeps the records apart.
 * Python compares no names, aliases or locations (section K unchanged).
+  (RC-79, section A.60: Python now nominates candidate pairs from shared rare
+  feature terms for confirmation; it still decides no pair.)
 
 **R6 Requests.**
 
@@ -3823,6 +3825,62 @@ are the first `200` observation; Search failures there are disclosed as usual.
 SEARCH_CONFIGURATION_VERSION = search-discovery-v13 (RC-78: Finland searched, 231 weekly requests)
 HEALTH_PROBE_ORDINALS = (1, 10, 115, 120, 224, 231)
 GOOGLE_NEWS_EDITION_GAPS = denmark
+```
+
+### A.60 RC-79 Event Identity: Python nominates candidate pairs (2026-11-20, user-approved)
+
+**Decision (revises RC-48 "Python does not compare names").** Python now finds
+candidate pairs; it still never merges, separates or decides a pair. Root cause
+(recall Run 44547985819, section A.58): the two ぱとれーる reports, same day and
+region, were in none of the six batch nominations, so no confirmation was ever
+asked; every merge depended on the batch helper's recall (RC-45, RC-46).
+
+* **Candidate pairs (`event_identity_candidates.py`, part of the Event Identity
+  owner).** Two eligible records pair when (a) their EvidenceService regions are
+  not established and different (a record without an established region pairs
+  with any record; an established conflict stays excluded, RC-22); (b) both
+  discovery publication times are known and at most 72 hours apart; and (c) their
+  title (without the publisher suffix) or Scope event-focus sentences share a
+  *feature term*, a term found in at least two and at most three records of the
+  run. Terms are read mechanically: Latin-script words of four or more letters,
+  katakana runs of three or more, three-character windows of Han and Hangul runs,
+  and quoted spans of three or more characters. Every profile's governed mode
+  words, the geographic reference's generic transit terms (and the words and CJK
+  windows inside them), a short multilingual stop-word list and month and weekday
+  names (a date is not an identity feature, RC-38) are not feature terms. No
+  system, operator or publisher name is written in the rule.
+* **Confirmation.** In each RC-52 procedure, after both nominations, the Python
+  pairs no confirmation of that procedure decided are joined into connected
+  groups, and each group is confirmed exactly like a nominated group (subject
+  `event-identity-python[-pN]:group-K:confirmation`). A pair is SAME_EVENT only
+  when at least two of the three procedures confirm it; the region check,
+  "an earlier confirmation's verdict stands", complete-link grouping and
+  fail-closed handling are unchanged.
+* **Observation.** Each pair is a `PYTHON_CANDIDATE` diagnostic (IDs and a term
+  count only); `event_identity_confirmed_pairs` counts Python groups as
+  `PYTHON[_PN]`; the run summary shows `event_identity_python_candidates`
+  (`PAIRS`, and `SAME`: pairs that ended in one Event). The selection audit
+  records the pairs (`event_identity_python_candidates`, IDs only) and the
+  replay nominates exactly those pairs.
+* **Offline measurement (no paid calls).** `recorded_answers.json` holds IDs only,
+  no titles or sentences, so it cannot exercise the rule. On the two audits of
+  Run 44547985819 rebuilt from the job logs (60 Event Identity records, labelled
+  by hand: 130 same-event pairs): Python nominates 86 pairs, 59 of them labelled
+  same-event and 27 different-event; its connected groups contain all 130
+  labelled pairs, including the two the run missed (ぱとれーる; one 三鶯線 council
+  pair). Replaying the recorded answers with the Python groups answered by the
+  labels: three extra confirmation requests per procedure in each period (nine
+  per run), ぱとれーる merges (127/127 in 10-27), nothing differently labelled
+  merges; the 三鶯線 pair stays apart because a model confirmation already
+  separated it (an earlier verdict stands).
+* Golden ED29 (ぱとれーる: no nomination proposes the pair, the Python
+  confirmation places it, one event; without Python it stays two).
+  ED01–ED28 results unchanged. Tests:
+  `tests/test_event_identity_python_candidates_rc79.py`.
+
+```text
+EVENT_IDENTITY_PYTHON_CANDIDATES = feature term in <= 3 records, <= 72 h, no established-region conflict (RC-79)
+EVENT_IDENTITY_SAME_EVENT = >= 2 of 3 procedures confirm (RC-52, unchanged)
 ```
 
 ### Shared production workflow

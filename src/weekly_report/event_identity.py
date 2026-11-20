@@ -31,6 +31,7 @@ from .contracts import (
     UnresolvedClaim,
 )
 from .evidence_sentences import event_focus_sentences, resolve_sentence_ids, segment_evidence_sentences
+from .event_identity_candidates import candidate_pairs
 
 
 # RC-15/RC-18 bounds (contract sections A.9, A.12). The request payload is
@@ -47,6 +48,9 @@ AGREEMENT_PROCEDURES = 3
 AGREEMENT_REQUIRED = 2
 # Batch ID suffix of the second and later procedures ("-p2", "-p3").
 PROCEDURE_SUFFIX = "-p"
+# RC-79 (section A.60): subject prefix of a confirmation of Python candidate
+# pairs ("event-identity-python-p2:group-1:confirmation").
+PYTHON_CANDIDATE_SUBJECT = "event-identity-python"
 
 EVENT_IDENTITY_GROUPING_RESPONSE_SCHEMA: dict[str, object] = {
     "type": "object",
@@ -320,11 +324,15 @@ class EventIdentity:
         conflicts: set[tuple[str, str]] = set()
         singles: set[tuple[str, ...]] = set()
         confirmed_in: dict[tuple[str, str], int] = {}
+        python_pairs = self._python_candidate_pairs(
+            [by_id[record.candidate_id] for request in requests for record in request.records], diagnostics
+        )
         for procedure in range(1, AGREEMENT_PROCEDURES + 1):
             suffix = "" if procedure == 1 else f"{PROCEDURE_SUFFIX}{procedure}"
             for pair in self._proposal_procedure(
                 [replace(request, batch_id=f"{request.batch_id}{suffix}") for request in requests],
                 by_id, diagnostics, technical_gaps, exchanges, conflicts, singles,
+                python_pairs, f"{PYTHON_CANDIDATE_SUBJECT}{suffix}",
             ):
                 confirmed_in[pair] = confirmed_in.get(pair, 0) + 1
         for pair, count in sorted(confirmed_in.items()):
@@ -337,6 +345,35 @@ class EventIdentity:
                 )
         return relations, excerpt_limits
 
+    @staticmethod
+    def _python_candidate_pairs(
+        records: Sequence[EventIdentityRecord],
+        diagnostics: list[EventIdentityDiagnostic],
+    ) -> tuple[tuple[str, str], ...]:
+        """RC-79 (section A.60): pairs Python nominates for confirmation; it decides nothing.
+
+        Records in different requests are considered too, so a pair split by
+        RC-18 batching can still reach confirmation. Each pair is recorded once
+        as a ``PYTHON_CANDIDATE`` diagnostic (IDs and a term count only).
+        """
+
+        unique = {record.candidate.candidate_id: record for record in records}
+        focus_text = {
+            candidate_id: "\n".join(
+                sentence.text
+                for sentence in event_focus_sentences(
+                    record.evidence.substantive_content, dict(record.scope.provenance).get("candidate_event_focus")
+                )
+            )
+            for candidate_id, record in unique.items()
+        }
+        pairs = candidate_pairs(
+            list(unique.values()), focus_text=focus_text, different_regions=_different_established_regions
+        )
+        for pair, shared in pairs.items():
+            diagnostics.append(EventIdentityDiagnostic(pair, "PYTHON_CANDIDATE", f"terms={shared}"))
+        return tuple(pairs)
+
     def _proposal_procedure(
         self,
         requests: Sequence[EventIdentityGroupingRequest],
@@ -346,8 +383,15 @@ class EventIdentity:
         exchanges: list[dict[str, object]],
         conflicts: set[tuple[str, str]],
         singles: set[tuple[str, ...]],
+        python_pairs: Sequence[tuple[str, str]] = (),
+        python_subject: str = PYTHON_CANDIDATE_SUBJECT,
     ) -> set[tuple[str, str]]:
-        """One RC-23/RC-44 proposal procedure; returns the pairs its confirmations confirmed."""
+        """One RC-23/RC-44 proposal procedure; returns the pairs its confirmations confirmed.
+
+        RC-79 (section A.60): after both nominations, the Python candidate pairs
+        no confirmation of this procedure decided are joined into connected
+        groups, and each group is confirmed exactly like a nominated group.
+        """
 
         # RC-44: each batch is nominated twice, the second time with its
         # records in reverse order; a pair either nomination proposes goes to
@@ -394,41 +438,75 @@ class EventIdentity:
                             pairs.append(pair)
                 if not pairs:
                     continue
-                confirmed, placement = self._confirmed_pairs(
-                    [by_id[candidate_id] for candidate_id in outcome],
-                    f"{group_subject}:confirmation",
-                    technical_gaps,
-                    diagnostics,
-                    exchanges,
+                confirmed_pairs |= self._confirm_proposed_group(
+                    outcome, pairs, group_subject, by_id, technical_gaps, diagnostics, exchanges, decided_now
                 )
-                if placement is not None:
-                    decided_now.update(
-                        pair for pair in pairs if all(placement[candidate_id] == "PLACED" for candidate_id in pair)
-                    )
-                for pair in pairs:
-                    if pair not in confirmed:
-                        # Observation only (RC-31): why the pair stayed apart.
-                        diagnostics.append(
-                            EventIdentityDiagnostic(
-                                pair,
-                                "PROPOSAL_NOT_CONFIRMED",
-                                f"{group_subject}|size={len(outcome)}|{_unconfirmed_outcome(pair, placement)}",
-                            )
-                        )
-                        continue
-                    confirmed_pairs.add(pair)
-                accepted = [pair for pair in pairs if pair in confirmed]
-                if accepted:
-                    # Observation only (section A.33): which nomination's group
-                    # confirmed these pairs, so a run shows where merges come from.
-                    diagnostics.append(
-                        EventIdentityDiagnostic(
-                            tuple(sorted({candidate_id for pair in accepted for candidate_id in pair})),
-                            "PROPOSAL_CONFIRMED",
-                            f"{group_subject}|pairs={len(accepted)}",
-                        )
-                    )
+        decided |= decided_now
+        pending = [pair for pair in python_pairs if pair not in decided]
+        for index, members in enumerate(_connected_groups(pending), start=1):
+            group_subject = f"{python_subject}:group-{index}"
+            pairs = [
+                _pair_key(left_id, right_id)
+                for position, left_id in enumerate(members)
+                for right_id in members[position + 1 :]
+                if _pair_key(left_id, right_id) not in decided
+                and not _different_established_regions(by_id[left_id], by_id[right_id])
+            ]
+            if not pairs:
+                continue
+            confirmed_pairs |= self._confirm_proposed_group(
+                members, pairs, group_subject, by_id, technical_gaps, diagnostics, exchanges, decided_now
+            )
         return confirmed_pairs
+
+    def _confirm_proposed_group(
+        self,
+        outcome: Sequence[str],
+        pairs: Sequence[tuple[str, str]],
+        group_subject: str,
+        by_id: Mapping[str, EventIdentityRecord],
+        technical_gaps: list[TechnicalGap],
+        diagnostics: list[EventIdentityDiagnostic],
+        exchanges: list[dict[str, object]],
+        decided_now: set[tuple[str, str]],
+    ) -> set[tuple[str, str]]:
+        """Confirm one proposed group (RC-23); returns its confirmed pairs among ``pairs``."""
+
+        confirmed, placement = self._confirmed_pairs(
+            [by_id[candidate_id] for candidate_id in outcome],
+            f"{group_subject}:confirmation",
+            technical_gaps,
+            diagnostics,
+            exchanges,
+        )
+        if placement is not None:
+            decided_now.update(
+                pair for pair in pairs if all(placement[candidate_id] == "PLACED" for candidate_id in pair)
+            )
+        accepted = []
+        for pair in pairs:
+            if pair not in confirmed:
+                # Observation only (RC-31): why the pair stayed apart.
+                diagnostics.append(
+                    EventIdentityDiagnostic(
+                        pair,
+                        "PROPOSAL_NOT_CONFIRMED",
+                        f"{group_subject}|size={len(outcome)}|{_unconfirmed_outcome(pair, placement)}",
+                    )
+                )
+                continue
+            accepted.append(pair)
+        if accepted:
+            # Observation only (section A.33): which nomination's group
+            # confirmed these pairs, so a run shows where merges come from.
+            diagnostics.append(
+                EventIdentityDiagnostic(
+                    tuple(sorted({candidate_id for pair in accepted for candidate_id in pair})),
+                    "PROPOSAL_CONFIRMED",
+                    f"{group_subject}|pairs={len(accepted)}",
+                )
+            )
+        return set(accepted)
 
     def _ask(
         self,
@@ -787,6 +865,26 @@ def _unconfirmed_outcome(pair: tuple[str, str], placement: Mapping[str, str] | N
         if state in states:
             return state
     return "SEPARATED"
+
+
+def _connected_groups(pairs: Sequence[tuple[str, str]]) -> list[tuple[str, ...]]:
+    """The connected groups the pairs form, each sorted, in a stable order (RC-79)."""
+
+    parent: dict[str, str] = {}
+
+    def root(item: str) -> str:
+        parent.setdefault(item, item)
+        while parent[item] != item:
+            parent[item] = parent[parent[item]]
+            item = parent[item]
+        return item
+
+    for left_id, right_id in pairs:
+        parent[root(left_id)] = root(right_id)
+    groups: dict[str, list[str]] = {}
+    for item in sorted(parent):
+        groups.setdefault(root(item), []).append(item)
+    return sorted((tuple(members) for members in groups.values() if len(members) > 1))
 
 
 def _pair_key(left_id: str, right_id: str) -> tuple[str, str]:

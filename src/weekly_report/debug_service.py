@@ -23,7 +23,7 @@ from urllib.parse import urlsplit
 from uuid import uuid4
 
 from .contracts import EvidenceResult, EvidenceState, RejectReason, SearchExecutionResult
-from .event_identity import PROCEDURE_SUFFIX, SECOND_NOMINATION_SUFFIX, proposal_subject_level
+from .event_identity import PROCEDURE_SUFFIX, PYTHON_CANDIDATE_SUBJECT, SECOND_NOMINATION_SUFFIX, proposal_subject_level
 
 
 STAGES = (
@@ -493,6 +493,7 @@ def build_engineering_summary(result: Any, *, files: Mapping[str, str]) -> dict[
             "diagnostics": dict(result.event_identity_diagnostic_distribution),
             "unconfirmed": dict(result.event_identity_unconfirmed_distribution),
             "confirmed_pairs": dict(result.event_identity_confirmed_pairs),
+            "python_candidates": dict(getattr(result, "event_identity_python_candidates", {}) or {}),
         },
         "event_counts": {
             "categorized": counts.get("category_results"),
@@ -689,7 +690,8 @@ def _field_diagnostic(
 
 _EVENT_IDENTITY_DIAGNOSTICS = frozenset({
     "DISTINCT_REGION", "EXACT_SOURCE_BODY", "INSUFFICIENT_IDENTITY", "PROPOSAL_BATCH_SPLIT", "PROPOSAL_CONFIRMED", "PROPOSAL_MEMBER_REJECTED",
-    "PROPOSAL_NOT_AGREED", "PROPOSAL_NOT_CONFIRMED", "PROPOSAL_REGION_CONFLICT", "SINGLE_MEMBER_PROPOSAL", "UPSTREAM_NOT_ELIGIBLE",
+    "PROPOSAL_NOT_AGREED", "PROPOSAL_NOT_CONFIRMED", "PROPOSAL_REGION_CONFLICT", "PYTHON_CANDIDATE", "SINGLE_MEMBER_PROPOSAL",
+    "UPSTREAM_NOT_ELIGIBLE",
 })
 _UNCONFIRMED_OUTCOMES = {"SEPARATED", "OMITTED", "MEMBER_INVALID", "CONFIRMATION_FAILED"}
 
@@ -718,7 +720,19 @@ def event_identity_projection(run: Any) -> dict[str, dict[str, int]]:
         ),
         # Section A.33: confirmed pairs by the nomination that proposed them.
         "event_identity_confirmed_pairs": _nomination_pairs(run.diagnostics),
+        # RC-79 (section A.60): Python candidate pairs, and how many of them
+        # ended in one Event (by any SAME path).
+        "event_identity_python_candidates": _python_candidates(run),
     }
+
+
+def _python_candidates(run: Any) -> dict[str, int]:
+    pairs = {tuple(item.candidate_ids) for item in run.diagnostics if item.reason == "PYTHON_CANDIDATE"}
+    if not pairs:
+        return {}
+    event_of = {candidate_id: group.event_id for group in run.groups for candidate_id in group.member_candidate_ids}
+    same = sum(1 for left, right in pairs if left in event_of and event_of[left] == event_of.get(right))
+    return {"PAIRS": len(pairs), "SAME": same}
 
 
 def _nomination_pairs(diagnostics: Any) -> dict[str, int]:
@@ -728,7 +742,10 @@ def _nomination_pairs(diagnostics: Any) -> dict[str, int]:
             continue
         subject, _, count = item.detail.rpartition("|pairs=")
         batch = subject.split(":", 1)[0]
-        nomination = "SECOND" if batch.endswith(SECOND_NOMINATION_SUFFIX) else "FIRST"
+        if batch.startswith(PYTHON_CANDIDATE_SUBJECT):
+            nomination = "PYTHON"  # RC-79: a group of Python candidate pairs
+        else:
+            nomination = "SECOND" if batch.endswith(SECOND_NOMINATION_SUFFIX) else "FIRST"
         # RC-52: confirmations of the second and later procedures are counted apart.
         procedure = re.search(rf"{re.escape(PROCEDURE_SUFFIX)}(\d+)", batch)
         key = f"{nomination}_P{procedure.group(1)}" if procedure else nomination
