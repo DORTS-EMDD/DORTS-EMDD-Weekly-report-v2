@@ -88,10 +88,10 @@ def test_gold_must_follow_the_star_rule(tmp_path, bad):
 def test_recall_v1_gold_matches_the_user_answer():
     gold = load_gold(ROOT / "acceptance" / "gold" / "recall_v1.json")
     items = {item["id"]: item for item in gold["items"]}
-    assert sorted(items) == list(range(1, 26))
+    assert sorted(items) == list(range(1, 27))
     assert [i for i, item in items.items() if item["kind"] == "recall_target"] == [18, 19, 20, 21, 22]
     assert items[15]["merge_into"] == 11 and items[16]["merge_into"] == 14
-    assert {i for i, item in items.items() if item.get("expected") == "EXCLUDE"} == {1, 6, 13, 25}
+    assert {i for i, item in items.items() if item.get("expected") == "EXCLUDE"} == {1, 6, 13, 25, 26}
     # v2 (2026-11-20): Sydney ★★ operations, Nice ★★★ procurement, Gwangju ★ (announced plan).
     assert (items[23]["stars"], items[23]["expected_section"]) == (2, "營運動態")
     assert (items[24]["stars"], items[24]["expected_section"]) == (3, "機電標案及採購動態")

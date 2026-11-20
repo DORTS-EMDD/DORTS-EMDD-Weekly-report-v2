@@ -3964,6 +3964,52 @@ exported. Observation only:
 * No decision changes: no retry, no fallback; the reject reason and gate are as
   before. Tests: `tests/test_google_news_links.py` (`LinkResolutionObservationTests`).
 
+### A.63 RC-82 Google News link retry and technical gap; two Category guidance sentences (2026-11-20, user decisions)
+
+**Link resolution (user decision; AGENTS section 13).** In recall Run 44652152415
+all 103 Google News links of 2026-05-26..05-28 failed resolution with a transport
+error; they were counted as Evidence rejections and the run reported `SUCCESS`
+with no technical gap, so a zero-event report would have read as "no qualifying
+events".
+
+* Within EvidenceService's acquisition responsibility, each resolution request
+  (`ARTICLE_PAGE`, `BATCHEXECUTE`) that fails transiently (a connection error or
+  timeout, HTTP 429 or 5xx) is retried once after 5 seconds
+  (`LINK_RETRY_DELAY_SECONDS`); any other non-200 status is not retried (RC-6
+  spirit: retry only when no usable answer came back, at most once).
+* A transient failure left after the retry raises
+  `EvidenceAcquisitionTechnicalFailure`; ReportApplication records an
+  `Evidence` TechnicalGap (`TRANSIENT_FAILURE_AFTER_RETRY`, attempts 2, failure
+  class such as `LINK_RESOLUTION_BATCHEXECUTE_HTTP_429`), so the run is
+  `SUCCESS_WITH_TECHNICAL_GAPS` and the artifact discloses it. It is no longer an
+  Evidence rejection. Non-transient failures (403, 404, unparseable pages) stay
+  Evidence rejections with their RC-81 observation; a link that recovers on the
+  retry records `link_resolution_retries`.
+* **Pending (BLOCKED_USER_DECISION):** a run-level threshold on the share of
+  links lost to such gaps and the wait-and-rerun behaviour; proposed to the user,
+  not implemented.
+
+**Category guidance (user decision; prompt `category-principal-action-v10`).** No
+action is added:
+
+* Selection for a funding, development or demonstration programme, and an
+  announcement that a technology will be developed, piloted or demonstrated when
+  that work has not started, are `PROJECT_STEP` (Gwangju AX, gold #25 one star).
+* A site visit, inspection tour or safety walk-through by executives, officials
+  or a board is `EVENT_OR_EXHIBITION`, not `OPERATIONAL_GOVERNANCE`, unless the
+  evidence reports a decision, service change or safety measure it produced
+  (Busan-Gimhae, gold #26 one star).
+
+Gold answer v2.1 adds #26. Tests: `tests/test_google_news_links.py`
+(`LinkResolutionRetryTests`), `tests/test_category_boundary_golden.py`,
+`tests/test_recall_score.py`. All Golden results are unchanged.
+
+```text
+LINK_RESOLUTION_RETRY = once, 5 s, transient only (connection, timeout, 429, 5xx) (RC-82)
+LINK_RESOLUTION_TRANSIENT_FAILURE = TechnicalGap (Evidence), not an Evidence rejection (RC-82)
+CATEGORY_PROMPT_VERSION = category-principal-action-v10 (RC-82)
+```
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式

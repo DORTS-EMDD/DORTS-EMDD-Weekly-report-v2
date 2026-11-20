@@ -20,6 +20,7 @@ from urllib.parse import unquote_plus, urljoin, urlsplit, urlunsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from .contracts import (
+    EvidenceAcquisitionTechnicalFailure,
     RegionResolution,
     RegionResolutionBasis,
     SemanticProviderConfigurationFailure,
@@ -588,6 +589,10 @@ class EvidenceService:
         try:
             resolution = self._link_resolver.resolve(input_url)
         except LinkResolutionError as exc:
+            if getattr(exc, "transient", False):
+                # RC-82: still failing transiently after the one retry; the
+                # candidate becomes a disclosed TechnicalGap, not a rejection.
+                raise EvidenceAcquisitionTechnicalFailure(exc.failure_class, attempts=exc.attempts) from None
             link.update(link_resolution=exc.failure.value, link_resolution_detail=exc.detail)
             # RC-81 (observation only): which request failed and how.
             for key, value in (
@@ -609,6 +614,9 @@ class EvidenceService:
             link_resolution_requests=resolution.requests,
             link_resolved_url=publisher_url,
         )
+        if getattr(resolution, "retries", 0):
+            # RC-82 (observation): a transient failure cleared by its retry.
+            link["link_resolution_retries"] = resolution.retries
         origin = same_publisher(item.publisher_url, publisher_url)
         link["publisher_origin_check"] = "NOT_DECLARED" if origin is None else ("MATCH" if origin else "MISMATCH")
         if not publisher_url:

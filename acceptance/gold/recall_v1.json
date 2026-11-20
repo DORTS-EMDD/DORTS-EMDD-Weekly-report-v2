@@ -651,7 +651,35 @@
    ],
    "stars_basis": "user condition applied to this period's Evidence (announced plan)",
    "source_run_id": 44547985819
+  },
+  {
+   "id": 26,
+   "kind": "report",
+   "period": {
+    "start": "2026-02-04",
+    "end": "2026-02-06"
+   },
+   "title": "부산김해경전철 대표이사 설 연휴 앞 차량기지 현장 안전점검",
+   "stars": 1,
+   "expected": "EXCLUDE",
+   "expected_section": null,
+   "note": "使用者 2026-11-20：主管、官員或董事會的現場視察、安全巡檢屬聲明評論或活動，不收（Run 44652152415 曾誤收為營運動態）。",
+   "aliases": [
+    "부산김해경전철, 설 연휴 앞두고 임직원 현장 안전점검 실시 - 한국철도일보"
+   ],
+   "keywords": [
+    [
+     "부산김해경전철",
+     "안전점검"
+    ],
+    [
+     "부산-김해경전철",
+     "안전점검"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 44652152415
   }
  ],
- "version_note": "v1: 17 reported events of Run 44468386445 and recall targets #18-#22; v2 (2026-11-20): #23-#25, new events of Run 44547985819."
+ "version_note": "v1: 17 reported events of Run 44468386445 and recall targets #18-#22; v2 (2026-11-20): #23-#25, new events of Run 44547985819. v2.1 (2026-11-20): #26 Busan-Gimhae CEO safety inspection, 1 star; #25 confirmed 1 star."
 }

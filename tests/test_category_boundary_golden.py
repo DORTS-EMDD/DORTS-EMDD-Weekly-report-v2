@@ -130,7 +130,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         # the action definitions, and Python maps the action to the Category.
         from src.weekly_report.contracts import CategoryPrincipalAction
 
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v9")
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v10")
         guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
         for action in CategoryPrincipalAction:
             self.assertIn(f"{action.value}:", guidance)
@@ -155,6 +155,12 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         self.assertIn("the action is still PROJECT_STEP", guidance)
         self.assertIn("A service change is the principal action only when the evidence reports the service change itself as its news", guidance)
         self.assertIn("starts with a letter a-z", guidance)
+        # RC-82 (user decision 2026-11-20): announced plans and executive
+        # inspections are named under their existing actions (no new action).
+        self.assertIn("Selection for a funding, development or demonstration programme", guidance)
+        self.assertIn("when that work has not started, are PROJECT_STEP, not TECHNOLOGY_TRIAL_OR_DEPLOYMENT", guidance)
+        self.assertIn("safety walk-through by executives, officials or a board", guidance)
+        self.assertIn("is EVENT_OR_EXHIBITION, not OPERATIONAL_GOVERNANCE", guidance)
 
     def test_every_action_maps_to_exactly_one_outcome(self):
         from src.weekly_report.contracts import CategoryId, CategoryPrincipalAction, CategoryResolutionReason

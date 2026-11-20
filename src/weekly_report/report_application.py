@@ -12,6 +12,7 @@ from .candidate_normalizer import CandidateNormalizationError, CandidateNormaliz
 from .debug_service import observe_stage
 from .classifier import Classifier
 from .contracts import (
+    EvidenceAcquisitionTechnicalFailure,
     AcquisitionRecord,
     CandidateNormalizationFailure,
     CandidateNormalizationResult,
@@ -689,7 +690,9 @@ class ReportApplication:
             for normalized_candidate in normalized.normalized_candidates:
                 try:
                     evidence = self._evidence_service.evaluate(normalized_candidate.candidate)
-                except SemanticProviderTechnicalFailure as failure:
+                except (SemanticProviderTechnicalFailure, EvidenceAcquisitionTechnicalFailure) as failure:
+                    # RC-82: a link that could not be resolved for a transient
+                    # reason is a disclosed technical gap, not an Evidence rejection.
                     technical_gaps.append(
                         TechnicalGap.from_failure("Evidence", normalized_candidate.candidate.candidate_id, failure)
                     )

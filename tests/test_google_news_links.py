@@ -73,7 +73,7 @@ class GoogleNewsLinkTests(unittest.TestCase):
         )
         for transport, failure in cases:
             with self.subTest(failure=failure), self.assertRaises(LinkResolutionError) as context:
-                GoogleNewsLinkResolver(transport).resolve(LINK)
+                GoogleNewsLinkResolver(transport, sleep=lambda seconds: None).resolve(LINK)
             self.assertIs(context.exception.failure, failure)
 
     def test_publisher_origin_comparison(self):
@@ -169,7 +169,7 @@ class EvidenceLinkResolutionTests(unittest.TestCase):
         fetched = []
         for service in (
             EvidenceService(lambda url: fetched.append(url)),
-            EvidenceService(lambda url: fetched.append(url), link_resolver=GoogleNewsLinkResolver(_Transport(page_status=429))),
+            EvidenceService(lambda url: fetched.append(url), link_resolver=GoogleNewsLinkResolver(_Transport(page_status=404))),
         ):
             result = service.evaluate(self._candidate())
             self.assertEqual(result.state, EvidenceState.REJECTED)
@@ -193,9 +193,11 @@ class LinkResolutionObservationTests(unittest.TestCase):
         from src.weekly_report.debug_service import evidence_projection
         from src.weekly_report.selection_audit import _evidence
 
+        # Non-transient statuses are still Evidence rejections (RC-82 turns
+        # transient ones into technical gaps; see LinkResolutionRetryTests).
         cases = (
-            (_Transport(page_status=429), {"link_resolution_step": "ARTICLE_PAGE", "link_resolution_http_status": 429}),
-            (_Transport(batch_status=503), {"link_resolution_step": "BATCHEXECUTE", "link_resolution_http_status": 503}),
+            (_Transport(page_status=404), {"link_resolution_step": "ARTICLE_PAGE", "link_resolution_http_status": 404}),
+            (_Transport(batch_status=403), {"link_resolution_step": "BATCHEXECUTE", "link_resolution_http_status": 403}),
         )
         for transport, expected in cases:
             with self.subTest(expected=expected):
@@ -216,7 +218,90 @@ class LinkResolutionObservationTests(unittest.TestCase):
             raise TimeoutError("slow")
 
         with self.assertRaises(LinkResolutionError) as raised:
-            GoogleNewsLinkResolver(broken).resolve(LINK)
+            GoogleNewsLinkResolver(broken, sleep=lambda seconds: None).resolve(LINK)
         self.assertEqual((raised.exception.step, raised.exception.transport_error, raised.exception.http_status),
                          ("ARTICLE_PAGE", "TimeoutError", None))
+        self.assertTrue(raised.exception.transient)
+        self.assertEqual(raised.exception.attempts, 2)
         self.assertIs(raised.exception.failure, LinkResolutionFailure.TRANSPORT)
+
+
+class _Sequence:
+    """Answers each request from a script: an int status or an exception class."""
+
+    def __init__(self, *answers):
+        self.answers, self.calls = list(answers), []
+
+    def __call__(self, method, url, headers, body, timeout):
+        self.calls.append(method)
+        answer = self.answers.pop(0)
+        if isinstance(answer, type) and issubclass(answer, BaseException):
+            raise answer("down")
+        if answer != 200:
+            return answer, ""
+        if method == "GET":
+            return 200, '<div jscontroller="x" data-n-a-sg="SIG" data-n-a-ts="1700000000">'
+        return 200, _batch_response(PUBLISHER)
+
+
+class LinkResolutionRetryTests(unittest.TestCase):
+    """RC-82 (section A.63): one retry for transient failures; what is left is a gap."""
+
+    def _candidate(self):
+        return CanonicalCandidate("C1", "Chennai Metro opens Yellow Line", LINK, "Railway Gazette", publisher_url="https://www.railwaygazette.com")
+
+    def _resolver(self, transport, waits):
+        return GoogleNewsLinkResolver(transport, sleep=waits.append)
+
+    def test_a_transient_failure_is_retried_once_after_the_wait(self):
+        from src.weekly_report.google_news_links import LINK_RETRY_DELAY_SECONDS
+
+        for first in (429, 500, 503, TimeoutError, ConnectionError):
+            with self.subTest(first=first):
+                waits = []
+                transport = _Sequence(first, 200, 200)
+                resolution = self._resolver(transport, waits).resolve(LINK)
+                self.assertEqual(resolution.publisher_url, PUBLISHER)
+                self.assertEqual((resolution.requests, resolution.retries), (3, 1))
+                self.assertEqual(waits, [LINK_RETRY_DELAY_SECONDS])
+        waits = []
+        resolution = self._resolver(_Sequence(200, 429, 200), waits).resolve(LINK)
+        self.assertEqual((resolution.requests, resolution.retries, waits), (3, 1, [5.0]))
+
+    def test_other_4xx_statuses_are_not_retried(self):
+        for status in (403, 404, 410):
+            with self.subTest(status=status):
+                waits, transport = [], _Sequence(status)
+                with self.assertRaises(LinkResolutionError) as raised:
+                    self._resolver(transport, waits).resolve(LINK)
+                self.assertFalse(raised.exception.transient)
+                self.assertEqual((transport.calls, waits), (["GET"], []))
+
+    def test_a_transient_failure_left_after_the_retry_is_a_technical_gap(self):
+        from src.weekly_report.contracts import EvidenceAcquisitionTechnicalFailure, TechnicalGap, TechnicalGapKind
+
+        fetched = []
+        service = EvidenceService(lambda url: fetched.append(url), link_resolver=self._resolver(_Sequence(200, 429, 429), []))
+        with self.assertRaises(EvidenceAcquisitionTechnicalFailure) as raised:
+            service.evaluate(self._candidate())
+        self.assertEqual(raised.exception.failure_class, "LINK_RESOLUTION_BATCHEXECUTE_HTTP_429")
+        self.assertEqual(fetched, [])
+        gap = TechnicalGap.from_failure("Evidence", "C1", raised.exception)
+        self.assertEqual((gap.kind, gap.attempts), (TechnicalGapKind.TRANSIENT_FAILURE_AFTER_RETRY, 2))
+
+    def test_a_recovered_link_records_its_retry(self):
+        def fetcher(url):
+            return FetchedSource(url=url, content="<html><body><p>short</p></body></html>", status_code=200,
+                                 content_type="text/html", redirect_chain=(url,))
+
+        result = EvidenceService(fetcher, link_resolver=self._resolver(_Sequence(503, 200, 200), [])).evaluate(self._candidate())
+        self.assertEqual(result.provenance["link_resolution_retries"], 1)
+        self.assertNotIn("news.google.com", result.canonical_source_url)
+
+    def test_the_application_discloses_the_gap_instead_of_a_rejection(self):
+        import inspect
+
+        from src.weekly_report import report_application
+
+        source = inspect.getsource(report_application.ReportApplication)
+        self.assertIn("except (SemanticProviderTechnicalFailure, EvidenceAcquisitionTechnicalFailure) as failure:", source)

@@ -2550,6 +2550,22 @@ class SemanticProviderTechnicalFailure(RuntimeError):
         super().__init__(f"semantic provider technical failure: {failure_class}")
 
 
+class EvidenceAcquisitionTechnicalFailure(RuntimeError):
+    """RC-82 (section A.63): a source could not be acquired for a transient reason.
+
+    EvidenceService raises it when a Google News discovery link still fails
+    transiently (a connection error or timeout, HTTP 429 or 5xx) after its one
+    retry. It is not an Evidence decision: the candidate becomes a disclosed
+    TechnicalGap, never an Evidence rejection.
+    """
+
+    def __init__(self, failure_class: str, *, attempts: int, transient: bool = True) -> None:
+        self.failure_class = failure_class if isinstance(failure_class, str) and failure_class.strip() else "UNKNOWN"
+        self.attempts = int(attempts)
+        self.transient = bool(transient)
+        super().__init__(f"evidence acquisition technical failure: {self.failure_class}")
+
+
 class SemanticProviderConfigurationFailure(RuntimeError):
     """Configuration or authentication failure; the formal run must stop."""
 
@@ -2610,7 +2626,7 @@ class TechnicalGap:
 
     @classmethod
     def from_failure(cls, stage: str, subject_id: str, failure: BaseException) -> "TechnicalGap":
-        if isinstance(failure, SemanticProviderTechnicalFailure):
+        if isinstance(failure, (SemanticProviderTechnicalFailure, EvidenceAcquisitionTechnicalFailure)):
             kind = (
                 TechnicalGapKind.TRANSIENT_FAILURE_AFTER_RETRY
                 if failure.transient

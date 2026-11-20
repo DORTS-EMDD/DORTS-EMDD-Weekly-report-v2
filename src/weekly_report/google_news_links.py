@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 import json
 import re
+import time
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit
 from urllib.request import Request, urlopen
@@ -29,6 +30,11 @@ _SIGNATURE = re.compile(r'data-n-a-sg="([^"]+)"')
 _TIMESTAMP = re.compile(r'data-n-a-ts="(\d+)"')
 _BATCH_ENDPOINT = "https://news.google.com/_/DotsSplashUi/data/batchexecute"
 _USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Weekly-report-v2-EvidenceService/1.0"
+
+# RC-82 (section A.63, user decision 2026-11-20): a transient failure of one
+# resolution request (a connection error or timeout, HTTP 429 or 5xx) is
+# retried once after this wait; any other non-200 status is not retried.
+LINK_RETRY_DELAY_SECONDS = 5.0
 
 # (method, url, headers, body, timeout) -> (status, text)
 LinkTransport = Callable[[str, str, dict[str, str], bytes | None, float], tuple[int, str]]
@@ -55,6 +61,8 @@ class LinkResolutionError(RuntimeError):
         step: str | None = None,
         http_status: int | None = None,
         transport_error: str | None = None,
+        transient: bool = False,
+        attempts: int = 1,
     ) -> None:
         super().__init__(f"{failure.value}: {detail}")
         self.failure = failure
@@ -62,6 +70,16 @@ class LinkResolutionError(RuntimeError):
         self.step = step
         self.http_status = http_status
         self.transport_error = transport_error
+        # RC-82: a transient failure that its one retry did not clear.
+        self.transient = transient
+        self.attempts = attempts
+
+    @property
+    def failure_class(self) -> str:
+        """A safe token naming the failed request and how it failed (RC-82)."""
+
+        cause = f"HTTP_{self.http_status}" if self.http_status is not None else (self.transport_error or self.failure.value)
+        return f"LINK_RESOLUTION_{self.step or 'UNKNOWN'}_{cause}".upper()
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +88,8 @@ class LinkResolution:
     publisher_url: str
     method: str
     requests: int
+    # RC-82: requests repeated after a transient failure (0 or more).
+    retries: int = 0
 
 
 def is_google_news_article_url(url: str) -> bool:
@@ -136,12 +156,56 @@ def _default_transport(method: str, url: str, headers: dict[str, str], body: byt
         return int(exc.code), ""
 
 
+def _is_transient_status(status: int) -> bool:
+    return status == 429 or 500 <= status <= 599
+
+
 class GoogleNewsLinkResolver:
     """Find the publisher URL a Google News discovery link points to."""
 
-    def __init__(self, transport: LinkTransport | None = None, *, timeout_seconds: float = 10.0) -> None:
+    def __init__(
+        self,
+        transport: LinkTransport | None = None,
+        *,
+        timeout_seconds: float = 10.0,
+        retry_delay_seconds: float = LINK_RETRY_DELAY_SECONDS,
+        sleep: Callable[[float], None] = time.sleep,
+    ) -> None:
         self._transport = transport or _default_transport
         self._timeout = float(timeout_seconds)
+        self._retry_delay = float(retry_delay_seconds)
+        self._sleep = sleep
+
+    def _request(self, step: str, method: str, url: str, headers: dict[str, str], body: bytes | None) -> tuple[int, str, int]:
+        """One resolution request, retried once on a transient failure (RC-82).
+
+        Returns the status, the text and how many requests were sent. A
+        non-transient non-200 status is returned for the caller to reject; a
+        transient failure left after the retry raises a transient
+        ``LinkResolutionError``.
+        """
+
+        for attempt in (1, 2):
+            try:
+                status, text = self._transport(method, url, headers, body, self._timeout)
+            except (TimeoutError, URLError, OSError) as exc:
+                if attempt == 1:
+                    self._sleep(self._retry_delay)
+                    continue
+                raise LinkResolutionError(
+                    LinkResolutionFailure.TRANSPORT, type(exc).__name__, step=step,
+                    transport_error=type(exc).__name__, transient=True, attempts=attempt,
+                ) from None
+            if _is_transient_status(status):
+                if attempt == 1:
+                    self._sleep(self._retry_delay)
+                    continue
+                raise LinkResolutionError(
+                    LinkResolutionFailure.TRANSPORT, f"{step.lower()} HTTP {status}", step=step,
+                    http_status=status, transient=True, attempts=attempt,
+                )
+            return status, text, attempt
+        raise AssertionError("unreachable")  # pragma: no cover
 
     def resolve(self, url: str) -> LinkResolution:
         article_id = google_news_article_id(url)
@@ -150,56 +214,40 @@ class GoogleNewsLinkResolver:
         legacy = decode_legacy_article_id(article_id)
         if legacy is not None:
             return LinkResolution(url, legacy, "LEGACY_ID_DECODE", 0)
-        requests = 0
         step = "ARTICLE_PAGE"
-        try:
-            status, page = self._transport(
-                "GET",
-                f"https://{GOOGLE_NEWS_HOST}/rss/articles/{article_id}",
-                {"User-Agent": _USER_AGENT, "Accept": "text/html"},
-                None,
-                self._timeout,
-            )
-            requests += 1
-            if status != 200:
-                raise LinkResolutionError(
-                    LinkResolutionFailure.TRANSPORT, f"article page HTTP {status}", step=step, http_status=status
-                )
-            signature, timestamp = _SIGNATURE.search(page), _TIMESTAMP.search(page)
-            if not signature or not timestamp:
-                raise LinkResolutionError(
-                    LinkResolutionFailure.UNRESOLVABLE, "article page has no signing parameters", step=step
-                )
-            inner = (
-                '["garturlreq",[["X","X",["X","X"],null,null,1,1,"US:en",null,1,null,null,null,null,null,0,1],'
-                f'"X","X",1,[1,1,1],1,1,null,0,0,null,0],"{article_id}",{timestamp.group(1)},"{signature.group(1)}"]'
-            )
-            body = ("f.req=" + quote(json.dumps([[["Fbv4je", inner]]], separators=(",", ":")))).encode("utf-8")
-            step = "BATCHEXECUTE"
-            status, text = self._transport(
-                "POST",
-                _BATCH_ENDPOINT,
-                {"User-Agent": _USER_AGENT, "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
-                body,
-                self._timeout,
-            )
-            requests += 1
-        except LinkResolutionError:
-            raise
-        except (TimeoutError, URLError, OSError) as exc:
-            raise LinkResolutionError(
-                LinkResolutionFailure.TRANSPORT, type(exc).__name__, step=step, transport_error=type(exc).__name__
-            ) from None
+        status, page, sent = self._request(
+            step,
+            "GET",
+            f"https://{GOOGLE_NEWS_HOST}/rss/articles/{article_id}",
+            {"User-Agent": _USER_AGENT, "Accept": "text/html"},
+            None,
+        )
+        requests = sent
         if status != 200:
-            raise LinkResolutionError(
-                LinkResolutionFailure.TRANSPORT, f"batchexecute HTTP {status}", step=step, http_status=status
-            )
+            raise LinkResolutionError(LinkResolutionFailure.TRANSPORT, f"article page HTTP {status}", step=step, http_status=status)
+        signature, timestamp = _SIGNATURE.search(page), _TIMESTAMP.search(page)
+        if not signature or not timestamp:
+            raise LinkResolutionError(LinkResolutionFailure.UNRESOLVABLE, "article page has no signing parameters", step=step)
+        inner = (
+            '["garturlreq",[["X","X",["X","X"],null,null,1,1,"US:en",null,1,null,null,null,null,null,0,1],'
+            f'"X","X",1,[1,1,1],1,1,null,0,0,null,0],"{article_id}",{timestamp.group(1)},"{signature.group(1)}"]'
+        )
+        body = ("f.req=" + quote(json.dumps([[["Fbv4je", inner]]], separators=(",", ":")))).encode("utf-8")
+        step = "BATCHEXECUTE"
+        status, text, sent = self._request(
+            step,
+            "POST",
+            _BATCH_ENDPOINT,
+            {"User-Agent": _USER_AGENT, "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
+            body,
+        )
+        requests += sent
+        if status != 200:
+            raise LinkResolutionError(LinkResolutionFailure.TRANSPORT, f"batchexecute HTTP {status}", step=step, http_status=status)
         publisher = _parse_batch_response(text)
         if publisher is None:
-            raise LinkResolutionError(
-                LinkResolutionFailure.UNRESOLVABLE, "batchexecute returned no publisher URL", step=step
-            )
-        return LinkResolution(url, publisher, "GOOGLE_NEWS_ARTICLE_ENDPOINT", requests)
+            raise LinkResolutionError(LinkResolutionFailure.UNRESOLVABLE, "batchexecute returned no publisher URL", step=step)
+        return LinkResolution(url, publisher, "GOOGLE_NEWS_ARTICLE_ENDPOINT", requests, retries=requests - 2)
 
 
 def _parse_batch_response(text: str) -> str | None:
@@ -239,6 +287,7 @@ def same_publisher(publisher_url: str, resolved_url: str) -> bool | None:
 __all__ = [
     "GOOGLE_NEWS_HOST",
     "GoogleNewsLinkResolver",
+    "LINK_RETRY_DELAY_SECONDS",
     "LinkResolution",
     "LinkResolutionError",
     "LinkResolutionFailure",
