@@ -3821,6 +3821,15 @@ are the first `200` observation; Search failures there are disclosed as usual.
   `NZ:en` (`en-NZ`), 40 to 101 items for `metro`. Their encodings stay unchanged;
   no market became a coverage gap.
 
+* First production observation of the Finnish edition (2026-11-20, recall
+  Run 44652152415, three periods, 10 Finnish requests each with
+  `hl=fi-FI&gl=FI&ceid=FI:fi`, no redirect followed): no Finnish request is among
+  the run summaries' `search_failure_item`s (the failures listed are 6 and 7
+  `RATE_LIMIT` 429s of other markets), so every Finnish request answered `200`; a
+  redirect would have been recorded as a non-200 failure. A direct one-off
+  request from the development environment was not possible (its network blocks
+  `news.google.com`).
+
 ```text
 SEARCH_CONFIGURATION_VERSION = search-discovery-v13 (RC-78: Finland searched, 231 weekly requests)
 HEALTH_PROBE_ORDINALS = (1, 10, 115, 120, 224, 231)
