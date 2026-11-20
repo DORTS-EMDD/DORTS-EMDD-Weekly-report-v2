@@ -179,3 +179,44 @@ class EvidenceLinkResolutionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LinkResolutionObservationTests(unittest.TestCase):
+    """RC-81 (observation only): the failed Google News request and its HTTP status."""
+
+    def _candidate(self):
+        return CanonicalCandidate("C1", "Chennai Metro opens Yellow Line", LINK, "Railway Gazette", publisher_url="https://www.railwaygazette.com")
+
+    def test_the_failed_step_and_status_reach_provenance_and_the_signature(self):
+        from types import SimpleNamespace
+
+        from src.weekly_report.debug_service import evidence_projection
+        from src.weekly_report.selection_audit import _evidence
+
+        cases = (
+            (_Transport(page_status=429), {"link_resolution_step": "ARTICLE_PAGE", "link_resolution_http_status": 429}),
+            (_Transport(batch_status=503), {"link_resolution_step": "BATCHEXECUTE", "link_resolution_http_status": 503}),
+        )
+        for transport, expected in cases:
+            with self.subTest(expected=expected):
+                result = EvidenceService(lambda url: None, link_resolver=GoogleNewsLinkResolver(transport)).evaluate(self._candidate())
+                self.assertEqual(result.reject_reason.value, "CONTENT_UNAVAILABLE")
+                for key, value in expected.items():
+                    self.assertEqual(result.provenance[key], value)
+                signatures = evidence_projection((result,))["evidence_rejection_signature_distribution"]
+                (signature,) = signatures
+                self.assertIn(f"link_resolution_step={expected['link_resolution_step']}", signature)
+                self.assertIn(f"link_resolution_http_status={expected['link_resolution_http_status']}", signature)
+                audit = _evidence(result)["link_resolution"]
+                self.assertEqual((audit["step"], audit["http_status"], audit["failure"]),
+                                 (expected["link_resolution_step"], expected["link_resolution_http_status"], "TRANSPORT"))
+
+    def test_a_connection_failure_names_its_exception_class(self):
+        def broken(method, url, headers, body, timeout):
+            raise TimeoutError("slow")
+
+        with self.assertRaises(LinkResolutionError) as raised:
+            GoogleNewsLinkResolver(broken).resolve(LINK)
+        self.assertEqual((raised.exception.step, raised.exception.transport_error, raised.exception.http_status),
+                         ("ARTICLE_PAGE", "TimeoutError", None))
+        self.assertIs(raised.exception.failure, LinkResolutionFailure.TRANSPORT)

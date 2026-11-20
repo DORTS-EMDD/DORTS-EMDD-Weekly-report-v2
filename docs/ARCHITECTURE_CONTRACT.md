@@ -3936,6 +3936,25 @@ CATEGORY_SCHEMA_VERSION = category-proposal-v6 (RC-80: principal_action / unreso
 CATEGORY_OWNER = Classifier (PRINCIPAL_ACTION_CATEGORY, unchanged single owner)
 ```
 
+### A.62 RC-81 Observation: why a Google News link could not be resolved (2026-11-20, user-approved)
+
+Recall Run 44547985819 lost MoniRail and twelve other candidates at
+`CONTENT_UNAVAILABLE | LINK_RESOLUTION`, which only the resolver's `TRANSPORT`
+failure produces, but the request that failed and its HTTP status were not
+exported. Observation only:
+
+* `LinkResolutionError` carries `step` (`ARTICLE_PAGE` or `BATCHEXECUTE`),
+  `http_status` (a non-200 status) and `transport_error` (the exception class
+  of a failed connection); EvidenceService copies them into the rejected
+  result's provenance as `link_resolution_step`, `link_resolution_http_status`
+  and `link_resolution_transport_error`.
+* The run summary's `evidence_rejection_signatures` include `link_resolution`
+  and those three fields (for example
+  `...;evidence_rejection_gate=LINK_RESOLUTION;link_resolution=TRANSPORT;link_resolution_step=BATCHEXECUTE;link_resolution_http_status=429`);
+  the selection audit's `evidence.link_resolution` holds the same values.
+* No decision changes: no retry, no fallback; the reject reason and gate are as
+  before. Tests: `tests/test_google_news_links.py` (`LinkResolutionObservationTests`).
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式

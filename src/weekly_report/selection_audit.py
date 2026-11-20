@@ -85,7 +85,7 @@ def _gap(gap: Any) -> dict[str, Any]:
 
 def _evidence(result: Any) -> dict[str, Any]:
     provenance = dict(result.provenance or {})
-    return {
+    entry = {
         "state": _value(result.state),
         "reject_reason": _value(result.reject_reason),
         "rejection_gate": provenance.get("evidence_rejection_gate"),
@@ -93,6 +93,13 @@ def _evidence(result: Any) -> dict[str, Any]:
         # Section A.34: a hash (not text) so a replay reproduces exact-source identity.
         "content_sha256": sha256(result.substantive_content.encode("utf-8")).hexdigest() if result.substantive_content else None,
     }
+    if provenance.get("evidence_rejection_gate") == "LINK_RESOLUTION":
+        # RC-81 (observation only): the Google News request that failed and how.
+        entry["link_resolution"] = {
+            key: provenance.get(f"link_resolution_{key}")
+            for key in ("step", "http_status", "transport_error")
+        } | {"failure": provenance.get("link_resolution")}
+    return entry
 
 
 def _focus(evidence: Any, scope: Any) -> tuple[list[str], list[str]]:

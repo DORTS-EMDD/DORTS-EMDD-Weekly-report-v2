@@ -589,6 +589,14 @@ class EvidenceService:
             resolution = self._link_resolver.resolve(input_url)
         except LinkResolutionError as exc:
             link.update(link_resolution=exc.failure.value, link_resolution_detail=exc.detail)
+            # RC-81 (observation only): which request failed and how.
+            for key, value in (
+                ("link_resolution_step", getattr(exc, "step", None)),
+                ("link_resolution_http_status", getattr(exc, "http_status", None)),
+                ("link_resolution_transport_error", getattr(exc, "transport_error", None)),
+            ):
+                if value is not None:
+                    link[key] = value
             reason = (
                 RejectReason.CONTENT_UNAVAILABLE
                 if exc.failure is LinkResolutionFailure.TRANSPORT

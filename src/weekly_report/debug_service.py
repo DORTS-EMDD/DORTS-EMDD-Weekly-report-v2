@@ -991,6 +991,11 @@ def evidence_projection(evidence_results: tuple[EvidenceResult, ...] | None) -> 
                 "acquisition_path",
                 "acquisition_final_endpoint",
                 "acquisition_redirect_consistency",
+                # RC-81: a Google News link that could not be resolved.
+                "link_resolution",
+                "link_resolution_step",
+                "link_resolution_http_status",
+                "link_resolution_transport_error",
             ):
                 if key not in provenance:
                     continue

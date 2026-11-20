@@ -40,10 +40,28 @@ class LinkResolutionFailure(StrEnum):
 
 
 class LinkResolutionError(RuntimeError):
-    def __init__(self, failure: LinkResolutionFailure, detail: str) -> None:
+    """A link that could not be resolved.
+
+    Observation only (RC-81): ``step`` is the request that failed
+    (``ARTICLE_PAGE`` or ``BATCHEXECUTE``), ``http_status`` its non-200 HTTP
+    status and ``transport_error`` the exception class of a failed connection.
+    """
+
+    def __init__(
+        self,
+        failure: LinkResolutionFailure,
+        detail: str,
+        *,
+        step: str | None = None,
+        http_status: int | None = None,
+        transport_error: str | None = None,
+    ) -> None:
         super().__init__(f"{failure.value}: {detail}")
         self.failure = failure
         self.detail = detail
+        self.step = step
+        self.http_status = http_status
+        self.transport_error = transport_error
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,6 +151,7 @@ class GoogleNewsLinkResolver:
         if legacy is not None:
             return LinkResolution(url, legacy, "LEGACY_ID_DECODE", 0)
         requests = 0
+        step = "ARTICLE_PAGE"
         try:
             status, page = self._transport(
                 "GET",
@@ -143,15 +162,20 @@ class GoogleNewsLinkResolver:
             )
             requests += 1
             if status != 200:
-                raise LinkResolutionError(LinkResolutionFailure.TRANSPORT, f"article page HTTP {status}")
+                raise LinkResolutionError(
+                    LinkResolutionFailure.TRANSPORT, f"article page HTTP {status}", step=step, http_status=status
+                )
             signature, timestamp = _SIGNATURE.search(page), _TIMESTAMP.search(page)
             if not signature or not timestamp:
-                raise LinkResolutionError(LinkResolutionFailure.UNRESOLVABLE, "article page has no signing parameters")
+                raise LinkResolutionError(
+                    LinkResolutionFailure.UNRESOLVABLE, "article page has no signing parameters", step=step
+                )
             inner = (
                 '["garturlreq",[["X","X",["X","X"],null,null,1,1,"US:en",null,1,null,null,null,null,null,0,1],'
                 f'"X","X",1,[1,1,1],1,1,null,0,0,null,0],"{article_id}",{timestamp.group(1)},"{signature.group(1)}"]'
             )
             body = ("f.req=" + quote(json.dumps([[["Fbv4je", inner]]], separators=(",", ":")))).encode("utf-8")
+            step = "BATCHEXECUTE"
             status, text = self._transport(
                 "POST",
                 _BATCH_ENDPOINT,
@@ -163,12 +187,18 @@ class GoogleNewsLinkResolver:
         except LinkResolutionError:
             raise
         except (TimeoutError, URLError, OSError) as exc:
-            raise LinkResolutionError(LinkResolutionFailure.TRANSPORT, type(exc).__name__) from None
+            raise LinkResolutionError(
+                LinkResolutionFailure.TRANSPORT, type(exc).__name__, step=step, transport_error=type(exc).__name__
+            ) from None
         if status != 200:
-            raise LinkResolutionError(LinkResolutionFailure.TRANSPORT, f"batchexecute HTTP {status}")
+            raise LinkResolutionError(
+                LinkResolutionFailure.TRANSPORT, f"batchexecute HTTP {status}", step=step, http_status=status
+            )
         publisher = _parse_batch_response(text)
         if publisher is None:
-            raise LinkResolutionError(LinkResolutionFailure.UNRESOLVABLE, "batchexecute returned no publisher URL")
+            raise LinkResolutionError(
+                LinkResolutionFailure.UNRESOLVABLE, "batchexecute returned no publisher URL", step=step
+            )
         return LinkResolution(url, publisher, "GOOGLE_NEWS_ARTICLE_ENDPOINT", requests)
 
 
