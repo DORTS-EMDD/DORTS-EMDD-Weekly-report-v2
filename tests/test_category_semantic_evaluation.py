@@ -19,11 +19,11 @@ class _AssignedProcurementStub:
     def __call__(self, request):
         self.call_count += 1
         self.payloads.append(request.as_payload())
+        # RC-80 (section A.61): a principal action, mapped by the Classifier.
         return {
-            "category_state": CategoryState.CATEGORY_ASSIGNED.value,
-            "primary_category_id": "PROCUREMENT",
+            "principal_action": "FORMAL_PROCUREMENT_ACTION",
+            "unresolved_reason": None,
             "subtype": None,
-            "category_resolution_reason": None,
             "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
         }
 

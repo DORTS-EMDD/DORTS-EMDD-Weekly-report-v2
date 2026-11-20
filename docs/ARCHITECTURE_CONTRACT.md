@@ -3883,6 +3883,59 @@ EVENT_IDENTITY_PYTHON_CANDIDATES = feature term in <= 3 records, <= 72 h, no est
 EVENT_IDENTITY_SAME_EVENT = >= 2 of 3 procedures confirm (RC-52, unchanged)
 ```
 
+### A.61 RC-80 Category: a closed principal-action list and a Python mapping table (2026-11-20, user-approved)
+
+**Decision.** The Category helper no longer names a Category. It chooses the
+evidenced principal action of the Event Group from a closed list and cites the
+sentences; the Classifier, still the sole Category owner, turns the action into
+the Category or `CATEGORY_UNRESOLVED` with one fixed table
+(`classifier.PRINCIPAL_ACTION_CATEGORY`). The section L definitions are
+unchanged; they are now stated per action in the guidance.
+
+| Principal action | Classifier outcome |
+|---|---|
+| `TECHNOLOGY_TRIAL_OR_DEPLOYMENT` (research, prototype, pilot, test or deployment of a technology, method or material itself) | `TECHNICAL_DEVELOPMENT` |
+| `SERVICE_OPENING` (a new line, extension, station or fleet begins carrying passengers) | `OPERATIONAL_CHANGE` |
+| `SERVICE_CHANGE` (timetable, headway, fare, operating hours, operating method, closure or suspension notice) | `OPERATIONAL_CHANGE` |
+| `OPERATIONAL_DISPUTE` (strike, lawsuit, arbitration, protest about the service) | `OPERATIONAL_CHANGE` |
+| `OPERATIONAL_GOVERNANCE` (governance of a running service, incl. a published completed investigation) | `OPERATIONAL_CHANGE` |
+| `INCIDENT_OR_FAILURE` | `INCIDENT` |
+| `FORMAL_PROCUREMENT_ACTION` (a formal tender or award that has taken place) | `PROCUREMENT` |
+| `NORMATIVE_ACTION` (published or revised regulation, standard, formal guidance, specification, formal draft) | `NORMATIVE_CHANGE` |
+| `PRE_SERVICE_OR_ACCEPTANCE_TEST`, `PROJECT_STEP` (incl. funding, delays, expected openings or tenders), `DRILL_OR_TRAINING`, `NON_TRANSPORT_SERVICE`, `STATISTICS_RANKING_OR_AWARD`, `STATEMENT_OR_COMMENTARY`, `EVENT_OR_EXHIBITION`, `OTHER` | `CATEGORY_UNRESOLVED` / `NO_CATEGORY_DEFINING_ACTION` |
+| `RECOMMENDATION_WITHOUT_ADOPTION` | `CATEGORY_UNRESOLVED` / `RECOMMENDATION_WITHOUT_ADOPTED_ACTION` |
+
+* When no single action can be chosen, the helper returns no action and one of
+  `CONFLICTING_CATEGORY_DEFINING_CLAIMS`, `NO_UNIQUE_PRINCIPAL_ACTION` or
+  `INSUFFICIENT_CATEGORY_EVIDENCE`; it cannot return a mapped outcome itself.
+* Differences from the suggested list, so that no section L definition and no
+  Golden outcome changes: operational disputes and operational governance
+  (including a published investigation) stay `OPERATIONAL_CHANGE`; an unadopted
+  recommendation keeps its own reason; the normative action is the general
+  section L normative change, not "a monitored standard changed" (that fact
+  belongs to ScopeClassifier, RC-59, and Reportability reads it).
+* A subtype describes a Category: with an action that maps to no Category the
+  result keeps no subtype. Exactly one of action and reason; at least one
+  citation; an unknown action, a mapped reason, or the v5 fields are proposal
+  contract violations (disclosed technical gaps, never `CATEGORY_UNRESOLVED`).
+* Versions: prompt `category-principal-action-v9`, schema `category-proposal-v6`,
+  observation record `category-exchange-observation-v2` (it records
+  `principal_action` and `unresolved_reason` instead of the v5 Category fields);
+  `CategoryResult.provenance["principal_action"]` keeps the helper's action.
+* Golden: every locked Category case and every `category_boundary_manifest` case
+  keeps its expected result; the test oracle now states each sealed judgment as
+  a principal action (the boundary cases name the action they describe, for
+  example G96 `NON_TRANSPORT_SERVICE`, G102 `DRILL_OR_TRAINING`).
+  The design note of the deleted commit c112dfc was not reachable and was not used.
+* Taxonomy, Reportability, Ordering, Writer, Validation and the report sections
+  (RC-41) are unchanged.
+
+```text
+CATEGORY_PROMPT_VERSION = category-principal-action-v9 (RC-80)
+CATEGORY_SCHEMA_VERSION = category-proposal-v6 (RC-80: principal_action / unresolved_reason)
+CATEGORY_OWNER = Classifier (PRINCIPAL_ACTION_CATEGORY, unchanged single owner)
+```
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式
@@ -5330,6 +5383,10 @@ exclusion of country, `transit_system_name`, and `metadata_support` from
 advisor relation authority without changing existing Golden outcomes.
 
 ## L. Category
+
+RC-80 (2026-11-20, section A.61): the Category helper proposes the principal
+action from a closed list; the Classifier maps it to the definitions below with
+the fixed `PRINCIPAL_ACTION_CATEGORY` table. The definitions are unchanged.
 
 Classifier 是唯一 Category owner，且只對已完成 Evidence、Scope、Temporal
 及 Event Identity / Dedup 的 authoritative Event Group 作出一次 Category

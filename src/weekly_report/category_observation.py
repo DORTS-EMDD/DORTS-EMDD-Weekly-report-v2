@@ -35,10 +35,10 @@ import re
 from typing import Any
 import unicodedata
 
-from .contracts import CategoryId, CategoryResolutionReason, CategoryState
+from .contracts import CategoryId, CategoryPrincipalAction, CategoryResolutionReason, CategoryState
 from .evidence_sentences import segment_evidence_sentences
 
-CATEGORY_EXCHANGE_OBSERVATION_SCHEMA = "category-exchange-observation-v1"
+CATEGORY_EXCHANGE_OBSERVATION_SCHEMA = "category-exchange-observation-v2"
 REPLAY_SCOPE = "INPUT_EQUIVALENT_SEMANTIC_ONLY"
 FINGERPRINT_CANONICALIZATION = "json sort_keys, separators=(',',':'), ensure_ascii=false, UTF-8"
 
@@ -65,6 +65,7 @@ AUDIT_HEADROOM = 128
 _CATEGORY_STATES = frozenset(item.value for item in CategoryState)
 _CATEGORY_IDS = frozenset(item.value for item in CategoryId)
 _RESOLUTION_REASONS = frozenset(item.value for item in CategoryResolutionReason)
+_PRINCIPAL_ACTIONS = frozenset(item.value for item in CategoryPrincipalAction)
 _PREDICATES = frozenset(
     {
         "RESPONSE_SHAPE", "CATEGORY_STATE", "CATEGORY_ID", "SUBTYPE_FORMAT", "RESOLUTION_REASON",
@@ -336,9 +337,10 @@ def _proposal(payload: Mapping[str, Any] | None) -> dict[str, Any] | None:
         return None
     citations, omitted = _citations(payload.get("citations"))
     return {
-        "category_state": _allowlisted(payload.get("category_state"), _CATEGORY_STATES),
-        "primary_category_id": _allowlisted(payload.get("primary_category_id"), _CATEGORY_IDS),
-        "category_resolution_reason": _allowlisted(payload.get("category_resolution_reason"), _RESOLUTION_REASONS),
+        # RC-80 (section A.61): the helper proposes a principal action (or an
+        # unresolved reason); the Category is the Classifier's mapping.
+        "principal_action": _allowlisted(payload.get("principal_action"), _PRINCIPAL_ACTIONS),
+        "unresolved_reason": _allowlisted(payload.get("unresolved_reason"), _RESOLUTION_REASONS),
         "subtype_raw": _subtype(payload.get("subtype")),
         "citations": citations,
         "citations_omitted": omitted,

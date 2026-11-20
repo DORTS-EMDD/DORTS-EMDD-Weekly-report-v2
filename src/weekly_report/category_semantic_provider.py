@@ -14,13 +14,13 @@ from typing import Any
 from urllib.parse import quote, urlsplit
 
 from .classifier import (
+    UNRESOLVED_PROPOSAL_REASONS,
     CategorySemanticHelperResult,
     CategorySemanticRequest,
     Classifier,
     InvalidCategorySemanticResponse,
-    _DOMAIN_UNRESOLVED_REASONS,
 )
-from .contracts import CategoryId, CategoryResolutionReason, CategoryState
+from .contracts import CategoryPrincipalAction
 from .maiagent_transport import (
     MaiAgentHttpResponse,
     MaiAgentJsonHttpTransport,
@@ -33,8 +33,8 @@ from .maiagent_transport import (
 )
 
 
-CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v8"
-CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v5"
+CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v9"
+CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v6"
 MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION = "maiagent-chatbot-adapter-v2"
 MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER = "maiagent-chatbot-completions"
 MAIAGENT_CATEGORY_MESSAGE_VERSION = "category-full-response-contract-v2"
@@ -61,73 +61,50 @@ _CATEGORY_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
-        "category_state": {
-            "type": "string",
-            "enum": [CategoryState.CATEGORY_ASSIGNED.value, CategoryState.CATEGORY_UNRESOLVED.value],
-        },
-        "primary_category_id": {
+        # RC-80 (section A.61): the closed principal-action list; the
+        # Classifier maps the action to a Category with a fixed table.
+        "principal_action": {
             "anyOf": [
-                {"type": "string", "enum": [item.value for item in CategoryId]},
+                {"type": "string", "enum": [item.value for item in CategoryPrincipalAction]},
                 {"type": "null"},
             ]
         },
-        "subtype": {"anyOf": [{"type": "string"}, {"type": "null"}]},
-        "category_resolution_reason": {
+        "unresolved_reason": {
             "anyOf": [
-                {
-                    "type": "string",
-                    "enum": sorted(reason.value for reason in _DOMAIN_UNRESOLVED_REASONS),
-                },
+                {"type": "string", "enum": sorted(reason.value for reason in UNRESOLVED_PROPOSAL_REASONS)},
                 {"type": "null"},
+            ]
+        },
+        "subtype": {
+            "anyOf": [
+                {"type": "null"},
+                # `$` may match before a final line terminator. This
+                # lookahead requires the subtype to consume the true
+                # end of the string, matching Classifier.fullmatch.
+                {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}(?![\\s\\S])"},
             ]
         },
         "citations": {"type": "array", "minItems": 1, "items": _CITATION_SCHEMA},
     },
-    "required": [
-        "category_state",
-        "primary_category_id",
-        "subtype",
-        "category_resolution_reason",
-        "citations",
-    ],
+    "required": ["principal_action", "unresolved_reason", "subtype", "citations"],
     "oneOf": [
         {
             "properties": {
-                "category_state": {"const": CategoryState.CATEGORY_ASSIGNED.value},
-                "primary_category_id": {
-                    "type": "string",
-                    "enum": [item.value for item in CategoryId],
-                },
-                "subtype": {
-                    "anyOf": [
-                        {"type": "null"},
-                        # `$` may match before a final line terminator. This
-                        # lookahead requires the subtype to consume the true
-                        # end of the string, matching Classifier.fullmatch.
-                        {
-                            "type": "string",
-                            "pattern": "^[a-z][a-z0-9_]{0,63}(?![\\s\\S])",
-                        },
-                    ]
-                },
-                "category_resolution_reason": {"type": "null"},
+                "principal_action": {"type": "string", "enum": [item.value for item in CategoryPrincipalAction]},
+                "unresolved_reason": {"type": "null"},
             }
         },
         {
             "properties": {
-                "category_state": {"const": CategoryState.CATEGORY_UNRESOLVED.value},
-                "primary_category_id": {"type": "null"},
-                "subtype": {"type": "null"},
-                "category_resolution_reason": {
+                "principal_action": {"type": "null"},
+                "unresolved_reason": {
                     "type": "string",
-                    "enum": sorted(reason.value for reason in _DOMAIN_UNRESOLVED_REASONS),
+                    "enum": sorted(reason.value for reason in UNRESOLVED_PROPOSAL_REASONS),
                 },
             },
         },
     ],
 }
-
-
 _MAIAGENT_UNSUPPORTED_SCHEMA_KEYWORDS = frozenset(
     {
         "oneOf",

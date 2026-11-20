@@ -35,11 +35,33 @@ ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = ROOT / "golden"
 
 
-class _GoldenSemanticOracle:
-    """Supply sealed per-fixture judgments without reimplementing semantics."""
+# RC-80 (section A.61): the helper proposes a principal action and the
+# Classifier's PRINCIPAL_ACTION_CATEGORY table makes the Category. The oracle
+# states each sealed judgment in that language: the canonical action of the
+# expected Category, or the action/reason of the expected unresolved outcome.
+ORACLE_ACTION_FOR_CATEGORY = {
+    "TECHNICAL_DEVELOPMENT": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT",
+    "INCIDENT": "INCIDENT_OR_FAILURE",
+    "OPERATIONAL_CHANGE": "SERVICE_CHANGE",
+    "PROCUREMENT": "FORMAL_PROCUREMENT_ACTION",
+    "NORMATIVE_CHANGE": "NORMATIVE_ACTION",
+}
+ORACLE_ACTION_FOR_REASON = {
+    "NO_CATEGORY_DEFINING_ACTION": "OTHER",
+    "RECOMMENDATION_WITHOUT_ADOPTED_ACTION": "RECOMMENDATION_WITHOUT_ADOPTION",
+}
 
-    def __init__(self, expected):
+
+class _GoldenSemanticOracle:
+    """Supply sealed per-fixture judgments without reimplementing semantics.
+
+    ``principal_action`` names the specific action a case describes (boundary
+    cases); otherwise the canonical action of the expected outcome is used.
+    """
+
+    def __init__(self, expected, principal_action=None):
         self.expected = expected
+        self.principal_action = principal_action
 
     def __call__(self, request: CategorySemanticRequest):
         expected = self.expected
@@ -51,19 +73,18 @@ class _GoldenSemanticOracle:
         category_state = expected["category_state"]
         if category_state == CategoryState.CATEGORY_ASSIGNED.value:
             return {
-                "category_state": category_state,
-                "primary_category_id": expected["primary_category_id"],
+                "principal_action": self.principal_action or ORACLE_ACTION_FOR_CATEGORY[expected["primary_category_id"]],
+                "unresolved_reason": None,
                 "subtype": expected["subtype"],
-                "category_resolution_reason": None,
                 "citations": citations[:1],
             }
         if category_state == CategoryState.CATEGORY_UNRESOLVED.value:
             reason = expected["category_resolution_reason"]
+            action = self.principal_action or ORACLE_ACTION_FOR_REASON.get(reason)
             return {
-                "category_state": category_state,
-                "primary_category_id": None,
+                "principal_action": action,
+                "unresolved_reason": None if action else reason,
                 "subtype": None,
-                "category_resolution_reason": reason,
                 "citations": citations,
             }
         raise AssertionError("the semantic oracle is not called for NOT_EVALUATED fixtures")

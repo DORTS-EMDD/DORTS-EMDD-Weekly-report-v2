@@ -107,20 +107,29 @@ def _classify(classifier, group, records):
         return _VIOLATION
 
 
+# RC-80 (section A.61): the action the Classifier's fixed table maps to each Category.
+_ACTION_FOR = {
+    CategoryId.TECHNICAL_DEVELOPMENT: "TECHNOLOGY_TRIAL_OR_DEPLOYMENT",
+    CategoryId.INCIDENT: "INCIDENT_OR_FAILURE",
+    CategoryId.OPERATIONAL_CHANGE: "SERVICE_CHANGE",
+    CategoryId.PROCUREMENT: "FORMAL_PROCUREMENT_ACTION",
+    CategoryId.NORMATIVE_CHANGE: "NORMATIVE_ACTION",
+}
+
+
 def _proposal(record, *, state=CategoryState.CATEGORY_ASSIGNED, category_id=CategoryId.TECHNICAL_DEVELOPMENT):
     if state is CategoryState.CATEGORY_ASSIGNED:
         return {
-            "category_state": state.value,
-            "primary_category_id": category_id.value,
+            "principal_action": _ACTION_FOR[category_id],
+            "unresolved_reason": None,
             "subtype": "pilot",
-            "category_resolution_reason": None,
             "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
         }
+    # NO_CATEGORY_DEFINING_ACTION: an action that maps to no Category.
     return {
-        "category_state": state.value,
-        "primary_category_id": None,
+        "principal_action": "PROJECT_STEP",
+        "unresolved_reason": None,
         "subtype": None,
-        "category_resolution_reason": CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION.value,
         "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
     }
 
@@ -144,17 +153,11 @@ def _top_level_assignment_count(module, name):
 
 
 class CategorySemanticProviderTests(unittest.TestCase):
-    def test_authoritative_v4_schema_and_five_field_contract(self):
-        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v5")
+    def test_authoritative_v6_schema_and_four_field_contract(self):
+        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v6")
         Draft202012Validator.check_schema(_CATEGORY_RESPONSE_SCHEMA)
         validator = Draft202012Validator(_CATEGORY_RESPONSE_SCHEMA)
-        expected_fields = {
-            "category_state",
-            "primary_category_id",
-            "subtype",
-            "category_resolution_reason",
-            "citations",
-        }
+        expected_fields = {"principal_action", "unresolved_reason", "subtype", "citations"}
         self.assertEqual(set(_CATEGORY_RESPONSE_SCHEMA["properties"]), expected_fields)
         self.assertEqual(set(_CATEGORY_RESPONSE_SCHEMA["required"]), expected_fields)
         self.assertFalse(_CATEGORY_RESPONSE_SCHEMA["additionalProperties"])
@@ -163,19 +166,18 @@ class CategorySemanticProviderTests(unittest.TestCase):
         assigned = _proposal(record)
         assigned["subtype"] = None
         self.assertTrue(validator.is_valid(assigned))
-        unresolved = _proposal(record, state=CategoryState.CATEGORY_UNRESOLVED)
+        self.assertTrue(validator.is_valid(_proposal(record, state=CategoryState.CATEGORY_UNRESOLVED)))
+        for action in ("OTHER", "RECOMMENDATION_WITHOUT_ADOPTION", "DRILL_OR_TRAINING"):
+            self.assertTrue(validator.is_valid(dict(assigned, principal_action=action)))
         for reason in (
-            CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
-            CategoryResolutionReason.RECOMMENDATION_WITHOUT_ADOPTED_ACTION,
             CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS,
             CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION,
             CategoryResolutionReason.INSUFFICIENT_CATEGORY_EVIDENCE,
         ):
             with self.subTest(reason=reason):
-                proposal = dict(unresolved, category_resolution_reason=reason.value)
+                proposal = dict(assigned, principal_action=None, unresolved_reason=reason.value)
                 self.assertTrue(validator.is_valid(proposal))
-                if reason is CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION:
-                    self.assertEqual(len(proposal["citations"]), 1)
+                self.assertEqual(len(proposal["citations"]), 1)
 
     def test_assigned_subtype_schema_and_classifier_acceptance_are_identical(self):
         validator = Draft202012Validator(_CATEGORY_RESPONSE_SCHEMA)
@@ -230,17 +232,22 @@ class CategorySemanticProviderTests(unittest.TestCase):
                 support_spans=[],
                 conflict_spans=[],
             ),
-            "assigned-null-category": dict(assigned, primary_category_id=None),
-            "assigned-with-reason": dict(
+            "v5-category-fields": {
+                "category_state": "CATEGORY_ASSIGNED", "primary_category_id": "INCIDENT", "subtype": None,
+                "category_resolution_reason": None, "citations": assigned["citations"],
+            },
+            "no-action-no-reason": dict(assigned, principal_action=None),
+            "action-with-reason": dict(
                 assigned,
-                category_resolution_reason=CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION.value,
+                unresolved_reason=CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION.value,
             ),
             "invalid-subtype": dict(assigned, subtype="Invalid-Subtype"),
-            "unresolved-with-category": dict(
+            "unknown-action": dict(assigned, principal_action="TECHNICAL_DEVELOPMENT"),
+            "mapped-reason-from-helper": dict(
                 unresolved,
-                primary_category_id=CategoryId.PROCUREMENT.value,
+                principal_action=None,
+                unresolved_reason=CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION.value,
             ),
-            "unresolved-with-subtype": dict(unresolved, subtype="award"),
             "empty-citations": dict(assigned, citations=[]),
             "empty-source-ref": dict(
                 assigned,
@@ -291,10 +298,7 @@ class CategorySemanticProviderTests(unittest.TestCase):
             return set()
 
         self.assertFalse(schema_keywords(projection) & unsupported)
-        expected_fields = {
-            "category_state", "primary_category_id", "subtype",
-            "category_resolution_reason", "citations",
-        }
+        expected_fields = {"principal_action", "unresolved_reason", "subtype", "citations"}
         self.assertEqual(set(projection["properties"]), expected_fields)
         self.assertEqual(set(projection["required"]), expected_fields)
         self.assertFalse(projection["additionalProperties"])
@@ -342,27 +346,27 @@ class CategorySemanticProviderTests(unittest.TestCase):
         self.assertIn("sentence_ids", guidance)
         self.assertNotIn("exact quote", guidance)
         self.assertIn("completed incident investigation", guidance)
-        self.assertIn("OPERATIONAL_CHANGE", guidance)
-        self.assertIn("ordinary passenger complaint", guidance)
-        self.assertIn("NO_CATEGORY_DEFINING_ACTION", guidance)
+        # RC-80: the helper names actions; the Category names are Python's.
+        self.assertIn("OPERATIONAL_GOVERNANCE", guidance)
+        self.assertIn("ordinary passenger complaints", guidance)
+        self.assertNotIn("OPERATIONAL_CHANGE", guidance)
+        self.assertNotIn("NO_CATEGORY_DEFINING_ACTION", guidance)
         self.assertNotIn("support_spans", guidance)
         self.assertNotIn("conflict_spans", guidance)
         self.assertNotIn("start inclusive", guidance)
         self.assertNotIn("end exclusive", guidance)
 
     def test_guidance_maps_every_unresolved_reason_to_distinct_semantics(self):
+        # RC-80: NO_CATEGORY_DEFINING_ACTION and RECOMMENDATION_WITHOUT_ADOPTED_ACTION
+        # come from the Python table (an action that maps to no Category; the
+        # RECOMMENDATION_WITHOUT_ADOPTION action); the helper gives only the
+        # three reasons for which no single action can be chosen.
         guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
-        for reason in (
-            CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
-            CategoryResolutionReason.RECOMMENDATION_WITHOUT_ADOPTED_ACTION,
-            CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS,
-            CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION,
-            CategoryResolutionReason.INSUFFICIENT_CATEGORY_EVIDENCE,
-        ):
+        for reason in classifier_module.UNRESOLVED_PROPOSAL_REASONS:
             self.assertIn(reason.value, guidance)
-        self.assertIn("positively establishes an unadopted recommendation", guidance)
+        self.assertIn("RECOMMENDATION_WITHOUT_ADOPTION: the evidence establishes a recommendation", guidance)
         self.assertIn("sources need not contradict each other", guidance)
-        self.assertIn("distinct from evidence affirmatively establishing", guidance)
+        self.assertIn("distinct from evidence that positively establishes one of the listed actions", guidance)
         self.assertIn("Subtype is optional descriptive metadata", guidance)
 
     def test_authoritative_schema_and_guidance_each_have_one_source(self):
@@ -546,7 +550,7 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
         self.assertEqual(result.primary_category_id, CategoryId.PROCUREMENT)
         self.assertIsNone(result.subtype)
         self.assertEqual(result.provenance["provider_identifier"], MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER)
-        self.assertEqual(result.provenance["schema_version"], "category-proposal-v5")
+        self.assertEqual(result.provenance["schema_version"], "category-proposal-v6")
         self.assertEqual(result.provenance["prompt_version"], MAIAGENT_CATEGORY_MESSAGE_VERSION)
         self.assertEqual(
             result.provenance["helper_version"],
@@ -688,7 +692,7 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
         self.assertEqual(len(transport.calls), 1)
 
     def test_maiagent_schema_projection_is_derived_from_the_authoritative_schema(self):
-        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v5")
+        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v6")
         self.assertEqual(
             _MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
             build_maiagent_category_schema(_CATEGORY_RESPONSE_SCHEMA),

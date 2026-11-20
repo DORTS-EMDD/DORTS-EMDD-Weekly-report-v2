@@ -11,6 +11,7 @@ from typing import Any, Protocol
 from . import category_observation
 from .source_refs import cited_spans, source_payload, source_refs
 from .contracts import (
+    CategoryPrincipalAction,
     ProposalContractViolation,
     SemanticProviderConfigurationFailure,
     SemanticProviderTechnicalFailure,
@@ -27,38 +28,71 @@ from .contracts import (
 
 
 _CATEGORY_GUIDANCE = (
-    "Classify the evidenced principal current action or lifecycle action of this one Event Group.",
-    "Choose exactly one canonical Category when one principal action is supported; otherwise return CATEGORY_UNRESOLVED.",
-    "Every semantic proposal, whether CATEGORY_ASSIGNED or CATEGORY_UNRESOLVED, must include at least one citation grounded in supplied evidence.",
+    "Name the evidenced principal current action of this one Event Group by choosing exactly one principal_action from the closed list below. Python maps the chosen action to the Category with a fixed table; never name a Category.",
+    "Return principal_action null with an unresolved_reason only when no single principal action can be chosen: CONFLICTING_CATEGORY_DEFINING_CLAIMS, NO_UNIQUE_PRINCIPAL_ACTION or INSUFFICIENT_CATEGORY_EVIDENCE (defined below). Otherwise unresolved_reason is null.",
+    "Every proposal must include at least one citation grounded in supplied evidence.",
     "Each source has a source_ref (M1, M2, ...) and sentences with sentence_ids assigned by Python. Each citation names one supplied source_ref and the sentence_ids of that source that support the proposal. Citations support the proposal as a whole; do not label them support or conflict citations. Never copy or retype source text or identifiers into a citation.",
-    "TECHNICAL_DEVELOPMENT covers research results, prototypes, pilots, experiments, applied tests, deployments and substantive development whose subject is a technology, method or material itself.",
-    "INCIDENT covers an actual urban-rail accident, unexpected failure, safety incident, or cybersecurity incident. An actual passenger, staff, or public safety incident in an in-scope urban-rail context remains INCIDENT even when injury is minor or no train, system, evacuation, service, or project impact occurs.",
-    "Severity and report value do not determine Category; they belong to downstream Reportability.",
-    "OPERATIONAL_CHANGE covers actual passenger or revenue service openings, service or timetable or fare changes, changes to how the passenger service is operated, evidenced operational disputes, and operational governance actions.",
-    "PROCUREMENT covers formal tenders, bid invitations, supplier selections, awards, exercised options, and equivalent formal procurement actions, including innovative, first-of-kind, AI, CBTC, cybersecurity, and pilot-purpose procurements.",
-    "NORMATIVE_CHANGE covers published or revised regulations, mandatory technical rules, standards, applicable formal guidance, operator-wide specifications, and formal draft or consultation procedures.",
-    "A technology name, equipment mention, procurement object, supplier award, or delivery alone is not technical development.",
-    "TECHNICAL_DEVELOPMENT requires that the research, prototype, pilot, experiment, test or deployment is of a technology, method or material itself. The steps of building or opening a line, station or depot are not technical development: groundbreaking, site preparation, construction progress, track or equipment installation, pre-opening or trial test runs, commissioning and acceptance tests, and inspections. Testing the installed vehicles or systems of a line, station or depot before its opening or for its acceptance is such a step even when the tested system is signalling, train control, communication or power equipment. Newly delivered vehicles or equipment go through the same kind of step before they enter passenger service, also on a network that is already running: their clearance or gauge, compatibility (electromagnetic compatibility included), commissioning, type, acceptance or homologation tests verify the delivery and are not technical development. A pilot or trial whose subject is a new technology, method or material itself remains technical development.",
-    "OPERATIONAL_CHANGE concerns the passenger transport service itself. A facility or service at a station or on board a train that is not transport service, such as a shop, clinic or booth, is not OPERATIONAL_CHANGE. Operational governance actions govern a passenger service that is running; the reporting, publicity, staffing or management of a project before its service opens is a project step, not OPERATIONAL_CHANGE.",
-    "Putting a technology, method or material into use is a deployment under TECHNICAL_DEVELOPMENT, also when it changes how maintenance, inspection or monitoring is done, or when it gives passengers an amenity on board or at stations such as Wi-Fi or mobile network coverage. Such a deployment is not a change to how the passenger service is operated and not a service launch: a maintenance, inspection or monitoring method and an on-board or station amenity are not the passenger transport service. A passenger service opening of a new line, extension or train fleet remains OPERATIONAL_CHANGE.",
-    "Classify the action the evidence reports as its news, not a consequence of it. When the evidence reports a project step (works, tests, installation or connection for a line that is not yet open) and mentions how the service of a running line was affected by it, the principal action is the project step and the service effect is not a separate principal action. A service change is the principal action only when the evidence reports the service change itself as its news, such as a closure, suspension or timetable notice.",
-    "A Category applies only when the principal action is itself one of the actions its definition lists. An activity that uses, teaches, exercises, presents, exhibits, discusses or enforces a technology, a service, a procurement or a rule, but is not itself one of the listed actions, does not take that Category: a meeting, exchange or exhibition about a technology is not TECHNICAL_DEVELOPMENT; a penalty or enforcement decision under an existing rule is not NORMATIVE_CHANGE.",
-    "A drill, exercise, rehearsal or training session (emergency, fire, evacuation, rescue or safety drills included, whoever holds it and whatever equipment or facilities it uses) has no Category-defining action under any Category: it is not TECHNICAL_DEVELOPMENT, not INCIDENT and not OPERATIONAL_CHANGE. Return CATEGORY_UNRESOLVED with NO_CATEGORY_DEFINING_ACTION unless the evidence reports another listed principal action of its own, such as an actual incident.",
-    "PROCUREMENT requires a formal procurement action that has taken place. A planned, expected or future tender, selection or award is not a procurement action.",
-    "Project steps and plans have no Category-defining action under any Category: approvals, funding or budget requests and decisions, cost increases, route or land decisions, demolition and relocation, construction stages and progress, test runs before opening, ridership counts or records, rankings, announcements of expected future openings or tenders, and changes to or forecasts of an expected opening date (delays, postponements or new target dates), and statements, criticisms, demands or questions about an action (an earlier action that such a document describes as background is not its current action). Return CATEGORY_UNRESOLVED with NO_CATEGORY_DEFINING_ACTION unless the evidence shows another listed principal action, such as a passenger service opening, a formal tender or award, or a service change.",
-    "An ordinary passenger complaint, request, feedback record, or operator log does not by itself establish OPERATIONAL_CHANGE. Without evidenced operator adoption, a service change, a formal operational decision, or another Category-defining action, return CATEGORY_UNRESOLVED with NO_CATEGORY_DEFINING_ACTION.",
-    "A completed incident investigation or report whose current principal action is publishing substantive investigation or safety-governance findings, and which establishes no new normative rule, is OPERATIONAL_CHANGE. Do not classify it as INCIDENT only because it discusses an earlier incident or failure.",
-    "RECOMMENDATION_WITHOUT_ADOPTED_ACTION applies when evidence establishes a recommendation, proposal, or suggestion, but no competent authority or operator adopted the recommended action and no other Category-defining action controls the event.",
-    "NO_CATEGORY_DEFINING_ACTION applies when the supplied content establishes no Category-defining action. Do not use it as a generic substitute when evidence positively establishes an unadopted recommendation.",
-    "INSUFFICIENT_CATEGORY_EVIDENCE applies when the supplied evidence is insufficient to determine what Category-defining action occurred; this is distinct from evidence affirmatively establishing that no Category-defining action exists.",
-    "Recommendations without adoption, procurement-specific specifications, and citations of existing standards do not by themselves establish an operational dispute or normative change.",
-    "Do not rank categories, vote by keywords, infer from source order, or prefer a canonical source. Preserve each source and its claims separately.",
-    "CONFLICTING_CATEGORY_DEFINING_CLAIMS applies only when competing evidence disagrees about the action or event fact that determines Category itself and the supplied authoritative evidence cannot resolve the disagreement. Differences only in duration, count, magnitude, exact timing, or consequence extent are not Category conflicts when the Category-defining action remains the same.",
-    "NO_UNIQUE_PRINCIPAL_ACTION applies when evidence consistently establishes multiple equal independent Category-defining actions but no unique principal action can be identified; sources need not contradict each other.",
-    "Material disagreement about the category-defining action, or multiple equal independent actions without one principal action, requires CATEGORY_UNRESOLVED with the corresponding reason above.",
-    "When CATEGORY_ASSIGNED, category_resolution_reason must be null.",
-    "Subtype is optional descriptive metadata, may be null when no useful subtype is needed, and never changes the primary Category. When present it matches the response schema pattern: lowercase snake_case that starts with a letter a-z, followed only by letters a-z, digits and underscores (spell out a leading number, for example fifth_generation_network_deployment, not 5g_network_deployment).",
+    "TECHNOLOGY_TRIAL_OR_DEPLOYMENT: research results, prototypes, pilots, experiments, applied tests, deployments and substantive development whose subject is a technology, method or material itself. Putting a technology, method or material into use is a deployment, also when it changes how maintenance, inspection or monitoring is done, or when it gives passengers an amenity on board or at stations such as Wi-Fi or mobile network coverage. A pilot or trial of a new technology, method or material on an operating line remains this action. A technology name, equipment mention, procurement object, supplier award or delivery alone is not this action.",
+    "SERVICE_OPENING: a new line, extension, station or train fleet actually begins carrying passengers.",
+    "SERVICE_CHANGE: a change to the passenger transport service itself reported as the news: timetable, headway, fare or ticketing, operating hours, how the passenger service is operated, or a closure, suspension or service notice.",
+    "OPERATIONAL_DISPUTE: an evidenced operational dispute about the passenger service or its operation, such as a strike or other industrial action, a lawsuit, arbitration or protest.",
+    "OPERATIONAL_GOVERNANCE: an operational governance action on a running passenger service by its operator or authority, including publishing a completed incident investigation or substantive safety-governance findings that establish no new normative rule. An investigation report is this action, not INCIDENT_OR_FAILURE, even though it discusses an earlier incident.",
+    "INCIDENT_OR_FAILURE: an actual urban-rail accident, unexpected failure, safety incident or cybersecurity incident. An actual passenger, staff or public safety incident in an in-scope urban-rail context remains this action even when injury is minor or no train, system, evacuation, service or project impact occurs.",
+    "FORMAL_PROCUREMENT_ACTION: a formal tender, bid invitation, supplier selection, award, exercised option or equivalent formal procurement action that has taken place, including innovative, first-of-kind, AI, CBTC, cybersecurity and pilot-purpose procurements. A planned, expected or future tender, selection or award is PROJECT_STEP.",
+    "NORMATIVE_ACTION: a published or revised regulation, mandatory technical rule, standard, applicable formal guidance or operator-wide specification, or a formal draft or consultation procedure. A penalty or enforcement decision under an existing rule, a procurement-specific specification and a citation of an existing standard are not this action.",
+    "PRE_SERVICE_OR_ACCEPTANCE_TEST: testing the installed vehicles or systems of a line, station or depot before its opening or for its acceptance, test runs before opening, and the clearance or gauge, compatibility (electromagnetic compatibility included), commissioning, type, acceptance or homologation tests of newly delivered vehicles or equipment before they enter passenger service, also on a network that is already running, even when the tested system is signalling, train control, communication or power equipment.",
+    "PROJECT_STEP: a step or plan of building or opening a line, station or depot, or of a project before its service opens: groundbreaking, site preparation, construction stages and progress, track or equipment installation, inspections of works, approvals, funding or budget requests and decisions, cost increases, route or land decisions, demolition and relocation, announcements of expected future openings or tenders, changes to or forecasts of an expected opening date (delays, postponements, new target dates), and the reporting, publicity, staffing or management of such a project. When the evidence reports a project step and mentions how the service of a running line was affected by it, the action is still PROJECT_STEP.",
+    "DRILL_OR_TRAINING: a drill, exercise, rehearsal or training session (emergency, fire, evacuation, rescue or safety drills included, whoever holds it and whatever equipment or facilities it uses), unless the evidence reports an actual incident of its own.",
+    "NON_TRANSPORT_SERVICE: a facility or service at a station or on board that is not the passenger transport service, such as a shop, clinic, consultation booth or vending service, also when that facility uses a technology.",
+    "STATISTICS_RANKING_OR_AWARD: ridership counts or records, statistics or report releases, rankings, awards and media praise.",
+    "STATEMENT_OR_COMMENTARY: statements, criticisms, demands, questions, interviews and opinion about an action, feature or background articles that recount earlier actions, and ordinary passenger complaints, requests, feedback records or operator logs. An earlier action that such a document describes as background is not its current action.",
+    "EVENT_OR_EXHIBITION: a meeting, exchange, conference, exhibition, ceremony, visit or presentation that uses, teaches, presents, exhibits or discusses a technology, service, procurement or rule but is not itself one of the actions above.",
+    "RECOMMENDATION_WITHOUT_ADOPTION: the evidence establishes a recommendation, proposal or suggestion that no competent authority or operator adopted, and no other listed action controls the event.",
+    "OTHER: any other principal action that none of the entries above describes.",
+    "Choose the action the evidence reports as its news, not a consequence of it. A service change is the principal action only when the evidence reports the service change itself as its news.",
+    "Severity and report value do not determine the action; they belong to downstream Reportability.",
+    "CONFLICTING_CATEGORY_DEFINING_CLAIMS applies only when competing evidence disagrees about the action itself and the supplied evidence cannot resolve the disagreement. Differences only in duration, count, magnitude, exact timing or consequence extent are not such a conflict when the action stays the same.",
+    "NO_UNIQUE_PRINCIPAL_ACTION applies when evidence consistently establishes several equal, independent listed actions and no unique principal action can be identified; sources need not contradict each other.",
+    "INSUFFICIENT_CATEGORY_EVIDENCE applies when the supplied evidence is insufficient to determine what action occurred; it is distinct from evidence that positively establishes one of the listed actions, including OTHER.",
+    "Do not rank actions, vote by keywords, infer from source order, or prefer a canonical source. Preserve each source and its claims separately.",
+    "Subtype is optional descriptive metadata, may be null, and never changes the mapping. When present it matches the response schema pattern: lowercase snake_case that starts with a letter a-z, followed only by letters a-z, digits and underscores (spell out a leading number, for example fifth_generation_network_deployment, not 5g_network_deployment).",
     "Event identity is already decided. Do not merge or split Event Groups. Ignore discovery metadata, report period, taxonomy, and Reportability.",
+)
+
+
+# RC-80 (section A.61): the Classifier's fixed table from the helper's
+# principal action to the Category, or to the CATEGORY_UNRESOLVED reason. It is
+# the only place an action becomes a Category; the helper never names one.
+PRINCIPAL_ACTION_CATEGORY: Mapping[CategoryPrincipalAction, CategoryId | CategoryResolutionReason] = MappingProxyType(
+    {
+        CategoryPrincipalAction.TECHNOLOGY_TRIAL_OR_DEPLOYMENT: CategoryId.TECHNICAL_DEVELOPMENT,
+        CategoryPrincipalAction.SERVICE_OPENING: CategoryId.OPERATIONAL_CHANGE,
+        CategoryPrincipalAction.SERVICE_CHANGE: CategoryId.OPERATIONAL_CHANGE,
+        CategoryPrincipalAction.OPERATIONAL_DISPUTE: CategoryId.OPERATIONAL_CHANGE,
+        CategoryPrincipalAction.OPERATIONAL_GOVERNANCE: CategoryId.OPERATIONAL_CHANGE,
+        CategoryPrincipalAction.INCIDENT_OR_FAILURE: CategoryId.INCIDENT,
+        CategoryPrincipalAction.FORMAL_PROCUREMENT_ACTION: CategoryId.PROCUREMENT,
+        CategoryPrincipalAction.NORMATIVE_ACTION: CategoryId.NORMATIVE_CHANGE,
+        CategoryPrincipalAction.PRE_SERVICE_OR_ACCEPTANCE_TEST: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
+        CategoryPrincipalAction.PROJECT_STEP: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
+        CategoryPrincipalAction.DRILL_OR_TRAINING: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
+        CategoryPrincipalAction.NON_TRANSPORT_SERVICE: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
+        CategoryPrincipalAction.STATISTICS_RANKING_OR_AWARD: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
+        CategoryPrincipalAction.STATEMENT_OR_COMMENTARY: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
+        CategoryPrincipalAction.EVENT_OR_EXHIBITION: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
+        CategoryPrincipalAction.OTHER: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
+        CategoryPrincipalAction.RECOMMENDATION_WITHOUT_ADOPTION: CategoryResolutionReason.RECOMMENDATION_WITHOUT_ADOPTED_ACTION,
+    }
+)
+if set(PRINCIPAL_ACTION_CATEGORY) != set(CategoryPrincipalAction):  # pragma: no cover - import-time invariant
+    raise RuntimeError("every principal action needs exactly one mapping")
+# Reasons the helper may give instead of an action (no single action can be chosen).
+UNRESOLVED_PROPOSAL_REASONS = frozenset(
+    {
+        CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS,
+        CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION,
+        CategoryResolutionReason.INSUFFICIENT_CATEGORY_EVIDENCE,
+    }
 )
 
 
@@ -155,12 +189,11 @@ class CategoryCitation:
 
 @dataclass(frozen=True, slots=True)
 class CategorySemanticResponse:
-    """Untrusted structured helper response; Classifier validates it."""
+    """Untrusted structured helper response (RC-80); Classifier validates and maps it."""
 
-    category_state: CategoryState | str
-    primary_category_id: CategoryId | str | None = None
+    principal_action: CategoryPrincipalAction | str | None = None
+    unresolved_reason: CategoryResolutionReason | str | None = None
     subtype: str | None = None
-    category_resolution_reason: CategoryResolutionReason | str | None = None
     citations: tuple[CategoryCitation, ...] = ()
 
 
@@ -217,6 +250,7 @@ class CategoryProposalViolation(ProposalContractViolation):
 
 @dataclass(frozen=True, slots=True)
 class _ValidatedCategoryResponse:
+    principal_action: CategoryPrincipalAction | None
     category_state: CategoryState
     primary_category_id: CategoryId | None
     subtype: str | None
@@ -224,15 +258,7 @@ class _ValidatedCategoryResponse:
     citation_spans: tuple[CategoryEvidenceSpan, ...]
 
 
-_RESPONSE_FIELDS = frozenset(
-    {
-        "category_state",
-        "primary_category_id",
-        "subtype",
-        "category_resolution_reason",
-        "citations",
-    }
-)
+_RESPONSE_FIELDS = frozenset({"principal_action", "unresolved_reason", "subtype", "citations"})
 _CITATION_FIELDS = frozenset({"source_ref", "sentence_ids"})
 _DOMAIN_UNRESOLVED_REASONS = frozenset(
     {
@@ -290,10 +316,9 @@ def _validate_response(
 ) -> _ValidatedCategoryResponse:
     if isinstance(raw_response, CategorySemanticResponse):
         payload = {
-            "category_state": raw_response.category_state,
-            "primary_category_id": raw_response.primary_category_id,
+            "principal_action": raw_response.principal_action,
+            "unresolved_reason": raw_response.unresolved_reason,
             "subtype": raw_response.subtype,
-            "category_resolution_reason": raw_response.category_resolution_reason,
             "citations": raw_response.citations,
         }
     elif isinstance(raw_response, Mapping):
@@ -303,60 +328,43 @@ def _validate_response(
 
     if frozenset(payload) != _RESPONSE_FIELDS:
         raise InvalidCategorySemanticResponse("response fields do not match schema", predicate="RESPONSE_SHAPE")
-    try:
-        state = CategoryState(payload["category_state"])
-    except (TypeError, ValueError) as exc:
-        raise InvalidCategorySemanticResponse("invalid category_state", predicate="CATEGORY_STATE") from exc
-    if state not in {CategoryState.CATEGORY_ASSIGNED, CategoryState.CATEGORY_UNRESOLVED}:
-        raise InvalidCategorySemanticResponse("helper cannot return NOT_EVALUATED", predicate="CATEGORY_STATE")
-
-    raw_category_id = payload["primary_category_id"]
-    if raw_category_id is None:
-        category_id = None
+    raw_action, raw_reason = payload["principal_action"], payload["unresolved_reason"]
+    if (raw_action is None) == (raw_reason is None):
+        raise InvalidCategorySemanticResponse(
+            "exactly one of principal_action and unresolved_reason is required", predicate="ACTION_OR_REASON"
+        )
+    action: CategoryPrincipalAction | None = None
+    if raw_action is not None:
+        try:
+            action = CategoryPrincipalAction(raw_action)
+        except (TypeError, ValueError) as exc:
+            raise InvalidCategorySemanticResponse("invalid principal_action", predicate="PRINCIPAL_ACTION") from exc
+        mapped = PRINCIPAL_ACTION_CATEGORY[action]
     else:
         try:
-            category_id = CategoryId(raw_category_id)
+            mapped = CategoryResolutionReason(raw_reason)
         except (TypeError, ValueError) as exc:
-            raise InvalidCategorySemanticResponse("invalid primary_category_id", predicate="CATEGORY_ID") from exc
+            raise InvalidCategorySemanticResponse("invalid unresolved_reason", predicate="RESOLUTION_REASON") from exc
+        if mapped not in UNRESOLVED_PROPOSAL_REASONS:
+            raise InvalidCategorySemanticResponse(
+                "unresolved_reason must say why no single action can be chosen", predicate="RESOLUTION_REASON"
+            )
 
     subtype = payload["subtype"]
-    raw_reason = payload["category_resolution_reason"]
-    if raw_reason is None:
-        resolution_reason = None
-    else:
-        try:
-            resolution_reason = CategoryResolutionReason(raw_reason)
-        except (TypeError, ValueError) as exc:
-            raise InvalidCategorySemanticResponse("invalid category_resolution_reason", predicate="RESOLUTION_REASON") from exc
+    if subtype is not None and (not isinstance(subtype, str) or not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", subtype)):
+        raise InvalidCategorySemanticResponse("subtype must be snake_case when present", predicate="SUBTYPE_FORMAT")
 
     citation_spans = _parse_citations(payload["citations"], request)
     if not citation_spans:
         raise InvalidCategorySemanticResponse("a semantic outcome requires at least one citation")
 
-    if state is CategoryState.CATEGORY_ASSIGNED:
-        if category_id is None:
-            raise InvalidCategorySemanticResponse("assigned response requires a Category ID", predicate="CATEGORY_ID")
-        if subtype is not None and (
-            not isinstance(subtype, str)
-            or not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", subtype)
-        ):
-            raise InvalidCategorySemanticResponse(
-                "assigned response subtype must be snake_case when present",
-                predicate="SUBTYPE_FORMAT",
-            )
-        if resolution_reason is not None:
-            raise InvalidCategorySemanticResponse("assigned response cannot carry a resolution reason", predicate="RESOLUTION_REASON")
-    else:
-        if category_id is not None or subtype is not None:
-            raise InvalidCategorySemanticResponse("unresolved response cannot carry an assigned Category", predicate="UNRESOLVED_ASSIGNMENT")
-        if resolution_reason not in _DOMAIN_UNRESOLVED_REASONS:
-            raise InvalidCategorySemanticResponse("unresolved response requires a domain reason", predicate="RESOLUTION_REASON")
+    if isinstance(mapped, CategoryId):
+        return _ValidatedCategoryResponse(
+            action, CategoryState.CATEGORY_ASSIGNED, mapped, subtype, None, citation_spans
+        )
+    # Subtype describes a Category; an unresolved outcome has none to describe.
     return _ValidatedCategoryResponse(
-        category_state=state,
-        primary_category_id=category_id,
-        subtype=subtype,
-        category_resolution_reason=resolution_reason,
-        citation_spans=citation_spans,
+        action, CategoryState.CATEGORY_UNRESOLVED, None, None, mapped, citation_spans
     )
 
 
@@ -439,10 +447,9 @@ def _proposal_payload(raw_response: object) -> Mapping[str, Any] | None:
 
     if isinstance(raw_response, CategorySemanticResponse):
         return {
-            "category_state": raw_response.category_state,
-            "primary_category_id": raw_response.primary_category_id,
+            "principal_action": raw_response.principal_action,
+            "unresolved_reason": raw_response.unresolved_reason,
             "subtype": raw_response.subtype,
-            "category_resolution_reason": raw_response.category_resolution_reason,
             "citations": raw_response.citations,
         }
     if isinstance(raw_response, Mapping):
@@ -579,6 +586,9 @@ class Classifier:
 
         provenance = {
             "decision_basis": "constrained_semantic_helper",
+            # RC-80: the helper's principal action; the Category comes from
+            # PRINCIPAL_ACTION_CATEGORY, not from the helper.
+            "principal_action": response.principal_action.value if response.principal_action else None,
             "source_candidate_ids": [source.candidate_id for source in request.sources],
             # Kept as the stable internal provenance key. Under proposal v4 it
             # means whole-proposal citations, with no support/conflict role split.

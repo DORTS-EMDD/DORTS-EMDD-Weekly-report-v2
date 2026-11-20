@@ -74,8 +74,8 @@ def test_the_subtype_policy(value, reason):
 def test_withheld_subtypes_keep_only_marker_and_hash():
     record = observe_category_exchange(
         _request(), outcome="REJECTED",
-        proposal_payload={"category_state": "CATEGORY_ASSIGNED", "primary_category_id": "TECHNICAL_DEVELOPMENT",
-                          "subtype": "see https://leak.example.test", "category_resolution_reason": None, "citations": []},
+        proposal_payload={"principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT", "unresolved_reason": None,
+                          "subtype": "see https://leak.example.test", "citations": []},
         predicate="SUBTYPE_FORMAT",
     )
     subtype = record["proposal"]["subtype_raw"]
@@ -86,8 +86,8 @@ def test_withheld_subtypes_keep_only_marker_and_hash():
 def test_enum_predicate_and_declared_fields_are_allowlisted():
     record = observe_category_exchange(
         _request(), outcome="REJECTED",
-        proposal_payload={"category_state": "Please visit https://x.test", "primary_category_id": "TECHNICAL_DEVELOPMENT",
-                          "subtype": None, "category_resolution_reason": "free text from the model", "citations": []},
+        proposal_payload={"principal_action": "Please visit https://x.test", "unresolved_reason": "free text from the model",
+                          "subtype": None, "citations": []},
         provider_provenance={"provider_identifier": "maiagent-chatbot-completions", "prompt_version": "Bearer abc123",
                              "schema_version": "category-proposal-v5", "helper_version": "maiagent-chatbot-adapter-v2",
                              "model_identifier": "sk-live-0123456789abcdefghijklmn"},
@@ -95,9 +95,13 @@ def test_enum_predicate_and_declared_fields_are_allowlisted():
         category_result_state="NOT A STATE",
     )
     rendered = json.dumps(record, ensure_ascii=False)
-    assert record["proposal"]["primary_category_id"] == "TECHNICAL_DEVELOPMENT"
-    assert record["proposal"]["category_state"]["withheld"] == "NOT_ALLOWLISTED"
-    assert record["proposal"]["category_resolution_reason"]["withheld"] == "NOT_ALLOWLISTED"
+    assert record["proposal"]["principal_action"]["withheld"] == "NOT_ALLOWLISTED"
+    assert record["proposal"]["unresolved_reason"]["withheld"] == "NOT_ALLOWLISTED"
+    accepted = observe_category_exchange(
+        _request(), outcome="ACCEPTED",
+        proposal_payload={"principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT", "unresolved_reason": None, "subtype": None, "citations": []},
+    )
+    assert accepted["proposal"]["principal_action"] == "TECHNOLOGY_TRIAL_OR_DEPLOYMENT"
     assert record["validation"]["predicate"]["withheld"] == "NOT_ALLOWLISTED"
     assert record["validation"]["category_result_state"]["withheld"] == "NOT_ALLOWLISTED"
     declared = record["provider_declared"]
@@ -129,8 +133,7 @@ def test_unusual_input_shapes_cannot_leak():
         ),
         outcome="ACCEPTED",
         proposal_payload={
-            "category_state": "CATEGORY_ASSIGNED", "primary_category_id": "TECHNICAL_DEVELOPMENT", "subtype": "x",
-            "category_resolution_reason": None,
+            "principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT", "unresolved_reason": None, "subtype": "x",
             "citations": [{"source_ref": "M1", "sentence_ids": [f"S{i}" for i in range(1, 46)] + [7, "bad"]}] * 10,
         },
     )

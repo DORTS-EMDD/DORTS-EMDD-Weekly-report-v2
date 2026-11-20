@@ -80,11 +80,11 @@ def _group(case_id: str):
 
 
 def _proposal(request, **overrides):
+    # RC-80 (section A.61): the helper proposes a principal action.
     proposal = {
-        "category_state": "CATEGORY_ASSIGNED",
-        "primary_category_id": "TECHNICAL_DEVELOPMENT",
+        "principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT",
+        "unresolved_reason": None,
         "subtype": "fifth_generation_network_deployment",
-        "category_resolution_reason": None,
         "citations": [{"source_ref": next(iter(request.source_refs)), "sentence_ids": ["S1"]}],
     }
     proposal.update(overrides)
@@ -113,10 +113,7 @@ def _paths():
         return _proposal(request)
 
     def unresolved(request):
-        return _proposal(
-            request, category_state="CATEGORY_UNRESOLVED", primary_category_id=None, subtype=None,
-            category_resolution_reason="NO_CATEGORY_DEFINING_ACTION",
-        )
+        return _proposal(request, principal_action="PROJECT_STEP", subtype=None)
 
     def subtype_format(request):
         return _proposal(request, subtype="5g_wifi_deployment")
@@ -125,7 +122,7 @@ def _paths():
         return _proposal(request, citations=[{"source_ref": "M9", "sentence_ids": ["S1"]}])
 
     def response_shape(request):
-        return CategorySemanticHelperResult(proposal={"category_state": "CATEGORY_ASSIGNED"}, provenance=PROVENANCE)
+        return CategorySemanticHelperResult(proposal={"principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT"}, provenance=PROVENANCE)
 
     def helper_rejects(request):
         raise InvalidCategorySemanticResponse("unparseable proposal", provenance=PROVENANCE, predicate="RESPONSE_SHAPE")
@@ -334,8 +331,8 @@ def test_the_record_carries_no_source_text_guidance_or_secrets():
     leaky = dict(PROVENANCE, api_key="sk-test-0123456789abcdefghijkl", chatbot_id="chatbot-secret-id", api_base="https://api.secret.test")
     record = observe_category_exchange(
         request, outcome="ACCEPTED", provider_provenance=leaky,
-        proposal_payload={"category_state": "CATEGORY_ASSIGNED", "primary_category_id": "TECHNICAL_DEVELOPMENT",
-                          "subtype": "x", "category_resolution_reason": None,
+        proposal_payload={"principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT", "unresolved_reason": None,
+                          "subtype": "x",
                           "citations": [{"source_ref": "M1", "sentence_ids": ["S1", "S2", "bad id"]}]},
     )
     rendered = json.dumps(record, ensure_ascii=False)
@@ -377,7 +374,7 @@ def test_the_semantic_request_fingerprint():
     assert other["semantic_request_fingerprint_sha256"] == fingerprint
     assert other["sources"][0]["candidate_id"] == "cand-b"
     assert all(variant[1]["semantic_request"]["semantic_request_fingerprint_sha256"] != fingerprint for variant in variants)
-    assert record["semantic_request"]["category_prompt_version"] == CATEGORY_SEMANTIC_PROMPT_VERSION == "category-principal-action-v8"
+    assert record["semantic_request"]["category_prompt_version"] == CATEGORY_SEMANTIC_PROMPT_VERSION == "category-principal-action-v9"
 
 
 # 8. Replay terminology: input-equivalent semantic replay only.
@@ -461,6 +458,6 @@ def test_the_workflow_echo_does_not_print_the_record():
 
 # 12. No prompt or decision-rule change.
 def test_the_category_prompt_is_unchanged():
-    assert CATEGORY_SEMANTIC_PROMPT_VERSION == "category-principal-action-v8"
+    assert CATEGORY_SEMANTIC_PROMPT_VERSION == "category-principal-action-v9"
     assert CategoryProposalViolation("x", "SUBTYPE_FORMAT").failure_class == "SUBTYPE_FORMAT"
     assert CategoryState.CATEGORY_ASSIGNED.value == "CATEGORY_ASSIGNED"

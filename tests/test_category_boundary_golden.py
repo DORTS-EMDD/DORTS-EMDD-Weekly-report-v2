@@ -21,6 +21,29 @@ from tests.test_classifier_golden import GOLDEN, _GoldenSemanticOracle, _materia
 
 MANIFEST = json.loads((GOLDEN / "category_boundary_manifest.json").read_text(encoding="utf-8"))
 
+# RC-80 (section A.61): the principal action each boundary case describes. The
+# oracle proposes it; the Classifier's fixed table must give the sealed result.
+BOUNDARY_ACTIONS = {
+    "G92": "PROJECT_STEP",  # groundbreaking
+    "G93": "PRE_SERVICE_OR_ACCEPTANCE_TEST",  # pre-opening test runs
+    "G94": "STATISTICS_RANKING_OR_AWARD",  # ridership record
+    "G95": "PROJECT_STEP",  # demolition and relocation plan
+    "G96": "NON_TRANSPORT_SERVICE",  # station clinic booth
+    "G97": "PROJECT_STEP",  # project progress publicity
+    "G98": "STATEMENT_OR_COMMENTARY",  # criticism of an earlier selection
+    "G99": "EVENT_OR_EXHIBITION",  # technical exchange meeting
+    "G100": "PRE_SERVICE_OR_ACCEPTANCE_TEST",  # pre-opening signalling tests
+    "G101": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT",  # 5G on operating lines
+    "G102": "DRILL_OR_TRAINING",  # emergency drill
+    "G103": "PROJECT_STEP",  # funding request
+    "G104": "PROJECT_STEP",  # opening delay
+    "G105": "PRE_SERVICE_OR_ACCEPTANCE_TEST",  # new trams' clearance and EMC tests
+    "G106": "PRE_SERVICE_OR_ACCEPTANCE_TEST",  # new-line tests with a service effect
+    "G107": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT",  # track monitoring on service trains
+    "G108": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT",  # on-board 5G Wi-Fi
+    "G109": "SERVICE_CHANGE",  # works closure notice
+}
+
 
 class CategoryBoundaryGoldenTests(unittest.TestCase):
     def test_manifest_is_isolated_from_the_locked_population(self):
@@ -47,7 +70,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
                 records = tuple(_materialize_record(candidate) for candidate in fixture["candidates"])
                 groups = _materialize_groups(fixture, records)
                 self.assertEqual(len(groups), 1)
-                result = Classifier(_GoldenSemanticOracle(expected)).classify(groups[0], records)
+                result = Classifier(_GoldenSemanticOracle(expected, BOUNDARY_ACTIONS[entry["case_id"]])).classify(groups[0], records)
                 self.assertIs(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
                 self.assertEqual(result.category_resolution_reason.value, "NO_CATEGORY_DEFINING_ACTION")
                 self.assertIsNone(result.primary_category_id)
@@ -69,7 +92,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
                 self.assertEqual(expected["primary_category_id"], entry["category_family"])
                 records = tuple(_materialize_record(candidate) for candidate in fixture["candidates"])
                 groups = _materialize_groups(fixture, records)
-                result = Classifier(_GoldenSemanticOracle(expected)).classify(groups[0], records)
+                result = Classifier(_GoldenSemanticOracle(expected, BOUNDARY_ACTIONS[entry["case_id"]])).classify(groups[0], records)
                 self.assertIs(result.category_state, CategoryState.CATEGORY_ASSIGNED)
                 self.assertEqual(result.primary_category_id.value, entry["category_family"])
                 self.assertEqual(result.subtype, expected["subtype"])
@@ -102,46 +125,66 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         self.assertEqual(set(outcomes.values()), {("CATEGORY_UNRESOLVED", None, "NO_CATEGORY_DEFINING_ACTION")})
 
     def test_prompt_carries_the_section_l_boundaries(self):
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v8")
-        guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
-        self.assertIn("is of a technology, method or material itself", guidance)
-        for step in ("groundbreaking", "pre-opening or trial test runs", "commissioning and acceptance tests"):
-            self.assertIn(step, guidance)
-        self.assertIn("concerns the passenger transport service itself", guidance)
-        self.assertIn("A planned, expected or future tender, selection or award is not a procurement action", guidance)
-        self.assertIn("ridership counts or records", guidance)
-        self.assertIn("Operational governance actions govern a passenger service that is running", guidance)
-        self.assertIn("statements, criticisms, demands or questions about an action", guidance)
-        self.assertIn("NO_CATEGORY_DEFINING_ACTION unless the evidence shows another listed principal action", guidance)
-        # RC-66: one qualified definition, the closed set of listed actions,
-        # on-board non-transport services, and the schema's subtype pattern.
-        self.assertIn("substantive development whose subject is a technology, method or material itself", guidance)
-        self.assertNotIn("technical deployments, and substantive technical development", guidance)
-        self.assertIn("A Category applies only when the principal action is itself one of the actions its definition lists", guidance)
-        self.assertIn("is not TECHNICAL_DEVELOPMENT", guidance)
-        # RC-67 (user decision 2026-11-16, D1/D2): drills have no Category;
-        # funding, cost increases and opening-date changes are project steps.
-        self.assertIn("A drill, exercise, rehearsal or training session", guidance)
-        self.assertIn("has no Category-defining action under any Category: it is not TECHNICAL_DEVELOPMENT, not INCIDENT and not OPERATIONAL_CHANGE", guidance)
-        for step in ("funding or budget requests and decisions", "cost increases", "construction stages and progress", "changes to or forecasts of an expected opening date"):
-            self.assertIn(step, guidance)
-        self.assertIn("at a station or on board a train that is not transport service", guidance)
-        self.assertIn("starts with a letter a-z", guidance)
-        self.assertIn("even when the tested system is signalling, train control, communication or power equipment", guidance)
-        # RC-68 (Run 43995345298): delivery acceptance tests on a running
-        # network, technology deployments that change maintenance or give an
-        # on-board amenity, and a consequence is not a principal action.
-        self.assertIn("Newly delivered vehicles or equipment go through the same kind of step before they enter passenger service, also on a network that is already running", guidance)
-        self.assertIn("A pilot or trial whose subject is a new technology, method or material itself remains technical development", guidance)
-        self.assertIn("changes to how the passenger service is operated", guidance)
-        self.assertNotIn("operating-practice changes", guidance)
-        self.assertIn("Putting a technology, method or material into use is a deployment under TECHNICAL_DEVELOPMENT", guidance)
-        self.assertIn("such as Wi-Fi or mobile network coverage", guidance)
-        self.assertIn("A passenger service opening of a new line, extension or train fleet remains OPERATIONAL_CHANGE", guidance)
-        self.assertIn("Classify the action the evidence reports as its news, not a consequence of it", guidance)
-        self.assertIn("the service effect is not a separate principal action", guidance)
-        self.assertIn("A service change is the principal action only when the evidence reports the service change itself as its news", guidance)
+        # RC-80 (section A.61): the helper chooses a principal action from a
+        # closed list; the section L boundaries of RC-63..RC-68 are carried by
+        # the action definitions, and Python maps the action to the Category.
+        from src.weekly_report.contracts import CategoryPrincipalAction
 
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v9")
+        guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
+        for action in CategoryPrincipalAction:
+            self.assertIn(f"{action.value}:", guidance)
+        self.assertIn("never name a Category", guidance)
+        self.assertIn("whose subject is a technology, method or material itself", guidance)
+        for step in ("groundbreaking", "test runs before opening", "commissioning, type, acceptance or homologation tests",
+                     "funding or budget requests and decisions", "cost increases", "construction stages and progress",
+                     "changes to or forecasts of an expected opening date", "ridership counts or records"):
+            self.assertIn(step, guidance)
+        self.assertIn("A planned, expected or future tender, selection or award is PROJECT_STEP", guidance)
+        self.assertIn("not the passenger transport service, such as a shop, clinic", guidance)
+        self.assertIn("also when that facility uses a technology", guidance)
+        self.assertIn("a drill, exercise, rehearsal or training session", guidance)
+        self.assertIn("statements, criticisms, demands, questions", guidance)
+        self.assertIn("a meeting, exchange, conference, exhibition", guidance)
+        self.assertIn("even when the tested system is signalling, train control, communication or power equipment", guidance)
+        self.assertIn("also on a network that is already running", guidance)
+        self.assertIn("also when it changes how maintenance, inspection or monitoring is done", guidance)
+        self.assertIn("such as Wi-Fi or mobile network coverage", guidance)
+        self.assertIn("a new line, extension, station or train fleet actually begins carrying passengers", guidance)
+        self.assertIn("Choose the action the evidence reports as its news, not a consequence of it", guidance)
+        self.assertIn("the action is still PROJECT_STEP", guidance)
+        self.assertIn("A service change is the principal action only when the evidence reports the service change itself as its news", guidance)
+        self.assertIn("starts with a letter a-z", guidance)
+
+    def test_every_action_maps_to_exactly_one_outcome(self):
+        from src.weekly_report.contracts import CategoryId, CategoryPrincipalAction, CategoryResolutionReason
+
+        table = classifier_module.PRINCIPAL_ACTION_CATEGORY
+        self.assertEqual(set(table), set(CategoryPrincipalAction))
+        to_category = {action.value: target.value for action, target in table.items() if isinstance(target, CategoryId)}
+        self.assertEqual(
+            to_category,
+            {
+                "TECHNOLOGY_TRIAL_OR_DEPLOYMENT": "TECHNICAL_DEVELOPMENT",
+                "SERVICE_OPENING": "OPERATIONAL_CHANGE",
+                "SERVICE_CHANGE": "OPERATIONAL_CHANGE",
+                "OPERATIONAL_DISPUTE": "OPERATIONAL_CHANGE",
+                "OPERATIONAL_GOVERNANCE": "OPERATIONAL_CHANGE",
+                "INCIDENT_OR_FAILURE": "INCIDENT",
+                "FORMAL_PROCUREMENT_ACTION": "PROCUREMENT",
+                "NORMATIVE_ACTION": "NORMATIVE_CHANGE",
+            },
+        )
+        self.assertEqual(
+            table[CategoryPrincipalAction.RECOMMENDATION_WITHOUT_ADOPTION],
+            CategoryResolutionReason.RECOMMENDATION_WITHOUT_ADOPTED_ACTION,
+        )
+        no_category = {action.value for action, target in table.items() if target is CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION}
+        self.assertEqual(
+            no_category,
+            {"PRE_SERVICE_OR_ACCEPTANCE_TEST", "PROJECT_STEP", "DRILL_OR_TRAINING", "NON_TRANSPORT_SERVICE",
+             "STATISTICS_RANKING_OR_AWARD", "STATEMENT_OR_COMMENTARY", "EVENT_OR_EXHIBITION", "OTHER"},
+        )
 
 
 class ScopeEventFocusContractTests(unittest.TestCase):

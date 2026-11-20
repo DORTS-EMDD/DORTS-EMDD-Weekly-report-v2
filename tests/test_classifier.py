@@ -116,13 +116,32 @@ def _source_for_test(candidate_id: str, body: str) -> CategorySourceEvidence:
     return CategorySourceEvidence(candidate_id, body, {})
 
 
+# RC-80 (section A.61): the helper proposes a principal action; these are the
+# actions that the Classifier's fixed table maps to each Category.
+_ACTION_FOR = {
+    CategoryId.TECHNICAL_DEVELOPMENT: "TECHNOLOGY_TRIAL_OR_DEPLOYMENT",
+    CategoryId.INCIDENT: "INCIDENT_OR_FAILURE",
+    CategoryId.OPERATIONAL_CHANGE: "SERVICE_CHANGE",
+    CategoryId.PROCUREMENT: "FORMAL_PROCUREMENT_ACTION",
+    CategoryId.NORMATIVE_CHANGE: "NORMATIVE_ACTION",
+}
+
+
 def _assigned_response(request: CategorySemanticRequest, category_id, subtype="pilot"):
     return {
-        "category_state": CategoryState.CATEGORY_ASSIGNED.value,
-        "primary_category_id": str(category_id),
+        "principal_action": _ACTION_FOR.get(category_id, str(category_id)),
+        "unresolved_reason": None,
         "subtype": subtype,
-        "category_resolution_reason": None,
         "citations": [_span(request)],
+    }
+
+
+def _unresolved_response(request: CategorySemanticRequest, reason, citations=None):
+    return {
+        "principal_action": None,
+        "unresolved_reason": reason.value,
+        "subtype": None,
+        "citations": citations or [_span(request)],
     }
 
 
@@ -202,22 +221,19 @@ class ClassifierTests(unittest.TestCase):
         with self.assertRaises(CategoryProposalViolation):
             classifier.classify(_group((record,)), (record,))
 
-    def test_unresolved_subtype_must_remain_null(self):
+    def test_an_unresolved_outcome_carries_no_subtype(self):
+        # RC-80: subtype describes a Category; an action that maps to no
+        # Category has none to describe, so the result keeps no subtype.
         record = _record("C1", "No category-defining action is established.")
 
-        def unresolved_with_subtype(request):
-            return {
-                "category_state": CategoryState.CATEGORY_UNRESOLVED.value,
-                "primary_category_id": None,
-                "subtype": "award",
-                "category_resolution_reason": (
-                    CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION.value
-                ),
-                "citations": [_span(request)],
-            }
+        def no_category_with_subtype(request):
+            return {"principal_action": "PROJECT_STEP", "unresolved_reason": None, "subtype": "award", "citations": [_span(request)]}
 
-        with self.assertRaises(CategoryProposalViolation):
-            Classifier(_Helper(unresolved_with_subtype)).classify(_group((record,)), (record,))
+        result = Classifier(_Helper(no_category_with_subtype)).classify(_group((record,)), (record,))
+        self.assertIs(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
+        self.assertEqual(result.category_resolution_reason, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION)
+        self.assertIsNone(result.subtype)
+        self.assertEqual(result.provenance["principal_action"], "PROJECT_STEP")
 
     def test_not_evaluated_is_an_uninvoked_stage_state(self):
         result = CategoryResult.not_evaluated()
@@ -295,7 +311,7 @@ class ClassifierTests(unittest.TestCase):
         self.assertIn("service_duration_minutes", helper.requests[0].as_payload()["unresolved_event_claims"][0]["claim_key"])
         guidance = " ".join(helper.requests[0].as_payload()["guidance"])
         self.assertIn("Differences only in duration, count, magnitude", guidance)
-        self.assertIn("When CATEGORY_ASSIGNED, category_resolution_reason must be null.", guidance)
+        self.assertIn("never name a Category", guidance)
 
     def test_minor_safety_incident_without_service_impact_can_be_assigned_incident(self):
         record = _record(
@@ -313,21 +329,17 @@ class ClassifierTests(unittest.TestCase):
         self.assertEqual(result.primary_category_id, CategoryId.INCIDENT)
         self.assertIsNone(result.category_resolution_reason)
         guidance = " ".join(helper.requests[0].as_payload()["guidance"])
-        self.assertIn("An actual passenger, staff, or public safety incident", guidance)
-        self.assertIn("Severity and report value do not determine Category", guidance)
+        self.assertIn("An actual passenger, staff or public safety incident", guidance)
+        self.assertIn("Severity and report value do not determine the action", guidance)
 
     def test_category_unresolved_has_no_assigned_fields_or_reportability(self):
         first = _record("C1", "The source reports a technical trial began.")
         second = _record("C2", "The source says a supplier award occurred and no trial began.")
 
         def response(request):
-            return {
-                "category_state": CategoryState.CATEGORY_UNRESOLVED.value,
-                "primary_category_id": None,
-                "subtype": None,
-                "category_resolution_reason": CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS.value,
-                "citations": [_span(request), _span(request, 1)],
-            }
+            return _unresolved_response(
+                request, CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS, [_span(request), _span(request, 1)]
+            )
 
         result = Classifier(_Helper(response)).classify(
             _group((first, second)), (first, second)
@@ -343,14 +355,12 @@ class ClassifierTests(unittest.TestCase):
         self.assertEqual(result.classification_reason, "CATEGORY_UNRESOLVED")
         self.assertFalse(hasattr(result, "reportability"))
 
-    def test_assigned_response_with_resolution_reason_remains_invalid(self):
+    def test_an_action_with_an_unresolved_reason_remains_invalid(self):
         record = _record("C1", "An unexpected urban-rail power failure stopped service.")
 
         def assigned_with_reason(request):
             proposal = _assigned_response(request, CategoryId.INCIDENT, None)
-            proposal["category_resolution_reason"] = (
-                CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS.value
-            )
+            proposal["unresolved_reason"] = CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS.value
             return proposal
 
         with self.assertRaises(CategoryProposalViolation):
@@ -361,13 +371,7 @@ class ClassifierTests(unittest.TestCase):
         group = _group((record,))
 
         def response(request):
-            return {
-                "category_state": CategoryState.CATEGORY_UNRESOLVED.value,
-                "primary_category_id": None,
-                "subtype": None,
-                "category_resolution_reason": CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION.value,
-                "citations": [_span(request)],
-            }
+            return _unresolved_response(request, CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION)
 
         result = Classifier(_Helper(response)).classify(group, (record,))
         self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
@@ -392,7 +396,7 @@ class ClassifierTests(unittest.TestCase):
         # RC-16: an invalid proposal is a disclosed technical gap.
         for helper in (
             _Helper({"category_state": "CATEGORY_ASSIGNED"}),
-            _Helper(lambda request: _assigned_response(request, "UNKNOWN_CATEGORY")),
+            _Helper(lambda request: _assigned_response(request, "UNKNOWN_ACTION")),
         ):
             with self.subTest(helper=helper.response):
                 with self.assertRaises(CategoryProposalViolation) as raised:
@@ -434,14 +438,7 @@ class ClassifierTests(unittest.TestCase):
         def response(request, state):
             proposal = _assigned_response(request, CategoryId.TECHNICAL_DEVELOPMENT)
             if state is CategoryState.CATEGORY_UNRESOLVED:
-                proposal.update(
-                    {
-                        "category_state": state.value,
-                        "primary_category_id": None,
-                        "subtype": None,
-                        "category_resolution_reason": CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION.value,
-                    }
-                )
+                proposal = _unresolved_response(request, CategoryResolutionReason.INSUFFICIENT_CATEGORY_EVIDENCE)
             proposal["citations"] = []
             return proposal
 
@@ -461,10 +458,9 @@ class ClassifierTests(unittest.TestCase):
             with self.subTest(sentence=sentence):
                 record = _record("C1", body)
                 response = {
-                    "category_state": CategoryState.CATEGORY_ASSIGNED.value,
-                    "primary_category_id": CategoryId.OPERATIONAL_CHANGE.value,
+                    "principal_action": "SERVICE_OPENING",
+                    "unresolved_reason": None,
                     "subtype": None,
-                    "category_resolution_reason": None,
                     "citations": [{"source_ref": "M1", "sentence_ids": [sentence_id]}],
                 }
                 result = Classifier(_Helper(response)).classify(_group((record,)), (record,))
@@ -494,10 +490,9 @@ class ClassifierTests(unittest.TestCase):
         for label, citations in cases:
             with self.subTest(case=label):
                 proposal = {
-                    "category_state": CategoryState.CATEGORY_ASSIGNED.value,
-                    "primary_category_id": CategoryId.TECHNICAL_DEVELOPMENT.value,
+                    "principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT",
+                    "unresolved_reason": None,
                     "subtype": None,
-                    "category_resolution_reason": None,
                     "citations": citations,
                 }
                 with self.assertRaises(CategoryProposalViolation) as raised:
@@ -519,11 +514,14 @@ class ClassifierTests(unittest.TestCase):
         cases = (
             ("SUBTYPE_FORMAT", lambda request: assigned(request, subtype="5g_network_deployment")),
             ("SUBTYPE_FORMAT", lambda request: assigned(request, subtype="Network Deployment")),
-            ("CATEGORY_ID", lambda request: assigned(request, primary_category_id="TECHNOLOGY")),
-            ("RESOLUTION_REASON", lambda request: assigned(request, category_resolution_reason="NO_CATEGORY_DEFINING_ACTION")),
+            ("PRINCIPAL_ACTION", lambda request: assigned(request, principal_action="TECHNOLOGY")),
+            ("PRINCIPAL_ACTION", lambda request: assigned(request, principal_action="TECHNICAL_DEVELOPMENT")),
+            # The helper names no Category and no mapped reason: those are Python's.
+            ("RESOLUTION_REASON", lambda request: assigned(request, principal_action=None, unresolved_reason="NO_CATEGORY_DEFINING_ACTION")),
             ("RESPONSE_SHAPE", lambda request: {**assigned(request), "explanation": "extra"}),
-            ("CATEGORY_STATE", lambda request: assigned(request, category_state="NOT_EVALUATED")),
-            ("UNRESOLVED_ASSIGNMENT", lambda request: assigned(request, category_state="CATEGORY_UNRESOLVED", category_resolution_reason="NO_CATEGORY_DEFINING_ACTION")),
+            ("RESPONSE_SHAPE", lambda request: {**assigned(request), "primary_category_id": "TECHNICAL_DEVELOPMENT"}),
+            ("ACTION_OR_REASON", lambda request: assigned(request, principal_action=None)),
+            ("ACTION_OR_REASON", lambda request: assigned(request, unresolved_reason="NO_UNIQUE_PRINCIPAL_ACTION")),
             ("CITATION_INVALID", lambda request: assigned(request, citations=[])),
         )
         for predicate, helper in cases:
@@ -542,60 +540,72 @@ class ClassifierTests(unittest.TestCase):
         body = "First sentence here. Second sentence here."
         record = _record("C1", body)
         proposal = {
-            "category_state": CategoryState.CATEGORY_ASSIGNED.value,
-            "primary_category_id": CategoryId.PROCUREMENT.value,
+            "principal_action": "FORMAL_PROCUREMENT_ACTION",
+            "unresolved_reason": None,
             "subtype": None,
-            "category_resolution_reason": None,
             "citations": [{"source_ref": "M1", "sentence_ids": ["S2", "S1"]}],
         }
         result = Classifier(_Helper(proposal)).classify(_group((record,)), (record,))
         spans = result.provenance["validated_support_spans"]
         self.assertEqual([(span["start"], span["end"]) for span in spans], [(0, 20), (21, 42)])
 
-    def test_v5_rejects_legacy_shapes_and_accepts_one_citation_for_each_unresolved_reason(self):
+    def test_v6_rejects_legacy_shapes_and_reaches_each_unresolved_reason(self):
         record = _record("C1", "The source provides this substantive evidence.")
         group = _group((record,))
+        # A v5 proposal (the helper naming the Category) is no longer accepted.
         legacy = {
             "category_state": CategoryState.CATEGORY_ASSIGNED.value,
             "primary_category_id": CategoryId.INCIDENT.value,
             "subtype": None,
             "category_resolution_reason": None,
-            "support_spans": [{"candidate_id": "C1", "start": 0, "end": 4}],
-            "conflict_spans": [],
+            "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
         }
-        with self.assertRaises(CategoryProposalViolation):
+        with self.assertRaises(CategoryProposalViolation) as raised:
             Classifier(_Helper(legacy)).classify(group, (record,))
+        self.assertEqual(raised.exception.failure_class, "RESPONSE_SHAPE")
 
-        for reason in (
-            CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
-            CategoryResolutionReason.RECOMMENDATION_WITHOUT_ADOPTED_ACTION,
-            CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS,
-            CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION,
-            CategoryResolutionReason.INSUFFICIENT_CATEGORY_EVIDENCE,
+        citation = [{"source_ref": "M1", "sentence_ids": ["S1"]}]
+        for proposal, reason in (
+            ({"principal_action": "OTHER", "unresolved_reason": None}, CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION),
+            ({"principal_action": "RECOMMENDATION_WITHOUT_ADOPTION", "unresolved_reason": None}, CategoryResolutionReason.RECOMMENDATION_WITHOUT_ADOPTED_ACTION),
+            ({"principal_action": None, "unresolved_reason": "CONFLICTING_CATEGORY_DEFINING_CLAIMS"}, CategoryResolutionReason.CONFLICTING_CATEGORY_DEFINING_CLAIMS),
+            ({"principal_action": None, "unresolved_reason": "NO_UNIQUE_PRINCIPAL_ACTION"}, CategoryResolutionReason.NO_UNIQUE_PRINCIPAL_ACTION),
+            ({"principal_action": None, "unresolved_reason": "INSUFFICIENT_CATEGORY_EVIDENCE"}, CategoryResolutionReason.INSUFFICIENT_CATEGORY_EVIDENCE),
         ):
-            proposal = {
-                "category_state": CategoryState.CATEGORY_UNRESOLVED.value,
-                "primary_category_id": None,
-                "subtype": None,
-                "category_resolution_reason": reason.value,
-                "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
-            }
-            result = Classifier(_Helper(proposal)).classify(group, (record,))
-            self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
-            self.assertEqual(result.category_resolution_reason, reason)
-            self.assertEqual(len(result.provenance["validated_support_spans"]), 1)
+            with self.subTest(reason=reason):
+                result = Classifier(_Helper({**proposal, "subtype": None, "citations": citation})).classify(group, (record,))
+                self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
+                self.assertEqual(result.category_resolution_reason, reason)
+                self.assertEqual(len(result.provenance["validated_support_spans"]), 1)
 
-    def test_typed_v4_response_uses_citation_items(self):
+    def test_the_fixed_table_alone_turns_an_action_into_a_category(self):
+        from src.weekly_report.classifier import PRINCIPAL_ACTION_CATEGORY
+        from src.weekly_report.contracts import CategoryPrincipalAction
+
+        record = _record("C1", "The source provides this substantive evidence.")
+        group = _group((record,))
+        for action in CategoryPrincipalAction:
+            with self.subTest(action=action.value):
+                result = Classifier(_Helper({"principal_action": action.value, "unresolved_reason": None, "subtype": None,
+                                             "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}]})).classify(group, (record,))
+                target = PRINCIPAL_ACTION_CATEGORY[action]
+                if isinstance(target, CategoryId):
+                    self.assertEqual(result.primary_category_id, target)
+                    self.assertEqual(result.classification_reason, f"PRINCIPAL_ACTION_{target.value}")
+                else:
+                    self.assertIs(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
+                    self.assertEqual(result.category_resolution_reason, target)
+                self.assertEqual(result.provenance["principal_action"], action.value)
+
+    def test_typed_v6_response_uses_citation_items(self):
         record = _record("C1", "The operator awarded a contract.")
         typed = CategorySemanticResponse(
-            category_state=CategoryState.CATEGORY_ASSIGNED,
-            primary_category_id=CategoryId.PROCUREMENT,
-            subtype=None,
-            category_resolution_reason=None,
+            principal_action="FORMAL_PROCUREMENT_ACTION",
             citations=(CategoryCitation("M1", ("S1",)),),
         )
         result = Classifier(_Helper(typed)).classify(_group((record,)), (record,))
         self.assertEqual(result.category_state, CategoryState.CATEGORY_ASSIGNED)
+        self.assertEqual(result.primary_category_id, CategoryId.PROCUREMENT)
 
     def test_upstream_boundary_is_required_before_helper_invocation(self):
         cases = (

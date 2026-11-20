@@ -242,7 +242,7 @@ transport、schema、correlation 或 citation 技術失敗（RC-6）只使該 Ev
 
 Transport retry 與 semantic correction 必須分開計算。
 
-### RC-3～RC-79 修訂（2026-10-20～11-20）
+### RC-3～RC-80 修訂（2026-10-20～11-20）
 
 完整條文見 `docs/ARCHITECTURE_CONTRACT.md` §A.1～§A.47、§L、§N 與 §R。
 
@@ -723,6 +723,19 @@ Transport retry 與 semantic correction 必須分開計算。
   * 離線量測：recorded_answers 只有 ID、沒有標題與句子，無法量測；以 Run 44547985819 重建的兩期 audit（60 筆、人工標註
     130 個同事件配對）量測：Python 提出 86 對（59 對同事件、27 對不同事件），其群組涵蓋全部 130 對，含該次漏合的兩對；
     以標註回答重放時每期每次程序多 3 個確認請求（每次執行 9 個），ぱとれーる 合併、無不同事件被合併。Golden 新增 ED29。
+* RC-80（§A.61，使用者核准 2026-11-20）：Category helper 不再直接給分類，改從封閉清單選出「主要動作類型」並引用句子，
+  由 Classifier（唯一 Category owner）以固定對照表 `PRINCIPAL_ACTION_CATEGORY` 決定 Category 或 CATEGORY_UNRESOLVED：
+  * 技術試驗或部署 → 技術新知；新路線／延伸段／新車隊開始載客、服務變更（時刻、班距、票價、營運方式、停駛公告）、
+    營運爭議、營運治理（含已完成的調查報告）→ 營運動態；事故或故障 → 事故；已發生的正式招標或決標 → 採購；
+    規範或標準的正式變動 → 規範變動。
+  * 啟用前或驗收測試、施工或專案步驟（含經費、延期、預告通車或招標）、演練訓練、非運輸服務、統計排名獎項、聲明評論、
+    活動展覽、其他 → NO_CATEGORY_DEFINING_ACTION；未被採納的建議 → RECOMMENDATION_WITHOUT_ADOPTED_ACTION。
+  * 無法選出單一動作時，helper 只能回 CONFLICTING／NO_UNIQUE／INSUFFICIENT 三種理由；未知動作、自行給映射後理由或
+    舊版欄位皆為已揭露的技術缺口。無分類的動作不保留 subtype。
+  * 與建議清單的差異（為使 §L 定義與 Golden 預期不變）：營運爭議與營運治理仍屬營運動態、未採納建議保留原理由、
+    規範動作為 §L 一般規範變動而非「監控標準本身變動」（監控標準由 ScopeClassifier 判定，RC-59）。
+  * 提示詞 v9、schema v6、觀測紀錄 v2；現有 Golden 與 category_boundary_manifest 預期結果全部不變（測試 oracle 改以動作
+    類型表達同一判定）；已刪除分支 c112dfc 無法取得，未參考。
 
 ## 13. Report / Delivery
 
@@ -873,5 +886,5 @@ ARCHITECTURE_CONTRACT = docs/ARCHITECTURE_CONTRACT.md
 ARCHITECTURE_BASELINE = v0.5 FINAL_LOCKED
 V1_STATUS = FROZEN_REFERENCE
 ENTRY_POINT_CLARIFICATION = APPLIED
-CONTRACT_REVISION = RC-3..RC-79 (2026-11-20; RC-79 Event Identity: Python nominates candidate pairs (rare shared feature term, 72 h, no region conflict) for the unchanged RC-52 confirmation, Golden ED29; RC-78 Finland's Google News edition verified and searched, Denmark the only edition gap, search-discovery-v13; RC-77 recall gold answer and score tool, routine operations NOT_REPORTABLE (Reportability prompt v9), AI search terms search-discovery-v12 (221 weekly requests), geo-reference-v7 (Frankfurt, Kitchener, Vitoria); RC-76 designated regions 27 (CN out, HK in), search-discovery-v11, geo-reference-v6; RC-75 Scope system relation may leave the focus under three conditions, and one correction request per violated proposal; RC-74 named-month source dates and trade-press site list; RC-73 workflow concurrency moved to the production and recall-test jobs; RC-72 Google News health gate: at least 4 of 6 probes succeed with only RATE_LIMIT failures, otherwise one 45-minute wait and one full re-run, plus the email-free recall-test workflow; RC-71 principal-document detection: related collections outside the single article, repeated identical headline metadata and interactive widgets no longer make a page ambiguous, evidence_document.py only; RC-70 user decisions: a road collision is reportable only with a derailment, a person struck only with a stated rail equipment failure or staff operating error, Reportability prompt v8, observer-only source host probe; RC-69 observer-only Category exchange record, selection audit v4; RC-68 Category prompt v8: delivery acceptance tests, deployments and consequences; RC-67 user decisions D1/D2: project steps and drills have no Category, Category prompt v7, Writer v11; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
+CONTRACT_REVISION = RC-3..RC-80 (2026-11-20; RC-80 Category helper chooses a closed principal action and the Classifier maps it with a fixed table, prompt v9, schema v6; RC-79 Event Identity: Python nominates candidate pairs (rare shared feature term, 72 h, no region conflict) for the unchanged RC-52 confirmation, Golden ED29; RC-78 Finland's Google News edition verified and searched, Denmark the only edition gap, search-discovery-v13; RC-77 recall gold answer and score tool, routine operations NOT_REPORTABLE (Reportability prompt v9), AI search terms search-discovery-v12 (221 weekly requests), geo-reference-v7 (Frankfurt, Kitchener, Vitoria); RC-76 designated regions 27 (CN out, HK in), search-discovery-v11, geo-reference-v6; RC-75 Scope system relation may leave the focus under three conditions, and one correction request per violated proposal; RC-74 named-month source dates and trade-press site list; RC-73 workflow concurrency moved to the production and recall-test jobs; RC-72 Google News health gate: at least 4 of 6 probes succeed with only RATE_LIMIT failures, otherwise one 45-minute wait and one full re-run, plus the email-free recall-test workflow; RC-71 principal-document detection: related collections outside the single article, repeated identical headline metadata and interactive widgets no longer make a page ambiguous, evidence_document.py only; RC-70 user decisions: a road collision is reportable only with a derailment, a person struck only with a stated rail equipment failure or staff operating error, Reportability prompt v8, observer-only source host probe; RC-69 observer-only Category exchange record, selection audit v4; RC-68 Category prompt v8: delivery acceptance tests, deployments and consequences; RC-67 user decisions D1/D2: project steps and drills have no Category, Category prompt v7, Writer v11; RC-66 offline review: Category prompt v6, numeric middle dot, Scope rejection observation, Event Identity R7 package; RC-64 measurement invalid; RC-65 Scope v13; none Live-accepted; RC-63 Category boundary clarification, prompt v4; RC-62 exact ownership of monitored identifiers, family coverage pending; RC-61 adoption by another body is not a monitored change; RC-60 official standards catalogue provider, phase 1 10/27; RC-59 monthly monitored-standards check with a narrow Scope/region basis; RC-57 normative discovery intent, superseded in part by RC-58 monitored standards; RC-51 reverted; RC-53 measured, not adopted; RC-54 observation only, no contract text; RC-55 wired and live-accepted (L1-L3 PASS); RC-56 reporting week, schedule and subscription applied; RC-56 go-live gate satisfied by controlled canary Run 41765559889)
 ```
