@@ -1,5 +1,5 @@
 {
- "version": "recall-v1",
+ "version": "recall-v2",
  "source_run_id": 44468386445,
  "selection_rule": "Rated by reference value to the Taipei rapid transit department: 3 stars or more included; 2 stars included only in 營運動態 or 事故及安全事件; 1 star not included. See README.md.",
  "items": [
@@ -572,6 +572,86 @@
     ]
    ],
    "stars_basis": "inferred from the selection rule (user may adjust)"
+  },
+  {
+   "id": 23,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-27",
+    "end": "2026-10-29"
+   },
+   "title": "Sydney Metro Southwest opens to 130-year-old stations",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "營運動態",
+   "aliases": [
+    "'Absolutely ecstatic': Metro finally arrives at 130yo train stations - ABC News & Headlines – Australian Broadcasting Corporation",
+    "VIDEO: Commuters react to Southwest Metro line opening - ABC News & Headlines – Australian Broadcasting Corporation"
+   ],
+   "keywords": [
+    [
+     "Southwest Metro"
+    ],
+    [
+     "Metro",
+     "130yo"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 44547985819
+  },
+  {
+   "id": 24,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-27",
+    "end": "2026-10-29"
+   },
+   "title": "Nice tram operator seeks ADETEL battery supply, upkeep for lines 2 and 3",
+   "stars": 3,
+   "expected": "INCLUDE",
+   "expected_section": "機電標案及採購動態",
+   "aliases": [
+    "Nice tram operator seeks ADETEL battery supply, upkeep for lines 2 and 3 - Railway Supply"
+   ],
+   "keywords": [
+    [
+     "ADETEL"
+    ],
+    [
+     "Nice",
+     "tram",
+     "battery"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 44547985819
+  },
+  {
+   "id": 25,
+   "kind": "report",
+   "period": {
+    "start": "2026-10-27",
+    "end": "2026-10-29"
+   },
+   "title": "광주교통공사 AX 실증밸리 선정, AI 기반 도시철도 개발·실증",
+   "stars": 1,
+   "expected": "EXCLUDE",
+   "expected_section": null,
+   "note": "使用者：★★★ 技術新知，若只是宣布計畫則 ★。本期 Evidence（뉴시스 10/28）為部會公募選定、將建置與實證（宣布計畫），故依條件評 ★；之後若報導實際實證成果或部署，另列為 ★★★ 技術新知。",
+   "aliases": [
+    "'AX 실증밸리 선정' 광주교통공사, AI기반 도시철도 개발·실증 - 뉴시스",
+    "광주교통공사, AX 실증밸리 선정…도시철도에 국산 AI 기술 실증 - 매일일보"
+   ],
+   "keywords": [
+    [
+     "AX",
+     "실증밸리"
+    ]
+   ],
+   "stars_basis": "user condition applied to this period's Evidence (announced plan)",
+   "source_run_id": 44547985819
   }
- ]
+ ],
+ "version_note": "v1: 17 reported events of Run 44468386445 and recall targets #18-#22; v2 (2026-11-20): #23-#25, new events of Run 44547985819."
 }
