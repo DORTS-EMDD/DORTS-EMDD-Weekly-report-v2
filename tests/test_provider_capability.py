@@ -39,7 +39,8 @@ SUPPORTED_ENCODINGS = {
     ("switzerland", "fr"): ("fr", "CH", "CH:fr"),
     ("united_kingdom", "en"): ("en-GB", "GB", "GB:en"),
     ("united_states", "en"): ("en-US", "US", "US:en"),
-    # RC-76 (user decision 2026-11-19): the new markets' editions.
+    # RC-76 (user decision 2026-11-19): the new markets' editions; each answered
+    # 200 without a redirect when verified on 2026-11-20 (section A.59).
     ("belgium", "nl"): ("nl", "BE", "BE:nl"),
     ("belgium", "fr"): ("fr", "BE", "BE:fr"),
     ("czechia", "cs"): ("cs", "CZ", "CZ:cs"),

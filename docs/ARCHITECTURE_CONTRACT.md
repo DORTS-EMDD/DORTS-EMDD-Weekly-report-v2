@@ -3812,9 +3812,12 @@ are the first `200` observation; Search failures there are disclosed as usual.
   (1, 10, N/2, N/2+5, N-7, N) convention; the RC-72 rule is unchanged.
 * Note: production follows no redirect, so an edition whose canonical `hl`
   differs from the configured one would fail. The eight other RC-76 encodings
-  (`BE:nl`, `BE:fr`, `CZ:cs`, `IL:he`, `IL:en`, `PL:pl`, `IE:en`, `NZ:en`) were
-  not requested here; their first production requests show whether they answer
-  `200`.
+  were each requested once on 2026-11-20 (user decision; no Google News workflow
+  was running, no redirect followed), and every one answered `200` with its own
+  edition: `BE:nl` (`nl`), `BE:fr` (`fr`), `CZ:cs` (`cs`), `IL:he` (channel
+  language `iw`), `IL:en` (`en-IL`), `PL:pl` (`pl`), `IE:en` (`en-IE`) and
+  `NZ:en` (`en-NZ`), 40 to 101 items for `metro`. Their encodings stay unchanged;
+  no market became a coverage gap.
 
 ```text
 SEARCH_CONFIGURATION_VERSION = search-discovery-v13 (RC-78: Finland searched, 231 weekly requests)

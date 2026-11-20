@@ -708,7 +708,8 @@ Transport retry 與 semantic correction 必須分開計算。
   `hl=fi-FI`，芬蘭版存在；`DK:da` 回 302 轉到挪威版，丹麥沒有 Google News 版本。芬蘭 binding 改為 SUPPORTED
   （`fi-FI`／`FI`／`FI:fi`），不再是 coverage gap；丹麥維持 UNSUPPORTED，是唯一的 coverage gap。`search-discovery-v13`：
   週計畫 221 → 231 次（芬蘭 10 次），月檢標準查詢 87 → 90 次；健康檢查探針 (1, 10, 115, 120, 224, 231)，RC-72 規則不變。
-  正式執行不跟隨轉址，RC-76 其餘八個版本代碼未另行請求，首次正式執行即可看出是否回 200。
+  正式執行不跟隨轉址；RC-76 其餘八個版本（BE:nl、BE:fr、CZ:cs、IL:he、IL:en、PL:pl、IE:en、NZ:en）於 2026-11-20 經使用者同意各送 1 次
+  請求驗證，全部回 200 且是各自的版本，代碼不變，沒有新增 coverage gap。
 
 ## 13. Report / Delivery
 
