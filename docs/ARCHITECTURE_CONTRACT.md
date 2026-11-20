@@ -3788,6 +3788,40 @@ GEOGRAPHIC_REFERENCE_VERSION = geo-reference-v7 (RC-77)
 HEALTH_PROBE_ORDINALS = (1, 10, 110, 115, 214, 221)
 ```
 
+### A.59 RC-78 Finland's Google News edition verified; Denmark has none (2026-11-20, user decision)
+
+After recall Run 44468386445 completed, one Google News RSS request was sent for
+each edition in question, without following redirects (as production does):
+
+* `hl=fi&gl=FI&ceid=FI:fi` answered HTTP 302 to `hl=fi-FI&gl=FI&ceid=FI:fi`: the
+  Finnish edition exists and its language code is `fi-FI`.
+* `hl=da&gl=DK&ceid=DK:da` answered HTTP 302 to `hl=no&gl=NO&ceid=NO:no`: Google
+  News has no Danish edition and sends the request to the Norwegian one.
+
+Applied (the user decided on 2026-11-19 that a verified edition becomes
+`SUPPORTED`): the binding `finland`/`fi` is `SUPPORTED` with
+`hl=fi-FI, gl=FI, ceid=FI:fi`, so Finland is searched in Finnish and is no longer
+a coverage gap. Denmark stays configured with both bindings `UNSUPPORTED` and
+remains the only `KNOWN_UNSUPPORTED_PROVIDER_CAPABILITY` coverage gap. The
+redirected address was not requested, so the first Finnish production requests
+are the first `200` observation; Search failures there are disclosed as usual.
+
+* Plan size (`search-discovery-v13`): weekly 221 -> 231 requests (Finland 10);
+  the monthly check adds 90 monitored-standard requests (was 87).
+* Health check: probe ordinals `(1, 10, 115, 120, 224, 231)` by the
+  (1, 10, N/2, N/2+5, N-7, N) convention; the RC-72 rule is unchanged.
+* Note: production follows no redirect, so an edition whose canonical `hl`
+  differs from the configured one would fail. The eight other RC-76 encodings
+  (`BE:nl`, `BE:fr`, `CZ:cs`, `IL:he`, `IL:en`, `PL:pl`, `IE:en`, `NZ:en`) were
+  not requested here; their first production requests show whether they answer
+  `200`.
+
+```text
+SEARCH_CONFIGURATION_VERSION = search-discovery-v13 (RC-78: Finland searched, 231 weekly requests)
+HEALTH_PROBE_ORDINALS = (1, 10, 115, 120, 224, 231)
+GOOGLE_NEWS_EDITION_GAPS = denmark
+```
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式

@@ -60,8 +60,8 @@ def test_bare_ai_is_not_used_where_it_is_a_common_word():
 def test_plan_size_and_query_bound():
     plan = SearchPlanner(REGISTRY).plan("selected")
     counts = Counter(item.intent.value for item in plan.items)
-    assert len(plan.items) == 221
-    assert counts["technology"] == 113
+    assert len(plan.items) == 231  # RC-78 adds Finland's edition (RC-77 was 221)
+    assert counts["technology"] == 118
     assert all(_query_words(item.query) <= 32 for item in plan.items)
 
 

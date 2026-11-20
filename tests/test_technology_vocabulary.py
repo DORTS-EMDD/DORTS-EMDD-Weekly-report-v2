@@ -163,7 +163,7 @@ def test_every_new_literal_reaches_every_supported_edition_of_its_profile(regist
                 assert _quoted(literal) in queries, (market_id, profile_id, literal)
     assert all(_query_words(item.query) <= 32 for item in plan.items)
     assert "da" not in {profile for _market, profile in editions}  # Denmark: no Google News edition
-    assert "fi" not in {profile for _market, profile in editions}  # Finland (RC-76): treated like Denmark
+    assert ("finland", "fi") in editions  # RC-78: Finland's edition verified
 
 
 @pytest.mark.parametrize("mode", ["selected", "global"])
@@ -174,13 +174,14 @@ def test_request_counts(registry, mode):
     # v10: 140 = technology 67 + major_incident 31 + operations 21 + procurement 21.
     # v11 (RC-76, 27 markets): 210.
     # v12 (RC-77, AI terms): 221; en, zh and cs gain one technology request per market.
-    assert len(weekly.items) == 221
-    assert counts == {"technology": 113, "major_incident": 47, "operations": 29, "procurement": 32}
+    # v13 (RC-78, Finland searched): 231.
+    assert len(weekly.items) == 231
+    assert counts == {"technology": 118, "major_incident": 49, "operations": 30, "procurement": 34}
     november = MonitoredCheckMonth(date(2026, 11, 1), date(2026, 11, 30))
     monthly = SearchPlanner(registry).plan(mode, window=SearchWindow(date(2026, 11, 30), date(2026, 12, 6)),
                                            monitored_check=november)
     monitored = [item for item in monthly.items if item.intent is DiscoveryIntent.MONITORED_STANDARDS
                  and item.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]
     catalogue = [item for item in monthly.items if item.provider_target is SearchProviderId.STANDARDS_CATALOGUE]
-    assert len(monitored) == 87 and len(catalogue) == 10
-    assert len(monthly.items) == 221 + 87 + 10
+    assert len(monitored) == 90 and len(catalogue) == 10
+    assert len(monthly.items) == 231 + 90 + 10

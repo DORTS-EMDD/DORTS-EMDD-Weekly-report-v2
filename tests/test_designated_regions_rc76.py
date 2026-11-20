@@ -89,15 +89,22 @@ def test_an_event_in_a_new_region_is_now_eligible():
     assert not projection.exclusions
 
 
-def test_finland_is_a_disclosed_coverage_gap_like_denmark():
+def test_finland_is_searched_and_denmark_stays_the_only_coverage_gap():
+    # RC-78 (2026-11-20): FI:fi answered with a redirect to hl=fi-FI on the same
+    # edition; DK:da redirected to the Norwegian edition (no Danish edition).
     plan = SearchPlanner(REGISTRY).plan("selected")
-    assert tuple(gap.market_id for gap in plan.coverage.gaps) == ("denmark", "finland")
-    assert not any(item.market_id in {"denmark", "finland"} for item in plan.items)
+    assert tuple(gap.market_id for gap in plan.coverage.gaps) == ("denmark",)
+    finnish = [item for item in plan.items if item.market_id == "finland"]
+    assert finnish and {item.language_profile for item in finnish} == {"fi"}
+    assert {(item.provider_encoding.hl, item.provider_encoding.gl, item.provider_encoding.ceid) for item in finnish} == {
+        ("fi-FI", "FI", "FI:fi")
+    }
+    assert not any(item.market_id == "denmark" for item in plan.items)
 
 
 def test_health_probes_are_spread_over_the_new_plan():
     size = len(SearchPlanner(REGISTRY).plan("selected").items)
-    assert size == 221  # RC-77 (search-discovery-v12); RC-76 was 210
+    assert size == 231  # RC-78 (search-discovery-v13); RC-77 221, RC-76 210
     assert HEALTH_PROBE_ORDINALS == (1, 10, size // 2, size // 2 + 5, size - 7, size)
 
 

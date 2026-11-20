@@ -1,5 +1,5 @@
 {
-  "configuration_version": "search-discovery-v12",
+  "configuration_version": "search-discovery-v13",
   "region_modes": [
     "selected",
     "global"
@@ -3858,7 +3858,7 @@
     {"market_id": "denmark", "language_profile_id": "da", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "denmark", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "finland", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
-    {"market_id": "finland", "language_profile_id": "fi", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
+    {"market_id": "finland", "language_profile_id": "fi", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "fi-FI", "gl": "FI", "ceid": "FI:fi"}},
     {"market_id": "france", "language_profile_id": "fr", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "fr", "gl": "FR", "ceid": "FR:fr"}},
     {"market_id": "france", "language_profile_id": "en", "provider_id": "google_news_rss", "eligibility": "UNSUPPORTED", "encoding": null},
     {"market_id": "germany", "language_profile_id": "de", "provider_id": "google_news_rss", "eligibility": "SUPPORTED", "encoding": {"hl": "de", "gl": "DE", "ceid": "DE:de"}},
