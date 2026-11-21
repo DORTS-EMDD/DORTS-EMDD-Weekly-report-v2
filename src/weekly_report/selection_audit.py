@@ -473,6 +473,10 @@ def build_selection_audit(
         "terminal_reason_distribution": dict(
             sorted(Counter(f"{entry['terminal_stage']}:{entry['terminal_reason']}" for entry in candidates).items())
         ),
+        # RC-83 (section A.64): the run-level link-resolution gate counts.
+        "link_resolution_gate": (
+            None if getattr(result, "link_resolution_gate", None) is None else result.link_resolution_gate.projection()
+        ),
         "event_identity_excerpt_limits": getattr(run, "proposal_excerpt_limits", "") or None,
         "event_identity_rejected_members": rejected_members,
         # Section A.34 (observation only): every helper exchange, IDs only, for

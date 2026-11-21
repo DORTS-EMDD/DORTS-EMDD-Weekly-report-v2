@@ -3985,9 +3985,8 @@ events".
   Evidence rejection. Non-transient failures (403, 404, unparseable pages) stay
   Evidence rejections with their RC-81 observation; a link that recovers on the
   retry records `link_resolution_retries`.
-* **Pending (BLOCKED_USER_DECISION):** a run-level threshold on the share of
-  links lost to such gaps and the wait-and-rerun behaviour; proposed to the user,
-  not implemented.
+* The run-level threshold on the share of links lost to such gaps and the
+  wait-and-retry behaviour were decided on 2026-11-21: section A.64 (RC-83).
 
 **Category guidance (user decision; prompt `category-principal-action-v10`).** No
 action is added:
@@ -4008,6 +4007,59 @@ Gold answer v2.1 adds #26. Tests: `tests/test_google_news_links.py`
 LINK_RESOLUTION_RETRY = once, 5 s, transient only (connection, timeout, 429, 5xx) (RC-82)
 LINK_RESOLUTION_TRANSIENT_FAILURE = TechnicalGap (Evidence), not an Evidence rejection (RC-82)
 CATEGORY_PROMPT_VERSION = category-principal-action-v10 (RC-82)
+```
+
+### A.64 RC-83 Run-level gate on Google News link resolution (2026-11-21, user decision)
+
+Section A.63 made a link still failing transiently after its 5-second retry a
+disclosed `Evidence` TechnicalGap. A whole-run outage (Run 44652152415: 103 of 103
+links of 2026-05-26..05-28) would still produce a report built from the few
+publisher URLs left, so the user decided on a run-level gate (option B of the
+proposal: wait and retry the failed links once in the same run).
+
+* **Owner.** ReportApplication, the application orchestration owner, as for the
+  Search execution gate (`determine_search_runtime_acceptance`). It decides only
+  whether the run continues; it makes no Evidence decision. EvidenceService
+  names the population (`requires_link_resolution`: a candidate whose
+  normalised URL is a Google News article link and not an official standards
+  catalogue record, the same order as `evaluate`).
+* **Counts.** `links` = this run's candidates that require link resolution;
+  `failed` = those left as a transient link-resolution TechnicalGap
+  (`EvidenceAcquisitionTechnicalFailure`). Other Evidence gaps (semantic helper
+  failures) and Evidence rejections (403, 404, unparseable pages) are not
+  counted.
+* **Gate.** Exceeded when `failed >= 20` and `failed >= 30% of links`
+  (`link_resolution_gate_exceeded`). Both are required: a small run with fewer
+  than 20 failed links is never blocked; its failures stay disclosed gaps.
+* **Wait and retry once.** When the first Evidence pass exceeds the gate,
+  ReportApplication waits 2,700 seconds (45 minutes,
+  `LINK_RESOLUTION_RETRY_WAIT_SECONDS`) and calls `EvidenceService.evaluate`
+  once more for exactly the candidates whose link failed. Links that resolve
+  continue normally; the others keep their TechnicalGap. There is no third
+  attempt, and links that did not fail are not re-evaluated.
+* **Still exceeded after the retry.** The run stops after Evidence: Scope and all
+  later stages are not reached, no report is assembled and nothing can be
+  delivered (scheduled, manual or recall runs alike). ProductionRunner reports
+  `TECHNICAL_FAILURE` with `failure_stage=evidence` and
+  `failure_class=LINK_RESOLUTION_GATE`, so the CLI exits 1, and the summary and
+  selection audit disclose the counts.
+* **Disclosure.** Every run that reached Evidence records
+  `link_resolution_gate` (`STATUS` = `PASS`, `PASS_AFTER_RETRY` or `BLOCK`;
+  `LINKS`, `FAILED`, `RETRIED`; after a retry also `FAILED_AFTER_RETRY` and
+  `WAIT_SECONDS`) in the run summary and the selection audit. A passing run with
+  link gaps remains `SUCCESS_WITH_TECHNICAL_GAPS` (section A.63).
+* Unchanged: the per-request retry of section A.63, Evidence decisions, the
+  Google News health gate (section A.53), Delivery (RC-55). The production job's
+  default 360-minute limit covers both 45-minute waits.
+
+Observed first-pass failure shares in recall runs: 0%, 7.8%, 7.9%, 14.3%, 15.1%,
+18.6%, 23.5% (all pass) and 100% (blocked). Tests:
+`tests/test_link_resolution_gate_rc83.py`.
+
+```text
+LINK_RESOLUTION_GATE = failed >= 20 and failed >= 30% of the run's Google News links (RC-83)
+LINK_RESOLUTION_GATE_RETRY = wait 2,700 s once, retry only the failed links (RC-83)
+LINK_RESOLUTION_GATE_BLOCK = TECHNICAL_FAILURE / evidence / LINK_RESOLUTION_GATE, no report, no delivery (RC-83)
 ```
 
 ### Shared production workflow

@@ -679,7 +679,59 @@
    ],
    "stars_basis": "user",
    "source_run_id": 44652152415
+  },
+  {
+   "id": 27,
+   "kind": "report",
+   "period": {
+    "start": "2026-05-26",
+    "end": "2026-05-28"
+   },
+   "title": "Two trains crash into each other leaving 12 injured after 'signal failure'",
+   "stars": 3,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "aliases": [
+    "Two trains crash into each other leaving 12 injured after 'signal failure' as emergency services rush to scene - the-sun.com"
+   ],
+   "keywords": [
+    [
+     "Two trains crash",
+     "signal failure"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 44774723652
+  },
+  {
+   "id": 28,
+   "kind": "report",
+   "period": {
+    "start": "2026-05-26",
+    "end": "2026-05-28"
+   },
+   "title": "淡海輕軌座椅掉漆染色",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": [
+    "事故及安全事件",
+    "營運動態"
+   ],
+   "note": "使用者 2026-11-21：★★ 收，事故及安全事件或營運動態皆可。來源標題寫「淡水輕軌」。",
+   "aliases": [
+    "熱到掉漆？淡水輕軌座椅手一摸染色 乘客急喊：穿白褲不要坐 - UDN",
+    "淡海輕軌座椅掉漆 新北捷運：今日更新座椅 全面檢視車隊 - UDN"
+   ],
+   "keywords": [
+    [
+     "輕軌",
+     "座椅",
+     "掉漆"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 44774723652
   }
  ],
- "version_note": "v1: 17 reported events of Run 44468386445 and recall targets #18-#22; v2 (2026-11-20): #23-#25, new events of Run 44547985819. v2.1 (2026-11-20): #26 Busan-Gimhae CEO safety inspection, 1 star; #25 confirmed 1 star."
+ "version_note": "v1: 17 reported events of Run 44468386445 and recall targets #18-#22; v2 (2026-11-20): #23-#25, new events of Run 44547985819. v2.1 (2026-11-20): #26 Busan-Gimhae CEO safety inspection, 1 star; #25 confirmed 1 star. v2.2 (2026-11-21): #27 two trains collide after a signal failure (3 stars, 事故及安全事件), #28 Danhai LRT seat paint stains (2 stars, 事故及安全事件 or 營運動態), Run 44774723652."
 }

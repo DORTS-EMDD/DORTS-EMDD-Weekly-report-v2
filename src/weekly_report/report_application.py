@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, replace
 from datetime import date
 from enum import StrEnum
+import time
 from typing import Any
 
 from .candidate_normalizer import CandidateNormalizationError, CandidateNormalizer
@@ -97,6 +98,86 @@ def determine_search_runtime_acceptance(
     return SearchRuntimeAcceptance.LEGAL_COMPLETED_SEARCH
 
 
+# RC-83 (section A.64): run-level gate on Google News link resolution.
+LINK_RESOLUTION_GATE_MIN_RATIO = 0.30
+LINK_RESOLUTION_GATE_MIN_FAILED = 20
+LINK_RESOLUTION_RETRY_WAIT_SECONDS = 2700
+
+
+class LinkResolutionAcceptance(StrEnum):
+    """Application-owned continuation outcome for the run's link resolution."""
+
+    PASS = "PASS"
+    PASS_AFTER_RETRY = "PASS_AFTER_RETRY"
+    BLOCK = "BLOCK"
+
+
+def link_resolution_gate_exceeded(failed: int, links: int) -> bool:
+    """RC-83: at least 20 links failed and they are at least 30% of the run's links."""
+
+    for value in (failed, links):
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError("link resolution gate counts must be non-negative integers")
+    if failed > links:
+        raise ValueError("link resolution gate cannot fail more links than it has")
+    return failed >= LINK_RESOLUTION_GATE_MIN_FAILED and failed >= LINK_RESOLUTION_GATE_MIN_RATIO * links
+
+
+@dataclass(frozen=True, slots=True)
+class LinkResolutionGateResult:
+    """RC-83: how many Google News links this run resolved, failed and retried.
+
+    ``links`` counts the candidates whose source is a Google News discovery
+    link (EvidenceService decides which); ``failed`` counts those left as a
+    transient link-resolution TechnicalGap by the first pass; ``failed_after_retry``
+    is None unless the gate was exceeded and the failed links were retried once.
+    """
+
+    links: int
+    failed: int
+    failed_after_retry: int | None = None
+    wait_seconds: int = 0
+
+    def __post_init__(self) -> None:
+        link_resolution_gate_exceeded(self.failed, self.links)
+        if self.failed_after_retry is not None:
+            link_resolution_gate_exceeded(self.failed_after_retry, self.links)
+            if self.failed_after_retry > self.failed:
+                raise ValueError("a retry only revisits the links that failed")
+            if not link_resolution_gate_exceeded(self.failed, self.links):
+                raise ValueError("failed links are retried only when the gate is exceeded")
+        if isinstance(self.wait_seconds, bool) or not isinstance(self.wait_seconds, int) or self.wait_seconds < 0:
+            raise ValueError("wait_seconds must be a non-negative integer")
+
+    @property
+    def retried(self) -> int:
+        return 0 if self.failed_after_retry is None else self.failed
+
+    @property
+    def acceptance(self) -> LinkResolutionAcceptance:
+        if self.failed_after_retry is None:
+            if link_resolution_gate_exceeded(self.failed, self.links):
+                return LinkResolutionAcceptance.BLOCK
+            return LinkResolutionAcceptance.PASS
+        if link_resolution_gate_exceeded(self.failed_after_retry, self.links):
+            return LinkResolutionAcceptance.BLOCK
+        return LinkResolutionAcceptance.PASS_AFTER_RETRY
+
+    def projection(self) -> dict[str, int | str]:
+        """Secret-free counts for the run summary and the formal disclosure."""
+
+        values: dict[str, int | str] = {
+            "STATUS": self.acceptance.value,
+            "LINKS": self.links,
+            "FAILED": self.failed,
+            "RETRIED": self.retried,
+        }
+        if self.failed_after_retry is not None:
+            values["FAILED_AFTER_RETRY"] = self.failed_after_retry
+            values["WAIT_SECONDS"] = self.wait_seconds
+        return values
+
+
 @dataclass(frozen=True, slots=True)
 class ReportApplicationResult:
     """Immutable shared application result through the Event Identity boundary."""
@@ -139,6 +220,14 @@ class ReportApplicationResult:
     # Category exchange that ended as a disclosed TechnicalGap. Carried for the
     # selection audit; no decision reads it.
     category_gap_exchanges: tuple[tuple[str, Mapping[str, Any]], ...] = ()
+    # RC-83: the run-level link-resolution gate; None until the Evidence stage
+    # completed. BLOCK stops the run after Evidence: no report, no Delivery.
+    link_resolution_gate: LinkResolutionGateResult | None = None
+
+    @property
+    def link_resolution_acceptance(self) -> LinkResolutionAcceptance | None:
+        gate = self.link_resolution_gate
+        return None if gate is None else gate.acceptance
 
     @property
     def search_runtime_acceptance(self) -> SearchRuntimeAcceptance:
@@ -519,6 +608,9 @@ class ReportApplication:
         validator: Validator | None = None,
         delivery: DeliveryService | None = None,
         delivery_recipient: str | None = None,
+        *,
+        sleep: Callable[[float], None] | None = None,
+        link_resolution_retry_wait_seconds: int = LINK_RESOLUTION_RETRY_WAIT_SECONDS,
     ) -> None:
         if not isinstance(registry, RegionRegistry):
             raise TypeError("ReportApplication requires a RegionRegistry")
@@ -574,6 +666,14 @@ class ReportApplication:
         self._validator = validator
         self._delivery = delivery
         self._delivery_recipient = delivery_recipient
+        if (
+            isinstance(link_resolution_retry_wait_seconds, bool)
+            or not isinstance(link_resolution_retry_wait_seconds, int)
+            or link_resolution_retry_wait_seconds < 0
+        ):
+            raise ValueError("link_resolution_retry_wait_seconds must be a non-negative integer")
+        self._sleep = time.sleep if sleep is None else sleep
+        self._link_retry_wait_seconds = link_resolution_retry_wait_seconds
 
     @property
     def registry(self) -> RegionRegistry:
@@ -686,28 +786,60 @@ class ReportApplication:
         scope_rejected_proposals: list[tuple[str, Mapping[str, Any]]] = []
         scope_corrections: list[tuple[str, Mapping[str, Any]]] = []
         with observe_stage("Evidence", len(normalized.normalized_candidates)) as observation:
-            evidence_results: list[EvidenceResult] = []
-            for normalized_candidate in normalized.normalized_candidates:
-                try:
-                    evidence = self._evidence_service.evaluate(normalized_candidate.candidate)
-                except (SemanticProviderTechnicalFailure, EvidenceAcquisitionTechnicalFailure) as failure:
-                    # RC-82: a link that could not be resolved for a transient
-                    # reason is a disclosed technical gap, not an Evidence rejection.
-                    technical_gaps.append(
-                        TechnicalGap.from_failure("Evidence", normalized_candidate.candidate.candidate_id, failure)
-                    )
-                    continue
-                if not isinstance(evidence, EvidenceResult):
-                    raise TypeError("EvidenceService must return an EvidenceResult")
-                if not isinstance(evidence.state, EvidenceState):
-                    raise TypeError("EvidenceResult state must be an EvidenceState")
-                if evidence.candidate_id != normalized_candidate.candidate.candidate_id:
-                    raise ValueError("EvidenceResult candidate_id does not match candidate")
-                evidence_results.append(evidence)
-                observation.observe(evidence_results)
-
-            evidence_tuple = tuple(evidence_results)
+            evidence_by_candidate: dict[str, EvidenceResult] = {}
+            evidence_gaps: dict[str, TechnicalGap] = {}
+            link_failures: set[str] = set()
+            self._evaluate_evidence(
+                normalized.normalized_candidates, evidence_by_candidate, evidence_gaps, link_failures, observation
+            )
+            # RC-83 (section A.64): when link resolution failed for too many of
+            # this run's Google News links, wait once and retry only those links.
+            links = sum(
+                self._evidence_service.requires_link_resolution(candidate.candidate)
+                for candidate in normalized.normalized_candidates
+            )
+            first_failed = len(link_failures)
+            gate = LinkResolutionGateResult(links, first_failed)
+            if gate.acceptance is LinkResolutionAcceptance.BLOCK:
+                self._sleep(self._link_retry_wait_seconds)
+                retry = tuple(
+                    candidate
+                    for candidate in normalized.normalized_candidates
+                    if candidate.candidate.candidate_id in link_failures
+                )
+                for candidate in retry:
+                    evidence_gaps.pop(candidate.candidate.candidate_id, None)
+                link_failures.clear()
+                self._evaluate_evidence(retry, evidence_by_candidate, evidence_gaps, link_failures, observation)
+                gate = LinkResolutionGateResult(
+                    links, first_failed, len(link_failures), wait_seconds=self._link_retry_wait_seconds
+                )
+            evidence_tuple = tuple(
+                evidence_by_candidate[candidate.candidate.candidate_id]
+                for candidate in normalized.normalized_candidates
+                if candidate.candidate.candidate_id in evidence_by_candidate
+            )
+            technical_gaps.extend(
+                evidence_gaps[candidate.candidate.candidate_id]
+                for candidate in normalized.normalized_candidates
+                if candidate.candidate.candidate_id in evidence_gaps
+            )
             observation.observe(evidence_tuple, final=True)
+
+        if gate.acceptance is LinkResolutionAcceptance.BLOCK:
+            # RC-83: still over the gate after the one retry. The run stops
+            # after Evidence and is disclosed as a failure; no report is built,
+            # so nothing can be delivered.
+            return ReportApplicationResult(
+                plan,
+                execution,
+                acquisitions=acquisitions,
+                normalization_result=normalized,
+                normalized_observations=self._normalized_observations(execution, acquisitions, normalized),
+                evidence_results=evidence_tuple,
+                technical_gaps=tuple(technical_gaps),
+                link_resolution_gate=gate,
+            )
 
         evidence_by_id = {evidence.candidate_id: evidence for evidence in evidence_tuple}
         ready_pairs = tuple(
@@ -846,6 +978,7 @@ class ReportApplication:
             scope_rejected_proposals=tuple(scope_rejected_proposals),
             scope_corrections=tuple(scope_corrections),
             category_gap_exchanges=tuple(category_gap_exchanges),
+            link_resolution_gate=gate,
         )
         if final_report is None or self._delivery is None or self._delivery_recipient is None:
             return result
@@ -855,6 +988,34 @@ class ReportApplication:
                 raise TypeError("DeliveryService must return a DeliveryReceipt")
             observation.observe(delivery_result, final=True)
         return replace(result, delivery_result=delivery_result)
+
+    def _evaluate_evidence(
+        self,
+        candidates: Iterable[NormalizedCandidate],
+        results: dict[str, EvidenceResult],
+        gaps: dict[str, TechnicalGap],
+        link_failures: set[str],
+        observation,
+    ) -> None:
+        for normalized_candidate in candidates:
+            candidate_id = normalized_candidate.candidate.candidate_id
+            try:
+                evidence = self._evidence_service.evaluate(normalized_candidate.candidate)
+            except (SemanticProviderTechnicalFailure, EvidenceAcquisitionTechnicalFailure) as failure:
+                # RC-82: a link that could not be resolved for a transient
+                # reason is a disclosed technical gap, not an Evidence rejection.
+                gaps[candidate_id] = TechnicalGap.from_failure("Evidence", candidate_id, failure)
+                if isinstance(failure, EvidenceAcquisitionTechnicalFailure):
+                    link_failures.add(candidate_id)
+                continue
+            if not isinstance(evidence, EvidenceResult):
+                raise TypeError("EvidenceService must return an EvidenceResult")
+            if not isinstance(evidence.state, EvidenceState):
+                raise TypeError("EvidenceResult state must be an EvidenceState")
+            if evidence.candidate_id != candidate_id:
+                raise ValueError("EvidenceResult candidate_id does not match candidate")
+            results[candidate_id] = evidence
+            observation.observe(tuple(results.values()))
 
     def _run_final_pipeline(
         self,
@@ -1206,6 +1367,7 @@ def build_report_application(
     validator: Validator | None = None,
     delivery: DeliveryService | None = None,
     delivery_recipient: str | None = None,
+    sleep: Callable[[float], None] | None = None,
 ) -> ReportApplication:
     """Construct a formal shared application with its complete downstream workflow."""
 
@@ -1237,13 +1399,20 @@ def build_report_application(
         validator,
         delivery,
         delivery_recipient,
+        sleep=sleep,
     )
 
 
 __all__ = [
+    "LINK_RESOLUTION_GATE_MIN_FAILED",
+    "LINK_RESOLUTION_GATE_MIN_RATIO",
+    "LINK_RESOLUTION_RETRY_WAIT_SECONDS",
+    "LinkResolutionAcceptance",
+    "LinkResolutionGateResult",
     "ReportApplication",
     "ReportApplicationResult",
     "SearchRuntimeAcceptance",
     "build_report_application",
     "determine_search_runtime_acceptance",
+    "link_resolution_gate_exceeded",
 ]

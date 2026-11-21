@@ -560,6 +560,16 @@ class EvidenceService:
         self._judge_metadata = judge_metadata
         self._metadata_extractor = metadata_extractor
 
+    def requires_link_resolution(self, candidate: CanonicalCandidate | Mapping[str, Any]) -> bool:
+        """Whether ``evaluate`` must resolve a Google News discovery link for this Candidate.
+
+        RC-83 (section A.64): the population of the run-level link-resolution
+        gate. It mirrors the order of ``evaluate`` and decides nothing else.
+        """
+
+        input_url = _normalise_url(_candidate(candidate).url)
+        return bool(input_url) and record_source(input_url) is None and is_google_news_article_url(input_url)
+
     def evaluate(self, candidate: CanonicalCandidate | Mapping[str, Any]) -> EvidenceResult:
         """Acquire and assess one Candidate without mutating the input."""
 

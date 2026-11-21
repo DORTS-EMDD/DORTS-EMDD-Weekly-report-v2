@@ -59,6 +59,7 @@ from .maiagent_validation_provider import build_maiagent_validation_provider
 from .ordering import Ordering
 from .region_registry import RegionRegistry
 from .report_application import (
+    LinkResolutionAcceptance,
     ReportApplication,
     ReportApplicationResult,
     SearchRuntimeAcceptance,
@@ -374,6 +375,9 @@ class ProductionRunResult:
     event_identity_confirmed_pairs: Mapping[str, int] = field(default_factory=dict)
     # RC-79: Python candidate pairs (PAIRS) and how many ended in one Event (SAME).
     event_identity_python_candidates: Mapping[str, int] = field(default_factory=dict)
+    # RC-83: the run-level Google News link-resolution gate (STATUS, LINKS,
+    # FAILED, RETRIED and, after a retry, FAILED_AFTER_RETRY and WAIT_SECONDS).
+    link_resolution_gate: Mapping[str, Any] = field(default_factory=dict)
     # RC-31: per-candidate selection audit, an observer-only projection of the
     # owners' results (selection_audit.py); never read back by any decision.
     selection_audit: Mapping[str, Any] | None = field(default=None, repr=False, compare=False)
@@ -456,6 +460,17 @@ class ProductionRunResult:
             ):
                 raise ValueError(f"{field_name} must contain non-negative integer counts")
             object.__setattr__(self, field_name, MappingProxyType(values))
+        gate = dict(self.link_resolution_gate)
+        if any(
+            not isinstance(key, str)
+            or not key.strip()
+            or isinstance(value, bool)
+            or not isinstance(value, (int, str))
+            or (isinstance(value, int) and value < 0)
+            for key, value in gate.items()
+        ):
+            raise ValueError("link_resolution_gate must contain non-negative counts and a status")
+        object.__setattr__(self, "link_resolution_gate", MappingProxyType(gate))
         details = tuple(self.search_failure_details)
         if any(not isinstance(detail, SearchFailureDiagnostic) for detail in details):
             raise TypeError("search_failure_details must contain SearchFailureDiagnostic values")
@@ -552,6 +567,8 @@ class ProductionRunResult:
                         )
                     )
                 )
+        if self.link_resolution_gate:
+            parts.append(f"link_resolution_gate={_format_distribution(self.link_resolution_gate)}")
         if self.evidence_ready_count is not None:
             parts.append(f"evidence_ready={self.evidence_ready_count}")
             parts.append(f"evidence_rejected={self.evidence_rejected_count or 0}")
@@ -940,6 +957,23 @@ class ProductionRunner:
                 search_failure_reason_distribution=reason_distribution,
                 search_failure_http_status_distribution=status_distribution,
                 search_failure_details=failure_details,
+                **evidence_fields,
+            )
+        gate = getattr(result, "link_resolution_gate", None)
+        if gate is not None:
+            evidence_fields["link_resolution_gate"] = gate.projection()
+        if gate is not None and gate.acceptance is LinkResolutionAcceptance.BLOCK:
+            # RC-83 (section A.64): link resolution still failed for too many
+            # links after the one retry; the run fails, nothing is delivered.
+            return ProductionRunResult(
+                ProductionRunStatus.TECHNICAL_FAILURE,
+                start,
+                end,
+                mode,
+                counts,
+                failure_stage="evidence",
+                failure_class="LINK_RESOLUTION_GATE",
+                diagnostic="Google News link resolution failed for too many links after the one retry",
                 **evidence_fields,
             )
         if acceptance is SearchRuntimeAcceptance.PASS_WITH_GAPS:
