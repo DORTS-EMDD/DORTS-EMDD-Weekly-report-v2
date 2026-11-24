@@ -42,7 +42,27 @@ BOUNDARY_ACTIONS = {
     "G107": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT",  # track monitoring on service trains
     "G108": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT",  # on-board 5G Wi-Fi
     "G109": "SERVICE_CHANGE",  # works closure notice
+    # RC-84 (section A.65, user decision 2026-11-23).
+    "G110": "SERVICE_OPENING_ANNOUNCEMENT",  # Essen: first Sunday of Advent
+    "G111": "SERVICE_OPENING_ANNOUNCEMENT",  # expected in 2027, no date
+    "G112": "SERVICE_OPENING_ANNOUNCEMENT",  # dated, beyond 30 days
+    "G113": "TEMPORARY_EVENT_SERVICE",  # exam-day extra trains (Daegu)
+    "G114": "EXTERNAL_HAZARD_PRECAUTION",  # car park fire (Almàssera)
+    "G115": "INCIDENT_OR_FAILURE",  # platform smoke (Nagoya)
+    "G116": "OPERATIONAL_DISPUTE",  # strike notice (Seoul Metro unions)
+    "G117": "OPERATIONAL_GOVERNANCE",  # fare checks and patrols (DART)
 }
+# RC-84: the date the helper extracts for a SERVICE_OPENING_ANNOUNCEMENT case.
+BOUNDARY_OPENING_DATES = {"G110": "2026-11-29", "G111": None, "G112": "2027-03-15"}
+
+
+def _classify(entry, fixture, expected, records, groups):
+    from datetime import date
+
+    context = fixture["run_context"]
+    period = (date.fromisoformat(context["period_start"]), date.fromisoformat(context["period_end"]))
+    oracle = _GoldenSemanticOracle(expected, BOUNDARY_ACTIONS[entry["case_id"]], BOUNDARY_OPENING_DATES.get(entry["case_id"]))
+    return Classifier(oracle).classify(groups[0], records, report_period=period)
 
 
 class CategoryBoundaryGoldenTests(unittest.TestCase):
@@ -50,7 +70,8 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         locked = json.loads((GOLDEN / "manifest.json").read_text(encoding="utf-8"))
         taxonomy = json.loads((GOLDEN / "taxonomy_manifest.json").read_text(encoding="utf-8"))
         ids = [entry["case_id"] for entry in MANIFEST["cases"]]
-        self.assertEqual(ids, ["G92", "G93", "G94", "G95", "G96", "G97", "G98", "G99", "G100", "G101", "G102", "G103", "G104", "G105", "G106", "G107", "G108", "G109"])
+        self.assertEqual(ids, ["G92", "G93", "G94", "G95", "G96", "G97", "G98", "G99", "G100", "G101", "G102", "G103", "G104", "G105", "G106", "G107", "G108", "G109",
+                               "G110", "G111", "G112", "G113", "G114", "G115", "G116", "G117"])
         self.assertEqual(MANIFEST["case_count"], len(ids))
         self.assertTrue(MANIFEST["category_acceptance_population_excluded"])
         self.assertTrue(set(ids).isdisjoint(entry["case_id"] for entry in locked["cases"]))
@@ -70,7 +91,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
                 records = tuple(_materialize_record(candidate) for candidate in fixture["candidates"])
                 groups = _materialize_groups(fixture, records)
                 self.assertEqual(len(groups), 1)
-                result = Classifier(_GoldenSemanticOracle(expected, BOUNDARY_ACTIONS[entry["case_id"]])).classify(groups[0], records)
+                result = _classify(entry, fixture, expected, records, groups)
                 self.assertIs(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
                 self.assertEqual(result.category_resolution_reason.value, "NO_CATEGORY_DEFINING_ACTION")
                 self.assertIsNone(result.primary_category_id)
@@ -83,7 +104,8 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         assigned = [entry for entry in MANIFEST["cases"] if entry["category_family"] != "CATEGORY_UNRESOLVED"]
         self.assertEqual(
             [(entry["case_id"], entry["category_family"]) for entry in assigned],
-            [("G101", "TECHNICAL_DEVELOPMENT"), ("G107", "TECHNICAL_DEVELOPMENT"), ("G108", "TECHNICAL_DEVELOPMENT"), ("G109", "OPERATIONAL_CHANGE")],
+            [("G101", "TECHNICAL_DEVELOPMENT"), ("G107", "TECHNICAL_DEVELOPMENT"), ("G108", "TECHNICAL_DEVELOPMENT"), ("G109", "OPERATIONAL_CHANGE"),
+             ("G110", "OPERATIONAL_CHANGE"), ("G115", "INCIDENT"), ("G116", "OPERATIONAL_CHANGE"), ("G117", "OPERATIONAL_CHANGE")],
         )
         for entry in assigned:
             fixture = json.loads((GOLDEN / entry["file"]).read_text(encoding="utf-8"))
@@ -92,7 +114,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
                 self.assertEqual(expected["primary_category_id"], entry["category_family"])
                 records = tuple(_materialize_record(candidate) for candidate in fixture["candidates"])
                 groups = _materialize_groups(fixture, records)
-                result = Classifier(_GoldenSemanticOracle(expected, BOUNDARY_ACTIONS[entry["case_id"]])).classify(groups[0], records)
+                result = _classify(entry, fixture, expected, records, groups)
                 self.assertIs(result.category_state, CategoryState.CATEGORY_ASSIGNED)
                 self.assertEqual(result.primary_category_id.value, entry["category_family"])
                 self.assertEqual(result.subtype, expected["subtype"])
@@ -130,7 +152,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         # the action definitions, and Python maps the action to the Category.
         from src.weekly_report.contracts import CategoryPrincipalAction
 
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v10")
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v11")
         guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
         for action in CategoryPrincipalAction:
             self.assertIn(f"{action.value}:", guidance)
@@ -161,6 +183,14 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         self.assertIn("when that work has not started, are PROJECT_STEP, not TECHNOLOGY_TRIAL_OR_DEPLOYMENT", guidance)
         self.assertIn("safety walk-through by executives, officials or a board", guidance)
         self.assertIn("is EVENT_OR_EXHIBITION, not OPERATIONAL_GOVERNANCE", guidance)
+        # RC-84 (user decision 2026-11-23).
+        self.assertIn("Python decides what the date means for the report; never judge that", guidance)
+        self.assertIn("the first Sunday of Advent", guidance)
+        self.assertIn("are TEMPORARY_EVENT_SERVICE, not this action", guidance)
+        self.assertIn("whose source is outside the rail facilities", guidance)
+        self.assertIn("Smoke or fire on or from a station, platform, tunnel, track, train, power supply or other rail equipment itself is this action", guidance)
+        self.assertIn("A strike notice or threatened strike, a work-to-rule or slowdown", guidance)
+        self.assertIn("Ticket inspections, fare-evasion checks, security or safety patrols", guidance)
 
     def test_every_action_maps_to_exactly_one_outcome(self):
         from src.weekly_report.contracts import CategoryId, CategoryPrincipalAction, CategoryResolutionReason
@@ -189,7 +219,9 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         self.assertEqual(
             no_category,
             {"PRE_SERVICE_OR_ACCEPTANCE_TEST", "PROJECT_STEP", "DRILL_OR_TRAINING", "NON_TRANSPORT_SERVICE",
-             "STATISTICS_RANKING_OR_AWARD", "STATEMENT_OR_COMMENTARY", "EVENT_OR_EXHIBITION", "OTHER"},
+             "STATISTICS_RANKING_OR_AWARD", "STATEMENT_OR_COMMENTARY", "EVENT_OR_EXHIBITION", "OTHER",
+             # RC-84: SERVICE_OPENING_ANNOUNCEMENT's outcome outside its date window.
+             "SERVICE_OPENING_ANNOUNCEMENT", "TEMPORARY_EVENT_SERVICE", "EXTERNAL_HAZARD_PRECAUTION"},
         )
 
 
@@ -206,3 +238,49 @@ class ScopeEventFocusContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OpeningAnnouncementWindowTests(unittest.TestCase):
+    """RC-84: the 30-day window is Python date arithmetic over the report period."""
+
+    def test_window_bounds(self):
+        from datetime import date
+
+        from src.weekly_report.classifier import OPENING_ANNOUNCEMENT_WINDOW_DAYS, opening_announcement_category
+        from src.weekly_report.contracts import CategoryId, CategoryResolutionReason
+
+        period = (date(2026, 11, 16), date(2026, 11, 22))
+        self.assertEqual(OPENING_ANNOUNCEMENT_WINDOW_DAYS, 30)
+        inside = {date(2026, 11, 16), date(2026, 11, 22), date(2026, 11, 29), date(2026, 12, 22)}
+        outside = {date(2026, 11, 15), date(2026, 12, 23), date(2027, 3, 15)}
+        for day in inside:
+            self.assertIs(opening_announcement_category(day, period), CategoryId.OPERATIONAL_CHANGE)
+        for day in outside:
+            self.assertIs(opening_announcement_category(day, period), CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION)
+        self.assertIs(opening_announcement_category(None, period), CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION)
+        self.assertIs(opening_announcement_category(date(2026, 11, 29), None), CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION)
+
+    def test_the_date_is_validated_and_recorded(self):
+        from datetime import date
+
+        entry = next(item for item in MANIFEST["cases"] if item["case_id"] == "G110")
+        fixture = json.loads((GOLDEN / entry["file"]).read_text(encoding="utf-8"))
+        records = tuple(_materialize_record(candidate) for candidate in fixture["candidates"])
+        groups = _materialize_groups(fixture, records)
+        period = (date(2026, 11, 16), date(2026, 11, 22))
+
+        def run(action, opening_date):
+            oracle = _GoldenSemanticOracle(fixture["expected"], action, opening_date)
+            return Classifier(oracle).classify(groups[0], records, report_period=period)
+
+        result = run("SERVICE_OPENING_ANNOUNCEMENT", "2026-11-29")
+        self.assertEqual(result.provenance["announced_opening_date"], "2026-11-29")
+        self.assertEqual(result.provenance["opening_window"], "WITHIN")
+        self.assertEqual(result.primary_category_id.value, "OPERATIONAL_CHANGE")
+        from src.weekly_report.classifier import CategoryProposalViolation
+
+        for action, value in (("SERVICE_OPENING_ANNOUNCEMENT", "29 November"), ("SERVICE_OPENING_ANNOUNCEMENT", "2026-02-30"),
+                              ("SERVICE_CHANGE", "2026-11-29")):
+            with self.subTest(action=action, value=value), self.assertRaises(CategoryProposalViolation) as raised:
+                run(action, value)
+            self.assertEqual(raised.exception.failure_class, "OPENING_DATE")

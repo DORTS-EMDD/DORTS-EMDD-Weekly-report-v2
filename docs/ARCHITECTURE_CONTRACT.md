@@ -4062,6 +4062,78 @@ LINK_RESOLUTION_GATE_RETRY = wait 2,700 s once, retry only the failed links (RC-
 LINK_RESOLUTION_GATE_BLOCK = TECHNICAL_FAILURE / evidence / LINK_RESOLUTION_GATE, no report, no delivery (RC-83)
 ```
 
+### A.65 RC-84 Category: announced openings, temporary event service and external hazards (2026-11-23, user decision)
+
+Root cause: scheduled Run 45103217994 (2026-11-16..22) reported Almàssera (a
+fire in the car park of a metro station that caused a precautionary suspension)
+under 事故及安全事件 and the Daegu exam-day extra trains under 營運動態, both
+not reportable by the user's selection rule, while the announced Citybahn
+Essen tram line (opening on the first Sunday of Advent) is reportable although
+D1 (section A.48) made every announced opening a project step.
+
+User decisions, implemented with the RC-80 closed action list and the
+Classifier's fixed table (no prompt-only rule):
+
+* `SERVICE_OPENING_ANNOUNCEMENT` (new action): the news is the operator's or
+  authority's announcement of when a new line, extension, station, route or
+  fleet begins carrying passengers. The helper extracts `announced_opening_date`
+  (YYYY-MM-DD) only when the evidence fixes one day, a calendar date or a named
+  day that fixes one date (such as the first Sunday of Advent); it is null for
+  a month, season, year, range, target or estimate. The Classifier decides by
+  date arithmetic only (`opening_announcement_category`,
+  `OPENING_ANNOUNCEMENT_WINDOW_DAYS = 30`): `period_start <= date <=
+  period_end + 30 days` gives `OPERATIONAL_CHANGE`; no date, a date outside that
+  window or no report period gives `CATEGORY_UNRESOLVED` /
+  `NO_CATEGORY_DEFINING_ACTION`. A date before the period is not an
+  announcement of a future opening, and a date inside the period stays in
+  (the report is issued after it). A delay, postponement or new target date of
+  an expected opening remains `PROJECT_STEP` (D1). The date with any other
+  action, a malformed value or a non-existent calendar date is a proposal
+  contract violation (`OPENING_DATE`), a disclosed TechnicalGap. Provenance
+  records `announced_opening_date` and `opening_window` (`WITHIN`, `OUTSIDE`,
+  `NO_DATE`, `NO_PERIOD`). ReportApplication passes the run's report period to
+  `Classifier.classify(report_period=...)`.
+* `TEMPORARY_EVENT_SERVICE` (new action, `NO_CATEGORY_DEFINING_ACTION`): extra,
+  added or extended trains or hours, shortened headways or crowd guidance for an
+  exam, holiday, festival, sports match, concert or other event. A lasting
+  timetable change, a suspension or closure and labour action keep their own
+  actions.
+* `EXTERNAL_HAZARD_PRECAUTION` (new action, `NO_CATEGORY_DEFINING_ACTION`): a
+  fire, smoke, gas leak or other hazard whose source is outside the rail
+  facilities (a car park, a nearby building, a road vehicle, vegetation) and that
+  did not reach or damage a station, platform, tunnel, track, train or power
+  equipment, when the only rail consequence is a precautionary, brief
+  suspension, diversion or station closure. Smoke or fire on or from a station,
+  platform, tunnel, track, train, power supply or other rail equipment itself
+  remains `INCIDENT_OR_FAILURE`.
+* Kept as reportable operations events (user decision): a strike notice or
+  threatened strike, a work-to-rule or slowdown and their negotiations stay
+  `OPERATIONAL_DISPUTE`; ticket inspections, fare-evasion checks and security or
+  safety patrols stay `OPERATIONAL_GOVERNANCE`. Both sentences are added to the
+  definitions.
+* Reportability prompt v10 adds one sentence: an announcement of the date a new
+  line, extension, station, route or fleet begins carrying passengers is
+  `OPENING_OR_SERVICE_CHANGE`, judged under the opening path, not
+  `FEATURE_OR_BACKGROUND`. Reportability reads no Category fact; the sentence
+  only names the occurrence class.
+
+Golden (category boundary extension, `category_boundary_manifest.json`, 26
+cases): G110 Essen first Sunday of Advent (營運動態), G111 opening expected in
+2027 with no date, G112 a dated opening beyond 30 days, G113 exam-day extra
+trains, G114 car-park fire with a precautionary suspension (all
+`NO_CATEGORY_DEFINING_ACTION`), and the near-boundary positives G115 platform
+smoke (事故), G116 strike notice and G117 fare checks and patrols (營運動態).
+G92-G109 and the locked population are unchanged. Gold answer v3 adds
+Run 45103217994 (#29-#45, #47). None of this is Live-accepted.
+
+```text
+CATEGORY_PROMPT_VERSION = category-principal-action-v11 (RC-84)
+CATEGORY_SCHEMA_VERSION = category-proposal-v7 (RC-84: announced_opening_date)
+CATEGORY_EXCHANGE_OBSERVATION = category-exchange-observation-v3 (RC-84)
+REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v10 (RC-84)
+OPENING_ANNOUNCEMENT_WINDOW = period_start .. period_end + 30 days, Python only (RC-84)
+```
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式
@@ -5513,6 +5585,13 @@ advisor relation authority without changing existing Golden outcomes.
 RC-80 (2026-11-20, section A.61): the Category helper proposes the principal
 action from a closed list; the Classifier maps it to the definitions below with
 the fixed `PRINCIPAL_ACTION_CATEGORY` table. The definitions are unchanged.
+
+RC-84 (2026-11-23, user decision, section A.65): three boundaries of the D1
+project-step rule and of the operations and incident definitions. An announced
+opening with a definite date no later than 30 days after the report period is
+an operations event (營運動態); temporary added or extended service for an
+exam, festival or other event, and a precautionary suspension for an external
+hazard that did not reach rail facilities, have no Category-defining action.
 
 Classifier 是唯一 Category owner，且只對已完成 Evidence、Scope、Temporal
 及 Event Identity / Dedup 的 authoritative Event Group 作出一次 Category

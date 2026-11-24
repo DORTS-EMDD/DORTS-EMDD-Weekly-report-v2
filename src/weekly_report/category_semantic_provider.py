@@ -33,8 +33,8 @@ from .maiagent_transport import (
 )
 
 
-CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v10"
-CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v6"
+CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v11"
+CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v7"
 MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION = "maiagent-chatbot-adapter-v2"
 MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER = "maiagent-chatbot-completions"
 MAIAGENT_CATEGORY_MESSAGE_VERSION = "category-full-response-contract-v2"
@@ -84,9 +84,17 @@ _CATEGORY_RESPONSE_SCHEMA: dict[str, Any] = {
                 {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}(?![\\s\\S])"},
             ]
         },
+        # RC-84 (section A.65): the announced opening date the evidence states,
+        # only with SERVICE_OPENING_ANNOUNCEMENT; Python applies the window.
+        "announced_opening_date": {
+            "anyOf": [
+                {"type": "null"},
+                {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])"},
+            ]
+        },
         "citations": {"type": "array", "minItems": 1, "items": _CITATION_SCHEMA},
     },
-    "required": ["principal_action", "unresolved_reason", "subtype", "citations"],
+    "required": ["principal_action", "unresolved_reason", "subtype", "announced_opening_date", "citations"],
     "oneOf": [
         {
             "properties": {

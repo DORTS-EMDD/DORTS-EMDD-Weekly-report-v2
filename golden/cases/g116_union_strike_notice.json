@@ -1,0 +1,56 @@
+{
+  "case_id": "G116",
+  "name": "union_strike_notice",
+  "description": "Synthetic Category contract case (RC-84 near-boundary positive, from Run 45103217994: Seoul Metro unions): unions announce a strike date after a work-to-rule.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-11-16",
+    "period_end": "2026-11-22",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro unions threaten strike from 25 November",
+      "url": "https://fixtures.invalid/g116-union_strike_notice-1",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-11-20T08:00:00Z",
+      "discovery_intent": "operations",
+      "search_snippet": "Metro unions threaten strike from 25 November.",
+      "source_content": "The metro operator's unions announced that they will strike from 25 November over hiring and pay unless negotiations succeed. The unions began a work-to-rule on 20 November, and some trains ran late.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-11-20T08:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "OPERATIONAL_CHANGE",
+    "primary_category": "營運動態",
+    "subtype": "strike_notice",
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "classification_reason": "PRINCIPAL_ACTION_OPERATIONAL_CHANGE",
+    "category_resolution_reason": "NONE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "Category follows the supported principal action in substantive source content.",
+    "Search intent, source title, technical novelty, taxonomy, and Reportability are not Category authorities.",
+    "RC-84: a strike notice or threatened strike and a work-to-rule are OPERATIONAL_DISPUTE (OPERATIONAL_CHANGE); the temporary event-service boundary does not remove them."
+  ]
+}

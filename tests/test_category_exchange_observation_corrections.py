@@ -75,7 +75,7 @@ def test_withheld_subtypes_keep_only_marker_and_hash():
     record = observe_category_exchange(
         _request(), outcome="REJECTED",
         proposal_payload={"principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT", "unresolved_reason": None,
-                          "subtype": "see https://leak.example.test", "citations": []},
+                          "subtype": "see https://leak.example.test", "announced_opening_date": None, "citations": []},
         predicate="SUBTYPE_FORMAT",
     )
     subtype = record["proposal"]["subtype_raw"]
@@ -87,7 +87,7 @@ def test_enum_predicate_and_declared_fields_are_allowlisted():
     record = observe_category_exchange(
         _request(), outcome="REJECTED",
         proposal_payload={"principal_action": "Please visit https://x.test", "unresolved_reason": "free text from the model",
-                          "subtype": None, "citations": []},
+                          "subtype": None, "announced_opening_date": None, "citations": []},
         provider_provenance={"provider_identifier": "maiagent-chatbot-completions", "prompt_version": "Bearer abc123",
                              "schema_version": "category-proposal-v5", "helper_version": "maiagent-chatbot-adapter-v2",
                              "model_identifier": "sk-live-0123456789abcdefghijklmn"},
@@ -99,7 +99,7 @@ def test_enum_predicate_and_declared_fields_are_allowlisted():
     assert record["proposal"]["unresolved_reason"]["withheld"] == "NOT_ALLOWLISTED"
     accepted = observe_category_exchange(
         _request(), outcome="ACCEPTED",
-        proposal_payload={"principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT", "unresolved_reason": None, "subtype": None, "citations": []},
+        proposal_payload={"principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT", "unresolved_reason": None, "subtype": None, "announced_opening_date": None, "citations": []},
     )
     assert accepted["proposal"]["principal_action"] == "TECHNOLOGY_TRIAL_OR_DEPLOYMENT"
     assert record["validation"]["predicate"]["withheld"] == "NOT_ALLOWLISTED"
@@ -133,7 +133,7 @@ def test_unusual_input_shapes_cannot_leak():
         ),
         outcome="ACCEPTED",
         proposal_payload={
-            "principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT", "unresolved_reason": None, "subtype": "x",
+            "principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT", "unresolved_reason": None, "subtype": "x", "announced_opening_date": None,
             "citations": [{"source_ref": "M1", "sentence_ids": [f"S{i}" for i in range(1, 46)] + [7, "bad"]}] * 10,
         },
     )

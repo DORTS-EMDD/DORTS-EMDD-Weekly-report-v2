@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import date, timedelta
 from types import MappingProxyType
 from typing import Any, Protocol
 
@@ -34,10 +35,14 @@ _CATEGORY_GUIDANCE = (
     "Each source has a source_ref (M1, M2, ...) and sentences with sentence_ids assigned by Python. Each citation names one supplied source_ref and the sentence_ids of that source that support the proposal. Citations support the proposal as a whole; do not label them support or conflict citations. Never copy or retype source text or identifiers into a citation.",
     "TECHNOLOGY_TRIAL_OR_DEPLOYMENT: research results, prototypes, pilots, experiments, applied tests, deployments and substantive development whose subject is a technology, method or material itself. Putting a technology, method or material into use is a deployment, also when it changes how maintenance, inspection or monitoring is done, or when it gives passengers an amenity on board or at stations such as Wi-Fi or mobile network coverage. A pilot or trial of a new technology, method or material on an operating line remains this action. A technology name, equipment mention, procurement object, supplier award or delivery alone is not this action.",
     "SERVICE_OPENING: a new line, extension, station or train fleet actually begins carrying passengers.",
-    "SERVICE_CHANGE: a change to the passenger transport service itself reported as the news: timetable, headway, fare or ticketing, operating hours, how the passenger service is operated, or a closure, suspension or service notice.",
-    "OPERATIONAL_DISPUTE: an evidenced operational dispute about the passenger service or its operation, such as a strike or other industrial action, a lawsuit, arbitration or protest.",
-    "OPERATIONAL_GOVERNANCE: an operational governance action on a running passenger service by its operator or authority, including publishing a completed incident investigation or substantive safety-governance findings that establish no new normative rule. An investigation report is this action, not INCIDENT_OR_FAILURE, even though it discusses an earlier incident.",
-    "INCIDENT_OR_FAILURE: an actual urban-rail accident, unexpected failure, safety incident or cybersecurity incident. An actual passenger, staff or public safety incident in an in-scope urban-rail context remains this action even when injury is minor or no train, system, evacuation, service or project impact occurs.",
+    "SERVICE_OPENING_ANNOUNCEMENT: the news is the operator's or authority's announcement of when a new line, extension, station, route or train fleet will begin carrying passengers. Give announced_opening_date. A delay or postponement of an expected opening, or a new target date for it, is PROJECT_STEP, not this action.",
+    "announced_opening_date: only with SERVICE_OPENING_ANNOUNCEMENT; null with every other action. It is the calendar date (YYYY-MM-DD) on which the evidence states passenger service will begin, when the evidence fixes one day: a stated calendar date, or a named day that fixes one date in a stated or evident year (for example the first Sunday of Advent, or the timetable change on 14 December). It is null when the evidence gives only a month, season, year or range, or calls the date provisional, a target, an estimate or uncertain. Cite the sentences that state the date. Python decides what the date means for the report; never judge that.",
+    "SERVICE_CHANGE: a change to the passenger transport service itself reported as the news: timetable, headway, fare or ticketing, operating hours, how the passenger service is operated, or a closure, suspension or service notice. Extra, added or extended trains or hours for an exam, holiday, festival, sports match, concert or other event are TEMPORARY_EVENT_SERVICE, not this action.",
+    "TEMPORARY_EVENT_SERVICE: a temporary routine adjustment of a running service for an exam, holiday, festival, sports match, concert or other event: extra or added trains, extended operating hours, shortened headways or crowd guidance for that day or period. A lasting timetable change, a suspension or closure, and a strike or other labour action remain their own actions.",
+    "OPERATIONAL_DISPUTE: an evidenced operational dispute about the passenger service or its operation, such as a strike or other industrial action, a lawsuit, arbitration or protest. A strike notice or threatened strike, a work-to-rule or slowdown, and the negotiations about them are this action.",
+    "OPERATIONAL_GOVERNANCE: an operational governance action on a running passenger service by its operator or authority, including publishing a completed incident investigation or substantive safety-governance findings that establish no new normative rule. An investigation report is this action, not INCIDENT_OR_FAILURE, even though it discusses an earlier incident. Ticket inspections, fare-evasion checks, security or safety patrols and similar safety or security initiatives on the running service are this action.",
+    "INCIDENT_OR_FAILURE: an actual urban-rail accident, unexpected failure, safety incident or cybersecurity incident. An actual passenger, staff or public safety incident in an in-scope urban-rail context remains this action even when injury is minor or no train, system, evacuation, service or project impact occurs. Smoke or fire on or from a station, platform, tunnel, track, train, power supply or other rail equipment itself is this action.",
+    "EXTERNAL_HAZARD_PRECAUTION: a fire, smoke, gas leak or other hazard whose source is outside the rail facilities (for example a car park, a nearby building, a road vehicle or vegetation) and that did not reach or damage a station, platform, tunnel, track, train or power equipment, when the only rail consequence is a precautionary, brief suspension, diversion or station closure. When the hazard reached or damaged rail facilities, the action is INCIDENT_OR_FAILURE.",
     "FORMAL_PROCUREMENT_ACTION: a formal tender, bid invitation, supplier selection, award, exercised option or equivalent formal procurement action that has taken place, including innovative, first-of-kind, AI, CBTC, cybersecurity and pilot-purpose procurements. A planned, expected or future tender, selection or award is PROJECT_STEP.",
     "NORMATIVE_ACTION: a published or revised regulation, mandatory technical rule, standard, applicable formal guidance or operator-wide specification, or a formal draft or consultation procedure. A penalty or enforcement decision under an existing rule, a procurement-specific specification and a citation of an existing standard are not this action.",
     "PRE_SERVICE_OR_ACCEPTANCE_TEST: testing the installed vehicles or systems of a line, station or depot before its opening or for its acceptance, test runs before opening, and the clearance or gauge, compatibility (electromagnetic compatibility included), commissioning, type, acceptance or homologation tests of newly delivered vehicles or equipment before they enter passenger service, also on a network that is already running, even when the tested system is signalling, train control, communication or power equipment.",
@@ -67,10 +72,15 @@ PRINCIPAL_ACTION_CATEGORY: Mapping[CategoryPrincipalAction, CategoryId | Categor
     {
         CategoryPrincipalAction.TECHNOLOGY_TRIAL_OR_DEPLOYMENT: CategoryId.TECHNICAL_DEVELOPMENT,
         CategoryPrincipalAction.SERVICE_OPENING: CategoryId.OPERATIONAL_CHANGE,
+        # RC-84: the outcome when the announced date is absent or outside the
+        # window; opening_announcement_category applies the window rule.
+        CategoryPrincipalAction.SERVICE_OPENING_ANNOUNCEMENT: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
         CategoryPrincipalAction.SERVICE_CHANGE: CategoryId.OPERATIONAL_CHANGE,
+        CategoryPrincipalAction.TEMPORARY_EVENT_SERVICE: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
         CategoryPrincipalAction.OPERATIONAL_DISPUTE: CategoryId.OPERATIONAL_CHANGE,
         CategoryPrincipalAction.OPERATIONAL_GOVERNANCE: CategoryId.OPERATIONAL_CHANGE,
         CategoryPrincipalAction.INCIDENT_OR_FAILURE: CategoryId.INCIDENT,
+        CategoryPrincipalAction.EXTERNAL_HAZARD_PRECAUTION: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
         CategoryPrincipalAction.FORMAL_PROCUREMENT_ACTION: CategoryId.PROCUREMENT,
         CategoryPrincipalAction.NORMATIVE_ACTION: CategoryId.NORMATIVE_CHANGE,
         CategoryPrincipalAction.PRE_SERVICE_OR_ACCEPTANCE_TEST: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
@@ -86,6 +96,26 @@ PRINCIPAL_ACTION_CATEGORY: Mapping[CategoryPrincipalAction, CategoryId | Categor
 )
 if set(PRINCIPAL_ACTION_CATEGORY) != set(CategoryPrincipalAction):  # pragma: no cover - import-time invariant
     raise RuntimeError("every principal action needs exactly one mapping")
+# RC-84 (section A.65): an announced opening is an operations event only when
+# its announced date lies within the report period or at most this many days
+# after its end. Python computes it; the helper only extracts the date.
+OPENING_ANNOUNCEMENT_WINDOW_DAYS = 30
+
+
+def opening_announcement_category(
+    announced_opening_date: date | None,
+    report_period: tuple[date, date] | None,
+) -> CategoryId | CategoryResolutionReason:
+    """The Category of a SERVICE_OPENING_ANNOUNCEMENT (RC-84), decided by date arithmetic only."""
+
+    if announced_opening_date is None or report_period is None:
+        return CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+    start, end = report_period
+    if start <= announced_opening_date <= end + timedelta(days=OPENING_ANNOUNCEMENT_WINDOW_DAYS):
+        return CategoryId.OPERATIONAL_CHANGE
+    return CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+
+
 # Reasons the helper may give instead of an action (no single action can be chosen).
 UNRESOLVED_PROPOSAL_REASONS = frozenset(
     {
@@ -195,6 +225,8 @@ class CategorySemanticResponse:
     unresolved_reason: CategoryResolutionReason | str | None = None
     subtype: str | None = None
     citations: tuple[CategoryCitation, ...] = ()
+    # RC-84: ISO date string, only with SERVICE_OPENING_ANNOUNCEMENT.
+    announced_opening_date: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -256,9 +288,12 @@ class _ValidatedCategoryResponse:
     subtype: str | None
     category_resolution_reason: CategoryResolutionReason | None
     citation_spans: tuple[CategoryEvidenceSpan, ...]
+    announced_opening_date: date | None = None
+    opening_window: str | None = None
 
 
-_RESPONSE_FIELDS = frozenset({"principal_action", "unresolved_reason", "subtype", "citations"})
+_RESPONSE_FIELDS = frozenset({"principal_action", "unresolved_reason", "subtype", "announced_opening_date", "citations"})
+_ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 _CITATION_FIELDS = frozenset({"source_ref", "sentence_ids"})
 _DOMAIN_UNRESOLVED_REASONS = frozenset(
     {
@@ -310,15 +345,32 @@ def _parse_citations(
     return tuple(spans)
 
 
+def _announced_date(raw: object, action: CategoryPrincipalAction | None) -> date | None:
+    if raw is None:
+        return None
+    if action is not CategoryPrincipalAction.SERVICE_OPENING_ANNOUNCEMENT:
+        raise InvalidCategorySemanticResponse(
+            "announced_opening_date is only given with SERVICE_OPENING_ANNOUNCEMENT", predicate="OPENING_DATE"
+        )
+    if not isinstance(raw, str) or not _ISO_DATE.fullmatch(raw):
+        raise InvalidCategorySemanticResponse("announced_opening_date must be YYYY-MM-DD", predicate="OPENING_DATE")
+    try:
+        return date.fromisoformat(raw)
+    except ValueError as exc:
+        raise InvalidCategorySemanticResponse("announced_opening_date is not a calendar date", predicate="OPENING_DATE") from exc
+
+
 def _validate_response(
     raw_response: object,
     request: CategorySemanticRequest,
+    report_period: tuple[date, date] | None = None,
 ) -> _ValidatedCategoryResponse:
     if isinstance(raw_response, CategorySemanticResponse):
         payload = {
             "principal_action": raw_response.principal_action,
             "unresolved_reason": raw_response.unresolved_reason,
             "subtype": raw_response.subtype,
+            "announced_opening_date": raw_response.announced_opening_date,
             "citations": raw_response.citations,
         }
     elif isinstance(raw_response, Mapping):
@@ -353,6 +405,17 @@ def _validate_response(
     subtype = payload["subtype"]
     if subtype is not None and (not isinstance(subtype, str) or not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", subtype)):
         raise InvalidCategorySemanticResponse("subtype must be snake_case when present", predicate="SUBTYPE_FORMAT")
+    announced = _announced_date(payload["announced_opening_date"], action)
+    window = None
+    if action is CategoryPrincipalAction.SERVICE_OPENING_ANNOUNCEMENT:
+        # RC-84: the helper only extracted the date; the window is Python's.
+        mapped = opening_announcement_category(announced, report_period)
+        window = (
+            "NO_DATE" if announced is None
+            else "NO_PERIOD" if report_period is None
+            else "WITHIN" if isinstance(mapped, CategoryId)
+            else "OUTSIDE"
+        )
 
     citation_spans = _parse_citations(payload["citations"], request)
     if not citation_spans:
@@ -360,11 +423,11 @@ def _validate_response(
 
     if isinstance(mapped, CategoryId):
         return _ValidatedCategoryResponse(
-            action, CategoryState.CATEGORY_ASSIGNED, mapped, subtype, None, citation_spans
+            action, CategoryState.CATEGORY_ASSIGNED, mapped, subtype, None, citation_spans, announced, window
         )
     # Subtype describes a Category; an unresolved outcome has none to describe.
     return _ValidatedCategoryResponse(
-        action, CategoryState.CATEGORY_UNRESOLVED, None, None, mapped, citation_spans
+        action, CategoryState.CATEGORY_UNRESOLVED, None, None, mapped, citation_spans, announced, window
     )
 
 
@@ -450,6 +513,7 @@ def _proposal_payload(raw_response: object) -> Mapping[str, Any] | None:
             "principal_action": raw_response.principal_action,
             "unresolved_reason": raw_response.unresolved_reason,
             "subtype": raw_response.subtype,
+            "announced_opening_date": raw_response.announced_opening_date,
             "citations": raw_response.citations,
         }
     if isinstance(raw_response, Mapping):
@@ -499,8 +563,14 @@ class Classifier:
         self,
         event_group: EventGroup,
         records: Sequence[EventIdentityRecord],
+        *,
+        report_period: tuple[date, date] | None = None,
     ) -> CategoryResult:
-        """Classify exactly one already-grouped Event Group without external I/O."""
+        """Classify exactly one already-grouped Event Group without external I/O.
+
+        ``report_period`` (start, end) is the run's report period; only the
+        RC-84 opening-announcement window reads it.
+        """
 
         request = _request_for(event_group, records)
         if self._semantic_helper is None:
@@ -566,7 +636,7 @@ class Classifier:
             helper_provenance = _provider_provenance(helper_result.provenance)
 
         try:
-            response = _validate_response(raw_response, request)
+            response = _validate_response(raw_response, request, report_period)
         except InvalidCategorySemanticResponse as exc:
             violation = CategoryProposalViolation(str(exc), exc.predicate)
         else:
@@ -589,6 +659,17 @@ class Classifier:
             # RC-80: the helper's principal action; the Category comes from
             # PRINCIPAL_ACTION_CATEGORY, not from the helper.
             "principal_action": response.principal_action.value if response.principal_action else None,
+            **(
+                {
+                    # RC-84: the extracted date and Python's window result.
+                    "announced_opening_date": (
+                        response.announced_opening_date.isoformat() if response.announced_opening_date else None
+                    ),
+                    "opening_window": response.opening_window,
+                }
+                if response.principal_action is CategoryPrincipalAction.SERVICE_OPENING_ANNOUNCEMENT
+                else {}
+            ),
             "source_candidate_ids": [source.candidate_id for source in request.sources],
             # Kept as the stable internal provenance key. Under proposal v4 it
             # means whole-proposal citations, with no support/conflict role split.

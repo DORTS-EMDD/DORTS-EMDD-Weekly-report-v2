@@ -332,7 +332,9 @@ class ReportabilityCriteriaTests(unittest.TestCase):
         from src.weekly_report.maiagent_reportability_provider import PROMPT_VERSION, REPORTABILITY_INSTRUCTIONS
 
         instructions = " ".join(REPORTABILITY_INSTRUCTIONS)
-        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v9")
+        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v10")
+        # RC-84: a dated opening announcement is judged under the opening path.
+        self.assertIn("begins carrying passengers is OPENING_OR_SERVICE_CHANGE", instructions)
         # RC-77 (user decision 2026-11-19): routine operations reporting is low value.
         self.assertIn("Routine operations reporting is NOT_REPORTABLE", instructions)
         self.assertIn("normal operation despite severe weather", instructions)

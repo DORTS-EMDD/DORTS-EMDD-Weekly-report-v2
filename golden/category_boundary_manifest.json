@@ -1,10 +1,10 @@
 {
   "golden_version": "category-boundary-v1",
-  "contract": "docs/ARCHITECTURE_CONTRACT.md section L, RC-63, RC-65, RC-66, RC-67 and RC-68 boundary clarifications",
+  "contract": "docs/ARCHITECTURE_CONTRACT.md section L, RC-63, RC-65, RC-66, RC-67, RC-68 and RC-84 boundary clarifications",
   "status": "EXTENSION",
   "category_acceptance_population_excluded": true,
   "note": "Category boundary extension (RC-63). Kept apart from the locked v2-category-lock manifest and its sealed acceptance population, as the taxonomy extension is. Each expected outcome is the section L domain outcome of the case's own Evidence.",
-  "case_count": 18,
+  "case_count": 26,
   "cases": [
     {
       "case_id": "G92",
@@ -129,6 +129,62 @@
       "case_id": "G109",
       "file": "cases/g109_engineering_works_closure_notice.json",
       "case_class": "engineering_works_closure_notice",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "OPERATIONAL_CHANGE"
+    },
+    {
+      "case_id": "G110",
+      "file": "cases/g110_advent_tram_line_opening_announcement.json",
+      "case_class": "advent_tram_line_opening_announcement",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "OPERATIONAL_CHANGE"
+    },
+    {
+      "case_id": "G111",
+      "file": "cases/g111_distant_opening_announcement_without_date.json",
+      "case_class": "distant_opening_announcement_without_date",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G112",
+      "file": "cases/g112_dated_opening_announcement_beyond_window.json",
+      "case_class": "dated_opening_announcement_beyond_window",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G113",
+      "file": "cases/g113_exam_day_extra_trains.json",
+      "case_class": "exam_day_extra_trains",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G114",
+      "file": "cases/g114_car_park_fire_precautionary_suspension.json",
+      "case_class": "car_park_fire_precautionary_suspension",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "CATEGORY_UNRESOLVED"
+    },
+    {
+      "case_id": "G115",
+      "file": "cases/g115_platform_smoke_incident.json",
+      "case_class": "platform_smoke_incident",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "INCIDENT"
+    },
+    {
+      "case_id": "G116",
+      "file": "cases/g116_union_strike_notice.json",
+      "case_class": "union_strike_notice",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "OPERATIONAL_CHANGE"
+    },
+    {
+      "case_id": "G117",
+      "file": "cases/g117_fare_inspection_safety_initiative.json",
+      "case_class": "fare_inspection_safety_initiative",
       "origin_type": "SYNTHETIC_CONTRACT_CASE",
       "category_family": "OPERATIONAL_CHANGE"
     }

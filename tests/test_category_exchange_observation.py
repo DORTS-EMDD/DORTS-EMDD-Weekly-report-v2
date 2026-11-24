@@ -84,7 +84,7 @@ def _proposal(request, **overrides):
     proposal = {
         "principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT",
         "unresolved_reason": None,
-        "subtype": "fifth_generation_network_deployment",
+        "subtype": "fifth_generation_network_deployment", "announced_opening_date": None,
         "citations": [{"source_ref": next(iter(request.source_refs)), "sentence_ids": ["S1"]}],
     }
     proposal.update(overrides)
@@ -202,7 +202,7 @@ class _ScriptedClassifier(Classifier):
         super().__init__(helper)
         self.calls = []
 
-    def classify(self, event_group, records):
+    def classify(self, event_group, records, *, report_period=None):
         self.calls.append(event_group)
         return super().classify(event_group, records)
 
@@ -332,7 +332,7 @@ def test_the_record_carries_no_source_text_guidance_or_secrets():
     record = observe_category_exchange(
         request, outcome="ACCEPTED", provider_provenance=leaky,
         proposal_payload={"principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT", "unresolved_reason": None,
-                          "subtype": "x",
+                          "subtype": "x", "announced_opening_date": None,
                           "citations": [{"source_ref": "M1", "sentence_ids": ["S1", "S2", "bad id"]}]},
     )
     rendered = json.dumps(record, ensure_ascii=False)
@@ -374,7 +374,7 @@ def test_the_semantic_request_fingerprint():
     assert other["semantic_request_fingerprint_sha256"] == fingerprint
     assert other["sources"][0]["candidate_id"] == "cand-b"
     assert all(variant[1]["semantic_request"]["semantic_request_fingerprint_sha256"] != fingerprint for variant in variants)
-    assert record["semantic_request"]["category_prompt_version"] == CATEGORY_SEMANTIC_PROMPT_VERSION == "category-principal-action-v10"
+    assert record["semantic_request"]["category_prompt_version"] == CATEGORY_SEMANTIC_PROMPT_VERSION == "category-principal-action-v11"
 
 
 # 8. Replay terminology: input-equivalent semantic replay only.
@@ -458,6 +458,6 @@ def test_the_workflow_echo_does_not_print_the_record():
 
 # 12. No prompt or decision-rule change.
 def test_the_category_prompt_is_unchanged():
-    assert CATEGORY_SEMANTIC_PROMPT_VERSION == "category-principal-action-v10"
+    assert CATEGORY_SEMANTIC_PROMPT_VERSION == "category-principal-action-v11"
     assert CategoryProposalViolation("x", "SUBTYPE_FORMAT").failure_class == "SUBTYPE_FORMAT"
     assert CategoryState.CATEGORY_ASSIGNED.value == "CATEGORY_ASSIGNED"

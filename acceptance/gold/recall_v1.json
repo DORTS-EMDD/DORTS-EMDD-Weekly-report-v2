@@ -1,5 +1,5 @@
 {
- "version": "recall-v2",
+ "version": "recall-v3",
  "source_run_id": 44468386445,
  "selection_rule": "Rated by reference value to the Taipei rapid transit department: 3 stars or more included; 2 stars included only in 營運動態 or 事故及安全事件; 1 star not included. See README.md.",
  "items": [
@@ -731,7 +731,420 @@
    ],
    "stars_basis": "user",
    "source_run_id": 44774723652
+  },
+  {
+   "id": 29,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "Bydgoszcz 練習電車在 Rondo Fordońskie 出軌",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "aliases": [],
+   "keywords": [
+    [
+     "Bydgoszcz",
+     "wykoleił"
+    ],
+    [
+     "Bydgoszczy",
+     "wykoleił"
+    ]
+   ],
+   "stars_basis": "minimum stars consistent with the user's include decision (user 2026-11-23 gave include/exclude, not stars)",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 30,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "Torino corso Duca degli Abruzzi 電車出軌",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "aliases": [],
+   "keywords": [
+    [
+     "Tram deraglia",
+     "Torino"
+    ]
+   ],
+   "stars_basis": "minimum stars consistent with the user's include decision (user 2026-11-23 gave include/exclude, not stars)",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 31,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "首爾地鐵 2 號線聖水支線停駛（闖紅燈、轉轍器損壞）",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "aliases": [],
+   "keywords": [
+    [
+     "성수지선"
+    ]
+   ],
+   "stars_basis": "minimum stars consistent with the user's include decision (user 2026-11-23 gave include/exclude, not stars)",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 32,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "名古屋市營地下鐵櫻通線・名城線 新瑞橋站月臺冒煙、一時停駛",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "aliases": [],
+   "keywords": [
+    [
+     "新瑞橋"
+    ],
+    [
+     "桜通線",
+     "煙"
+    ]
+   ],
+   "stars_basis": "minimum stars consistent with the user's include decision (user 2026-11-23 gave include/exclude, not stars)",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 33,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "Almàssera 地鐵站停車場火災，暫停服務",
+   "stars": 1,
+   "expected": "EXCLUDE",
+   "expected_section": null,
+   "note": "使用者 2026-11-23：火源不在軌道設施、軌道設施未受損的外部火災，只造成預防性短暫停駛，不收（RC-84 EXTERNAL_HAZARD_PRECAUTION）。",
+   "aliases": [],
+   "keywords": [
+    [
+     "Almàssera"
+    ]
+   ],
+   "stars_basis": "minimum stars consistent with the user's include decision (user 2026-11-23 gave include/exclude, not stars)",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 34,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "Seoul Metro 工會預告 11/25 罷工（1,313 名人力與薪資）",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "營運動態",
+   "note": "使用者 2026-11-23：罷工預告、依法運行等勞資行動收（★★，營運動態）。",
+   "aliases": [],
+   "keywords": [
+    [
+     "Seoul Metro unions",
+     "strike"
+    ],
+    [
+     "총파업"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 35,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "首爾地鐵工會 11/20 起準法運行",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "營運動態",
+   "aliases": [],
+   "keywords": [
+    [
+     "준법운행 돌입"
+    ],
+    [
+     "20일 첫차부터 준법투쟁"
+    ]
+   ],
+   "stars_basis": "minimum stars consistent with the user's include decision (user 2026-11-23 gave include/exclude, not stars)",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 36,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "Oslo T-bane 大規模停駛",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "營運動態",
+   "aliases": [],
+   "keywords": [
+    [
+     "T-banestengning"
+    ]
+   ],
+   "stars_basis": "minimum stars consistent with the user's include decision (user 2026-11-23 gave include/exclude, not stars)",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 37,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "Citybahn Essen 降臨節起新電車路線",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "營運動態",
+   "note": "使用者 2026-11-23：通車預告例外，來源寫明降臨節第一主日（2026-11-29），在期間結束後 30 天內，收（RC-84）。",
+   "aliases": [],
+   "keywords": [
+    [
+     "Citybahn Essen"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 38,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "修學能力考試日大邱都市鐵道加開 12 班",
+   "stars": 1,
+   "expected": "EXCLUDE",
+   "expected_section": null,
+   "note": "使用者 2026-11-23：考試、節慶、活動等臨時加開或延長班次屬例行營運調整，不收（RC-84 TEMPORARY_EVENT_SERVICE）。",
+   "aliases": [],
+   "keywords": [
+    [
+     "수능",
+     "대구",
+     "증편"
+    ]
+   ],
+   "stars_basis": "minimum stars consistent with the user's include decision (user 2026-11-23 gave include/exclude, not stars)",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 39,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "DART Operation Access 安全措施",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "營運動態",
+   "note": "使用者 2026-11-23：查票、治安等安全措施收（★★，營運動態）。",
+   "aliases": [],
+   "keywords": [
+    [
+     "Operation Access"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 40,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "Škoda Group 為德國供應 50 輛電車（可增至 79 輛）",
+   "stars": 3,
+   "expected": "INCLUDE",
+   "expected_section": "機電標案及採購動態",
+   "aliases": [],
+   "keywords": [
+    [
+     "Škoda",
+     "tramvají"
+    ]
+   ],
+   "stars_basis": "minimum stars consistent with the user's include decision (user 2026-11-23 gave include/exclude, not stars)",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 41,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "Metro de Madrid Línea 1 列車更新 720 個組件、空調",
+   "stars": 3,
+   "expected": "INCLUDE",
+   "expected_section": "機電標案及採購動態",
+   "aliases": [],
+   "keywords": [
+    [
+     "Metro de Madrid",
+     "Línea 1"
+    ]
+   ],
+   "stars_basis": "minimum stars consistent with the user's include decision (user 2026-11-23 gave include/exclude, not stars)",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 42,
+   "kind": "recall_target",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "韓國鐵道技術研究院 車輛搭載型鋼軌影像檢測與診斷技術",
+   "stars": 4,
+   "expected": "INCLUDE",
+   "expected_section": "技術新知",
+   "note": "漏在 Evidence：INSUFFICIENT_SUBSTANCE|PRINCIPAL_DOCUMENT（redaily.co.kr idxno=18220）。",
+   "aliases": [
+    "도시철도 전동차 달릴 때 레일 상태 검측…차량 탑재형 진단기술 - 철도경제신문"
+   ],
+   "keywords": [
+    [
+     "레일",
+     "차량 탑재형"
+    ],
+    [
+     "레일 상태 검측"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 43,
+   "kind": "recall_target",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "赫爾辛基與 Stadler 簽約最多 183 輛 TANGO 電車",
+   "stars": 3,
+   "expected": "INCLUDE",
+   "expected_section": "機電標案及採購動態",
+   "note": "漏在 Scope 技術缺口（Urban Transport Magazine）與 Evidence（redaily idxno=18269）。",
+   "aliases": [
+    "헬싱키, 스태들러 트램 63편성 수주…초도차량 2029년 인도 - 철도경제신문"
+   ],
+   "keywords": [
+    [
+     "Stadler",
+     "Helsinki"
+    ],
+    [
+     "헬싱키",
+     "스태들러"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 44,
+   "kind": "recall_target",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "奧斯陸電車在 Løkka 出軌（11/17）",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "note": "漏在 Scope 技術缺口（VårtOslo）與 Evidence SOURCE_PROVENANCE（Nettavisen、NAB）。",
+   "aliases": [],
+   "keywords": [
+    [
+     "Trikk",
+     "sporet av"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 45,
+   "kind": "recall_target",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "Fortress Solutions 為紐約 Fulton-Liberty 線 CBTC 建置專用無線網路",
+   "stars": 3,
+   "expected": "INCLUDE",
+   "expected_section": [
+    "技術新知",
+    "機電標案及採購動態"
+   ],
+   "note": "漏在 Category：NO_CATEGORY_DEFINING_ACTION（Mass Transit 11/19）；技術新知或採購皆可。",
+   "aliases": [],
+   "keywords": [
+    [
+     "Fortress Solutions"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 47,
+   "kind": "recall_target",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "奧斯陸 Sporveien 追加 24 列 CAF M4000",
+   "stars": 3,
+   "expected": "INCLUDE",
+   "expected_section": "機電標案及採購動態",
+   "note": "漏在 Search：候選中沒有（IRJ、CAF 新聞稿 11/17）。",
+   "aliases": [],
+   "keywords": [
+    [
+     "CAF",
+     "Oslo"
+    ],
+    [
+     "CAF",
+     "Sporveien"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45103217994
   }
  ],
- "version_note": "v1: 17 reported events of Run 44468386445 and recall targets #18-#22; v2 (2026-11-20): #23-#25, new events of Run 44547985819. v2.1 (2026-11-20): #26 Busan-Gimhae CEO safety inspection, 1 star; #25 confirmed 1 star. v2.2 (2026-11-21): #27 two trains collide after a signal failure (3 stars, 事故及安全事件), #28 Danhai LRT seat paint stains (2 stars, 事故及安全事件 or 營運動態), Run 44774723652."
+ "version_note": "v1: 17 reported events of Run 44468386445 and recall targets #18-#22; v2 (2026-11-20): #23-#25, new events of Run 44547985819. v2.1 (2026-11-20): #26 Busan-Gimhae CEO safety inspection, 1 star; #25 confirmed 1 star. v2.2 (2026-11-21): #27 two trains collide after a signal failure (3 stars, 事故及安全事件), #28 Danhai LRT seat paint stains (2 stars, 事故及安全事件 or 營運動態), Run 44774723652. v3 (2026-11-24): #29-#41, the 13 reported events of scheduled Run 45103217994 (2026-11-16..22), with #33 Almàssera and #38 Daegu exam day excluded (RC-84); recall targets #42-#45 and #47. #46 Forte-Citnalta (user: 2 stars, procurement) is held back: the selection rule allows two stars only in operations or incidents."
 }

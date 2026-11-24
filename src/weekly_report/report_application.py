@@ -938,6 +938,7 @@ class ReportApplication:
             event_identity_records,
             technical_gaps,
             category_gap_exchanges,
+            report_period=(window_start, window_end),
         )
         downstream_results = self._run_downstream_workflow(
             event_identity_run,
@@ -1195,6 +1196,8 @@ class ReportApplication:
         event_identity_records: tuple[EventIdentityRecord, ...],
         technical_gaps: list[TechnicalGap] | None = None,
         gap_exchanges: list[tuple[str, Mapping[str, Any]]] | None = None,
+        *,
+        report_period: tuple[date, date] | None = None,
     ) -> tuple[CategoryResult, ...]:
         with observe_stage("Category") as observation:
             groups = event_identity_run.groups
@@ -1242,7 +1245,7 @@ class ReportApplication:
             results: list[CategoryResult] = []
             for event_group, member_records in projections:
                 try:
-                    result = self._classifier.classify(event_group, member_records)
+                    result = self._classifier.classify(event_group, member_records, report_period=report_period)
                 except EVENT_TECHNICAL_FAILURES as failure:
                     if technical_gaps is None:
                         raise

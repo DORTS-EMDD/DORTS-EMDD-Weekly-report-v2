@@ -59,9 +59,11 @@ class _GoldenSemanticOracle:
     cases); otherwise the canonical action of the expected outcome is used.
     """
 
-    def __init__(self, expected, principal_action=None):
+    def __init__(self, expected, principal_action=None, announced_opening_date=None):
         self.expected = expected
         self.principal_action = principal_action
+        # RC-84: the date a SERVICE_OPENING_ANNOUNCEMENT case states, if any.
+        self.announced_opening_date = announced_opening_date
 
     def __call__(self, request: CategorySemanticRequest):
         expected = self.expected
@@ -76,6 +78,7 @@ class _GoldenSemanticOracle:
                 "principal_action": self.principal_action or ORACLE_ACTION_FOR_CATEGORY[expected["primary_category_id"]],
                 "unresolved_reason": None,
                 "subtype": expected["subtype"],
+                "announced_opening_date": self.announced_opening_date,
                 "citations": citations[:1],
             }
         if category_state == CategoryState.CATEGORY_UNRESOLVED.value:
@@ -85,6 +88,7 @@ class _GoldenSemanticOracle:
                 "principal_action": action,
                 "unresolved_reason": None if action else reason,
                 "subtype": None,
+                "announced_opening_date": self.announced_opening_date,
                 "citations": citations,
             }
         raise AssertionError("the semantic oracle is not called for NOT_EVALUATED fixtures")

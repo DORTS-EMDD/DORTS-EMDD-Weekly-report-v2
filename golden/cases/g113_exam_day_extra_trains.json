@@ -1,0 +1,56 @@
+{
+  "case_id": "G113",
+  "name": "exam_day_extra_trains",
+  "description": "Synthetic Category contract case (RC-84, from Run 45103217994: Daegu exam day): extra trains for a national exam day.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-11-16",
+    "period_end": "2026-11-22",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Metro adds 12 extra trains on national exam day",
+      "url": "https://fixtures.invalid/g113-exam_day_extra_trains-1",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-11-17T08:00:00Z",
+      "discovery_intent": "operations",
+      "search_snippet": "Metro adds 12 extra trains on national exam day.",
+      "source_content": "The city metro operator will run 12 additional trains on the morning of the national college entrance exam so that candidates reach the test sites on time. Vehicles will be kept away from the area 200 metres in front of the test sites. Normal service resumes after the morning peak.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-11-17T08:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_UNRESOLVED",
+    "primary_category_id": null,
+    "primary_category": null,
+    "subtype": null,
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "classification_reason": "CATEGORY_UNRESOLVED",
+    "category_resolution_reason": "NO_CATEGORY_DEFINING_ACTION",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "Category follows the supported principal action in substantive source content.",
+    "Search intent, source title, technical novelty, taxonomy, and Reportability are not Category authorities.",
+    "RC-84: extra, added or extended trains or hours for an exam, holiday, festival or other event are a temporary routine adjustment (TEMPORARY_EVENT_SERVICE) with no Category-defining action."
+  ]
+}

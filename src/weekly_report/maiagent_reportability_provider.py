@@ -29,7 +29,7 @@ from .maiagent_transport import (
 
 
 TASK_IDENTITY = "reportability_semantic_proposal"
-PROMPT_VERSION = "reportability-principal-body-v9"
+PROMPT_VERSION = "reportability-principal-body-v10"
 SCHEMA_VERSION = "reportability-semantic-proposal-v3"
 HELPER_VERSION = "maiagent-structured-helper-reportability-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-reportability"
@@ -53,6 +53,7 @@ REPORTABILITY_INSTRUCTIONS = (
     "Awards, rankings, media praise, anniversaries and marketing collaborations are NOT_REPORTABLE unless the evidence also reports a concrete technical, operational, safety or procurement change.",
     "Site visits, inspections, interviews, council questions, and statements, criticism or demands by officials, politicians, civic groups or commentators are NOT_REPORTABLE unless the evidence records a concrete decision, schedule change, test result, approval or safety measure.",
     "Feature, background, explainer or opinion articles that recount a project's history or controversy without reporting a new occurrence of their own (a decision, schedule change, test, delivery, incident, approval or contract) are NOT_REPORTABLE.",
+    "An operator's or authority's announcement of the date on which a new line, extension, station, route or train fleet begins carrying passengers is OPENING_OR_SERVICE_CHANGE and is judged under the opening path; it is not FEATURE_OR_BACKGROUND.",
     "Routine operations reporting is NOT_REPORTABLE: an article whose news is that service ran as usual (for example normal operation despite severe weather, a holiday or an event crowd) and that reports no service change, no incident and no technical content. A suspension, reduced or altered service, an incident or a safety measure reported in the evidence is judged under the accepted value paths.",
     "A road-traffic collision between a tram or light-rail vehicle and a road user (a car, truck, bus, cyclist or pedestrian) is REPORTABLE only when the evidence reports that the rail vehicle derailed. Without a derailment it is NOT_REPORTABLE even when the evidence reports injuries, deaths, damage, a service suspension or a police investigation. A rail safety measure that the operator or authority adopts in response (a crossing, signal or vehicle change) is judged as its own occurrence under the other value paths.",
     "A person struck by a train or entering the track (trespass, suicide or attempted suicide, a fall or deliberate entry from the platform) is NOT_REPORTABLE, even with deaths, injuries or a service suspension, unless the evidence attributes it to the rail system itself: a failure of its own equipment (such as a signal or train control failure or a platform screen door or train door malfunction) or an operating error by its staff (such as a driver, dispatcher or station staff error). Do not infer such a cause; the evidence must state it.",

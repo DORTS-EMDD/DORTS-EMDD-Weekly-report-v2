@@ -38,7 +38,7 @@ import unicodedata
 from .contracts import CategoryId, CategoryPrincipalAction, CategoryResolutionReason, CategoryState
 from .evidence_sentences import segment_evidence_sentences
 
-CATEGORY_EXCHANGE_OBSERVATION_SCHEMA = "category-exchange-observation-v2"
+CATEGORY_EXCHANGE_OBSERVATION_SCHEMA = "category-exchange-observation-v3"
 REPLAY_SCOPE = "INPUT_EQUIVALENT_SEMANTIC_ONLY"
 FINGERPRINT_CANONICALIZATION = "json sort_keys, separators=(',',':'), ensure_ascii=false, UTF-8"
 
@@ -332,6 +332,12 @@ def _citations(value: Any) -> tuple[list[dict[str, Any]], int]:
     return observed, max(0, len(value) - CITATION_LIMIT)
 
 
+def _iso_date(value: Any) -> str | None:
+    if value is None:
+        return None
+    return value if isinstance(value, str) and re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value) else "INVALID_VALUE"
+
+
 def _proposal(payload: Mapping[str, Any] | None) -> dict[str, Any] | None:
     if payload is None:
         return None
@@ -342,6 +348,8 @@ def _proposal(payload: Mapping[str, Any] | None) -> dict[str, Any] | None:
         "principal_action": _allowlisted(payload.get("principal_action"), _PRINCIPAL_ACTIONS),
         "unresolved_reason": _allowlisted(payload.get("unresolved_reason"), _RESOLUTION_REASONS),
         "subtype_raw": _subtype(payload.get("subtype")),
+        # RC-84: an ISO date only; any other value is withheld.
+        "announced_opening_date": _iso_date(payload.get("announced_opening_date")),
         "citations": citations,
         "citations_omitted": omitted,
     }

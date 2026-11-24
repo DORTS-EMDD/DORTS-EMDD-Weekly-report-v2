@@ -398,9 +398,10 @@ class RecordingClassifier(Classifier):
         self.result_factory = result_factory
         self.error_after = error_after
 
-    def classify(self, event_group, records):
+    def classify(self, event_group, records, *, report_period=None):
         records = tuple(records)
         self.calls.append((event_group, records))
+        self.report_periods = getattr(self, "report_periods", []) + [report_period]
         if self.error_after is not None and len(self.calls) > self.error_after:
             raise RuntimeError("unexpected classifier failure")
         if self.result_factory is not None:
@@ -1039,6 +1040,8 @@ class ReportApplicationTests(TestCase):
         self.assertEqual(classifier.calls[0][1], (result.event_identity_records[0],))
         self.assertIs(result.category_results[0], classifier.results[0])
         self.assertEqual(result.category_results[0].event_id, group.event_id)
+        # RC-84: the Classifier receives the run's report period.
+        self.assertEqual(classifier.report_periods, [(date(2026, 9, 12), date(2026, 9, 18))])
 
     def test_category_receives_all_group_members_in_authoritative_order(self) -> None:
         classifier = RecordingClassifier()
@@ -1811,7 +1814,7 @@ class ReportApplicationTests(TestCase):
                 )
                 self.calls = []
 
-            def classify(self, event_group, records):
+            def classify(self, event_group, records, *, report_period=None):
                 self.calls.append((event_group, tuple(records)))
                 return super().classify(event_group, records)
 
@@ -1842,7 +1845,7 @@ class ReportApplicationTests(TestCase):
                 )
                 self.calls = []
 
-            def classify(self, event_group, records):
+            def classify(self, event_group, records, *, report_period=None):
                 self.calls.append((event_group, tuple(records)))
                 return super().classify(event_group, records)
 

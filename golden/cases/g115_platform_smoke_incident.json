@@ -1,0 +1,56 @@
+{
+  "case_id": "G115",
+  "name": "platform_smoke_incident",
+  "description": "Synthetic Category contract case (RC-84 near-boundary positive, from Run 45103217994: Nagoya Arahata/Shin-Mizuhashi): smoke on a station platform stops two lines.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-11-16",
+    "period_end": "2026-11-22",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Smoke on a station platform halts two subway lines",
+      "url": "https://fixtures.invalid/g115-platform_smoke_incident-1",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-11-20T08:00:00Z",
+      "discovery_intent": "operations",
+      "search_snippet": "Smoke on a station platform halts two subway lines.",
+      "source_content": "Smoke rose on the platform of a subway station on Thursday morning, and the operator stopped trains on two lines for about an hour. About 6,700 passengers were affected. The operator is investigating the source of the smoke on the platform.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-11-20T08:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "INCIDENT",
+    "primary_category": "事故事件",
+    "subtype": "platform_smoke",
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "classification_reason": "PRINCIPAL_ACTION_INCIDENT",
+    "category_resolution_reason": "NONE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "Category follows the supported principal action in substantive source content.",
+    "Search intent, source title, technical novelty, taxonomy, and Reportability are not Category authorities.",
+    "RC-84: smoke or fire on or from a station, platform, tunnel, track, train or power equipment itself remains INCIDENT_OR_FAILURE; the external-hazard boundary does not remove it."
+  ]
+}
