@@ -67,6 +67,29 @@ DEFAULT_URLS = (
     "https://www.railtechnologymagazine.com/articles/vossloh-wins-contract-supply-booted-sleepers-sydney-metro-west",
     # Mass Transit page whose two ORIGINAL_PUBLICATION facts ended at DATE_UNPARSEABLE.
     "https://www.masstransitmag.com/rail/infrastructure/news/55418425/the-austin-transit-partnership-austin-transit-partnership-advances-planning-for-future-extension-of-austin-light-rail-to-austin-bergstrom-international-airport",
+    # 2026-11-16..22 recall review (Runs 44919705575 and 45103217994):
+    # 철도경제신문 pages that ended at INSUFFICIENT_SUBSTANCE|PRINCIPAL_DOCUMENT.
+    "https://www.redaily.co.kr/news/articleView.html?idxno=18220",
+    "https://www.redaily.co.kr/news/articleView.html?idxno=18269",
+    "https://www.redaily.co.kr/news/articleView.html?idxno=18261",
+    # One page of each host with the most SOURCE_PAGE_MISMATCH|PRINCIPAL_DOCUMENT.
+    "https://www.vietnam.vn/ja/doanh-nghiep-muon-ro-tieu-chuan-goi-thau-de-tham-gia-metro",
+    "https://www.onet.pl/informacje/przez-wieki-2/atak-w-tokijskim-metrze-zamach-ktora-wstrzasnal-japonia/vstz7tr,0666d3f1",
+    "https://www.rynekinfrastruktury.pl/wiadomosci/miasto/warszawa-matro-ma-byc-przedluzone-z-brodna-na-marymont-107510.html",
+    "https://transinfo.pl/infotram/warszawa-tramwaje-nie-pojada-targowa-zmiany-dla-pieciu-linii/",
+    "https://warszawa.wyborcza.pl/warszawa/7,54420,33141462,rewolucyjna-zapowiedz-dla-warszawy-druga-linia-metra-pojedzie.htm",
+    "https://tvn24.pl/krakow/krakow-wysiada-z-metra-minister-obrony-narodowej-deklaruje-wsparcie-st9345911",
+    "https://www.bankier.pl/wiadomosc/Warszawa-przedluzy-druga-linie-metra-Powstana-cztery-nowe-stacje-9231876.html",
+    "https://www.newspim.com/news/view/20261117000559",
+    "https://olomoucky.denik.cz/zpravy-region/olomouc-dpmo-vanocni-tramvaje-spanila-mikulaska-jizda/",
+    "https://polskieradio24.pl/polska/nie-bedzie-metra-beda-tramwaje-krakow-stawia-na-kolej-naziemna-chce-siedmiu-linii",
+    "https://www.wnp.pl/budownictwo/zwrot-w-sprawie-metra-w-krakowie-nowe-wladze-mowia-co-dalej,1120510.html",
+    # Recall targets: Scope (Stadler Helsinki), Category (Fortress), Evidence
+    # SOURCE_PROVENANCE (two Oslo derailment reports).
+    "https://www.urban-transport-magazine.com/en/now-confirmed-and-signed-stadler-secures-contract-for-up-to-183-tango-trams-for-helsinki/",
+    "https://www.masstransitmag.com/rail/railroad-signals-ptc-control-systems-and-products/article/55420233/fortress-solutions-providing-wireless-network-integration-for-new-york-city-transits-fulton-liberty-line",
+    "https://www.nettavisen.no/80-95-257456",
+    "https://www.nab.no/80-143-38894",
 )
 
 FEEDS = (
