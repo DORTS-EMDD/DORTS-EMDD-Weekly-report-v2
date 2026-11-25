@@ -90,6 +90,15 @@ DEFAULT_URLS = (
     "https://www.masstransitmag.com/rail/railroad-signals-ptc-control-systems-and-products/article/55420233/fortress-solutions-providing-wireless-network-integration-for-new-york-city-transits-fulton-liberty-line",
     "https://www.nettavisen.no/80-95-257456",
     "https://www.nab.no/80-143-38894",
+    # Recall Run 45558738725 (RC-85, 2026-11-16..22): section and Evidence review.
+    "https://www.thestar.co.uk/news/traffic-and-travel/replacement-buses-costing-more-than-ps6000-a-day-after-hole-discovered-under-sheffield-tram-track-9360843",
+    "https://news.videoland.com.tw/article/1015f011-5670-4e55-b0bc-023ace7dbdd0.html",
+    "https://www.se.pl/warszawa/warszawskie-metro-stoi-na-czesci-trasy-trzy-stacje-zostaly-zamkniete-aa-B6iE-aTmN-zZfh.html",
+    "https://www.estrelladigital.es/espana/madrid/metro-madrid-prepara-cambios-trenes-linea-1-renovara-720-componentes-aire-acondicionado/20261119103100453594.html",
+    "https://www.moncloa.com/2026/11/19/metro-madrid-linea-1-climatizacion-3470569/",
+    "https://www.diariovasco.com/economia/empresas/guipuzcoanas/caf-fabricara-nuevos-trenes-metro-oslo-125-millones-20261116113301-nt.html",
+    "https://bydgoszcz.tvp.pl/bydgoszcz-21-listopada-wykolejenie-tramwaju-na-rondzie-fordonskim,96607302",
+    "https://www.ao.no/30-128-26544",
 )
 
 FEEDS = (
