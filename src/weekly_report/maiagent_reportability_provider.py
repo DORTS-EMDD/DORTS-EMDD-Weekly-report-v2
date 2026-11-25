@@ -29,7 +29,7 @@ from .maiagent_transport import (
 
 
 TASK_IDENTITY = "reportability_semantic_proposal"
-PROMPT_VERSION = "reportability-principal-body-v10"
+PROMPT_VERSION = "reportability-principal-body-v11"
 SCHEMA_VERSION = "reportability-semantic-proposal-v3"
 HELPER_VERSION = "maiagent-structured-helper-reportability-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-reportability"
@@ -53,6 +53,7 @@ REPORTABILITY_INSTRUCTIONS = (
     "Awards, rankings, media praise, anniversaries and marketing collaborations are NOT_REPORTABLE unless the evidence also reports a concrete technical, operational, safety or procurement change.",
     "Site visits, inspections, interviews, council questions, and statements, criticism or demands by officials, politicians, civic groups or commentators are NOT_REPORTABLE unless the evidence records a concrete decision, schedule change, test result, approval or safety measure.",
     "Feature, background, explainer or opinion articles that recount a project's history or controversy without reporting a new occurrence of their own (a decision, schedule change, test, delivery, incident, approval or contract) are NOT_REPORTABLE.",
+    "A comprehensive inspection of the equipment or facilities of a whole running line or of the whole network carried out by the operator or authority (for example an all-line high-intensity inspection after a series of failures) is SAFETY_MEASURE_OR_INVESTIGATION and is judged under the safety-governance path; a site visit, inspection tour or walk-through by executives, officials, council members or a board stays VISIT_INSPECTION_OR_STATEMENT.",
     "An operator's or authority's announcement of the date on which a new line, extension, station, route or train fleet begins carrying passengers is OPENING_OR_SERVICE_CHANGE and is judged under the opening path; it is not FEATURE_OR_BACKGROUND.",
     "Routine operations reporting is NOT_REPORTABLE: an article whose news is that service ran as usual (for example normal operation despite severe weather, a holiday or an event crowd) and that reports no service change, no incident and no technical content. A suspension, reduced or altered service, an incident or a safety measure reported in the evidence is judged under the accepted value paths.",
     "A road-traffic collision between a tram or light-rail vehicle and a road user (a car, truck, bus, cyclist or pedestrian) is REPORTABLE only when the evidence reports that the rail vehicle derailed. Without a derailment it is NOT_REPORTABLE even when the evidence reports injuries, deaths, damage, a service suspension or a police investigation. A rail safety measure that the operator or authority adopts in response (a crossing, signal or vehicle change) is judged as its own occurrence under the other value paths.",

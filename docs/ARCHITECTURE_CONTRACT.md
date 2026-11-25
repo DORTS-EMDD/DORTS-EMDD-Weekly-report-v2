@@ -4211,6 +4211,90 @@ SEARCH_CONFIGURATION_VERSION = search-discovery-v14 (RC-85, 239 weekly requests)
 HEALTH_PROBE_ORDINALS = (1, 10, 119, 124, 232, 239) (RC-85)
 ```
 
+### A.67 RC-86 Failure disruptions, asset sales, non-rail contracts, procurement authorisations, network inspections and canonical declarations (2026-11-25, user decisions)
+
+From the review of recall Run 45558738725 (main ab0b13b, 2026-11-16..22) and source
+probe Run 45618703238. All Category items are implemented with the RC-80 closed
+action list and the Classifier's fixed table (`PRINCIPAL_ACTION_CATEGORY`), not by
+prompt text alone. Category prompt `category-principal-action-v13`, schema
+`category-proposal-v8`, observation record `category-exchange-observation-v4`.
+
+| Decision | Action | Classifier outcome | Root cause in Run 45558738725 |
+|---|---|---|---|
+| a. A failure that stops or shortens a running line is an incident; operations covers planned or announced changes only | new `FAILURE_SERVICE_DISRUPTION`; `SERVICE_CHANGE` narrowed to planned or announced changes | `INCIDENT` | Warsaw "Awaria na M1" was `SERVICE_CHANGE` (營運動態): its definition listed "closure, suspension" without saying planned, overlapping `INCIDENT_OR_FAILURE` |
+| b. Sale, auction or scrapping of assets is not procurement | new `ASSET_DISPOSAL` | `CATEGORY_UNRESOLVED` / `NO_CATEGORY_DEFINING_ACTION` | Taichung's damaged-car auction was `FORMAL_PROCUREMENT_ACTION` (採購) |
+| c. A contract for a non-rail service (replacement buses) is not procurement; a closed rail section and its replacement transport is operations | new `NON_RAIL_CONTRACT`; `SERVICE_CHANGE` names replacement transport for a closed section, its contract and cost | `NO_CATEGORY_DEFINING_ACTION`; `SERVICE_CHANGE` → `OPERATIONAL_CHANGE` | Sheffield's replacement-bus award was `FORMAL_PROCUREMENT_ACTION` (採購) |
+| d. A formal government or operator decision authorising an E&M equipment procurement, with the amount and the scope stated, is procurement; a plan to tender without such a decision stays a project step | new `PROCUREMENT_AUTHORIZATION` with `authorization_terms` | `PROCUREMENT` only when Python verifies both terms; otherwise `NO_CATEGORY_DEFINING_ACTION` | Madrid's Consejo de Gobierno authorisation (gold #41) was `PROJECT_STEP`, as D1 (section A.48) listed approvals |
+| 6. An operator's comprehensive equipment inspection of a whole line or network is operations; an executive's or official's site visit is not | new `NETWORK_EQUIPMENT_INSPECTION` | `OPERATIONAL_CHANGE` | Daegu's all-line inspection had no action of its own (`OPERATIONAL_GOVERNANCE` by chance; `EVENT_OR_EXHIBITION` lists inspection tours) |
+
+* **Procurement authorisation terms (Python).** The helper copies `amount` and
+  `scope` character for character from a cited sentence; it never judges what
+  they mean. The Classifier (`_authorization_terms`) requires both to be
+  non-empty text occurring in one cited sentence and the amount to contain a
+  digit; `procurement_authorization_category` then gives `PROCUREMENT`. Terms
+  with another action, a missing key, text that is not in a cited sentence or an
+  amount without a number are a proposal contract violation
+  (`AUTHORIZATION_TERMS`, a disclosed TechnicalGap). No terms gives
+  `NO_CATEGORY_DEFINING_ACTION`. Provenance records only `authorization_terms`
+  = `STATED` or `NOT_STATED`, and the observation record only `PRESENT`,
+  `INVALID_VALUE` or null; the copied text (source text) is not kept.
+* **D1 revision (user decision d).** Section A.48 made every approval a project
+  step. A formal authorising decision for an E&M equipment procurement with a
+  stated amount and scope is now a procurement event (機電標案及採購動態);
+  approvals of construction, funding, routes and plans, and announcements or plans
+  to tender, remain project steps.
+* **Reportability prompt `reportability-principal-body-v11`.** One sentence: an
+  operator's or authority's comprehensive inspection of a whole running line or
+  network is `SAFETY_MEASURE_OR_INVESTIGATION` under the safety-governance path; a
+  site visit, inspection tour or walk-through by executives, officials, council
+  members or a board stays `VISIT_INSPECTION_OR_STATEMENT`. Reportability reads no
+  Category fact.
+* **Evidence: canonical declarations (user decision 5).** A page may declare its
+  canonical resource several times (`link rel=canonical`, `og:url`,
+  `twitter:url`). Root cause: `EvidenceService._canonical_url` used only the first
+  declaration; Avisa Oslo and Nordre Aker Budstikke declare the short article
+  address (`/30-128-26544`) in `og:url` before the long slug address in `link
+  rel=canonical`, and Google News resolved the long address, so both were
+  `SOURCE_PAGE_MISMATCH | SOURCE_PROVENANCE` (the audit records the short address
+  as `canonical_source_url`). `_declared_canonical` now accepts the page when at
+  least one declaration is related to the resolved page (the same resource or a
+  step of the redirect chain) and no declaration names an unrelated resource on
+  another site; the canonical URL is the first related declaration. A page whose
+  declaration names another site's article (Nettavisen republishing Avisa Oslo)
+  is rejected with the new mismatch reason `CANONICAL_OTHER_SITE`; unrelated
+  same-site declarations stay `CANONICAL_RESOURCE_MISMATCH`. Known limit: a
+  declaration on a sibling host (for example `m.` and `www.`) that is not in the
+  redirect chain counts as another site.
+* **Golden** (`category_boundary_manifest.json`, 34 cases): G120 Warsaw-type line
+  curtailment after a fault (事故), G121 damaged-car auction, G122 replacement
+  buses for a closed tram section (營運動態), G123 a government authorisation of a
+  train air-conditioning renewal with amount and scope (採購), G124 a tender plan
+  without a formal decision, G125 an all-line equipment inspection (營運動態).
+  G92-G119 and the locked population are unchanged. Evidence fixtures with the
+  three Amedia page structures (synthetic text and hosts):
+  `tests/test_evidence_canonical_rc86.py`.
+* **Gold answer v4** (`acceptance/gold/recall_v1.json`): #41 Madrid stays
+  procurement under d; #48 (Yonhap work-to-rule, merges into #35), #49 Sheffield
+  2 stars 營運動態, #50 Warsaw M1 2 stars 事故及安全事件, #51 Taichung auction
+  1 star, #52 Daegu all-line inspection 2 stars 營運動態 (two reports, one item),
+  #53 Gorzów tram failure 2 stars 事故及安全事件, #54 Tokyo Metro smartphone-game
+  station inspection 3 stars 技術新知. Run 45558738725 scores 15/25 against v4
+  (2 wrong sections, 1 false inclusion, 3 duplicates).
+* Not changed: Event Identity, Taxonomy, Ordering, Writer, Validation, Delivery.
+  The same-line, same-period merge of a story's preview, occurrence, resumption
+  and follow-up reports (user decision of 2026-11-16) is a design proposal
+  awaiting approval (`docs/REPORT_ITEM_STORY_MERGE_DESIGN_DRAFT.md`). None of this
+  is Live-accepted.
+
+```text
+CATEGORY_PROMPT_VERSION = category-principal-action-v13 (RC-86)
+CATEGORY_SCHEMA_VERSION = category-proposal-v8 (RC-86: authorization_terms)
+CATEGORY_EXCHANGE_OBSERVATION = category-exchange-observation-v4 (RC-86)
+REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v11 (RC-86)
+PROCUREMENT_AUTHORIZATION = PROCUREMENT only with amount and scope verified in a cited sentence, Python only (RC-86)
+EVIDENCE_CANONICAL = any declaration related, none on another site (RC-86)
+```
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式
@@ -5676,6 +5760,15 @@ communications, power, rolling stock, platform screen doors and similar), also
 as a subcontractor in a larger project, is a procurement action (機電標案及採購
 動態); a company's publicity only that it takes part in a project remains a
 project step.
+
+RC-86 (2026-11-25, user decisions, section A.67): an unplanned suspension or
+curtailment caused by a failure is an incident (事故事件), and 營運動態 covers
+planned or announced service changes, including the replacement transport of a
+closed rail section; a sale, auction or scrapping of assets and a contract for a
+non-rail service are not procurement; a formal government or operator decision
+authorising an E&M equipment procurement with the amount and scope stated is a
+procurement event (revises D1 for this case only); an operator's comprehensive
+equipment inspection of a whole line or network is 營運動態.
 
 Classifier 是唯一 Category owner，且只對已完成 Evidence、Scope、Temporal
 及 Event Identity / Dedup 的 authoritative Event Group 作出一次 Category

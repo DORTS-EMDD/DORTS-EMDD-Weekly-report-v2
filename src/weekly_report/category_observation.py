@@ -38,7 +38,7 @@ import unicodedata
 from .contracts import CategoryId, CategoryPrincipalAction, CategoryResolutionReason, CategoryState
 from .evidence_sentences import segment_evidence_sentences
 
-CATEGORY_EXCHANGE_OBSERVATION_SCHEMA = "category-exchange-observation-v3"
+CATEGORY_EXCHANGE_OBSERVATION_SCHEMA = "category-exchange-observation-v4"
 REPLAY_SCOPE = "INPUT_EQUIVALENT_SEMANTIC_ONLY"
 FINGERPRINT_CANONICALIZATION = "json sort_keys, separators=(',',':'), ensure_ascii=false, UTF-8"
 
@@ -338,6 +338,18 @@ def _iso_date(value: Any) -> str | None:
     return value if isinstance(value, str) and re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value) else "INVALID_VALUE"
 
 
+def _terms_presence(value: Any) -> str | None:
+    """RC-86: whether authorization terms were proposed; their text (source text) is never kept."""
+
+    if value is None:
+        return None
+    if isinstance(value, Mapping) and set(value) == {"amount", "scope"} and all(
+        isinstance(value[key], str) and value[key].strip() for key in ("amount", "scope")
+    ):
+        return "PRESENT"
+    return "INVALID_VALUE"
+
+
 def _proposal(payload: Mapping[str, Any] | None) -> dict[str, Any] | None:
     if payload is None:
         return None
@@ -350,6 +362,8 @@ def _proposal(payload: Mapping[str, Any] | None) -> dict[str, Any] | None:
         "subtype_raw": _subtype(payload.get("subtype")),
         # RC-84: an ISO date only; any other value is withheld.
         "announced_opening_date": _iso_date(payload.get("announced_opening_date")),
+        # RC-86: presence only (PRESENT / INVALID_VALUE / null).
+        "authorization_terms": _terms_presence(payload.get("authorization_terms")),
         "citations": citations,
         "citations_omitted": omitted,
     }

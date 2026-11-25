@@ -1,5 +1,5 @@
 {
- "version": "recall-v3",
+ "version": "recall-v4",
  "source_run_id": 44468386445,
  "selection_rule": "Rated by reference value to the Taipei rapid transit department: 3 stars or more included; 2 stars included only in 營運動態 or 事故及安全事件; 1 star not included. See README.md.",
  "items": [
@@ -1019,8 +1019,9 @@
      "Línea 1"
     ]
    ],
-   "stars_basis": "minimum stars consistent with the user's include decision (user 2026-11-23 gave include/exclude, not stars)",
-   "source_run_id": 45103217994
+   "stars_basis": "user",
+   "source_run_id": 45103217994,
+   "note": "使用者 2026-11-25：政府正式核准發包、寫明金額與採購範圍的機電設備採購屬採購（RC-86 PROCUREMENT_AUTHORIZATION）；Run 45558738725 的 helper 選 PROJECT_STEP 而漏收。"
   },
   {
    "id": 42,
@@ -1170,7 +1171,166 @@
    ],
    "stars_basis": "user",
    "source_run_id": 45103217994
+  },
+  {
+   "id": 48,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "首爾地鐵工會 11/20 起準法鬥爭（聯合新聞）",
+   "merge_into": 35,
+   "note": "使用者 2026-11-25：與 #35 為同一事件，應合併為一則。Run 45558738725 確認 1/3，未合併。",
+   "aliases": [
+    "서울지하철 노조, 오늘부터 준법투쟁 - 연합뉴스"
+   ],
+   "keywords": [
+    [
+     "오늘부터 준법투쟁"
+    ]
+   ],
+   "source_run_id": 45558738725
+  },
+  {
+   "id": 49,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "Sheffield 電車路段因廢礦坑停駛，替代公車每日逾 £6,000",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "營運動態",
+   "note": "使用者 2026-11-25：替代公車等非軌道服務合約不算採購；新聞重點為軌道路段停駛與替代運輸，屬營運動態（RC-86 SERVICE_CHANGE）。Run 45558738725 誤列採購。",
+   "aliases": [],
+   "keywords": [
+    [
+     "Replacement buses",
+     "Sheffield"
+    ],
+    [
+     "Replacement buses",
+     "tram track"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45558738725
+  },
+  {
+   "id": 50,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "華沙地鐵 M1 故障，三站停駛",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "note": "使用者 2026-11-25：故障造成的非計畫停駛或縮短營運屬事故（RC-86 FAILURE_SERVICE_DISRUPTION）。Run 45558738725 誤列營運動態。",
+   "aliases": [],
+   "keywords": [
+    [
+     "Awaria na M1"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45558738725
+  },
+  {
+   "id": 51,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "台中捷運事故車廂上網拍賣",
+   "stars": 1,
+   "expected": "EXCLUDE",
+   "expected_section": null,
+   "note": "使用者 2026-11-25：出售、拍賣、報廢資產不算採購，不收（RC-86 ASSET_DISPOSAL）。Run 45558738725 誤列採購。",
+   "aliases": [],
+   "keywords": [
+    [
+     "台中捷運",
+     "事故車廂"
+    ],
+    [
+     "中捷",
+     "拍賣"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45558738725
+  },
+  {
+   "id": 52,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "大邱都市鐵道全線高強度全面檢查",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "營運動態",
+   "note": "使用者 2026-11-25：全路網或全線設備全面檢查屬營運動態（RC-86 NETWORK_EQUIPMENT_INSPECTION）；全線（경향신문）與 3 號線（뉴시스）兩則應合併為一則。",
+   "aliases": [],
+   "keywords": [
+    [
+     "대구",
+     "고강도 전수점검"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45558738725
+  },
+  {
+   "id": 53,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "Gorzów Wielkopolski 電車故障，暫停電車行駛",
+   "stars": 2,
+   "expected": "INCLUDE",
+   "expected_section": "事故及安全事件",
+   "note": "使用者 2026-11-25。",
+   "aliases": [],
+   "keywords": [
+    [
+     "Awaria tramwaju",
+     "Podmiejskiej"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45558738725
+  },
+  {
+   "id": 54,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "東京メトロ 以手機遊戲蒐集乘客照片協助車站設備檢查",
+   "stars": 3,
+   "expected": "INCLUDE",
+   "expected_section": "技術新知",
+   "note": "使用者 2026-11-25。",
+   "aliases": [],
+   "keywords": [
+    [
+     "スマホゲーム",
+     "駅設備点検"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45558738725
   }
  ],
- "version_note": "v1: 17 reported events of Run 44468386445 and recall targets #18-#22; v2 (2026-11-20): #23-#25, new events of Run 44547985819. v2.1 (2026-11-20): #26 Busan-Gimhae CEO safety inspection, 1 star; #25 confirmed 1 star. v2.2 (2026-11-21): #27 two trains collide after a signal failure (3 stars, 事故及安全事件), #28 Danhai LRT seat paint stains (2 stars, 事故及安全事件 or 營運動態), Run 44774723652. v3 (2026-11-24): #29-#41, the 13 reported events of scheduled Run 45103217994 (2026-11-16..22), with #33 Almàssera and #38 Daegu exam day excluded (RC-84); recall targets #42-#45 and #47. #46 Forte-Citnalta (user: 2 stars, procurement) is held back: the selection rule allows two stars only in operations or incidents. v3.1 (2026-11-25): #46 Forte-Citnalta 1 star, not collected (user); #45 Fortress procurement only (RC-85)."
+ "version_note": "v1: 17 reported events of Run 44468386445 and recall targets #18-#22; v2 (2026-11-20): #23-#25, new events of Run 44547985819. v2.1 (2026-11-20): #26 Busan-Gimhae CEO safety inspection, 1 star; #25 confirmed 1 star. v2.2 (2026-11-21): #27 two trains collide after a signal failure (3 stars, 事故及安全事件), #28 Danhai LRT seat paint stains (2 stars, 事故及安全事件 or 營運動態), Run 44774723652. v3 (2026-11-24): #29-#41, the 13 reported events of scheduled Run 45103217994 (2026-11-16..22), with #33 Almàssera and #38 Daegu exam day excluded (RC-84); recall targets #42-#45 and #47. #46 Forte-Citnalta (user: 2 stars, procurement) is held back: the selection rule allows two stars only in operations or incidents. v3.1 (2026-11-25): #46 Forte-Citnalta 1 star, not collected (user); #45 Fortress procurement only (RC-85). v4 (2026-11-25): #41 Madrid stays included as procurement under RC-86 rule d; #48-#54 from recall Run 45558738725 rated by the user: #48 Yonhap work-to-rule merges into #35, #49 Sheffield 2 stars 營運動態, #50 Warsaw M1 failure 2 stars 事故及安全事件, #51 Taichung auction 1 star, #52 Daegu all-line inspection 2 stars 營運動態 (two reports, one event), #53 Gorzów tram failure 2 stars 事故及安全事件, #54 Tokyo Metro smartphone game for station equipment inspection 3 stars 技術新知."
 }

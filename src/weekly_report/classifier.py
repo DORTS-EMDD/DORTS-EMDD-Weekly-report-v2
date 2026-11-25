@@ -37,17 +37,23 @@ _CATEGORY_GUIDANCE = (
     "SERVICE_OPENING: a new line, extension, station or train fleet actually begins carrying passengers.",
     "SERVICE_OPENING_ANNOUNCEMENT: the news is the operator's or authority's announcement of when a new line, extension, station, route or train fleet will begin carrying passengers. Give announced_opening_date. A delay or postponement of an expected opening, or a new target date for it, is PROJECT_STEP, not this action.",
     "announced_opening_date: only with SERVICE_OPENING_ANNOUNCEMENT; null with every other action. It is the calendar date (YYYY-MM-DD) on which the evidence states passenger service will begin, when the evidence fixes one day: a stated calendar date, or a named day that fixes one date in a stated or evident year (for example the first Sunday of Advent, or the timetable change on 14 December). It is null when the evidence gives only a month, season, year or range, or calls the date provisional, a target, an estimate or uncertain. Cite the sentences that state the date. Python decides what the date means for the report; never judge that.",
-    "SERVICE_CHANGE: a change to the passenger transport service itself reported as the news: timetable, headway, fare or ticketing, operating hours, how the passenger service is operated, or a closure, suspension or service notice. Extra, added or extended trains or hours for an exam, holiday, festival, sports match, concert or other event are TEMPORARY_EVENT_SERVICE, not this action.",
+    "SERVICE_CHANGE: a planned or announced change to the passenger transport service itself reported as the news: timetable, headway, fare or ticketing, operating hours, how the passenger service is operated, a planned closure or suspension (for example for engineering works) or the service notice announcing it, and the replacement transport (replacement buses or shuttles) arranged for a closed rail section when that arrangement, its contract or its cost is the news, whatever caused the closure. An unplanned suspension, closure or curtailment caused by a failure is FAILURE_SERVICE_DISRUPTION, not this action. Extra, added or extended trains or hours for an exam, holiday, festival, sports match, concert or other event are TEMPORARY_EVENT_SERVICE, not this action.",
     "TEMPORARY_EVENT_SERVICE: a temporary routine adjustment of a running service for an exam, holiday, festival, sports match, concert or other event: extra or added trains, extended operating hours, shortened headways or crowd guidance for that day or period. A lasting timetable change, a suspension or closure, and a strike or other labour action remain their own actions.",
     "OPERATIONAL_DISPUTE: an evidenced operational dispute about the passenger service or its operation, such as a strike or other industrial action, a lawsuit, arbitration or protest. A strike notice or threatened strike, a work-to-rule or slowdown, and the negotiations about them are this action.",
     "OPERATIONAL_GOVERNANCE: an operational governance action on a running passenger service by its operator or authority, including publishing a completed incident investigation or substantive safety-governance findings that establish no new normative rule. An investigation report is this action, not INCIDENT_OR_FAILURE, even though it discusses an earlier incident. Ticket inspections, fare-evasion checks, security or safety patrols and similar safety or security initiatives on the running service are this action.",
     "INCIDENT_OR_FAILURE: an actual urban-rail accident, unexpected failure, safety incident or cybersecurity incident. An actual passenger, staff or public safety incident in an in-scope urban-rail context remains this action even when injury is minor or no train, system, evacuation, service or project impact occurs. Smoke or fire on or from a station, platform, tunnel, track, train, power supply or other rail equipment itself is this action.",
+    "FAILURE_SERVICE_DISRUPTION: the news is an unplanned suspension, closure, curtailment, shortened route or reduced service of a running line caused by a technical problem, failure, fault, breakdown, damage or accident in the rail system (for example trains running only on part of a line after a fault near a station). Replacement transport mentioned in such a report does not change the action. A planned closure or a service notice announced in advance is SERVICE_CHANGE.",
+    "NETWORK_EQUIPMENT_INSPECTION: the operator or authority carries out a comprehensive inspection of the equipment or facilities of a whole running line or of the whole network (for example an all-line high-intensity inspection after a series of failures, or a network-wide special inspection before winter). A site visit, inspection tour or walk-through by executives, officials, council members or a board is EVENT_OR_EXHIBITION, and an inspection of construction works is PROJECT_STEP, not this action.",
     "EXTERNAL_HAZARD_PRECAUTION: a fire, smoke, gas leak or other hazard whose source is outside the rail facilities (for example a car park, a nearby building, a road vehicle or vegetation) and that did not reach or damage a station, platform, tunnel, track, train or power equipment, when the only rail consequence is a precautionary, brief suspension, diversion or station closure. When the hazard reached or damaged rail facilities, the action is INCIDENT_OR_FAILURE.",
-    "FORMAL_PROCUREMENT_ACTION: a formal tender, bid invitation, supplier selection, award, exercised option or equivalent formal procurement action that has taken place, including innovative, first-of-kind, AI, CBTC, cybersecurity and pilot-purpose procurements. A planned, expected or future tender, selection or award is PROJECT_STEP.",
+    "FORMAL_PROCUREMENT_ACTION: a formal tender, bid invitation, supplier selection, award, exercised option or equivalent formal procurement action that has taken place, including innovative, first-of-kind, AI, CBTC, cybersecurity and pilot-purpose procurements. A planned, expected or future tender, selection or award is PROJECT_STEP. Its object is an urban rail system, equipment, vehicle, infrastructure or rail service; a contract for anything else is NON_RAIL_CONTRACT. A formal decision authorising a procurement before any tender or award is PROCUREMENT_AUTHORIZATION.",
     "SUPPLIER_SYSTEM_ENGAGEMENT: the evidence states that a named company has been engaged, contracted or commissioned to provide, supply, integrate or install an electrical and mechanical system or its equipment for an urban rail line or network (for example signalling or train control, communications or radio networks, power supply, rolling stock, platform screen doors, fare collection or depot equipment), also as a subcontractor within a larger project. A company's announcement only that it takes part in or supports a project, without naming a system it was engaged to provide, is PROJECT_STEP, not this action.",
+    "PROCUREMENT_AUTHORIZATION: a formal decision or resolution of a government body or of the operator (for example a council of government, cabinet, city council or board) that authorises the contracting of an electrical and mechanical system or equipment for an urban rail line or network, such as approving the contract or launching its award procedure, before any tender or award has taken place. Give authorization_terms. A plan, intention or announcement to tender without such a formal decision is PROJECT_STEP, not this action.",
+    "authorization_terms: only with PROCUREMENT_AUTHORIZATION; null with every other action. An object with amount, the authorised amount, and scope, the items or works to be procured, each copied character for character from one cited sentence that states it (for example amount '3,4 millones de euros' and scope 'sustituir 720 componentes de aire acondicionado'). It is null when the evidence does not state both the amount and the scope. Python decides what the terms mean for the report; never judge that.",
+    "NON_RAIL_CONTRACT: a tender, award or contract whose object is not an urban rail system, equipment, vehicle, infrastructure or rail service, such as replacement buses, ferries, cleaning, catering, advertising or office services. When the news is a closed rail section and the replacement transport arranged for it, the action is SERVICE_CHANGE.",
+    "ASSET_DISPOSAL: the sale, auction, scrapping, write-off or disposal of vehicles, equipment, property or other assets, including damaged or retired trains. It is not FORMAL_PROCUREMENT_ACTION.",
     "NORMATIVE_ACTION: a published or revised regulation, mandatory technical rule, standard, applicable formal guidance or operator-wide specification, or a formal draft or consultation procedure. A penalty or enforcement decision under an existing rule, a procurement-specific specification and a citation of an existing standard are not this action.",
     "PRE_SERVICE_OR_ACCEPTANCE_TEST: testing the installed vehicles or systems of a line, station or depot before its opening or for its acceptance, test runs before opening, and the clearance or gauge, compatibility (electromagnetic compatibility included), commissioning, type, acceptance or homologation tests of newly delivered vehicles or equipment before they enter passenger service, also on a network that is already running, even when the tested system is signalling, train control, communication or power equipment.",
-    "PROJECT_STEP: a step or plan of building or opening a line, station or depot, or of a project before its service opens: groundbreaking, site preparation, construction stages and progress, track or equipment installation, inspections of works, approvals, funding or budget requests and decisions, cost increases, route or land decisions, demolition and relocation, announcements of expected future openings or tenders, changes to or forecasts of an expected opening date (delays, postponements, new target dates), and the reporting, publicity, staffing or management of such a project. Selection for a funding, development or demonstration programme, and an announcement that a technology will be developed, piloted or demonstrated when that work has not started, are PROJECT_STEP, not TECHNOLOGY_TRIAL_OR_DEPLOYMENT. When the evidence reports a project step and mentions how the service of a running line was affected by it, the action is still PROJECT_STEP. When the evidence states that a named company was engaged to provide an electrical and mechanical system for the project, the action is SUPPLIER_SYSTEM_ENGAGEMENT.",
+    "PROJECT_STEP: a step or plan of building or opening a line, station or depot, or of a project before its service opens: groundbreaking, site preparation, construction stages and progress, track or equipment installation, inspections of works, approvals, funding or budget requests and decisions, cost increases, route or land decisions, demolition and relocation, announcements of expected future openings or tenders, changes to or forecasts of an expected opening date (delays, postponements, new target dates), and the reporting, publicity, staffing or management of such a project. Selection for a funding, development or demonstration programme, and an announcement that a technology will be developed, piloted or demonstrated when that work has not started, are PROJECT_STEP, not TECHNOLOGY_TRIAL_OR_DEPLOYMENT. When the evidence reports a project step and mentions how the service of a running line was affected by it, the action is still PROJECT_STEP. When the evidence states that a named company was engaged to provide an electrical and mechanical system for the project, the action is SUPPLIER_SYSTEM_ENGAGEMENT. A formal decision authorising an electrical and mechanical equipment procurement is PROCUREMENT_AUTHORIZATION.",
     "DRILL_OR_TRAINING: a drill, exercise, rehearsal or training session (emergency, fire, evacuation, rescue or safety drills included, whoever holds it and whatever equipment or facilities it uses), unless the evidence reports an actual incident of its own.",
     "NON_TRANSPORT_SERVICE: a facility or service at a station or on board that is not the passenger transport service, such as a shop, clinic, consultation booth or vending service, also when that facility uses a technology.",
     "STATISTICS_RANKING_OR_AWARD: ridership counts or records, statistics or report releases, rankings, awards and media praise.",
@@ -81,9 +87,17 @@ PRINCIPAL_ACTION_CATEGORY: Mapping[CategoryPrincipalAction, CategoryId | Categor
         CategoryPrincipalAction.OPERATIONAL_DISPUTE: CategoryId.OPERATIONAL_CHANGE,
         CategoryPrincipalAction.OPERATIONAL_GOVERNANCE: CategoryId.OPERATIONAL_CHANGE,
         CategoryPrincipalAction.INCIDENT_OR_FAILURE: CategoryId.INCIDENT,
+        # RC-86 (section A.67, user decisions 2026-11-25).
+        CategoryPrincipalAction.FAILURE_SERVICE_DISRUPTION: CategoryId.INCIDENT,
+        CategoryPrincipalAction.NETWORK_EQUIPMENT_INSPECTION: CategoryId.OPERATIONAL_CHANGE,
         CategoryPrincipalAction.EXTERNAL_HAZARD_PRECAUTION: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
         CategoryPrincipalAction.FORMAL_PROCUREMENT_ACTION: CategoryId.PROCUREMENT,
         CategoryPrincipalAction.SUPPLIER_SYSTEM_ENGAGEMENT: CategoryId.PROCUREMENT,
+        # RC-86: the outcome when the amount or scope is not stated;
+        # procurement_authorization_category applies the terms rule.
+        CategoryPrincipalAction.PROCUREMENT_AUTHORIZATION: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
+        CategoryPrincipalAction.NON_RAIL_CONTRACT: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
+        CategoryPrincipalAction.ASSET_DISPOSAL: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
         CategoryPrincipalAction.NORMATIVE_ACTION: CategoryId.NORMATIVE_CHANGE,
         CategoryPrincipalAction.PRE_SERVICE_OR_ACCEPTANCE_TEST: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
         CategoryPrincipalAction.PROJECT_STEP: CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION,
@@ -116,6 +130,17 @@ def opening_announcement_category(
     if start <= announced_opening_date <= end + timedelta(days=OPENING_ANNOUNCEMENT_WINDOW_DAYS):
         return CategoryId.OPERATIONAL_CHANGE
     return CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
+
+
+def procurement_authorization_category(terms_stated: bool) -> CategoryId | CategoryResolutionReason:
+    """The Category of a PROCUREMENT_AUTHORIZATION (RC-86), decided by Python only.
+
+    A formal authorisation is a procurement event only when the evidence states
+    both the authorised amount and the procurement scope, verified by Python
+    as exact text of a cited sentence (``_authorization_terms``).
+    """
+
+    return CategoryId.PROCUREMENT if terms_stated else CategoryResolutionReason.NO_CATEGORY_DEFINING_ACTION
 
 
 # Reasons the helper may give instead of an action (no single action can be chosen).
@@ -229,6 +254,8 @@ class CategorySemanticResponse:
     citations: tuple[CategoryCitation, ...] = ()
     # RC-84: ISO date string, only with SERVICE_OPENING_ANNOUNCEMENT.
     announced_opening_date: str | None = None
+    # RC-86: {"amount": ..., "scope": ...}, only with PROCUREMENT_AUTHORIZATION.
+    authorization_terms: Mapping[str, str] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -292,9 +319,13 @@ class _ValidatedCategoryResponse:
     citation_spans: tuple[CategoryEvidenceSpan, ...]
     announced_opening_date: date | None = None
     opening_window: str | None = None
+    authorization_terms: str | None = None
 
 
-_RESPONSE_FIELDS = frozenset({"principal_action", "unresolved_reason", "subtype", "announced_opening_date", "citations"})
+_RESPONSE_FIELDS = frozenset(
+    {"principal_action", "unresolved_reason", "subtype", "announced_opening_date", "authorization_terms", "citations"}
+)
+_AUTHORIZATION_TERM_FIELDS = frozenset({"amount", "scope"})
 _ISO_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 _CITATION_FIELDS = frozenset({"source_ref", "sentence_ids"})
 _DOMAIN_UNRESOLVED_REASONS = frozenset(
@@ -362,6 +393,42 @@ def _announced_date(raw: object, action: CategoryPrincipalAction | None) -> date
         raise InvalidCategorySemanticResponse("announced_opening_date is not a calendar date", predicate="OPENING_DATE") from exc
 
 
+def _authorization_terms(
+    raw: object,
+    action: CategoryPrincipalAction | None,
+    request: CategorySemanticRequest,
+    spans: tuple[CategoryEvidenceSpan, ...],
+) -> str | None:
+    """RC-86: ``STATED`` or ``NOT_STATED`` for a PROCUREMENT_AUTHORIZATION, else None.
+
+    Each term must be non-empty text that occurs exactly as written in one
+    cited sentence, and the amount must contain a digit; anything else is a
+    proposal contract violation (``AUTHORIZATION_TERMS``), never a Category.
+    """
+
+    if raw is None:
+        return "NOT_STATED" if action is CategoryPrincipalAction.PROCUREMENT_AUTHORIZATION else None
+    if action is not CategoryPrincipalAction.PROCUREMENT_AUTHORIZATION:
+        raise InvalidCategorySemanticResponse(
+            "authorization_terms are only given with PROCUREMENT_AUTHORIZATION", predicate="AUTHORIZATION_TERMS"
+        )
+    if not isinstance(raw, Mapping) or frozenset(raw) != _AUTHORIZATION_TERM_FIELDS:
+        raise InvalidCategorySemanticResponse("authorization_terms fields do not match schema", predicate="AUTHORIZATION_TERMS")
+    text = {source.candidate_id: source.substantive_content for source in request.sources}
+    cited = [text[span.candidate_id][span.start:span.end] for span in spans]
+    for key in ("amount", "scope"):
+        value = raw[key]
+        if not isinstance(value, str) or not value.strip():
+            raise InvalidCategorySemanticResponse(f"authorization_terms.{key} must be text", predicate="AUTHORIZATION_TERMS")
+        if not any(value in sentence for sentence in cited):
+            raise InvalidCategorySemanticResponse(
+                f"authorization_terms.{key} is not text of a cited sentence", predicate="AUTHORIZATION_TERMS"
+            )
+    if not any(character.isdigit() for character in raw["amount"]):
+        raise InvalidCategorySemanticResponse("authorization_terms.amount states no number", predicate="AUTHORIZATION_TERMS")
+    return "STATED"
+
+
 def _validate_response(
     raw_response: object,
     request: CategorySemanticRequest,
@@ -373,6 +440,7 @@ def _validate_response(
             "unresolved_reason": raw_response.unresolved_reason,
             "subtype": raw_response.subtype,
             "announced_opening_date": raw_response.announced_opening_date,
+            "authorization_terms": raw_response.authorization_terms,
             "citations": raw_response.citations,
         }
     elif isinstance(raw_response, Mapping):
@@ -422,14 +490,18 @@ def _validate_response(
     citation_spans = _parse_citations(payload["citations"], request)
     if not citation_spans:
         raise InvalidCategorySemanticResponse("a semantic outcome requires at least one citation")
+    terms = _authorization_terms(payload["authorization_terms"], action, request, citation_spans)
+    if action is CategoryPrincipalAction.PROCUREMENT_AUTHORIZATION:
+        # RC-86: the helper only copied the terms; the Category is Python's.
+        mapped = procurement_authorization_category(terms == "STATED")
 
     if isinstance(mapped, CategoryId):
         return _ValidatedCategoryResponse(
-            action, CategoryState.CATEGORY_ASSIGNED, mapped, subtype, None, citation_spans, announced, window
+            action, CategoryState.CATEGORY_ASSIGNED, mapped, subtype, None, citation_spans, announced, window, terms
         )
     # Subtype describes a Category; an unresolved outcome has none to describe.
     return _ValidatedCategoryResponse(
-        action, CategoryState.CATEGORY_UNRESOLVED, None, None, mapped, citation_spans, announced, window
+        action, CategoryState.CATEGORY_UNRESOLVED, None, None, mapped, citation_spans, announced, window, terms
     )
 
 
@@ -516,6 +588,7 @@ def _proposal_payload(raw_response: object) -> Mapping[str, Any] | None:
             "unresolved_reason": raw_response.unresolved_reason,
             "subtype": raw_response.subtype,
             "announced_opening_date": raw_response.announced_opening_date,
+            "authorization_terms": raw_response.authorization_terms,
             "citations": raw_response.citations,
         }
     if isinstance(raw_response, Mapping):
@@ -670,6 +743,12 @@ class Classifier:
                     "opening_window": response.opening_window,
                 }
                 if response.principal_action is CategoryPrincipalAction.SERVICE_OPENING_ANNOUNCEMENT
+                else {}
+            ),
+            # RC-86: whether Python verified the stated amount and scope (no source text).
+            **(
+                {"authorization_terms": response.authorization_terms}
+                if response.principal_action is CategoryPrincipalAction.PROCUREMENT_AUTHORIZATION
                 else {}
             ),
             "source_candidate_ids": [source.candidate_id for source in request.sources],

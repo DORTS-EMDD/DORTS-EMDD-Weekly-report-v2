@@ -33,8 +33,8 @@ from .maiagent_transport import (
 )
 
 
-CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v12"
-CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v7"
+CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v13"
+CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v8"
 MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION = "maiagent-chatbot-adapter-v2"
 MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER = "maiagent-chatbot-completions"
 MAIAGENT_CATEGORY_MESSAGE_VERSION = "category-full-response-contract-v2"
@@ -92,9 +92,26 @@ _CATEGORY_RESPONSE_SCHEMA: dict[str, Any] = {
                 {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])"},
             ]
         },
+        # RC-86 (section A.67): the authorised amount and procurement scope,
+        # copied from cited sentences, only with PROCUREMENT_AUTHORIZATION;
+        # Python verifies them and decides the Category.
+        "authorization_terms": {
+            "anyOf": [
+                {"type": "null"},
+                {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "amount": {"type": "string", "minLength": 1},
+                        "scope": {"type": "string", "minLength": 1},
+                    },
+                    "required": ["amount", "scope"],
+                },
+            ]
+        },
         "citations": {"type": "array", "minItems": 1, "items": _CITATION_SCHEMA},
     },
-    "required": ["principal_action", "unresolved_reason", "subtype", "announced_opening_date", "citations"],
+    "required": ["principal_action", "unresolved_reason", "subtype", "announced_opening_date", "authorization_terms", "citations"],
     "oneOf": [
         {
             "properties": {

@@ -23,7 +23,7 @@ class _AssignedProcurementStub:
         return {
             "principal_action": "FORMAL_PROCUREMENT_ACTION",
             "unresolved_reason": None,
-            "subtype": None, "announced_opening_date": None,
+            "subtype": None, "announced_opening_date": None, "authorization_terms": None,
             "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
         }
 

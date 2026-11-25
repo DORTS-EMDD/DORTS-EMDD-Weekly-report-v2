@@ -1,0 +1,56 @@
+{
+  "case_id": "G122",
+  "name": "replacement_bus_contract_for_closed_tram_section",
+  "description": "Synthetic Category contract case (RC-86, from Run 45558738725: Sheffield tram section closed after a mineshaft was found under the track, The Star): the news is the replacement bus service for a closed tram section, its contract and daily cost.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-11-16",
+    "period_end": "2026-11-22",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Replacement buses for closed tram section cost thousands a day",
+      "url": "https://fixtures.invalid/g122-replacement_bus_contract_for_closed_tram_section-1",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-11-19T08:00:00Z",
+      "discovery_intent": "operations",
+      "search_snippet": "Replacement buses for closed tram section cost thousands a day.",
+      "source_content": "Replacement buses serving an area cut off from the tram network since an old mineshaft was found under the tracks are costing several thousand pounds a day. The authority awarded the replacement bus service to a bus operator after a competitive tender, and the contract runs until the end of December. The tram section will stay closed until the ground under the tracks has been made safe.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-11-19T08:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "OPERATIONAL_CHANGE",
+    "primary_category": "營運動態",
+    "subtype": "replacement_bus_service_for_closed_section",
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "classification_reason": "PRINCIPAL_ACTION_OPERATIONAL_CHANGE",
+    "category_resolution_reason": "NONE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "Category follows the supported principal action in substantive source content.",
+    "Search intent, source title, technical novelty, taxonomy, and Reportability are not Category authorities.",
+    "RC-86 (user decision c): a contract for a non-rail service such as replacement buses is not a procurement action; when the news is a closed rail section and its replacement transport, the action is SERVICE_CHANGE (營運動態)."
+  ]
+}

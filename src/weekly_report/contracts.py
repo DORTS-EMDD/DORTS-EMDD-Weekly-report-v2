@@ -85,10 +85,22 @@ class CategoryPrincipalAction(StrEnum):
     OPERATIONAL_DISPUTE = "OPERATIONAL_DISPUTE"
     OPERATIONAL_GOVERNANCE = "OPERATIONAL_GOVERNANCE"
     INCIDENT_OR_FAILURE = "INCIDENT_OR_FAILURE"
+    # RC-86 (section A.67): an unplanned suspension or curtailment caused by a
+    # failure maps to INCIDENT; SERVICE_CHANGE is planned or announced only.
+    FAILURE_SERVICE_DISRUPTION = "FAILURE_SERVICE_DISRUPTION"
+    # RC-86: an operator's inspection of all equipment of a whole line or network.
+    NETWORK_EQUIPMENT_INSPECTION = "NETWORK_EQUIPMENT_INSPECTION"
     EXTERNAL_HAZARD_PRECAUTION = "EXTERNAL_HAZARD_PRECAUTION"
     FORMAL_PROCUREMENT_ACTION = "FORMAL_PROCUREMENT_ACTION"
     # RC-85 (section A.66): a supplier named as engaged to provide an E&M system.
     SUPPLIER_SYSTEM_ENGAGEMENT = "SUPPLIER_SYSTEM_ENGAGEMENT"
+    # RC-86: a formal resolution authorising an E&M equipment procurement; its
+    # Category depends on the stated amount and scope (Classifier).
+    PROCUREMENT_AUTHORIZATION = "PROCUREMENT_AUTHORIZATION"
+    # RC-86: a contract for something that is not urban rail (replacement buses).
+    NON_RAIL_CONTRACT = "NON_RAIL_CONTRACT"
+    # RC-86: sale, auction or scrapping of assets.
+    ASSET_DISPOSAL = "ASSET_DISPOSAL"
     NORMATIVE_ACTION = "NORMATIVE_ACTION"
     PRE_SERVICE_OR_ACCEPTANCE_TEST = "PRE_SERVICE_OR_ACCEPTANCE_TEST"
     PROJECT_STEP = "PROJECT_STEP"

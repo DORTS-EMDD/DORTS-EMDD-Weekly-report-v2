@@ -88,17 +88,27 @@ def test_gold_must_follow_the_star_rule(tmp_path, bad):
 def test_recall_v1_gold_matches_the_user_answer():
     gold = load_gold(ROOT / "acceptance" / "gold" / "recall_v1.json")
     items = {item["id"]: item for item in gold["items"]}
-    assert sorted(items) == list(range(1, 48))
+    assert sorted(items) == list(range(1, 55))
     assert [i for i, item in items.items() if item["kind"] == "recall_target"] == [18, 19, 20, 21, 22, 42, 43, 44, 45, 47]
     assert items[15]["merge_into"] == 11 and items[16]["merge_into"] == 14
-    assert {i for i, item in items.items() if item.get("expected") == "EXCLUDE"} == {1, 6, 13, 25, 26, 33, 38, 46}
+    assert {i for i, item in items.items() if item.get("expected") == "EXCLUDE"} == {1, 6, 13, 25, 26, 33, 38, 46, 51}
+    # v4 (2026-11-25, user; RC-86): Madrid procurement, the Yonhap work-to-rule
+    # report merges into #35, and the ratings of Run 45558738725's new events.
+    assert (items[41]["stars"], items[41]["expected_section"]) == (3, "機電標案及採購動態")
+    assert items[48]["merge_into"] == 35
+    assert (items[49]["stars"], items[49]["expected_section"]) == (2, "營運動態")
+    assert (items[50]["stars"], items[50]["expected_section"]) == (2, "事故及安全事件")
+    assert items[51]["stars"] == 1
+    assert (items[52]["stars"], items[52]["expected_section"]) == (2, "營運動態")
+    assert (items[53]["stars"], items[53]["expected_section"]) == (2, "事故及安全事件")
+    assert (items[54]["stars"], items[54]["expected_section"]) == (3, "技術新知")
     # v2 (2026-11-20): Sydney ★★ operations, Nice ★★★ procurement, Gwangju ★ (announced plan).
     assert (items[23]["stars"], items[23]["expected_section"]) == (2, "營運動態")
     assert (items[24]["stars"], items[24]["expected_section"]) == (3, "機電標案及採購動態")
     # v2.2 (2026-11-21): signal-failure collision ★★★ incidents, Danhai LRT seats ★★ incidents or operations.
     assert (items[27]["stars"], items[27]["expected_section"]) == (3, "事故及安全事件")
     assert items[28]["stars"] == 2 and set(items[28]["expected_section"]) == {"事故及安全事件", "營運動態"}
-    assert gold["version"] == "recall-v3"
+    assert gold["version"] == "recall-v4"
     assert items[7]["stars"] == 5 and items[7]["expected_section"] == "技術新知"
     assert set(items[3]["expected_section"]) == {"營運動態", "事故及安全事件"}
     assert set(items[10]["expected_section"]) == {"營運動態", "事故及安全事件"}

@@ -131,7 +131,7 @@ def _assigned_response(request: CategorySemanticRequest, category_id, subtype="p
     return {
         "principal_action": _ACTION_FOR.get(category_id, str(category_id)),
         "unresolved_reason": None,
-        "subtype": subtype, "announced_opening_date": None,
+        "subtype": subtype, "announced_opening_date": None, "authorization_terms": None,
         "citations": [_span(request)],
     }
 
@@ -140,7 +140,7 @@ def _unresolved_response(request: CategorySemanticRequest, reason, citations=Non
     return {
         "principal_action": None,
         "unresolved_reason": reason.value,
-        "subtype": None, "announced_opening_date": None,
+        "subtype": None, "announced_opening_date": None, "authorization_terms": None,
         "citations": citations or [_span(request)],
     }
 
@@ -227,7 +227,7 @@ class ClassifierTests(unittest.TestCase):
         record = _record("C1", "No category-defining action is established.")
 
         def no_category_with_subtype(request):
-            return {"principal_action": "PROJECT_STEP", "unresolved_reason": None, "subtype": "award", "announced_opening_date": None, "citations": [_span(request)]}
+            return {"principal_action": "PROJECT_STEP", "unresolved_reason": None, "subtype": "award", "announced_opening_date": None, "authorization_terms": None, "citations": [_span(request)]}
 
         result = Classifier(_Helper(no_category_with_subtype)).classify(_group((record,)), (record,))
         self.assertIs(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
@@ -460,7 +460,7 @@ class ClassifierTests(unittest.TestCase):
                 response = {
                     "principal_action": "SERVICE_OPENING",
                     "unresolved_reason": None,
-                    "subtype": None, "announced_opening_date": None,
+                    "subtype": None, "announced_opening_date": None, "authorization_terms": None,
                     "citations": [{"source_ref": "M1", "sentence_ids": [sentence_id]}],
                 }
                 result = Classifier(_Helper(response)).classify(_group((record,)), (record,))
@@ -492,7 +492,7 @@ class ClassifierTests(unittest.TestCase):
                 proposal = {
                     "principal_action": "TECHNOLOGY_TRIAL_OR_DEPLOYMENT",
                     "unresolved_reason": None,
-                    "subtype": None, "announced_opening_date": None,
+                    "subtype": None, "announced_opening_date": None, "authorization_terms": None,
                     "citations": citations,
                 }
                 with self.assertRaises(CategoryProposalViolation) as raised:
@@ -542,7 +542,7 @@ class ClassifierTests(unittest.TestCase):
         proposal = {
             "principal_action": "FORMAL_PROCUREMENT_ACTION",
             "unresolved_reason": None,
-            "subtype": None, "announced_opening_date": None,
+            "subtype": None, "announced_opening_date": None, "authorization_terms": None,
             "citations": [{"source_ref": "M1", "sentence_ids": ["S2", "S1"]}],
         }
         result = Classifier(_Helper(proposal)).classify(_group((record,)), (record,))
@@ -556,7 +556,7 @@ class ClassifierTests(unittest.TestCase):
         legacy = {
             "category_state": CategoryState.CATEGORY_ASSIGNED.value,
             "primary_category_id": CategoryId.INCIDENT.value,
-            "subtype": None, "announced_opening_date": None,
+            "subtype": None, "announced_opening_date": None, "authorization_terms": None,
             "category_resolution_reason": None,
             "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
         }
@@ -573,7 +573,7 @@ class ClassifierTests(unittest.TestCase):
             ({"principal_action": None, "unresolved_reason": "INSUFFICIENT_CATEGORY_EVIDENCE"}, CategoryResolutionReason.INSUFFICIENT_CATEGORY_EVIDENCE),
         ):
             with self.subTest(reason=reason):
-                result = Classifier(_Helper({**proposal, "subtype": None, "announced_opening_date": None, "citations": citation})).classify(group, (record,))
+                result = Classifier(_Helper({**proposal, "subtype": None, "announced_opening_date": None, "authorization_terms": None, "citations": citation})).classify(group, (record,))
                 self.assertEqual(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
                 self.assertEqual(result.category_resolution_reason, reason)
                 self.assertEqual(len(result.provenance["validated_support_spans"]), 1)
@@ -586,7 +586,7 @@ class ClassifierTests(unittest.TestCase):
         group = _group((record,))
         for action in CategoryPrincipalAction:
             with self.subTest(action=action.value):
-                result = Classifier(_Helper({"principal_action": action.value, "unresolved_reason": None, "subtype": None, "announced_opening_date": None,
+                result = Classifier(_Helper({"principal_action": action.value, "unresolved_reason": None, "subtype": None, "announced_opening_date": None, "authorization_terms": None,
                                              "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}]})).classify(group, (record,))
                 target = PRINCIPAL_ACTION_CATEGORY[action]
                 if isinstance(target, CategoryId):

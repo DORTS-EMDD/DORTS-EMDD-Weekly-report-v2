@@ -7,7 +7,7 @@ signals only; they do not create a second Evidence owner.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 import codecs
 from dataclasses import replace
 import ipaddress
@@ -332,6 +332,46 @@ def _canonical_is_related(
     if any(_resource_key(item) == canonical_key for item in chain):
         return True
     return False
+
+
+def _declared_canonical(
+    values: Sequence[str],
+    resolved_url: str,
+    redirect_chain: tuple[str, ...],
+) -> tuple[str, str]:
+    """The page's canonical URL and, when the declarations do not fit, why (RC-86).
+
+    A page may declare its canonical resource several times (``link
+    rel=canonical``, ``og:url``, ``twitter:url``), for example a short and a
+    long address of the same article. The declarations fit when at least one
+    is related to the resolved page (the same resource, or a step of the
+    redirect chain) and none names an unrelated resource on another site,
+    which marks the page as a republication of that site's article. The
+    canonical URL is then the first related declaration in document order.
+    Returns ``("", "")`` without declarations, ``(url, "")`` when they fit, and
+    otherwise the first declaration with ``CANONICAL_OTHER_SITE`` or
+    ``CANONICAL_RESOURCE_MISMATCH``.
+    """
+
+    declared = [
+        url for url in (_normalise_url(urljoin(resolved_url, value.strip())) for value in values) if url
+    ]
+    if not declared:
+        return "", ""
+    resolved_key = _resource_key(resolved_url)
+    related = [url for url in declared if _canonical_is_related(url, resolved_url, redirect_chain)]
+    other_site = [
+        url
+        for url in declared
+        if url not in related
+        and resolved_key is not None
+        and (_resource_key(url) or (None, None))[1] != resolved_key[1]
+    ]
+    if other_site:
+        return other_site[0], "CANONICAL_OTHER_SITE"
+    if not related:
+        return declared[0], "CANONICAL_RESOURCE_MISMATCH"
+    return related[0], ""
 
 
 def _coerce_source(value: FetchedSource | Mapping[str, Any] | object, request_url: str) -> FetchedSource:
@@ -820,7 +860,9 @@ class EvidenceService:
         structural_provenance = assessment.as_provenance()
         structural_provenance["content_type"] = fetched.content_type
         structural_provenance["body_text_available"] = bool(body)
-        canonical_url = self._canonical_url(list(assessment.canonical_values), resolved_url)
+        canonical_url, canonical_mismatch = _declared_canonical(
+            assessment.canonical_values, resolved_url, fetched.redirect_chain
+        )
         source_url = canonical_url or resolved_url
         if not _normalise_url(source_url):
             return self._rejected(
@@ -835,10 +877,10 @@ class EvidenceService:
             resolved_url,
             fetched.redirect_chain,
         )
-        if canonical_url and not _canonical_is_related(canonical_url, resolved_url, fetched.redirect_chain):
+        if canonical_mismatch:
             source_provenance = False
             provenance_signals["canonical_related"] = False
-            provenance_signals["source_provenance_mismatch_reason"] = "CANONICAL_RESOURCE_MISMATCH"
+            provenance_signals["source_provenance_mismatch_reason"] = canonical_mismatch
         else:
             provenance_signals["canonical_related"] = True
             if source_provenance and "acquisition_redirect_consistency" not in provenance_signals:
@@ -1281,14 +1323,6 @@ class EvidenceService:
     def _textual_content_type(content_type: str) -> bool:
         lowered = content_type.casefold()
         return any(kind in lowered for kind in ("html", "text", "xml"))
-
-    @staticmethod
-    def _canonical_url(values: list[str], base_url: str) -> str:
-        for value in values:
-            candidate = _normalise_url(urljoin(base_url, value.strip()))
-            if candidate:
-                return candidate
-        return ""
 
     @staticmethod
     def _rejected(

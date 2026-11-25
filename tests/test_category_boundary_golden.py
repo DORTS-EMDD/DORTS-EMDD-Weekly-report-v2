@@ -54,6 +54,17 @@ BOUNDARY_ACTIONS = {
     # RC-85 (section A.66, user decision 2026-11-24).
     "G118": "SUPPLIER_SYSTEM_ENGAGEMENT",  # CBTC radio network subcontract (Fortress)
     "G119": "PROJECT_STEP",  # project participation publicity
+    # RC-86 (section A.67, user decisions 2026-11-25).
+    "G120": "FAILURE_SERVICE_DISRUPTION",  # line curtailed after a fault (Warsaw M1)
+    "G121": "ASSET_DISPOSAL",  # damaged cars at auction (Taichung)
+    "G122": "SERVICE_CHANGE",  # replacement buses for a closed section (Sheffield)
+    "G123": "PROCUREMENT_AUTHORIZATION",  # authorised air-conditioning renewal (Madrid)
+    "G124": "PROJECT_STEP",  # tender plan without a formal decision
+    "G125": "NETWORK_EQUIPMENT_INSPECTION",  # all-line inspection (Daegu)
+}
+# RC-86: the amount and scope a PROCUREMENT_AUTHORIZATION case states (text of its first sentence).
+BOUNDARY_AUTHORIZATION_TERMS = {
+    "G123": {"amount": "3.4 million euros", "scope": "replace 720 air-conditioning components on the trains of metro line 1"},
 }
 # RC-84: the date the helper extracts for a SERVICE_OPENING_ANNOUNCEMENT case.
 BOUNDARY_OPENING_DATES = {"G110": "2026-11-29", "G111": None, "G112": "2027-03-15"}
@@ -64,7 +75,12 @@ def _classify(entry, fixture, expected, records, groups):
 
     context = fixture["run_context"]
     period = (date.fromisoformat(context["period_start"]), date.fromisoformat(context["period_end"]))
-    oracle = _GoldenSemanticOracle(expected, BOUNDARY_ACTIONS[entry["case_id"]], BOUNDARY_OPENING_DATES.get(entry["case_id"]))
+    oracle = _GoldenSemanticOracle(
+        expected,
+        BOUNDARY_ACTIONS[entry["case_id"]],
+        BOUNDARY_OPENING_DATES.get(entry["case_id"]),
+        BOUNDARY_AUTHORIZATION_TERMS.get(entry["case_id"]),
+    )
     return Classifier(oracle).classify(groups[0], records, report_period=period)
 
 
@@ -74,7 +90,8 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         taxonomy = json.loads((GOLDEN / "taxonomy_manifest.json").read_text(encoding="utf-8"))
         ids = [entry["case_id"] for entry in MANIFEST["cases"]]
         self.assertEqual(ids, ["G92", "G93", "G94", "G95", "G96", "G97", "G98", "G99", "G100", "G101", "G102", "G103", "G104", "G105", "G106", "G107", "G108", "G109",
-                               "G110", "G111", "G112", "G113", "G114", "G115", "G116", "G117", "G118", "G119"])
+                               "G110", "G111", "G112", "G113", "G114", "G115", "G116", "G117", "G118", "G119",
+                               "G120", "G121", "G122", "G123", "G124", "G125"])
         self.assertEqual(MANIFEST["case_count"], len(ids))
         self.assertTrue(MANIFEST["category_acceptance_population_excluded"])
         self.assertTrue(set(ids).isdisjoint(entry["case_id"] for entry in locked["cases"]))
@@ -109,7 +126,8 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
             [(entry["case_id"], entry["category_family"]) for entry in assigned],
             [("G101", "TECHNICAL_DEVELOPMENT"), ("G107", "TECHNICAL_DEVELOPMENT"), ("G108", "TECHNICAL_DEVELOPMENT"), ("G109", "OPERATIONAL_CHANGE"),
              ("G110", "OPERATIONAL_CHANGE"), ("G115", "INCIDENT"), ("G116", "OPERATIONAL_CHANGE"), ("G117", "OPERATIONAL_CHANGE"),
-             ("G118", "PROCUREMENT")],
+             ("G118", "PROCUREMENT"), ("G120", "INCIDENT"), ("G122", "OPERATIONAL_CHANGE"), ("G123", "PROCUREMENT"),
+             ("G125", "OPERATIONAL_CHANGE")],
         )
         for entry in assigned:
             fixture = json.loads((GOLDEN / entry["file"]).read_text(encoding="utf-8"))
@@ -156,7 +174,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         # the action definitions, and Python maps the action to the Category.
         from src.weekly_report.contracts import CategoryPrincipalAction
 
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v12")
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v13")
         guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
         for action in CategoryPrincipalAction:
             self.assertIn(f"{action.value}:", guidance)
@@ -199,6 +217,15 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         self.assertIn("engaged, contracted or commissioned to provide, supply, integrate or install an electrical and mechanical system", guidance)
         self.assertIn("also as a subcontractor within a larger project", guidance)
         self.assertIn("without naming a system it was engaged to provide, is PROJECT_STEP", guidance)
+        # RC-86 (user decisions 2026-11-25).
+        self.assertIn("SERVICE_CHANGE: a planned or announced change", guidance)
+        self.assertIn("An unplanned suspension, closure or curtailment caused by a failure is FAILURE_SERVICE_DISRUPTION", guidance)
+        self.assertIn("the replacement transport (replacement buses or shuttles) arranged for a closed rail section", guidance)
+        self.assertIn("a contract for anything else is NON_RAIL_CONTRACT", guidance)
+        self.assertIn("It is not FORMAL_PROCUREMENT_ACTION", guidance)
+        self.assertIn("A plan, intention or announcement to tender without such a formal decision is PROJECT_STEP", guidance)
+        self.assertIn("It is null when the evidence does not state both the amount and the scope", guidance)
+        self.assertIn("comprehensive inspection of the equipment or facilities of a whole running line or of the whole network", guidance)
 
     def test_every_action_maps_to_exactly_one_outcome(self):
         from src.weekly_report.contracts import CategoryId, CategoryPrincipalAction, CategoryResolutionReason
@@ -218,6 +245,9 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
                 "FORMAL_PROCUREMENT_ACTION": "PROCUREMENT",
                 "SUPPLIER_SYSTEM_ENGAGEMENT": "PROCUREMENT",
                 "NORMATIVE_ACTION": "NORMATIVE_CHANGE",
+                # RC-86 (section A.67).
+                "FAILURE_SERVICE_DISRUPTION": "INCIDENT",
+                "NETWORK_EQUIPMENT_INSPECTION": "OPERATIONAL_CHANGE",
             },
         )
         self.assertEqual(
@@ -230,7 +260,9 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
             {"PRE_SERVICE_OR_ACCEPTANCE_TEST", "PROJECT_STEP", "DRILL_OR_TRAINING", "NON_TRANSPORT_SERVICE",
              "STATISTICS_RANKING_OR_AWARD", "STATEMENT_OR_COMMENTARY", "EVENT_OR_EXHIBITION", "OTHER",
              # RC-84: SERVICE_OPENING_ANNOUNCEMENT's outcome outside its date window.
-             "SERVICE_OPENING_ANNOUNCEMENT", "TEMPORARY_EVENT_SERVICE", "EXTERNAL_HAZARD_PRECAUTION"},
+             "SERVICE_OPENING_ANNOUNCEMENT", "TEMPORARY_EVENT_SERVICE", "EXTERNAL_HAZARD_PRECAUTION",
+             # RC-86: PROCUREMENT_AUTHORIZATION's outcome without a stated amount and scope.
+             "PROCUREMENT_AUTHORIZATION", "NON_RAIL_CONTRACT", "ASSET_DISPOSAL"},
         )
 
 
@@ -293,3 +325,43 @@ class OpeningAnnouncementWindowTests(unittest.TestCase):
             with self.subTest(action=action, value=value), self.assertRaises(CategoryProposalViolation) as raised:
                 run(action, value)
             self.assertEqual(raised.exception.failure_class, "OPENING_DATE")
+
+
+class ProcurementAuthorizationTermsTests(unittest.TestCase):
+    """RC-86 (section A.67): Python verifies the stated amount and scope and decides the Category."""
+
+    def _run(self, action="PROCUREMENT_AUTHORIZATION", terms=None):
+        entry = next(item for item in MANIFEST["cases"] if item["case_id"] == "G123")
+        fixture = json.loads((GOLDEN / entry["file"]).read_text(encoding="utf-8"))
+        records = tuple(_materialize_record(candidate) for candidate in fixture["candidates"])
+        groups = _materialize_groups(fixture, records)
+        oracle = _GoldenSemanticOracle(fixture["expected"], action, None, terms)
+        return Classifier(oracle).classify(groups[0], records)
+
+    def test_stated_terms_make_a_procurement_event(self):
+        result = self._run(terms=BOUNDARY_AUTHORIZATION_TERMS["G123"])
+        self.assertEqual(result.primary_category_id.value, "PROCUREMENT")
+        self.assertEqual(result.provenance["principal_action"], "PROCUREMENT_AUTHORIZATION")
+        self.assertEqual(result.provenance["authorization_terms"], "STATED")
+
+    def test_without_terms_there_is_no_category_defining_action(self):
+        result = self._run(terms=None)
+        self.assertIs(result.category_state, CategoryState.CATEGORY_UNRESOLVED)
+        self.assertEqual(result.category_resolution_reason.value, "NO_CATEGORY_DEFINING_ACTION")
+        self.assertEqual(result.provenance["authorization_terms"], "NOT_STATED")
+
+    def test_invalid_terms_are_a_disclosed_proposal_violation(self):
+        from src.weekly_report.classifier import CategoryProposalViolation
+
+        bad = (
+            ("PROCUREMENT_AUTHORIZATION", {"amount": "3.5 million euros", "scope": "replace 720 air-conditioning components"}),
+            ("PROCUREMENT_AUTHORIZATION", {"amount": "million euros", "scope": "replace 720 air-conditioning components"}),
+            ("PROCUREMENT_AUTHORIZATION", {"amount": "3.4 million euros", "scope": "new signalling"}),
+            ("PROCUREMENT_AUTHORIZATION", {"amount": "3.4 million euros"}),
+            ("FORMAL_PROCUREMENT_ACTION", BOUNDARY_AUTHORIZATION_TERMS["G123"]),
+        )
+        for action, terms in bad:
+            with self.subTest(action=action, terms=terms):
+                with self.assertRaises(CategoryProposalViolation) as raised:
+                    self._run(action, terms)
+                self.assertEqual(raised.exception.failure_class, "AUTHORIZATION_TERMS")

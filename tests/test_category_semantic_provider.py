@@ -122,14 +122,14 @@ def _proposal(record, *, state=CategoryState.CATEGORY_ASSIGNED, category_id=Cate
         return {
             "principal_action": _ACTION_FOR[category_id],
             "unresolved_reason": None,
-            "subtype": "pilot", "announced_opening_date": None,
+            "subtype": "pilot", "announced_opening_date": None, "authorization_terms": None,
             "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
         }
     # NO_CATEGORY_DEFINING_ACTION: an action that maps to no Category.
     return {
         "principal_action": "PROJECT_STEP",
         "unresolved_reason": None,
-        "subtype": None, "announced_opening_date": None,
+        "subtype": None, "announced_opening_date": None, "authorization_terms": None,
         "citations": [{"source_ref": "M1", "sentence_ids": ["S1"]}],
     }
 
@@ -154,10 +154,10 @@ def _top_level_assignment_count(module, name):
 
 class CategorySemanticProviderTests(unittest.TestCase):
     def test_authoritative_v7_schema_and_five_field_contract(self):
-        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v7")
+        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v8")
         Draft202012Validator.check_schema(_CATEGORY_RESPONSE_SCHEMA)
         validator = Draft202012Validator(_CATEGORY_RESPONSE_SCHEMA)
-        expected_fields = {"principal_action", "unresolved_reason", "subtype", "announced_opening_date", "citations"}
+        expected_fields = {"principal_action", "unresolved_reason", "subtype", "announced_opening_date", "authorization_terms", "citations"}
         self.assertEqual(set(_CATEGORY_RESPONSE_SCHEMA["properties"]), expected_fields)
         self.assertEqual(set(_CATEGORY_RESPONSE_SCHEMA["required"]), expected_fields)
         self.assertFalse(_CATEGORY_RESPONSE_SCHEMA["additionalProperties"])
@@ -298,7 +298,7 @@ class CategorySemanticProviderTests(unittest.TestCase):
             return set()
 
         self.assertFalse(schema_keywords(projection) & unsupported)
-        expected_fields = {"principal_action", "unresolved_reason", "subtype", "announced_opening_date", "citations"}
+        expected_fields = {"principal_action", "unresolved_reason", "subtype", "announced_opening_date", "authorization_terms", "citations"}
         self.assertEqual(set(projection["properties"]), expected_fields)
         self.assertEqual(set(projection["required"]), expected_fields)
         self.assertFalse(projection["additionalProperties"])
@@ -550,7 +550,7 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
         self.assertEqual(result.primary_category_id, CategoryId.PROCUREMENT)
         self.assertIsNone(result.subtype)
         self.assertEqual(result.provenance["provider_identifier"], MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER)
-        self.assertEqual(result.provenance["schema_version"], "category-proposal-v7")
+        self.assertEqual(result.provenance["schema_version"], "category-proposal-v8")
         self.assertEqual(result.provenance["prompt_version"], MAIAGENT_CATEGORY_MESSAGE_VERSION)
         self.assertEqual(
             result.provenance["helper_version"],
@@ -692,7 +692,7 @@ class MaiAgentCategorySemanticProviderTests(unittest.TestCase):
         self.assertEqual(len(transport.calls), 1)
 
     def test_maiagent_schema_projection_is_derived_from_the_authoritative_schema(self):
-        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v7")
+        self.assertEqual(CATEGORY_SEMANTIC_SCHEMA_VERSION, "category-proposal-v8")
         self.assertEqual(
             _MAIAGENT_CATEGORY_RESPONSE_SCHEMA,
             build_maiagent_category_schema(_CATEGORY_RESPONSE_SCHEMA),
