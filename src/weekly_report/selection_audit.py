@@ -93,6 +93,10 @@ def _evidence(result: Any) -> dict[str, Any]:
         # Section A.34: a hash (not text) so a replay reproduces exact-source identity.
         "content_sha256": sha256(result.substantive_content.encode("utf-8")).hexdigest() if result.substantive_content else None,
     }
+    if provenance.get("evidence_rejection_gate") == "SOURCE_PROVENANCE":
+        # RC-87 (observation only): which provenance check failed,
+        # e.g. CANONICAL_OTHER_SITE or CANONICAL_RESOURCE_MISMATCH.
+        entry["source_provenance_mismatch_reason"] = provenance.get("source_provenance_mismatch_reason")
     if provenance.get("evidence_rejection_gate") == "LINK_RESOLUTION":
         # RC-81 (observation only): the Google News request that failed and how.
         entry["link_resolution"] = {

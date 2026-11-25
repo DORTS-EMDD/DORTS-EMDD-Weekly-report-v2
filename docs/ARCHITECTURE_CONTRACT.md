@@ -4262,9 +4262,9 @@ prompt text alone. Category prompt `category-principal-action-v13`, schema
   another site; the canonical URL is the first related declaration. A page whose
   declaration names another site's article (Nettavisen republishing Avisa Oslo)
   is rejected with the new mismatch reason `CANONICAL_OTHER_SITE`; unrelated
-  same-site declarations stay `CANONICAL_RESOURCE_MISMATCH`. Known limit: a
-  declaration on a sibling host (for example `m.` and `www.`) that is not in the
-  redirect chain counts as another site.
+  same-site declarations stay `CANONICAL_RESOURCE_MISMATCH`. (RC-87, section
+  A.68: hosts that differ only by a leading `www.`, `m.`, `mobile.` or `amp.`
+  label are the same site.)
 * **Golden** (`category_boundary_manifest.json`, 34 cases): G120 Warsaw-type line
   curtailment after a fault (事故), G121 damaged-car auction, G122 replacement
   buses for a closed tram section (營運動態), G123 a government authorisation of a
@@ -4293,6 +4293,63 @@ CATEGORY_EXCHANGE_OBSERVATION = category-exchange-observation-v4 (RC-86)
 REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v11 (RC-86)
 PROCUREMENT_AUTHORIZATION = PROCUREMENT only with amount and scope verified in a cited sentence, Python only (RC-86)
 EVIDENCE_CANONICAL = any declaration related, none on another site (RC-86)
+```
+
+### A.68 RC-87 Failure disruptions take precedence over replacement transport; same-site canonical hosts; replay of confirmation excerpts (2026-11-25, user decisions)
+
+Corrections after the review of RC-86, before its first live run.
+
+* **Category (user decision 1).** An unplanned suspension, closure or curtailment
+  caused by a failure or an accident is always `FAILURE_SERVICE_DISRUPTION`
+  (`INCIDENT`), also when the evidence reports replacement buses, shuttles or
+  other substitute transport for it, and their cost; the action takes
+  precedence over `SERVICE_CHANGE`. `SERVICE_CHANGE` names the replacement
+  transport of a closed rail section only for a planned closure or for a closure
+  after an external safety risk to the section was discovered (Sheffield: an old
+  mineshaft found under the track). `NON_RAIL_CONTRACT` points to the same split.
+  Root cause: RC-86 worded the replacement-transport case of `SERVICE_CHANGE`
+  "whatever caused the closure", so a failure report that mentions replacement
+  buses had two matching actions. Category prompt `category-principal-action-v14`;
+  schema, mapping table and Python validation unchanged. Golden G126 (a fault
+  closes the end of a metro line and replacement buses run: 事故), in
+  `category_boundary_manifest.json` (35 cases); G92-G125 unchanged.
+* **Evidence: same-site hosts (user decision 2b).** In the RC-86 canonical check,
+  a declaration names another site only when its host differs from the resolved
+  host after removing leading `www.`, `m.`, `mobile.` and `amp.` labels
+  (`_site_host`; no eTLD+1 or other host comparison). Relatedness is unchanged
+  (`_canonical_is_related`), so a same-site declaration that is neither the same
+  resource nor in the redirect chain still fits only beside a related one, and
+  alone remains `CANONICAL_RESOURCE_MISMATCH`, as before RC-86. Findings
+  (decision 2a): d5bfbaa compared only the first declaration with `www.` removed
+  (`_resource_key`), so an `m.` or `amp.` first declaration that was not in the
+  redirect chain was already rejected (`CANONICAL_RESOURCE_MISMATCH`); under RC-86
+  the same page was rejected as `CANONICAL_OTHER_SITE`, and a page whose related
+  declaration came first but which also declared an `m.`/`amp.` address became a
+  new rejection. The selection audit keeps one canonical URL per candidate, not
+  the declarations or the resolved URL, so Run 45558738725's count is measured by
+  re-fetching its 535 evidence-checked pages with
+  `scripts/canonical_declaration_probe.py` (observation only, manual
+  `source_probe` job; the fetched URL stands in for the resolved one).
+* **Observation.** The selection audit records
+  `evidence.source_provenance_mismatch_reason` for `SOURCE_PROVENANCE` rejections
+  (for example `CANONICAL_OTHER_SITE`); additive, decides nothing.
+* **Replay tool (decision 3).** `scripts/event_identity_replay.py` replays
+  confirmation requests: they use the longest lead tier, so their answers may
+  cite focus sentences the batch excerpt (all the audit records) did not carry.
+  Each replayed focus is the recorded excerpt followed by placeholder sentences up
+  to that tier, and batch requests are cut back to the recorded excerpt. Run
+  45558738725 now replays exactly (97 Events). Debug tool only; production
+  Event Identity is unchanged.
+* **Recorded open item (decision 5, no code change).** RC-79 joins the Python
+  candidate pairs of a procedure into connected groups, so pairs that each share
+  a different rare term chain into large confirmation groups: in Run 45558738725
+  278 pairs formed groups of 41 and 48 Korean records (budgets, tram delays,
+  exam-day trains, inspections and the work-to-rule reports in one request).
+
+```text
+CATEGORY_PROMPT_VERSION = category-principal-action-v14 (RC-87)
+FAILURE_SERVICE_DISRUPTION_PRECEDES_SERVICE_CHANGE = YES, replacement transport does not change it (RC-87)
+EVIDENCE_CANONICAL_SAME_SITE = host equal after removing leading www., m., mobile., amp. (RC-87)
 ```
 
 ### Shared production workflow
@@ -5769,6 +5826,12 @@ non-rail service are not procurement; a formal government or operator decision
 authorising an E&M equipment procurement with the amount and scope stated is a
 procurement event (revises D1 for this case only); an operator's comprehensive
 equipment inspection of a whole line or network is 營運動態.
+
+RC-87 (2026-11-25, user decision, section A.68): a failure or accident that
+stops or shortens a running line is 事故事件 also when the evidence reports
+replacement buses; the replacement transport of a closed section is 營運動態
+only for a planned closure or a closure after an external safety risk was
+discovered.
 
 Classifier 是唯一 Category owner，且只對已完成 Evidence、Scope、Temporal
 及 Event Identity / Dedup 的 authoritative Event Group 作出一次 Category

@@ -13,12 +13,20 @@ With ``--labels`` (a JSON map of candidate ID to occurrence label) the replayed
 Events are scored: labelled same-occurrence pairs merged or left apart, and
 differently labelled pairs merged.
 
+Confirmation requests build each record's excerpt with the longest lead tier
+(``LEAD_TIERS[0]``), so a confirmation may carry, and its answer cite, more of a
+record's Scope focus than the batch request did. The audit records only the
+batch excerpt's sentence IDs, so each replayed focus is the recorded excerpt
+followed by placeholder sentences up to that tier's sentence count, and each
+batch request is cut back to the recorded excerpt length (RC-87).
+
 Exit status: 0 when the replay reproduces the audited Events, 1 otherwise.
 """
 
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 from collections.abc import Mapping, Sequence
 from itertools import combinations
 import json
@@ -96,18 +104,26 @@ def records_from_audit(audit: Mapping[str, Any]) -> list[EventIdentityRecord]:
     for entry in reached:
         key = content_key(entry)
         lengths[key] = max(lengths.get(key, 0), *(int(sentence_id[1:]) for sentence_id in excerpt_of(entry)))
+    # Placeholder sentences after the recorded excerpt stand for the focus
+    # sentences only a confirmation request carried (longest lead tier).
+    padding = event_identity_module.LEAD_TIERS[0][0]
 
     records = []
     for entry in reached:
         candidate_id = entry["candidate_id"]
         excerpt = excerpt_of(entry)
         key = content_key(entry)
-        body = "\n".join(f"Replay {key} sentence {index}." for index in range(1, lengths[key] + 1))
+        length = lengths[key]
+        body = "\n".join(
+            f"Replay {key} sentence {index}." if index <= length else f"Replay {key} focus sentence {index}."
+            for index in range(1, length + padding + 1)
+        )
         region_id = (entry.get("region") or {}).get("region_id")
         if region_id:
             body += f"\nRegion {region_id}"
         sentences = {sentence.sentence_id: sentence for sentence in segment_evidence_sentences(body)}
-        focus = [{"start": sentences[sid].start, "end": sentences[sid].end} for sid in excerpt]
+        focus_ids = [*excerpt, *(f"S{index}" for index in range(length + 1, length + padding + 1))]
+        focus = [{"start": sentences[sid].start, "end": sentences[sid].end} for sid in focus_ids]
         url = (entry.get("evidence") or {}).get("canonical_source_url") or f"https://replay.invalid/{candidate_id}"
         candidate = CanonicalCandidate(
             candidate_id=candidate_id, title="replay", url=url, publisher="replay",
@@ -179,11 +195,34 @@ def replay(audit: Mapping[str, Any]) -> EventIdentityRun:
     recorded_pairs = {
         tuple(sorted(pair)): 1 for pair in audit.get("event_identity_python_candidates") or ()
     }
+    recorded_excerpt = {
+        entry["candidate_id"]: len(entry["event_identity"].get("proposal_excerpt_sentence_ids") or ["S1"])
+        for entry in audit["candidates"]
+        if entry.get("event_identity")
+    }
+    build_requests = event_identity_module._grouping_requests
+
+    def batch_requests(eligible):
+        # A batch request carries exactly the excerpt the run recorded; the
+        # placeholder focus sentences are only for confirmation requests.
+        requests, limits = build_requests(eligible)
+        return [
+            replace(
+                request,
+                records=tuple(
+                    replace(record, sentences=record.sentences[: recorded_excerpt[record.candidate_id]])
+                    for record in request.records
+                ),
+            )
+            for request in requests
+        ], limits
+
     with patch.multiple(
         event_identity_module,
         AGREEMENT_PROCEDURES=procedures,
         AGREEMENT_REQUIRED=min(event_identity_module.AGREEMENT_REQUIRED, procedures),
         candidate_pairs=lambda *args, **kwargs: dict(recorded_pairs),
+        _grouping_requests=batch_requests,
     ):
         return EventIdentity(RecordedAdvisor(exchanges)).evaluate(records_from_audit(audit))
 

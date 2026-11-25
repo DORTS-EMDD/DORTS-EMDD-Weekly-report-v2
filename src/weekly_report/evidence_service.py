@@ -334,6 +334,28 @@ def _canonical_is_related(
     return False
 
 
+# RC-87 (section A.68, user decision 2026-11-25): only these leading labels name
+# another rendering of the same site; no eTLD+1 or other host comparison.
+_SAME_SITE_PREFIXES = ("www.", "m.", "mobile.", "amp.")
+
+
+def _site_host(value: str) -> str | None:
+    """The host of a URL without the leading same-site labels www., m., mobile., amp."""
+
+    key = _resource_key(value)
+    if key is None:
+        return None
+    host = key[1]
+    stripped = True
+    while stripped:
+        stripped = False
+        for prefix in _SAME_SITE_PREFIXES:
+            if host.startswith(prefix) and len(host) > len(prefix):
+                host = host[len(prefix):]
+                stripped = True
+    return host
+
+
 def _declared_canonical(
     values: Sequence[str],
     resolved_url: str,
@@ -358,14 +380,12 @@ def _declared_canonical(
     ]
     if not declared:
         return "", ""
-    resolved_key = _resource_key(resolved_url)
+    resolved_site = _site_host(resolved_url)
     related = [url for url in declared if _canonical_is_related(url, resolved_url, redirect_chain)]
     other_site = [
         url
         for url in declared
-        if url not in related
-        and resolved_key is not None
-        and (_resource_key(url) or (None, None))[1] != resolved_key[1]
+        if url not in related and resolved_site is not None and _site_host(url) != resolved_site
     ]
     if other_site:
         return other_site[0], "CANONICAL_OTHER_SITE"

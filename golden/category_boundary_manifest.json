@@ -4,7 +4,7 @@
   "status": "EXTENSION",
   "category_acceptance_population_excluded": true,
   "note": "Category boundary extension (RC-63). Kept apart from the locked v2-category-lock manifest and its sealed acceptance population, as the taxonomy extension is. Each expected outcome is the section L domain outcome of the case's own Evidence.",
-  "case_count": 34,
+  "case_count": 35,
   "cases": [
     {
       "case_id": "G92",
@@ -243,6 +243,13 @@
       "case_class": "all_line_high_intensity_equipment_inspection",
       "origin_type": "SYNTHETIC_CONTRACT_CASE",
       "category_family": "OPERATIONAL_CHANGE"
+    },
+    {
+      "case_id": "G126",
+      "file": "cases/g126_fault_closure_with_replacement_buses.json",
+      "case_class": "fault_closure_with_replacement_buses",
+      "origin_type": "SYNTHETIC_CONTRACT_CASE",
+      "category_family": "INCIDENT"
     }
   ]
 }

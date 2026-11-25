@@ -61,6 +61,8 @@ BOUNDARY_ACTIONS = {
     "G123": "PROCUREMENT_AUTHORIZATION",  # authorised air-conditioning renewal (Madrid)
     "G124": "PROJECT_STEP",  # tender plan without a formal decision
     "G125": "NETWORK_EQUIPMENT_INSPECTION",  # all-line inspection (Daegu)
+    # RC-87 (section A.68, user decision 2026-11-25).
+    "G126": "FAILURE_SERVICE_DISRUPTION",  # fault closure with replacement buses (Warsaw M1)
 }
 # RC-86: the amount and scope a PROCUREMENT_AUTHORIZATION case states (text of its first sentence).
 BOUNDARY_AUTHORIZATION_TERMS = {
@@ -91,7 +93,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         ids = [entry["case_id"] for entry in MANIFEST["cases"]]
         self.assertEqual(ids, ["G92", "G93", "G94", "G95", "G96", "G97", "G98", "G99", "G100", "G101", "G102", "G103", "G104", "G105", "G106", "G107", "G108", "G109",
                                "G110", "G111", "G112", "G113", "G114", "G115", "G116", "G117", "G118", "G119",
-                               "G120", "G121", "G122", "G123", "G124", "G125"])
+                               "G120", "G121", "G122", "G123", "G124", "G125", "G126"])
         self.assertEqual(MANIFEST["case_count"], len(ids))
         self.assertTrue(MANIFEST["category_acceptance_population_excluded"])
         self.assertTrue(set(ids).isdisjoint(entry["case_id"] for entry in locked["cases"]))
@@ -127,7 +129,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
             [("G101", "TECHNICAL_DEVELOPMENT"), ("G107", "TECHNICAL_DEVELOPMENT"), ("G108", "TECHNICAL_DEVELOPMENT"), ("G109", "OPERATIONAL_CHANGE"),
              ("G110", "OPERATIONAL_CHANGE"), ("G115", "INCIDENT"), ("G116", "OPERATIONAL_CHANGE"), ("G117", "OPERATIONAL_CHANGE"),
              ("G118", "PROCUREMENT"), ("G120", "INCIDENT"), ("G122", "OPERATIONAL_CHANGE"), ("G123", "PROCUREMENT"),
-             ("G125", "OPERATIONAL_CHANGE")],
+             ("G125", "OPERATIONAL_CHANGE"), ("G126", "INCIDENT")],
         )
         for entry in assigned:
             fixture = json.loads((GOLDEN / entry["file"]).read_text(encoding="utf-8"))
@@ -174,7 +176,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         # the action definitions, and Python maps the action to the Category.
         from src.weekly_report.contracts import CategoryPrincipalAction
 
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v13")
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v14")
         guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
         for action in CategoryPrincipalAction:
             self.assertIn(f"{action.value}:", guidance)
@@ -219,8 +221,12 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         self.assertIn("without naming a system it was engaged to provide, is PROJECT_STEP", guidance)
         # RC-86 (user decisions 2026-11-25).
         self.assertIn("SERVICE_CHANGE: a planned or announced change", guidance)
-        self.assertIn("An unplanned suspension, closure or curtailment caused by a failure is FAILURE_SERVICE_DISRUPTION", guidance)
-        self.assertIn("the replacement transport (replacement buses or shuttles) arranged for a closed rail section", guidance)
+        self.assertIn("when the section stopped because of a failure or an accident, it is FAILURE_SERVICE_DISRUPTION", guidance)
+        self.assertIn("the replacement transport (replacement buses or shuttles) arranged for such a planned or risk closure", guidance)
+        self.assertIn("after an external safety risk to it was discovered (for example an old mineshaft found under the track)", guidance)
+        # RC-87: a failure disruption wins over its replacement transport.
+        self.assertIn("is always FAILURE_SERVICE_DISRUPTION, not this action, also when the evidence reports replacement buses", guidance)
+        self.assertIn("This action takes precedence over SERVICE_CHANGE", guidance)
         self.assertIn("a contract for anything else is NON_RAIL_CONTRACT", guidance)
         self.assertIn("It is not FORMAL_PROCUREMENT_ACTION", guidance)
         self.assertIn("A plan, intention or announcement to tender without such a formal decision is PROJECT_STEP", guidance)

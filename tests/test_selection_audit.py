@@ -208,3 +208,17 @@ def test_observer_only_fields_are_read_by_no_decision_module():
     # The runner only writes the audit next to the report; no owner reads it back.
     runner = (package / "production_runner.py").read_text(encoding="utf-8")
     assert runner.count("build_selection_audit(") == 1
+
+
+def test_a_source_provenance_rejection_names_the_failed_check():
+    # RC-87, observation only: the audit shows which provenance
+    # check failed (for example CANONICAL_OTHER_SITE for a republication).
+    from src.weekly_report.selection_audit import _evidence
+
+    rejected = SimpleNamespace(
+        state=EvidenceState.REJECTED, reject_reason=RejectReason.SOURCE_PAGE_MISMATCH, canonical_source_url="https://a.test/x",
+        substantive_content="", provenance={"evidence_rejection_gate": "SOURCE_PROVENANCE", "source_provenance_mismatch_reason": "CANONICAL_OTHER_SITE"},
+    )
+    assert _evidence(rejected)["source_provenance_mismatch_reason"] == "CANONICAL_OTHER_SITE"
+    other_gate = SimpleNamespace(**{**vars(rejected), "provenance": {"evidence_rejection_gate": "PRINCIPAL_DOCUMENT"}})
+    assert "source_provenance_mismatch_reason" not in _evidence(other_gate)

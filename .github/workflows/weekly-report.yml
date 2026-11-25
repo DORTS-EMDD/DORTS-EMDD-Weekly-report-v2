@@ -280,6 +280,10 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Probe specialist rail media hosts
         run: python -m scripts.source_host_probe --dump
+      # RC-87 (observation only): canonical declarations of the pages
+      # of recall Run 45558738725 under the d5bfbaa, RC-86 and RC-86 prefix rules.
+      - name: Probe canonical declarations of Run 45558738725 pages
+        run: python -m scripts.canonical_declaration_probe acceptance/canonical_probe/run_45558738725_pages.tsv
 
   delivery-check:
     # RC-55 live checks (L1-L3): manual only, never on the schedule, and never

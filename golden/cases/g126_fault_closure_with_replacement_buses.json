@@ -1,0 +1,56 @@
+{
+  "case_id": "G126",
+  "name": "fault_closure_with_replacement_buses",
+  "description": "Synthetic Category contract case (RC-87, from Run 45558738725: Warsaw metro line M1): a technical fault closes the end of a running metro line and the operator runs replacement buses; the failure disruption takes precedence over the replacement transport.",
+  "origin_type": "SYNTHETIC_CONTRACT_CASE",
+  "origin_reference": null,
+  "run_context": {
+    "report_type": "weekly",
+    "period_start": "2026-11-16",
+    "period_end": "2026-11-22",
+    "region_mode": "global"
+  },
+  "candidates": [
+    {
+      "candidate_id": "C1",
+      "title": "Fault closes three metro stations, replacement buses run",
+      "url": "https://fixtures.invalid/g126-fault_closure_with_replacement_buses-1",
+      "publisher": "Synthetic Contract Fixture",
+      "published_at": "2026-11-19T08:00:00Z",
+      "discovery_intent": "incident",
+      "search_snippet": "Fault closes three metro stations, replacement buses run.",
+      "source_content": "A technical fault near the northern terminal station has stopped metro trains on line M1 between three stations at the northern end of the line. The operator is running replacement buses between the closed stations every few minutes. Technicians are repairing the fault and the operator said trains would run the whole line again once the repair is complete.",
+      "source_date_facts": [
+        {
+          "raw_date_value": "2026-11-19T08:00:00Z",
+          "date_kind": "ORIGINAL_PUBLICATION",
+          "principal_document_association": "C1",
+          "source_node_or_field_provenance": "source_content.publication_date",
+          "explicit_timezone_or_offset": "Z"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "evidence_state": "EVIDENCE_READY",
+    "scope": "IN_SCOPE",
+    "date_valid": true,
+    "event_identity_expectation": "NOT_EVALUATED",
+    "event_count_after_dedup": 1,
+    "category_state": "CATEGORY_ASSIGNED",
+    "primary_category_id": "INCIDENT",
+    "primary_category": "事故事件",
+    "subtype": "fault_closure_with_replacement_buses",
+    "e&m_taxonomy": "NOT_EVALUATED",
+    "reportability": "NOT_EVALUATED",
+    "classification_reason": "PRINCIPAL_ACTION_INCIDENT",
+    "category_resolution_reason": "NONE",
+    "reject_stage": "NONE",
+    "reject_reason": "NONE"
+  },
+  "contract_notes": [
+    "Category follows the supported principal action in substantive source content.",
+    "Search intent, source title, technical novelty, taxonomy, and Reportability are not Category authorities.",
+    "RC-87 (section A.68, user decision 2026-11-25): an unplanned suspension or curtailment caused by a failure or an accident is always FAILURE_SERVICE_DISRUPTION (INCIDENT), also when the evidence reports replacement buses; SERVICE_CHANGE covers replacement transport only for a planned closure or a closure after an external safety risk was discovered."
+  ]
+}

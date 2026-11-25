@@ -105,3 +105,24 @@ def test_score_counts_labelled_merges_misses_and_wrong_merges():
     assert result["same_pairs"] == 3 and result["same_pairs_merged"] == 1
     assert result["same_pairs_missed"] == [("A", "C"), ("B", "C")]
     assert result["different_pairs_merged"] == [("A", "D"), ("B", "D")]
+
+
+def test_a_confirmation_citing_beyond_the_batch_excerpt_replays():
+    # RC-87: a confirmation request uses the longest lead tier, so
+    # its answer may cite a focus sentence the batch excerpt (all the audit
+    # records) did not carry. Run 45558738725 failed to replay for this reason.
+    audit = _audit(_SemanticAdvisor())
+    excerpt = {
+        entry["candidate_id"]: len(entry["event_identity"]["proposal_excerpt_sentence_ids"])
+        for entry in audit["candidates"]
+        if entry.get("event_identity")
+    }
+    confirmations = [exchange for exchange in audit["event_identity_exchanges"] if exchange["confirmation"] and "response" in exchange]
+    assert confirmations
+    exchange = confirmations[0]
+    member = exchange["response"]["groups"][0]["members"][0]
+    beyond = f"S{excerpt[exchange['records'][member['record_id']]] + 1}"
+    member["occurrence_sentence_ids"] = [*member["occurrence_sentence_ids"], beyond]
+    run = replay(audit)
+    assert {group.member_candidate_ids for group in run.groups} == audited_groups(audit)
+    assert _gaps(run) == []

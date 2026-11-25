@@ -20,7 +20,7 @@ from __future__ import annotations
 import unittest
 
 from src.weekly_report.contracts import EvidenceState
-from src.weekly_report.evidence_service import EvidenceService, FetchedSource, _declared_canonical
+from src.weekly_report.evidence_service import EvidenceService, FetchedSource, _declared_canonical, _site_host
 from tests.test_evidence_contract import _candidate, _FixtureFetcher, _SameEventJudge
 
 SHORT = "https://www.local-oslo.test/30-128-26544"
@@ -100,6 +100,39 @@ class DeclaredCanonicalTests(unittest.TestCase):
             _declared_canonical((REPUBLISHED, ORIGINAL_ELSEWHERE), REPUBLISHED, ()),
             (ORIGINAL_ELSEWHERE, "CANONICAL_OTHER_SITE"),
         )
+
+
+
+class SameSitePrefixTests(unittest.TestCase):
+    """RC-87: www., m., mobile. and amp. are the same site; nothing else is."""
+
+    def test_site_host(self):
+        for host in ("www.local-oslo.test", "m.local-oslo.test", "mobile.local-oslo.test", "amp.local-oslo.test",
+                     "local-oslo.test", "www.m.local-oslo.test"):
+            with self.subTest(host=host):
+                self.assertEqual(_site_host(f"https://{host}/a"), "local-oslo.test")
+        for host in ("news.local-oslo.test", "mbiz.local-oslo.test", "local-oslo.example", "m2.local-oslo.test"):
+            with self.subTest(host=host):
+                self.assertNotEqual(_site_host(f"https://{host}/a"), "local-oslo.test")
+
+    def test_a_mobile_or_amp_declaration_beside_a_related_one_fits(self):
+        for prefix in ("m.", "mobile.", "amp."):
+            with self.subTest(prefix=prefix):
+                other = f"https://{prefix}local-oslo.test/30-128-26544"
+                self.assertEqual(_declared_canonical((other, LONG), LONG, ()), (LONG, ""))
+                result = _evaluate(LONG, _page(og_url=other, link_canonical=LONG))
+                self.assertIs(result.state, EvidenceState.READY)
+                self.assertEqual(result.canonical_source_url, LONG)
+
+    def test_a_mobile_declaration_alone_is_a_same_site_resource_mismatch(self):
+        # Same site, but not the same resource and not in the redirect chain:
+        # unchanged, as d5bfbaa (CANONICAL_RESOURCE_MISMATCH, not another site).
+        other = "https://m.local-oslo.test/30-128-26544"
+        self.assertEqual(_declared_canonical((other,), LONG, ()), (other, "CANONICAL_RESOURCE_MISMATCH"))
+
+    def test_other_subdomains_are_still_another_site(self):
+        other = "https://news.local-oslo.test/30-128-26544"
+        self.assertEqual(_declared_canonical((other, LONG), LONG, ()), (other, "CANONICAL_OTHER_SITE"))
 
 
 if __name__ == "__main__":
