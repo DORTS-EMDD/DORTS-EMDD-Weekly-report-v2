@@ -358,6 +358,16 @@ def _collect_principal_body(
     parts: list[str] = []
     has_noninteractive = False
     has_any = False
+    # RC-85 (section A.66): article elements on the path from the principal to
+    # its single declared schema.org articleBody wrap the principal's own body;
+    # they are not subordinate documents. Structure only: no class or text test.
+    declared = [node for node in _walk(boundary) if node is not boundary and _is_declared_article_body(node)]
+    body_path: set[int] = set()
+    if len(declared) == 1:
+        current = declared[0].parent
+        while current is not None and current is not boundary:
+            body_path.add(id(current))
+            current = current.parent
 
     def visit(node: _Node, inside_anchor: bool = False) -> None:
         nonlocal has_noninteractive, has_any
@@ -375,7 +385,7 @@ def _collect_principal_body(
             )
             # RC-13: the principal's declared schema.org articleBody is its
             # own body, not a subordinate document.
-            if nested_in_principal and not _is_declared_article_body(node):
+            if nested_in_principal and not _is_declared_article_body(node) and id(node) not in body_path:
                 excluded.append(f"{node.node_id}:subordinate_document")
                 return
         if node is not boundary and _is_interactive_only_node(node):
@@ -1274,7 +1284,9 @@ def _assess_tree(
         if reason
     ]
     canonical_values = _canonical_values(root, None) if format_name == "html" else ()
-    mains = _find_main_nodes(root)
+    # RC-85 (section A.66): a main region without any text cannot compete as the
+    # principal region, as a content-less article unit cannot (section 6).
+    mains = [node for node in _find_main_nodes(root) if _node_text(node)]
     if len(mains) > 1:
         return _assessment(
             format_name=format_name,

@@ -175,8 +175,9 @@ def test_request_counts(registry, mode):
     # v11 (RC-76, 27 markets): 210.
     # v12 (RC-77, AI terms): 221; en, zh and cs gain one technology request per market.
     # v13 (RC-78, Finland searched): 231.
-    assert len(weekly.items) == 231
-    assert counts == {"technology": 118, "major_incident": 49, "operations": 30, "procurement": 34}
+    # v14 (RC-85, "metro train" in English procurement): 239; each English market gains one procurement request.
+    assert len(weekly.items) == 239
+    assert counts == {"technology": 118, "major_incident": 49, "operations": 30, "procurement": 42}
     november = MonitoredCheckMonth(date(2026, 11, 1), date(2026, 11, 30))
     monthly = SearchPlanner(registry).plan(mode, window=SearchWindow(date(2026, 11, 30), date(2026, 12, 6)),
                                            monitored_check=november)
@@ -184,4 +185,4 @@ def test_request_counts(registry, mode):
                  and item.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]
     catalogue = [item for item in monthly.items if item.provider_target is SearchProviderId.STANDARDS_CATALOGUE]
     assert len(monitored) == 90 and len(catalogue) == 10
-    assert len(monthly.items) == 231 + 90 + 10
+    assert len(monthly.items) == 239 + 90 + 10

@@ -59,4 +59,4 @@ def test_names_shared_by_regions_stay_ambiguous():
 
 
 def test_reference_version():
-    assert REFERENCE.version == "geo-reference-v7"
+    assert REFERENCE.version == "geo-reference-v8"

@@ -1,5 +1,5 @@
 {
-  "configuration_version": "search-discovery-v13",
+  "configuration_version": "search-discovery-v14",
   "region_modes": [
     "selected",
     "global"
@@ -612,7 +612,9 @@
             "subway station",
             "light rail",
             "tram",
-            "LRT"
+            "LRT",
+            "metro train",
+            "metro trains"
           ],
           "accident_terms": [
             "collision",
@@ -646,7 +648,9 @@
             "metro station",
             "subway line",
             "light rail",
-            "tram"
+            "tram",
+            "metro train",
+            "metro trains"
           ],
           "policy_terms": [
             "policy",
@@ -687,7 +691,8 @@
             "metro system",
             "light rail",
             "tram",
-            "urban rail"
+            "urban rail",
+            "metro train"
           ],
           "tender_terms": [
             "tender",
@@ -2862,7 +2867,9 @@
           "urban_rail_terms": [
             "T-bane",
             "trikk",
-            "bybane"
+            "bybane",
+            "T-banetog",
+            "T-banevogner"
           ],
           "accident_terms": [
             "ulykke",
@@ -2896,7 +2903,9 @@
           "urban_rail_terms": [
             "T-bane",
             "trikk",
-            "bybane"
+            "bybane",
+            "T-banetog",
+            "T-banevogner"
           ],
           "policy_terms": [
             "politikk",
@@ -2934,7 +2943,9 @@
           "urban_rail_terms": [
             "T-bane",
             "trikk",
-            "bybane"
+            "bybane",
+            "T-banetog",
+            "T-banevogner"
           ],
           "tender_terms": [
             "anbud",

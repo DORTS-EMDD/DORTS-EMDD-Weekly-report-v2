@@ -41,6 +41,11 @@ class ScopeSupportSpan:
     end: int
 
 
+_LABEL_LOCATIONS_NOTE = (
+    "label_locations lists, for each label of your previous proposal, the sentence_ids whose text contains that "
+    "label exactly, as found by Python. A label listed with no sentence_ids occurs in no sentence. Cite sentences "
+    "that contain the labels the rule requires, or choose labels that the cited sentences contain."
+)
 _CORRECTION_INSTRUCTION = (
     "Your previous proposal broke the rule named in violated_rule, in the fields listed in fields_at_fault. "
     "Return one complete proposal, in the same schema, that obeys that rule. Keep every conclusion the source "
@@ -63,20 +68,34 @@ class ScopeCorrection:
     fields: tuple[str, ...]
     rule: str
     rejected_proposal: Mapping[str, Any]
+    # RC-85 (section A.66): Python-computed facts, the sentence_ids whose text
+    # contains each label of the rejected proposal (empty when a label occurs
+    # in no sentence). The proposal is still validated by Python afterwards.
+    label_sentence_ids: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
 
     def as_payload(self) -> dict[str, Any]:
-        return {
+        payload = {
             "violated_rule": self.predicate,
             "fields_at_fault": list(self.fields),
             "rule": self.rule,
             "instruction": _CORRECTION_INSTRUCTION,
             "rejected_proposal": dict(self.rejected_proposal),
         }
+        if self.label_sentence_ids:
+            payload["label_locations"] = {name: list(ids) for name, ids in self.label_sentence_ids.items()}
+            payload["label_locations_note"] = _LABEL_LOCATIONS_NOTE
+        return payload
 
     def record(self, outcome: str) -> dict[str, Any]:
         """IDs-only observation of this correction: no source or proposal text."""
 
-        return {"predicate": self.predicate, "fields": list(self.fields), "outcome": outcome}
+        return {
+            "predicate": self.predicate,
+            "fields": list(self.fields),
+            "outcome": outcome,
+            # RC-85: the label locations Python sent (sentence IDs only).
+            "label_sentence_ids": {name: list(ids) for name, ids in self.label_sentence_ids.items()},
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -377,18 +396,52 @@ _CORRECTION_RULES: dict[str, tuple[tuple[str, ...], str]] = {
 }
 
 
-def _correction_for(rejected: "_Violation", proposal: Mapping[str, Any]) -> ScopeCorrection | None:
+_LABEL_FIELDS = (
+    ("action.label", ("action", "label")),
+    ("target.label", ("target", "label")),
+    ("system.label", ("system", "label")),
+    ("target_system.target_reference", ("target_system", "target_reference")),
+)
+
+
+def _label_sentence_ids(
+    proposal: Mapping[str, Any], sentences: tuple[EvidenceSentence, ...]
+) -> dict[str, tuple[str, ...]]:
+    """RC-85: where each proposed label occurs, by the same containment test the validator uses."""
+
+    located: dict[str, tuple[str, ...]] = {}
+    for name, (record, key) in _LABEL_FIELDS:
+        value = proposal.get(record) if isinstance(proposal, Mapping) else None
+        label = _text(value.get(key)) if isinstance(value, Mapping) else None
+        if label is None:
+            continue
+        located[name] = tuple(sentence.sentence_id for sentence in sentences if _within(label, sentence.text))
+    return located
+
+
+def _correction_for(
+    rejected: "_Violation",
+    proposal: Mapping[str, Any],
+    sentences: tuple[EvidenceSentence, ...] = (),
+) -> ScopeCorrection | None:
     """Build the one correction request for a rejected proposal, or None.
 
     Only a predicate with a stated rule is corrected; every correctable
-    predicate names the fields at fault.
+    predicate names the fields at fault, and the request carries the
+    sentence_ids that contain each proposed label (RC-85).
     """
 
     entry = _CORRECTION_RULES.get(rejected.predicate)
     if entry is None:
         return None
     default_fields, rule = entry
-    return ScopeCorrection(rejected.predicate, tuple(rejected.fields or default_fields), rule, dict(proposal))
+    return ScopeCorrection(
+        rejected.predicate,
+        tuple(rejected.fields or default_fields),
+        rule,
+        dict(proposal),
+        _label_sentence_ids(proposal, sentences),
+    )
 
 
 def _strict_record(value: object, keys: tuple[str, ...]) -> Mapping[str, Any] | None:
@@ -756,7 +809,7 @@ class ScopeClassifier:
         try:
             support, diagnostic, provenance, first_rejection = _proposal_support(response.proposal, request)
         except _Violation as rejected:
-            correction = _correction_for(rejected, response.proposal)
+            correction = _correction_for(rejected, response.proposal, request.principal_sentences)
             if correction is None:
                 raise violation(rejected.predicate, _rejected_proposal_shape(response.proposal, request)) from None
             # RC-75 (user decision 2026-11-19): like the Validator's one rewrite,

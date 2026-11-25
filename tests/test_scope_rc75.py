@@ -186,7 +186,10 @@ def test_a_label_that_is_not_source_text_is_corrected_once():
         "predicate": "ENDPOINT_LABEL",
         "fields": ["action.label"],
         "outcome": "ACCEPTED",
+        # RC-85: the sentence IDs that contain each proposed label.
+        "label_sentence_ids": {"action.label": [], "target.label": ["S1", "S3"], "system.label": ["S3"]},
     }
+    assert payload["label_locations"] == {"action.label": [], "target.label": ["S1", "S3"], "system.label": ["S3"]}
     assert seen[-1].correction_predicate == "ENDPOINT_LABEL"
     assert seen[-1].response_status == "OWNER_VALIDATED"
 
@@ -202,6 +205,7 @@ def test_a_second_violation_is_the_technical_gap_and_there_is_no_third_request()
         "predicate": "ENDPOINT_LABEL",
         "fields": ["action.label"],
         "outcome": "STILL_VIOLATED",
+        "label_sentence_ids": {"action.label": [], "target.label": ["S1", "S3"], "system.label": ["S3"]},
         "second_predicate": "ENDPOINT_LABEL",
     }
     assert caught.value.observation is not None

@@ -357,7 +357,7 @@ def _supported(registry, markets):
 def test_a_weekly_plan_has_no_monitored_standard_request(registry):
     week = SearchWindow(date(2026, 11, 16), date(2026, 11, 22))
     plan = SearchPlanner(registry).plan("selected", window=week)
-    assert len(plan.items) == 231  # search-discovery-v13 (RC-78); v12 221, v11 210
+    assert len(plan.items) == 239  # search-discovery-v14 (RC-85); v13 231, v12 221, v11 210
     assert all(item.intent is not DiscoveryIntent.MONITORED_STANDARDS for item in plan.items)
     with pytest.raises(ValueError):
         SearchPlanner(registry).plan("selected", intents=(DiscoveryIntent.MONITORED_STANDARDS,), window=week)
@@ -372,7 +372,7 @@ def test_the_monthly_plan_searches_every_identifier_over_the_whole_month(registr
                  and item.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]
     catalogue = [item for item in plan.items if item.provider_target is SearchProviderId.STANDARDS_CATALOGUE]
     others = [item for item in plan.items if item.intent is not DiscoveryIntent.MONITORED_STANDARDS]
-    assert len(others) == 231 and len(monitored) == 90 and len(catalogue) == 10  # RC-60: one per configured record
+    assert len(others) == 239 and len(monitored) == 90 and len(catalogue) == 10  # RC-60: one per configured record
     assert {(item.market_id, item.language_profile) for item in monitored} == _supported(registry, markets)
     assert {item.search_window for item in monitored} == {SearchWindow(date(2026, 11, 1), date(2026, 11, 30))}
     assert {item.search_window for item in others} == {week}

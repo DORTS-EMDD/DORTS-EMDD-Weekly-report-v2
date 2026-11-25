@@ -197,7 +197,7 @@ class SearchPlannerTests(unittest.TestCase):
         # RC-12 brought 20 markets below 207 requests; RC-76 (27 markets, user
         # decision 2026-11-19) is 210; RC-77 (AI terms) is 221, locked exactly in
         # test_technology_vocabulary.
-        self.assertEqual(len(plan.items), 231)  # RC-78: Finland searched
+        self.assertEqual(len(plan.items), 239)  # RC-85: "metro train" (RC-78: 231)
 
     def test_query_generation_is_bounded(self) -> None:
         source = copy.deepcopy(self.source)

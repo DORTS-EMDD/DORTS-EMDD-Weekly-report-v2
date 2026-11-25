@@ -374,7 +374,7 @@ def test_the_semantic_request_fingerprint():
     assert other["semantic_request_fingerprint_sha256"] == fingerprint
     assert other["sources"][0]["candidate_id"] == "cand-b"
     assert all(variant[1]["semantic_request"]["semantic_request_fingerprint_sha256"] != fingerprint for variant in variants)
-    assert record["semantic_request"]["category_prompt_version"] == CATEGORY_SEMANTIC_PROMPT_VERSION == "category-principal-action-v11"
+    assert record["semantic_request"]["category_prompt_version"] == CATEGORY_SEMANTIC_PROMPT_VERSION == "category-principal-action-v12"
 
 
 # 8. Replay terminology: input-equivalent semantic replay only.
@@ -458,6 +458,6 @@ def test_the_workflow_echo_does_not_print_the_record():
 
 # 12. No prompt or decision-rule change.
 def test_the_category_prompt_is_unchanged():
-    assert CATEGORY_SEMANTIC_PROMPT_VERSION == "category-principal-action-v11"
+    assert CATEGORY_SEMANTIC_PROMPT_VERSION == "category-principal-action-v12"
     assert CategoryProposalViolation("x", "SUBTYPE_FORMAT").failure_class == "SUBTYPE_FORMAT"
     assert CategoryState.CATEGORY_ASSIGNED.value == "CATEGORY_ASSIGNED"

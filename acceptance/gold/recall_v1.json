@@ -1105,15 +1105,37 @@
    "title": "Fortress Solutions 為紐約 Fulton-Liberty 線 CBTC 建置專用無線網路",
    "stars": 3,
    "expected": "INCLUDE",
-   "expected_section": [
-    "技術新知",
-    "機電標案及採購動態"
-   ],
-   "note": "漏在 Category：NO_CATEGORY_DEFINING_ACTION（Mass Transit 11/19）；技術新知或採購皆可。",
+   "expected_section": "機電標案及採購動態",
+   "note": "漏在 Category：NO_CATEGORY_DEFINING_ACTION（Mass Transit 11/19，helper 選 PROJECT_STEP）。使用者 2026-11-24：廠商承接機電系統屬採購（RC-85 SUPPLIER_SYSTEM_ENGAGEMENT）。",
    "aliases": [],
    "keywords": [
     [
      "Fortress Solutions"
+    ]
+   ],
+   "stars_basis": "user",
+   "source_run_id": 45103217994
+  },
+  {
+   "id": 46,
+   "kind": "report",
+   "period": {
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+   },
+   "title": "Forte-Citnalta 得標 MTA Chambers Street J/Z 車站工程",
+   "stars": 1,
+   "expected": "EXCLUDE",
+   "expected_section": null,
+   "note": "使用者 2026-11-24：土建為主的站體工程，★ 不收。Run 45103217994 在 Validation 失敗（$118.95M 被讀成長度，RC-85 已修 Validator）。",
+   "aliases": [],
+   "keywords": [
+    [
+     "Forte-Citnalta"
+    ],
+    [
+     "Chambers Street",
+     "J/Z"
     ]
    ],
    "stars_basis": "user",
@@ -1146,5 +1168,5 @@
    "source_run_id": 45103217994
   }
  ],
- "version_note": "v1: 17 reported events of Run 44468386445 and recall targets #18-#22; v2 (2026-11-20): #23-#25, new events of Run 44547985819. v2.1 (2026-11-20): #26 Busan-Gimhae CEO safety inspection, 1 star; #25 confirmed 1 star. v2.2 (2026-11-21): #27 two trains collide after a signal failure (3 stars, 事故及安全事件), #28 Danhai LRT seat paint stains (2 stars, 事故及安全事件 or 營運動態), Run 44774723652. v3 (2026-11-24): #29-#41, the 13 reported events of scheduled Run 45103217994 (2026-11-16..22), with #33 Almàssera and #38 Daegu exam day excluded (RC-84); recall targets #42-#45 and #47. #46 Forte-Citnalta (user: 2 stars, procurement) is held back: the selection rule allows two stars only in operations or incidents."
+ "version_note": "v1: 17 reported events of Run 44468386445 and recall targets #18-#22; v2 (2026-11-20): #23-#25, new events of Run 44547985819. v2.1 (2026-11-20): #26 Busan-Gimhae CEO safety inspection, 1 star; #25 confirmed 1 star. v2.2 (2026-11-21): #27 two trains collide after a signal failure (3 stars, 事故及安全事件), #28 Danhai LRT seat paint stains (2 stars, 事故及安全事件 or 營運動態), Run 44774723652. v3 (2026-11-24): #29-#41, the 13 reported events of scheduled Run 45103217994 (2026-11-16..22), with #33 Almàssera and #38 Daegu exam day excluded (RC-84); recall targets #42-#45 and #47. #46 Forte-Citnalta (user: 2 stars, procurement) is held back: the selection rule allows two stars only in operations or incidents. v3.1 (2026-11-25): #46 Forte-Citnalta 1 star, not collected (user); #45 Fortress procurement only (RC-85)."
 }

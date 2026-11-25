@@ -51,6 +51,9 @@ BOUNDARY_ACTIONS = {
     "G115": "INCIDENT_OR_FAILURE",  # platform smoke (Nagoya)
     "G116": "OPERATIONAL_DISPUTE",  # strike notice (Seoul Metro unions)
     "G117": "OPERATIONAL_GOVERNANCE",  # fare checks and patrols (DART)
+    # RC-85 (section A.66, user decision 2026-11-24).
+    "G118": "SUPPLIER_SYSTEM_ENGAGEMENT",  # CBTC radio network subcontract (Fortress)
+    "G119": "PROJECT_STEP",  # project participation publicity
 }
 # RC-84: the date the helper extracts for a SERVICE_OPENING_ANNOUNCEMENT case.
 BOUNDARY_OPENING_DATES = {"G110": "2026-11-29", "G111": None, "G112": "2027-03-15"}
@@ -71,7 +74,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         taxonomy = json.loads((GOLDEN / "taxonomy_manifest.json").read_text(encoding="utf-8"))
         ids = [entry["case_id"] for entry in MANIFEST["cases"]]
         self.assertEqual(ids, ["G92", "G93", "G94", "G95", "G96", "G97", "G98", "G99", "G100", "G101", "G102", "G103", "G104", "G105", "G106", "G107", "G108", "G109",
-                               "G110", "G111", "G112", "G113", "G114", "G115", "G116", "G117"])
+                               "G110", "G111", "G112", "G113", "G114", "G115", "G116", "G117", "G118", "G119"])
         self.assertEqual(MANIFEST["case_count"], len(ids))
         self.assertTrue(MANIFEST["category_acceptance_population_excluded"])
         self.assertTrue(set(ids).isdisjoint(entry["case_id"] for entry in locked["cases"]))
@@ -105,7 +108,8 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         self.assertEqual(
             [(entry["case_id"], entry["category_family"]) for entry in assigned],
             [("G101", "TECHNICAL_DEVELOPMENT"), ("G107", "TECHNICAL_DEVELOPMENT"), ("G108", "TECHNICAL_DEVELOPMENT"), ("G109", "OPERATIONAL_CHANGE"),
-             ("G110", "OPERATIONAL_CHANGE"), ("G115", "INCIDENT"), ("G116", "OPERATIONAL_CHANGE"), ("G117", "OPERATIONAL_CHANGE")],
+             ("G110", "OPERATIONAL_CHANGE"), ("G115", "INCIDENT"), ("G116", "OPERATIONAL_CHANGE"), ("G117", "OPERATIONAL_CHANGE"),
+             ("G118", "PROCUREMENT")],
         )
         for entry in assigned:
             fixture = json.loads((GOLDEN / entry["file"]).read_text(encoding="utf-8"))
@@ -152,7 +156,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         # the action definitions, and Python maps the action to the Category.
         from src.weekly_report.contracts import CategoryPrincipalAction
 
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v11")
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v12")
         guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
         for action in CategoryPrincipalAction:
             self.assertIn(f"{action.value}:", guidance)
@@ -191,6 +195,10 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         self.assertIn("Smoke or fire on or from a station, platform, tunnel, track, train, power supply or other rail equipment itself is this action", guidance)
         self.assertIn("A strike notice or threatened strike, a work-to-rule or slowdown", guidance)
         self.assertIn("Ticket inspections, fare-evasion checks, security or safety patrols", guidance)
+        # RC-85 (user decision 2026-11-24).
+        self.assertIn("engaged, contracted or commissioned to provide, supply, integrate or install an electrical and mechanical system", guidance)
+        self.assertIn("also as a subcontractor within a larger project", guidance)
+        self.assertIn("without naming a system it was engaged to provide, is PROJECT_STEP", guidance)
 
     def test_every_action_maps_to_exactly_one_outcome(self):
         from src.weekly_report.contracts import CategoryId, CategoryPrincipalAction, CategoryResolutionReason
@@ -208,6 +216,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
                 "OPERATIONAL_GOVERNANCE": "OPERATIONAL_CHANGE",
                 "INCIDENT_OR_FAILURE": "INCIDENT",
                 "FORMAL_PROCUREMENT_ACTION": "PROCUREMENT",
+                "SUPPLIER_SYSTEM_ENGAGEMENT": "PROCUREMENT",
                 "NORMATIVE_ACTION": "NORMATIVE_CHANGE",
             },
         )

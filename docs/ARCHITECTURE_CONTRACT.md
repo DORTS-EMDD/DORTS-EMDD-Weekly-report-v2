@@ -4134,6 +4134,83 @@ REPORTABILITY_PROMPT_VERSION = reportability-principal-body-v10 (RC-84)
 OPENING_ANNOUNCEMENT_WINDOW = period_start .. period_end + 30 days, Python only (RC-84)
 ```
 
+### A.66 RC-85 Supplier engagements, Polish and Czech place forms, Scope correction facts and four mechanical fixes (2026-11-24, user decisions)
+
+From the recall review of 2026-11-16..22 (Runs 44919705575, 45103217994 and the
+source probe Run 45307601830). No other Domain rule changes.
+
+* **Category (user decision).** New action `SUPPLIER_SYSTEM_ENGAGEMENT` mapped to
+  `PROCUREMENT` by `PRINCIPAL_ACTION_CATEGORY`: the evidence states that a named
+  company has been engaged, contracted or commissioned to provide, supply,
+  integrate or install an electrical and mechanical system or its equipment
+  (signalling or train control, communications or radio networks, power supply,
+  rolling stock, platform screen doors, fare collection, depot equipment), also
+  as a subcontractor within a larger project. A company's announcement only that
+  it takes part in or supports a project, naming no system it was engaged to
+  provide, stays `PROJECT_STEP`. Root cause: Fortress Solutions (CBTC radio
+  network on the Fulton-Liberty line) was proposed as `PROJECT_STEP` under the
+  "equipment installation" wording. Category prompt v12. Golden G118 (collected,
+  採購) and G119 (participation publicity, no Category). Gold answer #45 is
+  procurement only; #46 Forte-Citnalta (a civil station works award) is one star,
+  not collected (user).
+* **Geographic reference v8 (data only).** Polish and Czech sources write places
+  in case forms, and the metadata helper copies the exact surface value, so
+  `Krakowie`, `Warszawie`, `Praze`, `pražských Nuslích` and `do Německa` were
+  `UNRECOGNIZED_VALUE` and the events `REGION_NOT_ESTABLISHED` (Škoda's 50 trams
+  for Germany among them). The case and adjective forms of the designated Polish
+  and Czech cities, Toruń, Gorzów Wielkopolski, Olsztyn, Elbląg, Grudziądz,
+  Częstochowa, Katowice and Konstantynów Łódzki, the Polish and Czech forms of
+  Germany, the United Kingdom, France and Austria and of London, Paris, Berlin
+  and Vienna are listed as names of their own. Matching is unchanged; there is no
+  suffix inference, and a form shared by two regions stays ambiguous.
+* **Scope correction facts.** The RC-75 correction request now carries
+  `label_locations`: for each label of the rejected proposal, the sentence IDs
+  whose text contains it, computed by Python with the validator's own containment
+  test. The corrected proposal is validated exactly as before; there is still one
+  correction request. Root cause: Monday's VårtOslo derailment (target_system
+  cited S3; target and system labels only in S1, S4, S6, S10, S12, S13) and
+  Stadler Helsinki (system label only in S2, S12) were still violated after the
+  correction, which named the rule but not where the labels are. The
+  correction's audit record adds `label_sentence_ids` (IDs only).
+* **Nested article wrappers.** In the principal body, article elements on the
+  path from the principal article to its single declared `itemprop="articleBody"`
+  are part of the principal body, not subordinate documents. Root cause:
+  철도경제신문 (redaily.co.kr) nests `article.wrapper > article.grid >
+  article[itemprop=articleBody]`; the intermediate article was excluded, the body
+  was empty and the pages ended at `INSUFFICIENT_SUBSTANCE`. Without exactly one
+  declaration nothing changes.
+* **Empty main.** A `<main>` region without text does not compete as the
+  principal region, as a content-less article does not (section 6). The probed
+  polskieradio24.pl page is not recovered by it: its article lies outside both
+  main elements, so it is rejected as before (now as a structural failure).
+* **Validator quantities.** After a currency-signed number the magnitude letter
+  is read in either case (`$118.95M`, `$2B`, `€5K`), and a hyphenated magnitude
+  word is read (`$118.95-million`). Root cause: `$118.95M` was read as 118.95
+  metres, so no rendering of the Forte-Citnalta amount could be grounded. RC-29 is
+  unchanged: `美元` for a bare `$` is still more specific than the source.
+* **Search (`search-discovery-v14`).** English adds the mode phrase
+  "metro train" to procurement and "metro train", "metro trains" to major
+  incident and operations; Norwegian adds the compounds `T-banetog` and
+  `T-banevogner` to major incident, operations and procurement. Technology is
+  unchanged: one more phrase there would split every English technology request
+  (231 → 296). The weekly plan is 239 requests (each English market gains one
+  procurement request); every query stays within 32 words. Health probes
+  (1, 10, 119, 124, 232, 239), RC-72 rule unchanged. Expected additional titles:
+  English procurement, incident and service news worded "metro train(s)" (for
+  example "Oslo increases CAF metro train order"), and Norwegian titles with the
+  compounds (for example "Sporveien bestiller 24 nye T-banetog").
+
+Not changed (investigation only): the other principal-document mechanisms
+(onet.pl lead and body as sibling articles, transinfo.pl teaser cards, comment
+and related-article units as articles, sibling generic units, two `<h1>`).
+
+```text
+CATEGORY_PROMPT_VERSION = category-principal-action-v12 (RC-85)
+GEOGRAPHIC_REFERENCE_VERSION = geo-reference-v8 (RC-85)
+SEARCH_CONFIGURATION_VERSION = search-discovery-v14 (RC-85, 239 weekly requests)
+HEALTH_PROBE_ORDINALS = (1, 10, 119, 124, 232, 239) (RC-85)
+```
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式
@@ -5592,6 +5669,13 @@ opening with a definite date no later than 30 days after the report period is
 an operations event (營運動態); temporary added or extended service for an
 exam, festival or other event, and a precautionary suspension for an external
 hazard that did not reach rail facilities, have no Category-defining action.
+
+RC-85 (2026-11-24, user decision, section A.66): a source stating that a named
+company was engaged to provide an electrical and mechanical system (signalling,
+communications, power, rolling stock, platform screen doors and similar), also
+as a subcontractor in a larger project, is a procurement action (機電標案及採購
+動態); a company's publicity only that it takes part in a project remains a
+project step.
 
 Classifier 是唯一 Category owner，且只對已完成 Evidence、Scope、Temporal
 及 Event Identity / Dedup 的 authoritative Event Group 作出一次 Category

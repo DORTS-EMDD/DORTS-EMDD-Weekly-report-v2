@@ -38,8 +38,11 @@ _WORD_RE = re.compile(r"\s*(" + "|".join(pattern for pattern, _ in _WORD_MAGNITU
 # Magnitude words only English uses, always with a dot decimal mark ("91.766 billion").
 # "million(s)" is left out: French writes "1,5 million".
 _ENGLISH_MAGNITUDE_RE = re.compile(r"lakh\s+crores?|crores?|cr\.?|lakhs?|lacs?|trillions?|tn|billions?|bn|bln|mn|mln", re.IGNORECASE)
-# Directly after a currency-signed number, "m", "b" and "k" are magnitudes ("$5m", "€1.2b").
-_SIGN_MAGNITUDE_RE = re.compile(r"(m|b|k)(?![A-Za-z])")
+# Directly after a currency-signed number, "m", "b" and "k" are magnitudes ("$5m", "€1.2b");
+# RC-85 (section A.66): in either case ("$118.95M", "$2B"), never as metres there.
+_SIGN_MAGNITUDE_RE = re.compile(r"(m|b|k)(?![A-Za-z])", re.IGNORECASE)
+# RC-85: a currency-signed number joined to its magnitude word by a hyphen ("$118.95-million").
+_HYPHEN_WORD_RE = re.compile(r"-(" + "|".join(pattern for pattern, _ in _WORD_MAGNITUDES) + r")(?![a-zà-ÿ])", re.IGNORECASE)
 _SIGN_MAGNITUDES = {"m": 10**6, "b": 10**9, "k": 10**3}
 # A space joins digits only as thousands grouping ("20 000"), never two numbers ("20 2026").
 _NUMBER = r"\d+(?:[.,]\d+|[   ]\d{3}(?!\d))*"
@@ -337,7 +340,7 @@ def _read(text: str, number: re.Match[str], notation: str | None) -> _Reading:
         values, end, place, magnitude, multiplier = cjk
         reading = _Reading(start, end, values, place, magnitude, currency, multiplier=multiplier)
     else:
-        word = _WORD_RE.match(text, number.end())
+        word = _WORD_RE.match(text, number.end()) or (_HYPHEN_WORD_RE.match(text, number.end()) if currency else None)
         if notation != _STRICT and _cjk_adjacent(text, start, number.end()):
             notation = "."
         elif notation is None and word and _ENGLISH_MAGNITUDE_RE.fullmatch(word.group(1)):
