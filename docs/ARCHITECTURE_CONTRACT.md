@@ -4396,13 +4396,25 @@ rule changes.
   than 32 as this planner counts words, so the 30-word bound does not keep the
   dates. Not merged; the fix (date operators first, and the real word limit) is a
   user decision.
-* **Standards catalogue (item 3).** `standards_catalogue.parse_record` turns every
-  malformed record page (a comment-only or maintenance page lxml cannot parse,
-  `"versions": null`, a missing or mistyped field) into `CatalogueRecordError`,
-  which the provider already reports as an `INVALID_RESPONSE` technical failure
-  and EvidenceService as a `CATALOGUE_RECORD` rejection; no other exception
-  escapes to stop the remaining Search requests. Before the 2026-11-30..12-06
-  period (the November monthly check).
+* **Standards catalogue (item 3).** Merged to main early with RC-89 (section
+  A.70, user decision 2026-11-26), for the 2026-11-30..12-06 monthly check.
+* **Search 429 (user decision 2026-11-26).** `SearchExecutor` waits
+  `SEARCH_PACING_SECONDS` (1 s) before every Search request except the first,
+  and sends an attempt that ended `RATE_LIMIT` once more, unchanged, after
+  `SEARCH_RATE_LIMIT_RETRY_SECONDS` (60 s); the retry's result is final, so a
+  second `RATE_LIMIT` stays a disclosed technical gap, and no other failure
+  class is retried. The single owner is `SearchExecutor` (the provider and the
+  RC-72 health check are unchanged; the health check keeps its own 45-minute
+  rule). The run summary shows `search_rate_limit_retries` (requests retried
+  once); `search_rate_limit_failures` still counts what remained.
+* **Unrecognised place names (user decision 2026-11-26, observation only).**
+  EvidenceService records on its `RegionResolution` each metadata value
+  (country, transit_system_name, location) that the geographic reference did not
+  recognise (`unrecognized_values`), whatever the resolution's outcome; the
+  selection audit (`selection-audit-v5`) shows them under `region` with the
+  RC-69 exposure policy (a value over 80 characters, with a sentence break,
+  control or format character, URL or token is shown only as its SHA-256). No
+  decision reads them; they are for extending the reference later.
 * **Monitored identifiers (item 4).** `identifiers_in` reads U+2010, U+2011,
   U+2012, U+2013 and U+2212 as the ASCII hyphen after NFKC, one character for one;
   RC-62 exact ownership is unchanged (`IEC 62271‑100` is found; `IEC 60076‑5` is

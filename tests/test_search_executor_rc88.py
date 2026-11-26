@@ -124,3 +124,21 @@ def test_the_run_summary_shows_the_retries():
             production_runner.ProductionRunStatus.SUCCESS, date(2026, 11, 16), date(2026, 11, 22),
             RegionMode.SELECTED, {}, search_rate_limit_retries=-1,
         )
+
+
+def test_the_date_operators_come_first():
+    from datetime import date
+    from urllib.parse import parse_qs, urlsplit
+
+    from src.weekly_report.contracts import SearchWindow
+    from src.weekly_report.google_news_rss_provider import GoogleNewsRssProvider
+    from src.weekly_report.region_registry import RegionRegistry
+    from src.weekly_report.search_planner import SearchPlanner
+
+    plan = SearchPlanner(RegionRegistry.from_file()).plan(
+        "selected", window=SearchWindow(date(2026, 11, 16), date(2026, 11, 22))
+    )
+    item = next(i for i in plan.items if i.provider_target is SearchProviderId.GOOGLE_NEWS_RSS)
+    q = parse_qs(urlsplit(GoogleNewsRssProvider.request_url(item)).query)["q"][0]
+    assert q == f"after:2026-11-16 before:2026-11-23 {item.query}"
+    assert len(q) <= 200  # Google News reads only the first 200 characters (RC-88)
