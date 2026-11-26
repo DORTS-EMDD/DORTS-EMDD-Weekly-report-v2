@@ -177,6 +177,10 @@ class RegionResolution:
     source_value: str | None = None
     reference_version: str = ""
     diagnostic: str = ""
+    # RC-88 (observation only): (field, value) pairs of metadata values the
+    # geographic reference did not recognise, recorded by EvidenceService so
+    # the reference can be extended later; never read by any decision.
+    unrecognized_values: tuple[tuple[str, str], ...] = ()
 
     def __post_init__(self) -> None:
         basis = RegionResolutionBasis(self.basis)
@@ -194,6 +198,16 @@ class RegionResolution:
             raise ValueError("an unestablished RegionResolution cannot carry a region or source value")
         if not isinstance(self.diagnostic, str):
             raise TypeError("RegionResolution diagnostic must be a string")
+        unrecognized = tuple(tuple(pair) for pair in self.unrecognized_values)
+        if any(
+            len(pair) != 2
+            or pair[0] not in {"country", "transit_system_name", "location"}
+            or not isinstance(pair[1], str)
+            or not pair[1].strip()
+            for pair in unrecognized
+        ):
+            raise ValueError("RegionResolution unrecognized_values must be (governed field, value) pairs")
+        object.__setattr__(self, "unrecognized_values", unrecognized)
 
     @property
     def established(self) -> bool:

@@ -1169,6 +1169,7 @@ class EvidenceService:
         matches = []
         ambiguous = False
         present = False
+        unrecognized: list[tuple[str, str]] = []
         for field_name in ("country", "transit_system_name", "location"):
             value = values.get(field_name)
             if not value:
@@ -1176,14 +1177,17 @@ class EvidenceService:
             present = True
             match = reference.lookup(value) or reference.lookup_contained(value)
             if match is None:
+                # RC-88, observation only: kept for extending the reference.
+                unrecognized.append((field_name, value))
                 continue
             if match.kind is GeographicMatchKind.AMBIGUOUS:
                 ambiguous = True
                 continue
             matches.append((field_name, value, match))
+        observed = tuple(unrecognized)
         regions = {match.region_id for _, _, match in matches}
         if len(regions) > 1:
-            return RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="CONFLICTING_REGIONS")
+            return RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="CONFLICTING_REGIONS", unrecognized_values=observed)
         if len(regions) == 1:
             stated = [item for item in matches if item[2].kind is GeographicMatchKind.REGION]
             field_name, value, match = (stated or matches)[0]
@@ -1194,11 +1198,12 @@ class EvidenceService:
                 source_field=field_name,
                 source_value=value,
                 reference_version=reference.version,
+                unrecognized_values=observed,
             )
         if ambiguous:
-            return RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="AMBIGUOUS_NAME")
+            return RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="AMBIGUOUS_NAME", unrecognized_values=observed)
         if present:
-            return RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="UNRECOGNIZED_VALUE")
+            return RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="UNRECOGNIZED_VALUE", unrecognized_values=observed)
         if unresolved_fields:
             return RegionResolution(RegionResolutionBasis.UNRESOLVED, diagnostic="INVALID_FIELD")
         return RegionResolution(RegionResolutionBasis.NOT_STATED)

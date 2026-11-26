@@ -39,7 +39,7 @@ from .category_observation import (
 from .contracts import EvidenceState, ScopeState
 from .evidence_sentences import event_focus_sentences
 
-SELECTION_AUDIT_VERSION = "selection-audit-v4"
+SELECTION_AUDIT_VERSION = "selection-audit-v5"
 STAGES = (
     "EVIDENCE",
     "SCOPE",
@@ -127,7 +127,24 @@ def _region(evidence: Any) -> dict[str, Any] | None:
     if not resolution.established and getattr(resolution, "diagnostic", ""):
         # RC-66, observation only: why EvidenceService could not establish it.
         entry["diagnostic"] = resolution.diagnostic
+    unrecognized = tuple(getattr(resolution, "unrecognized_values", ()) or ())
+    if unrecognized:
+        # RC-88, observation only: metadata place names the geographic
+        # reference did not recognise, for extending it later. The audit is
+        # public: a value is shown only when it passes the RC-69 exposure
+        # policy (at most 80 characters, no sentence, control or format
+        # character, URL or token); otherwise only its SHA-256.
+        entry["unrecognized_values"] = [
+            {"field": field_name, "value": _exposed_place_name(value)} for field_name, value in unrecognized
+        ]
     return entry
+
+
+def _exposed_place_name(value: str) -> Any:
+    from .category_observation import _withheld, exposure_violation
+
+    reason = exposure_violation(value)
+    return value if reason is None else _withheld(reason, value)
 
 
 _PAIR_PROPOSALS = frozenset({"PROPOSAL_NOT_CONFIRMED", "PROPOSAL_REGION_CONFLICT"})

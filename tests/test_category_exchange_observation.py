@@ -406,7 +406,7 @@ def test_only_the_observer_modules_name_the_record():
 def test_the_audit_projects_the_record_once_per_event_and_stays_bounded():
     result = _app().run("selected")
     audit = build_selection_audit(result)
-    assert audit["audit_version"] == "selection-audit-v4"
+    assert audit["audit_version"] == "selection-audit-v5"
     assert selection_audit_mapping_is_bounded(audit)
     exchanges = [outcome["category_exchange"] for outcome in audit["events"] if outcome.get("category_exchange")]
     assert exchanges and all(record["validation"]["outcome"] == "ACCEPTED" for record in exchanges)

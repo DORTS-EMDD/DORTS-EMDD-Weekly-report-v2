@@ -14,7 +14,7 @@ from src.weekly_report.contracts import (
     SearchCoverageGapReason,
 )
 from src.weekly_report.region_registry import RegionRegistry
-from src.weekly_report.search_planner import SearchPlanner, _query_words
+from src.weekly_report.search_planner import _MAX_QUERY_CHARACTERS, SearchPlanner
 
 
 class SearchPlannerTests(unittest.TestCase):
@@ -77,7 +77,7 @@ class SearchPlannerTests(unittest.TestCase):
         # RC-11: every supported edition is planned, in its own vocabulary,
         # within the 32-word query bound, and far below one request per term.
         self.assertEqual({(item.market_id, item.language_profile) for item in plan.items}, supported)
-        self.assertTrue(all(_query_words(item.query) <= 30 for item in plan.items))
+        self.assertTrue(all(len(item.query) <= _MAX_QUERY_CHARACTERS for item in plan.items))
         per_term = sum(
             len(self.registry.profile(profile_id).intent_vocabulary["technology"][group])
             for _market, profile_id in supported
@@ -193,7 +193,7 @@ class SearchPlannerTests(unittest.TestCase):
         )
         # The query is deliberately broad: no intent vocabulary is added.
         self.assertTrue(all(item.query.startswith('(metro OR subway OR tram OR "light rail" OR monorail) (site:') for item in trade))
-        self.assertTrue(all(_query_words(item.query) <= 30 for item in plan.items))
+        self.assertTrue(all(len(item.query) <= _MAX_QUERY_CHARACTERS for item in plan.items))
         # RC-12 brought 20 markets below 207 requests; RC-76 (27 markets, user
         # decision 2026-11-19) is 210; RC-77 (AI terms) is 221, locked exactly in
         # test_technology_vocabulary.

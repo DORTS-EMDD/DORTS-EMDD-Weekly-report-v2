@@ -16,7 +16,7 @@ import pytest
 from scripts.materialize_search_configuration import validate_configuration
 from src.weekly_report.contracts import DiscoveryIntent, MonitoredCheckMonth, SearchProviderId, SearchWindow
 from src.weekly_report.region_registry import RegionRegistry
-from src.weekly_report.search_planner import SearchPlanner, _query_words
+from src.weekly_report.search_planner import _MAX_QUERY_CHARACTERS, SearchPlanner
 from tests.test_ai_vocabulary_rc77 import RC77_TECHNOLOGY_TERMS
 
 CONCEPTS = ("CBTC", "ATO", "無人駕駛", "第三軌", "道岔", "狀態監測", "預測性維修")
@@ -161,7 +161,7 @@ def test_every_new_literal_reaches_every_supported_edition_of_its_profile(regist
         for literals in EXPECTED[profile_id].values():
             for literal in literals:
                 assert _quoted(literal) in queries, (market_id, profile_id, literal)
-    assert all(_query_words(item.query) <= 30 for item in plan.items)
+    assert all(len(item.query) <= _MAX_QUERY_CHARACTERS for item in plan.items)
     assert "da" not in {profile for _market, profile in editions}  # Denmark: no Google News edition
     assert ("finland", "fi") in editions  # RC-78: Finland's edition verified
 

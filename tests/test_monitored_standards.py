@@ -69,7 +69,7 @@ from src.weekly_report.report_service import FORMAL_REPORT_SECTIONS, ReportServi
 from src.weekly_report.reportability import Reportability
 from src.weekly_report.scope_classifier import MonitoredStandardScopeRequest, ScopeClassifier, ScopeSemanticRequest
 from src.weekly_report.search_executor import SearchExecutor
-from src.weekly_report.search_planner import SearchPlanner, _query_words
+from src.weekly_report.search_planner import _MAX_QUERY_CHARACTERS, SearchPlanner
 from src.weekly_report.temporal_rule import TemporalRule
 from src.weekly_report.validator import ValidatedReportEvent, ValidationResult
 from src.weekly_report.writer import WriterReportBlock
@@ -381,7 +381,7 @@ def test_the_monthly_plan_searches_every_identifier_over_the_whole_month(registr
         queries = [item.query for item in monitored if (item.market_id, item.language_profile) == edition]
         terms = {term.strip('"') for query in queries for term in re.findall(r'"[^"]+"|[^\s()]+', query) if term != "OR"}
         assert terms == identifiers, edition
-    assert all(_query_words(item.query) <= 30 for item in monitored)
+    assert all(len(item.query) <= _MAX_QUERY_CHARACTERS for item in monitored)
 
 
 def test_a_rerun_of_the_same_period_freezes_the_same_plan(registry):
