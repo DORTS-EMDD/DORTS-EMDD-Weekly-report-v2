@@ -16,6 +16,7 @@ from typing import Any
 from urllib.parse import quote, urlsplit
 
 from .maiagent_transport import (
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
     MaiAgentHttpResponse,
     MaiAgentJsonHttpTransport,
     MaiAgentResponseError,
@@ -30,7 +31,7 @@ from .contracts import canonical_em_system_ids
 
 
 TASK_IDENTITY = "taxonomy_semantic_proposal"
-PROMPT_VERSION = "taxonomy-principal-body-v3"
+PROMPT_VERSION = "taxonomy-principal-body-v4"
 SCHEMA_VERSION = "taxonomy-semantic-proposal-v2"
 HELPER_VERSION = "maiagent-structured-helper-taxonomy-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-taxonomy"
@@ -64,6 +65,7 @@ TAXONOMY_INSTRUCTIONS = (
     "Do not propose NOT_EVALUATED and do not create a final TaxonomyResult.",
     "Do not use external knowledge, search, RAG, tools, conversation history, or surrounding messages.",
     "Return JSON only, with no Markdown, no prose outside JSON, and no extra fields.",
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
 )
 
 

@@ -17,7 +17,7 @@ from src.weekly_report.search_planner import SearchPlanner, _query_words
 # Exactly what RC-77 appended to each profile, in order.
 RC77_TECHNOLOGY_TERMS = {
     "en": ["AI", "artificial intelligence", "maintenance", "remote monitoring", "sensor"],
-    "zh": ["AI", "人工智慧/人工智能", "維修/维修", "遠端監測/远程监测", "感測器/传感器"],
+    "zh": ["AI", "人工智慧", "人工智能", "維修", "维修", "遠端監測", "远程监测", "感測器", "传感器"],
     "ja": ["AI", "人工知能", "保守", "遠隔監視"],
     "ko": ["AI", "인공지능"],
     "de": ["KI", "künstliche Intelligenz", "Instandhaltung", "Fernüberwachung", "Sensor"],
@@ -60,9 +60,9 @@ def test_bare_ai_is_not_used_where_it_is_a_common_word():
 def test_plan_size_and_query_bound():
     plan = SearchPlanner(REGISTRY).plan("selected")
     counts = Counter(item.intent.value for item in plan.items)
-    assert len(plan.items) == 239  # RC-85 "metro train" (RC-78 231, RC-77 221)
-    assert counts["technology"] == 118
-    assert all(_query_words(item.query) <= 32 for item in plan.items)
+    assert len(plan.items) == 292  # RC-88 zh forms split and 30-word queries (RC-85 239, RC-78 231, RC-77 221)
+    assert counts["technology"] == 158  # RC-88: zh forms split and 30-word queries
+    assert all(_query_words(item.query) <= 30 for item in plan.items)
 
 
 def test_every_rc77_term_reaches_every_supported_edition_of_its_profile():

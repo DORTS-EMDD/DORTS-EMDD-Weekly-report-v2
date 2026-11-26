@@ -20,6 +20,7 @@ from urllib.parse import quote, urlsplit
 
 from .evidence_sentences import event_focus_sentences
 from .maiagent_transport import (
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
     MaiAgentHttpResponse,
     MaiAgentJsonHttpTransport,
     MaiAgentResponseError,
@@ -215,6 +216,7 @@ WRITER_INSTRUCTIONS = (
     "Translate technical terms into Traditional Chinese; do not leave common English words such as turnkey untranslated.",
     "When the request contains a correction, rewrite the previous block so that every listed statement is removed or corrected to match the evidence, keep the supported statements, and add no new facts.",
     "Return JSON only with exactly event_id, headline, factual_summary, taipei_insight.",
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
 )
 
 
@@ -236,7 +238,7 @@ def build_maiagent_writer_model_input(result: ReportWorkflowResult) -> dict[str,
         raise ValueError("Writer requires authoritative substantive content")
     return {
         "task_identity": "formal_report_writer",
-        "prompt_version": "formal-report-writer-v11",
+        "prompt_version": "formal-report-writer-v12",
         "schema_version": "writer-report-block-v1",
         "instructions": list(WRITER_INSTRUCTIONS),
         "writer_request": {

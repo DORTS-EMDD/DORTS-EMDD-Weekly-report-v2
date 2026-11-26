@@ -357,7 +357,7 @@ def _supported(registry, markets):
 def test_a_weekly_plan_has_no_monitored_standard_request(registry):
     week = SearchWindow(date(2026, 11, 16), date(2026, 11, 22))
     plan = SearchPlanner(registry).plan("selected", window=week)
-    assert len(plan.items) == 239  # search-discovery-v14 (RC-85); v13 231, v12 221, v11 210
+    assert len(plan.items) == 292  # search-discovery-v15 (RC-88); v14 239 (RC-85); v13 231, v12 221, v11 210
     assert all(item.intent is not DiscoveryIntent.MONITORED_STANDARDS for item in plan.items)
     with pytest.raises(ValueError):
         SearchPlanner(registry).plan("selected", intents=(DiscoveryIntent.MONITORED_STANDARDS,), window=week)
@@ -372,7 +372,7 @@ def test_the_monthly_plan_searches_every_identifier_over_the_whole_month(registr
                  and item.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]
     catalogue = [item for item in plan.items if item.provider_target is SearchProviderId.STANDARDS_CATALOGUE]
     others = [item for item in plan.items if item.intent is not DiscoveryIntent.MONITORED_STANDARDS]
-    assert len(others) == 239 and len(monitored) == 90 and len(catalogue) == 10  # RC-60: one per configured record
+    assert len(others) == 292 and len(monitored) == 90 and len(catalogue) == 10  # RC-60: one per configured record
     assert {(item.market_id, item.language_profile) for item in monitored} == _supported(registry, markets)
     assert {item.search_window for item in monitored} == {SearchWindow(date(2026, 11, 1), date(2026, 11, 30))}
     assert {item.search_window for item in others} == {week}
@@ -381,7 +381,7 @@ def test_the_monthly_plan_searches_every_identifier_over_the_whole_month(registr
         queries = [item.query for item in monitored if (item.market_id, item.language_profile) == edition]
         terms = {term.strip('"') for query in queries for term in re.findall(r'"[^"]+"|[^\s()]+', query) if term != "OR"}
         assert terms == identifiers, edition
-    assert all(_query_words(item.query) <= 32 for item in monitored)
+    assert all(_query_words(item.query) <= 30 for item in monitored)
 
 
 def test_a_rerun_of_the_same_period_freezes_the_same_plan(registry):
@@ -642,12 +642,12 @@ def test_the_monitored_question_is_a_second_request_kind_of_the_scope_task():
     assert model_input["monitored_standard_request"]["monitored_identifiers"] == ["NFPA 70"]
     assert "monitored_identifiers" not in json.dumps(build_maiagent_scope_model_input(
         ScopeSemanticRequest("C1", "Title", "A metro line opened.", {})))
-    assert SCOPE_PROMPT_VERSION == "scope-event-target-system-v13"
+    assert SCOPE_PROMPT_VERSION == "scope-event-target-system-v14"
 
 
 def test_only_the_issuing_body_changes_a_monitored_standard():
     # RC-61 (section A.45): a national or regional adoption by another body is not a change.
-    assert MONITORED_STANDARD_PROMPT_VERSION == "scope-monitored-standard-v2"
+    assert MONITORED_STANDARD_PROMPT_VERSION == "scope-monitored-standard-v3"
     text = " ".join(MONITORED_STANDARD_INSTRUCTIONS)
     assert "national adoption" in text and "regional adoption" in text and "is not a change of it" in text
     assert "including its formal national adoption" not in text
@@ -730,3 +730,15 @@ def test_delivery_schedule_and_mail_have_no_standards_branch():
             assert token not in text, (name, token)
     workflow = (ROOT / ".github" / "workflows" / "weekly-report.yml").read_text(encoding="utf-8")
     assert workflow.count("cron:") == 1 and "monitored" not in workflow
+
+
+@pytest.mark.parametrize("dash", ["‐", "‑", "‒", "–", "−"])
+def test_typeset_hyphens_are_read_as_the_ascii_hyphen(dash):
+    # RC-88: "IEC 62271-100" written with a non-ASCII hyphen or dash is the
+    # monitored identifier; "IEC 60076-5" is a part of no configured family and
+    # must not fall back to "IEC 60076" (RC-62 exact ownership).
+    standards = monitored_standards()
+    assert standards.identifiers_in(f"IEC 62271{dash}100:2021 was amended.") == ("IEC 62271-100",)
+    assert standards.identifiers_in(f"IEC 60076{dash}5 was revised.") == ()
+    assert standards.identifiers_in(f"IEC 60076{dash}11 was revised.") == ("IEC 60076-11",)
+    assert standards.identifiers_in(f"EN 50122{dash}2 was amended.") == ("EN 50122-2",)

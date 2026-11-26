@@ -34,5 +34,5 @@ def test_norwegian_compounds():
 
 
 def test_every_query_fits_and_the_plan_size():
-    assert all(len(item.query.replace("(", " ").replace(")", " ").split()) <= 32 for item in PLAN.items)
-    assert len(PLAN.items) == 239
+    assert all(len(item.query.replace("(", " ").replace(")", " ").split()) <= 30 for item in PLAN.items)
+    assert len(PLAN.items) == 292  # RC-88: zh forms split and 30-word queries (RC-85: 239)

@@ -66,8 +66,8 @@ class _MockHTTPResponse:
     def __exit__(self, exc_type, exc_value, traceback):
         return False
 
-    def read(self):
-        return self._body
+    def read(self, amount=None):
+        return self._body if amount is None else self._body[:amount]
 
     def geturl(self):
         return self._url

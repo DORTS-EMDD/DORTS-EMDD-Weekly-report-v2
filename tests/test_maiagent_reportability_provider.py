@@ -332,7 +332,7 @@ class ReportabilityCriteriaTests(unittest.TestCase):
         from src.weekly_report.maiagent_reportability_provider import PROMPT_VERSION, REPORTABILITY_INSTRUCTIONS
 
         instructions = " ".join(REPORTABILITY_INSTRUCTIONS)
-        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v11")
+        self.assertEqual(PROMPT_VERSION, "reportability-principal-body-v12")
         # RC-86: a whole-line or network-wide equipment inspection is a safety measure.
         self.assertIn("of a whole running line or of the whole network carried out by the operator or authority", instructions)
         self.assertIn("is SAFETY_MEASURE_OR_INVESTIGATION", instructions)

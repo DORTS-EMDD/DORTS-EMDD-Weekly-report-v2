@@ -163,7 +163,7 @@ def _line(prefix):
 
 
 def test_the_instruction_is_version_ten():
-    assert PROMPT_VERSION == "event-identity-grouping-v10"
+    assert PROMPT_VERSION == "event-identity-grouping-v11"
 
 
 def test_r3_occurrence_granularity_is_stated():
@@ -236,7 +236,10 @@ V9_LINE_SHA256 = (
 def test_every_v9_line_is_kept_byte_identical_and_in_order():
     digests = [sha256(line.encode("utf-8")).hexdigest() for line in _instructions()]
     assert [digest for digest in digests if digest in V9_LINE_SHA256] == list(V9_LINE_SHA256)
-    assert len(digests) == len(V9_LINE_SHA256) + 4
+    # RC-48 added four lines; RC-88 adds the shared untrusted-source line last.
+    assert len(digests) == len(V9_LINE_SHA256) + 5
+    from src.weekly_report.maiagent_transport import UNTRUSTED_SOURCE_TEXT_INSTRUCTION
+    assert _instructions()[-1] == UNTRUSTED_SOURCE_TEXT_INSTRUCTION
 
 
 def test_the_v9_lines_are_unchanged():

@@ -175,4 +175,4 @@ def test_writer_covers_only_the_focus_occurrence_of_a_roundup_article():
     assert "cover only the occurrence in event_focus" in instructions
     assert "Do not list, count or summarize the other occurrences" in instructions
     request = build_maiagent_writer_model_input(_workflow_result())
-    assert request["prompt_version"] == "formal-report-writer-v11"
+    assert request["prompt_version"] == "formal-report-writer-v12"

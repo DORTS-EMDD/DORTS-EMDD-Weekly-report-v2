@@ -537,6 +537,23 @@ class _RecordingRedirectHandler(HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
+# RC-88: the most bytes one Evidence page may have; a larger page is an
+# acquisition failure (FETCH_TRANSPORT), never read into memory whole.
+EVIDENCE_FETCH_MAX_BYTES = 10 * 1024 * 1024
+
+
+class _EvidenceFetchTooLarge(RuntimeError):
+    """RC-88: the page is larger than EVIDENCE_FETCH_MAX_BYTES."""
+
+    def __init__(self) -> None:
+        super().__init__("evidence page exceeds the size limit")
+
+
+def _is_textual_content_type(content_type: str) -> bool:
+    lowered = content_type.casefold()
+    return any(kind in lowered for kind in ("html", "text", "xml"))
+
+
 def _default_fetcher(url: str, timeout_seconds: float) -> FetchedSource:
     _assert_safe_destination(url)
     request = Request(
@@ -549,11 +566,22 @@ def _default_fetcher(url: str, timeout_seconds: float) -> FetchedSource:
     redirect_handler = _RecordingRedirectHandler()
     try:
         with build_opener(redirect_handler).open(request, timeout=timeout_seconds) as response:
-            body = response.read()
             headers = getattr(response, "headers", {})
             content_type = headers.get("Content-Type", "") if hasattr(headers, "get") else ""
             resolved_url = str(response.geturl() or url)
             _assert_safe_destination(resolved_url)
+            # RC-88: the Content-Type is checked before the body is read; a
+            # non-textual page is returned without content and rejected by the
+            # existing CONTENT_TYPE gate.
+            if content_type and not _is_textual_content_type(str(content_type)):
+                body = b""
+            else:
+                declared = headers.get("Content-Length", "") if hasattr(headers, "get") else ""
+                if str(declared).strip().isdigit() and int(str(declared).strip()) > EVIDENCE_FETCH_MAX_BYTES:
+                    raise _EvidenceFetchTooLarge()
+                body = response.read(EVIDENCE_FETCH_MAX_BYTES + 1)
+                if len(body) > EVIDENCE_FETCH_MAX_BYTES:
+                    raise _EvidenceFetchTooLarge()
             redirect_chain = [url, *redirect_handler.redirect_urls]
             if not redirect_chain or redirect_chain[-1] != resolved_url:
                 redirect_chain.append(resolved_url)
@@ -1350,8 +1378,7 @@ class EvidenceService:
 
     @staticmethod
     def _textual_content_type(content_type: str) -> bool:
-        lowered = content_type.casefold()
-        return any(kind in lowered for kind in ("html", "text", "xml"))
+        return _is_textual_content_type(content_type)
 
     @staticmethod
     def _rejected(

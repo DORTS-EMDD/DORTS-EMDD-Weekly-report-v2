@@ -104,7 +104,7 @@ def test_finland_is_searched_and_denmark_stays_the_only_coverage_gap():
 
 def test_health_probes_are_spread_over_the_new_plan():
     size = len(SearchPlanner(REGISTRY).plan("selected").items)
-    assert size == 239  # RC-85 (search-discovery-v14); RC-78 231, RC-77 221, RC-76 210
+    assert size == 292  # RC-88 (search-discovery-v15); RC-85 239; RC-78 231, RC-77 221, RC-76 210
     assert HEALTH_PROBE_ORDINALS == (1, 10, size // 2, size // 2 + 5, size - 7, size)
 
 

@@ -285,6 +285,6 @@ def test_metadata_location_is_the_city_the_source_states():
     )
 
     text = " ".join(EVIDENCE_METADATA_INSTRUCTIONS)
-    assert EVIDENCE_METADATA_PROMPT_VERSION == "evidence-metadata-principal-body-v4"
+    assert EVIDENCE_METADATA_PROMPT_VERSION == "evidence-metadata-principal-body-v5"
     assert "city, municipality or metropolitan area where the event happens as the source writes it" in text
     assert "Do not infer geography, country from a city" in text

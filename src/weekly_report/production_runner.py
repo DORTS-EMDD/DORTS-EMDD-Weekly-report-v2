@@ -77,10 +77,12 @@ from .validator import Validator
 
 PRODUCTION_METADATA_MODEL = "GPT-OSS-120B"
 # Six probes spread across the weekly plan as (1, 10, N/2, N/2+5, N-7, N): the
-# 239-request plan of RC-85 (search-discovery-v14, "metro train" in English
-# procurement; RC-78 had 231, RC-77 221, RC-76 210). The monthly
-# monitored-standards requests of RC-59 are not in the health-check plan.
-HEALTH_PROBE_ORDINALS = (1, 10, 119, 124, 232, 239)
+# 292-request plan of RC-88 (search-discovery-v15: the Traditional and
+# Simplified Chinese forms as separate terms, and at most 30 planned words so
+# the two date operators stay within Google's 32; RC-85 had 239, RC-78 231,
+# RC-77 221, RC-76 210). The monthly monitored-standards requests of RC-59 are
+# not in the health-check plan.
+HEALTH_PROBE_ORDINALS = (1, 10, 146, 151, 285, 292)
 # RC-72 (section A.53, user decision 2026-11-19): at least four of the six
 # probes succeed and every failure is Google News rate limiting (HTTP 429);
 # otherwise wait 45 minutes and run the whole set once more.

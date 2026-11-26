@@ -33,7 +33,7 @@ from .maiagent_transport import (
 )
 
 
-CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v14"
+CATEGORY_SEMANTIC_PROMPT_VERSION = "category-principal-action-v15"
 CATEGORY_SEMANTIC_SCHEMA_VERSION = "category-proposal-v8"
 MAIAGENT_CATEGORY_SEMANTIC_HELPER_VERSION = "maiagent-chatbot-adapter-v2"
 MAIAGENT_CATEGORY_PROVIDER_IDENTIFIER = "maiagent-chatbot-completions"

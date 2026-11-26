@@ -17,6 +17,7 @@ from typing import Any
 from urllib.parse import quote, urlsplit
 
 from .maiagent_transport import (
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
     MaiAgentHttpResponse,
     MaiAgentJsonHttpTransport,
     MaiAgentResponseError,
@@ -30,7 +31,7 @@ from .semantic_judge import JudgeMetadata, SemanticJudgeInput
 
 
 TASK_IDENTITY = "evidence_source_candidate_match"
-PROMPT_VERSION = "evidence-source-candidate-match-v2"
+PROMPT_VERSION = "evidence-source-candidate-match-v3"
 SCHEMA_VERSION = "evidence-semantic-judge-response-v2"
 HELPER_VERSION = "maiagent-structured-helper-semantic-judge-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-evidence-semantic-judge"
@@ -105,6 +106,7 @@ SEMANTIC_JUDGE_INSTRUCTIONS = (
     "Do not normalize, repair, retry, fall back, or rescue malformed or unsupported evidence.",
     "Do not decide Evidence READY or REJECTED; EvidenceService remains the authoritative decision owner.",
     "Return JSON only, with no Markdown, no prose outside JSON, and no extra fields.",
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
 )
 EVIDENCE_SEMANTIC_JUDGE_INSTRUCTIONS = SEMANTIC_JUDGE_INSTRUCTIONS
 

@@ -27,8 +27,8 @@ EXPECTED = {
     "en": {"CBTC": ["CBTC"], "ATO": ["automatic train operation"], "無人駕駛": ["driverless train"],
            "第三軌": ["conductor rail"], "道岔": ["switches and crossings", "track switch"],
            "狀態監測": ["condition monitoring"], "預測性維修": ["predictive maintenance"]},
-    "zh": {"CBTC": ["CBTC"], "ATO": ["ATO"], "無人駕駛": ["無人駕駛列車/无人驾驶列车"], "第三軌": ["第三軌/第三轨"],
-           "道岔": ["道岔"], "狀態監測": ["狀態監測/状态监测"], "預測性維修": ["預測性維修/预测性维修"]},
+    "zh": {"CBTC": ["CBTC"], "ATO": ["ATO"], "無人駕駛": ["無人駕駛列車", "无人驾驶列车"], "第三軌": ["第三軌", "第三轨"],
+           "道岔": ["道岔"], "狀態監測": ["狀態監測", "状态监测"], "預測性維修": ["預測性維修", "预测性维修"]},
     "ja": {"CBTC": ["CBTC"], "ATO": ["ATO"], "無人駕駛": ["無人運転"], "第三軌": ["第三軌条"],
            "道岔": ["分岐器"], "狀態監測": ["状態監視"], "預測性維修": ["予知保全"]},
     "ko": {"CBTC": ["CBTC"], "ATO": ["ATO"], "無人駕駛": ["무인운전"], "第三軌": ["제3궤조"],
@@ -79,7 +79,7 @@ EXPECTED = {
 V9_TECHNOLOGY_TERMS = {
     "en": ["CBTC", "signalling", "communications", "rolling stock", "traction power", "AFC",
            "platform screen doors", "predictive maintenance", "digital twin", "automation"],
-    "zh": ["號誌/信号", "通訊", "車輛/车辆", "電聯車", "供電", "自動收費", "月臺門/站台门", "數位孿生/数字孪生", "預測維護/预测维护"],
+    "zh": ["號誌", "信号", "通訊", "車輛", "车辆", "電聯車", "供電", "自動收費", "月臺門", "站台门", "數位孿生", "数字孪生", "預測維護", "预测维护"],
     "ja": ["信号", "車両", "通信", "電力", "CBTC", "自動運転", "予測保全", "デジタルツイン"],
     "ko": ["신호", "차량", "통신", "전력", "CBTC", "자동운전", "예지정비", "디지털 트윈"],
     "de": ["Signaltechnik", "Fahrzeuge", "Kommunikation", "Energieversorgung", "CBTC", "Zustandsüberwachung", "Digitalisierung"],
@@ -144,7 +144,7 @@ def test_ambiguous_bare_words_are_not_governed_vocabulary(registry):
     assert not {"driverless", "third rail", "turnout"} & set(_terms(registry, "en"))
     for profile_id in ("en", "es", "it", "pt"):
         assert "ATO" not in _terms(registry, profile_id), profile_id
-    assert "無人駕駛/无人驾驶" not in _terms(registry, "zh")
+    assert "無人駕駛", "无人驾驶" not in _terms(registry, "zh")
     assert "Weichen" not in _terms(registry, "de")
 
 
@@ -161,7 +161,7 @@ def test_every_new_literal_reaches_every_supported_edition_of_its_profile(regist
         for literals in EXPECTED[profile_id].values():
             for literal in literals:
                 assert _quoted(literal) in queries, (market_id, profile_id, literal)
-    assert all(_query_words(item.query) <= 32 for item in plan.items)
+    assert all(_query_words(item.query) <= 30 for item in plan.items)
     assert "da" not in {profile for _market, profile in editions}  # Denmark: no Google News edition
     assert ("finland", "fi") in editions  # RC-78: Finland's edition verified
 
@@ -176,8 +176,8 @@ def test_request_counts(registry, mode):
     # v12 (RC-77, AI terms): 221; en, zh and cs gain one technology request per market.
     # v13 (RC-78, Finland searched): 231.
     # v14 (RC-85, "metro train" in English procurement): 239; each English market gains one procurement request.
-    assert len(weekly.items) == 239
-    assert counts == {"technology": 118, "major_incident": 49, "operations": 30, "procurement": 42}
+    assert len(weekly.items) == 292  # RC-88: zh forms split (247), 30-word queries (292)
+    assert counts == {"technology": 158, "major_incident": 60, "operations": 30, "procurement": 44}  # RC-88: zh split and 30-word queries
     november = MonitoredCheckMonth(date(2026, 11, 1), date(2026, 11, 30))
     monthly = SearchPlanner(registry).plan(mode, window=SearchWindow(date(2026, 11, 30), date(2026, 12, 6)),
                                            monitored_check=november)
@@ -185,4 +185,4 @@ def test_request_counts(registry, mode):
                  and item.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]
     catalogue = [item for item in monthly.items if item.provider_target is SearchProviderId.STANDARDS_CATALOGUE]
     assert len(monitored) == 90 and len(catalogue) == 10
-    assert len(monthly.items) == 239 + 90 + 10
+    assert len(monthly.items) == 292 + 90 + 10

@@ -394,6 +394,10 @@ def _share_upper_bound(lower: _Reading, upper: _Reading) -> None:
             lower.measure_factor = upper.measure_factor
         else:
             lower.currency = upper.currency
+    if upper.measure is None and not upper.currency and lower.currency:
+        # RC-88: a prefix currency is written once, before the lower bound:
+        # "€10-20 million", "$5-10 billion".
+        upper.currency = lower.currency
 
 
 # A middle dot between digit runs ("１２・７キロ", "1·2호선") is either a decimal
@@ -455,13 +459,19 @@ def is_grounded(quantity: StatedQuantity, evidence: tuple[StatedQuantity, ...]) 
 
     A written unit needs the same unit in the Evidence, and a written currency
     one the Evidence names at least as specifically (``5億元`` does not ground
-    ``新臺幣5億元``, ``$`` does not ground 美元); a written number stands for
-    the values that round to it at its last written digit.
+    ``新臺幣5億元``, ``$`` does not ground 美元); a written number without a
+    unit is grounded only by an Evidence number without a unit (RC-88); a
+    written number stands for the values that round to it at its last written
+    digit.
     """
 
     tolerance = quantity.place / 2
     for stated in evidence:
         if quantity.unit and not (stated.unit and stated.unit <= quantity.unit):
+            continue
+        if not quantity.unit and stated.unit:
+            # RC-88 (RC-29): a written number without a unit ("5萬人次") is not
+            # the Evidence's length, area, percentage or currency amount.
             continue
         for written in quantity.values:
             for value in stated.values:

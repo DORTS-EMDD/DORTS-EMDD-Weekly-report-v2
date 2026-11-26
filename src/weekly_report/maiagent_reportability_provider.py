@@ -17,6 +17,7 @@ from urllib.parse import quote, urlsplit
 
 from .contracts import ReportabilitySemanticRequest
 from .maiagent_transport import (
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
     MaiAgentHttpResponse,
     MaiAgentJsonHttpTransport,
     MaiAgentResponseError,
@@ -29,7 +30,7 @@ from .maiagent_transport import (
 
 
 TASK_IDENTITY = "reportability_semantic_proposal"
-PROMPT_VERSION = "reportability-principal-body-v11"
+PROMPT_VERSION = "reportability-principal-body-v12"
 SCHEMA_VERSION = "reportability-semantic-proposal-v3"
 HELPER_VERSION = "maiagent-structured-helper-reportability-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-reportability"
@@ -69,6 +70,7 @@ REPORTABILITY_INSTRUCTIONS = (
     "Do not decide Category, Taxonomy, Ordering, or write the formal report.",
     "Do not output ReportabilityResult; Python Reportability remains authoritative.",
     "Return JSON only with no Markdown, prose outside JSON, or extra fields.",
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
 )
 
 

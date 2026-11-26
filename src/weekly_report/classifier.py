@@ -9,6 +9,7 @@ from datetime import date, timedelta
 from types import MappingProxyType
 from typing import Any, Protocol
 
+from .maiagent_transport import UNTRUSTED_SOURCE_TEXT_INSTRUCTION
 from . import category_observation
 from .source_refs import cited_spans, source_payload, source_refs
 from .contracts import (
@@ -69,6 +70,7 @@ _CATEGORY_GUIDANCE = (
     "Do not rank actions, vote by keywords, infer from source order, or prefer a canonical source. Preserve each source and its claims separately.",
     "Subtype is optional descriptive metadata, may be null, and never changes the mapping. When present it matches the response schema pattern: lowercase snake_case that starts with a letter a-z, followed only by letters a-z, digits and underscores (spell out a leading number, for example fifth_generation_network_deployment, not 5g_network_deployment).",
     "Event identity is already decided. Do not merge or split Event Groups. Ignore discovery metadata, report period, taxonomy, and Reportability.",
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
 )
 
 

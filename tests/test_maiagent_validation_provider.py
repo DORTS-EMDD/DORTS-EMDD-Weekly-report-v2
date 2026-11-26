@@ -95,7 +95,7 @@ class MaiAgentValidationProviderTests(unittest.TestCase):
         self.assertEqual(set(citation["properties"]), {"source_ref", "sentence_ids"})
         self.assertNotIn("exact_quote", json.dumps(MAIAGENT_VALIDATION_RESPONSE_SCHEMA))
         self.assertEqual((PROMPT_VERSION, SCHEMA_VERSION), (
-            "validation-evidence-writer-v5", "validation-semantic-check-proposal-v4"
+            "validation-evidence-writer-v6", "validation-semantic-check-proposal-v4"
         ))
         source = build_maiagent_validation_model_input(_request())["validation_request"]["evidence_sources"][0]
         self.assertEqual(source["sentences"], [{"sentence_id": "S1", "text": "Metro Taipei completed signalling testing."}])

@@ -260,10 +260,10 @@ es have no room for them. The weekly plan grows from 210 to 221 requests.
 
 ### `zh` — Chinese
 
-* `technology`: `urban_rail_terms=地鐵, 地铁, 捷運, MRT, 輕軌, 轻轨, 電車, 城市軌道, 單軌, 旅客捷運`; `technology_terms=號誌/信号, 通訊, 車輛/车辆, 電聯車, 供電, 自動收費, 月臺門/站台门, 數位孿生/数字孪生, 預測維護/预测维护, CBTC, ATO, 無人駕駛列車/无人驾驶列车, 第三軌/第三轨, 道岔, 狀態監測/状态监测, 預測性維修/预测性维修, AI, 人工智慧/人工智能, 維修/维修, 遠端監測/远程监测, 感測器/传感器`; `new_material_terms=新材料, 複合材料/复合材料, 輕量化材料/轻量化材料, 儲能材料`; `new_method_terms=試驗/试验, 試點/试点, 測試/测试, 部署, 導入, 啟用, 升級, 現代化, 創新, 新系統/新系统, 新設備/新设备`.
-* `major_incident`: `urban_rail_terms=地鐵, 地铁, 捷運, 輕軌, 轻轨, 電車`; `accident_terms=碰撞, 撞擊, 脫軌/脱轨, 火災/火灾, 煙霧/烟雾, 傷亡/伤亡`; `disruption_terms=停駛/停驶, 中斷/中断, 疏散, 線路故障`; `technical_failure_terms=停電/停电, 號誌故障/信号故障, 系統故障/系统故障, 基礎設施故障/基础设施故障`; `safety_terms=安全事故, 技術事故/技术事故, 調查, 應變/应变`.
-* `operations`: `urban_rail_terms=地鐵, 地铁, 捷運, MRT, 輕軌, 轻轨, 電車`; `policy_terms=政策, 規範/规范, 核准, 營運計畫/运营计划`; `dispute_terms=罷工/罢工, 勞資爭議/劳资争议, 合約爭議/合同争议, 仲裁, 抗議/抗议`; `opening_service_terms=通車, 开通, 開業, 開幕, 載客, 旅客服務/旅客服务`; `fare_ticketing_terms=票價/票价, 售票, 票務/票务, 閘門/闸门`; `operating_method_terms=班次, 運行時間/运行时间, 服務調整/服务调整, 路線延伸/路线延伸, 運能/运能, 管理變更/管理变更`.
-* `procurement`: `urban_rail_terms=地鐵, 地铁, 捷運, MRT, 輕軌, 轻轨, 城市軌道`; `tender_terms=招標/招标, 投標/投标, 徵求提案/征求提案`; `procurement_terms=採購/采购, 設備採購/设备采购, 系統更新/系统更新`; `award_terms=決標/决标, 得標/得标, 授標/授标`; `contract_terms=合約/合同, 框架協議/框架协议, 現代化合約/现代化合同`.
+* `technology`: `urban_rail_terms=地鐵, 地铁, 捷運, MRT, 輕軌, 轻轨, 電車, 城市軌道, 單軌, 旅客捷運`; `technology_terms=號誌, 信号, 通訊, 車輛, 车辆, 電聯車, 供電, 自動收費, 月臺門, 站台门, 數位孿生, 数字孪生, 預測維護, 预测维护, CBTC, ATO, 無人駕駛列車, 无人驾驶列车, 第三軌, 第三轨, 道岔, 狀態監測, 状态监测, 預測性維修, 预测性维修, AI, 人工智慧, 人工智能, 維修, 维修, 遠端監測, 远程监测, 感測器, 传感器`; `new_material_terms=新材料, 複合材料, 复合材料, 輕量化材料, 轻量化材料, 儲能材料`; `new_method_terms=試驗, 试验, 試點, 试点, 測試, 测试, 部署, 導入, 啟用, 升級, 現代化, 創新, 新系統, 新系统, 新設備, 新设备`.
+* `major_incident`: `urban_rail_terms=地鐵, 地铁, 捷運, 輕軌, 轻轨, 電車`; `accident_terms=碰撞, 撞擊, 脫軌, 脱轨, 火災, 火灾, 煙霧, 烟雾, 傷亡, 伤亡`; `disruption_terms=停駛, 停驶, 中斷, 中断, 疏散, 線路故障`; `technical_failure_terms=停電, 停电, 號誌故障, 信号故障, 系統故障, 系统故障, 基礎設施故障, 基础设施故障`; `safety_terms=安全事故, 技術事故, 技术事故, 調查, 應變, 应变`.
+* `operations`: `urban_rail_terms=地鐵, 地铁, 捷運, MRT, 輕軌, 轻轨, 電車`; `policy_terms=政策, 規範, 规范, 核准, 營運計畫, 运营计划`; `dispute_terms=罷工, 罢工, 勞資爭議, 劳资争议, 合約爭議, 合同争议, 仲裁, 抗議, 抗议`; `opening_service_terms=通車, 开通, 開業, 開幕, 載客, 旅客服務, 旅客服务`; `fare_ticketing_terms=票價, 票价, 售票, 票務, 票务, 閘門, 闸门`; `operating_method_terms=班次, 運行時間, 运行时间, 服務調整, 服务调整, 路線延伸, 路线延伸, 運能, 运能, 管理變更, 管理变更`.
+* `procurement`: `urban_rail_terms=地鐵, 地铁, 捷運, MRT, 輕軌, 轻轨, 城市軌道`; `tender_terms=招標, 招标, 投標, 投标, 徵求提案, 征求提案`; `procurement_terms=採購, 采购, 設備採購, 设备采购, 系統更新, 系统更新`; `award_terms=決標, 决标, 得標, 得标, 授標, 授标`; `contract_terms=合約, 合同, 框架協議, 框架协议, 現代化合約, 现代化合同`.
 * `monitored_standards`: `monitored_standard_ids=@monitored_standards`.
 
 ### `ja` — Japanese

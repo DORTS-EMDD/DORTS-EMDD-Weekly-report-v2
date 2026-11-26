@@ -41,7 +41,12 @@ def _encoding_key(item: SearchPlanItem) -> tuple[str, str, str]:
     encoding = item.provider_encoding
     return ("", "", "") if encoding is None else (encoding.hl, encoding.gl, encoding.ceid)
 # Google ignores words beyond 32 per query; OR operators are counted too.
-_MAX_QUERY_WORDS = 32
+# RC-88 (section A.69): GoogleNewsRssProvider.request_url appends two date
+# operators (after:, before:), so a planned query has at most 30 words. Probe
+# Run 45645553592 measured it: with 34 words the dates were dropped.
+_GOOGLE_QUERY_WORDS = 32
+_DATE_OPERATOR_WORDS = 2
+_MAX_QUERY_WORDS = _GOOGLE_QUERY_WORDS - _DATE_OPERATOR_WORDS
 
 
 def _query_words(query: str) -> int:

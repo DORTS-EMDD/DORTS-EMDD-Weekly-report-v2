@@ -10,6 +10,7 @@ from urllib.parse import quote, urlsplit
 
 from .evidence_metadata import EvidenceMetadataRequest
 from .maiagent_transport import (
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
     MaiAgentHttpResponse,
     MaiAgentJsonHttpTransport,
     MaiAgentResponseError,
@@ -21,7 +22,7 @@ from .maiagent_transport import (
 )
 
 
-EVIDENCE_METADATA_PROMPT_VERSION = "evidence-metadata-principal-body-v4"
+EVIDENCE_METADATA_PROMPT_VERSION = "evidence-metadata-principal-body-v5"
 EVIDENCE_METADATA_SCHEMA_VERSION = "evidence-metadata-proposal-v2"
 EVIDENCE_METADATA_HELPER_VERSION = "maiagent-structured-helper-adapter-v2"
 MAIAGENT_EVIDENCE_METADATA_PROVIDER_IDENTIFIER = "maiagent-structured-helper-metadata"
@@ -68,6 +69,7 @@ EVIDENCE_METADATA_INSTRUCTIONS = (
     "Do not calculate, repair, normalize, or guess character offsets.",
     "Do not retry, fall back, rescue, or repair a missing, ambiguous, or malformed observation.",
     "Return only the requested JSON object. Do not return prose, Markdown, explanations, or extra fields.",
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
 )
 
 

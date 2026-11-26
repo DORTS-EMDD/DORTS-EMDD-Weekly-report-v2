@@ -22,7 +22,7 @@ from .contracts import (
 
 
 CONFIGURATION_PATH = Path(__file__).with_name("search_configuration.json")
-CONFIGURATION_VERSION = "search-discovery-v14"
+CONFIGURATION_VERSION = "search-discovery-v15"
 
 
 def _tuple_strings(value: Any, field_name: str) -> tuple[str, ...]:

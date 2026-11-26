@@ -438,7 +438,7 @@ def test_prompt_states_valid_state_and_reason_combinations():
     from src.weekly_report.maiagent_taxonomy_provider import PROMPT_VERSION, TAXONOMY_INSTRUCTIONS
 
     instructions = " ".join(TAXONOMY_INSTRUCTIONS)
-    assert PROMPT_VERSION == "taxonomy-principal-body-v3"
+    assert PROMPT_VERSION == "taxonomy-principal-body-v4"
     assert "TAXONOMY_EVALUATED always has taxonomy_resolution_reason null" in instructions
     assert "return TAXONOMY_EVALUATED with systems [] rather than an unresolved reason" in instructions
 

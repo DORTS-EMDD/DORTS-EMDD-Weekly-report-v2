@@ -9,7 +9,8 @@ discovery terms in the monthly check, and ScopeClassifier alone decides whether
 a Candidate is a proven formal lifecycle change of a monitored standard.
 
 Locating is mechanical. The text is NFKC-normalized first, so full-width
-digits match. A publication token is a body prefix followed by its number.
+digits match, and the dash characters U+2010, U+2011, U+2012, U+2013 and U+2212
+are read as the ASCII hyphen (RC-88). A publication token is a body prefix followed by its number.
 Between them an optional "Std" (IEEE usage) and optional whitespace or a
 hyphen are allowed.
 
@@ -85,6 +86,13 @@ _HYPHEN_YEAR = re.compile(r"-\d{4}$")
 # Section A.46: an IEC Series pack ("IEC 60076:2026 SER") is a package of other
 # publications, not a publication of the identifier.
 _SERIES_DESIGNATOR = re.compile(r"\s*(?::\d{4})?\s*SER(?![A-Za-z0-9])")
+# RC-88: typeset hyphens and dashes inside an identifier ("IEC 62271\u2011100")
+# are the ASCII hyphen. One character for one, so text positions are kept.
+_DASHES = str.maketrans({"\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-", "\u2212": "-"})
+
+
+def _normalized(text: str) -> str:
+    return unicodedata.normalize("NFKC", text).translate(_DASHES)
 
 
 @dataclass(frozen=True, slots=True)
@@ -141,7 +149,7 @@ class MonitoredStandards:
 
         if not isinstance(text, str):
             raise TypeError("text must be a string")
-        normalized = unicodedata.normalize("NFKC", text)
+        normalized = _normalized(text)
         found: set[str] = set()
         for prefix, pattern in self._token_patterns:
             for match in pattern.finditer(normalized):
@@ -160,7 +168,7 @@ class MonitoredStandards:
 
         prefix, letter, number = _publication_key(publication)
         pattern = dict(self._token_patterns)[prefix]
-        match = pattern.fullmatch(unicodedata.normalize("NFKC", publication))
+        match = pattern.fullmatch(_normalized(publication))
         if match is None or (match.group("letter") or "", match.group("number")) != (letter, number):
             raise ValueError(f"{publication!r} cannot be located as itself, so {owner!r} could never own it")
 

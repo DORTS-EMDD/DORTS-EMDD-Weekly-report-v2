@@ -1835,6 +1835,10 @@ class LanguageProfileConfig:
                     raise ValueError("language profile vocabulary terms must be non-empty")
                 if len(terms) != len(set(terms)):
                     raise ValueError("language profile vocabulary terms must be unique")
+                if any("/" in term for term in terms):
+                    # RC-88: Google News reads "號誌/信号" as one term needing both
+                    # forms; each written form is its own term in the OR group.
+                    raise ValueError("language profile vocabulary terms must not join alternatives with '/'")
                 normalized_groups[group_name] = terms
             vocabulary[intent_id] = MappingProxyType(normalized_groups)
         missing_intents = {intent.value for intent in DiscoveryIntent} - set(vocabulary)

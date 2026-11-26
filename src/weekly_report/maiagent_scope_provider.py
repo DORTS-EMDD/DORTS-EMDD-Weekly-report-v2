@@ -16,6 +16,7 @@ from typing import Any
 from urllib.parse import quote, urlsplit
 
 from .maiagent_transport import (
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
     MaiAgentHttpResponse,
     MaiAgentJsonHttpTransport,
     MaiAgentResponseError,
@@ -35,7 +36,7 @@ from .scope_classifier import (
 
 
 TASK_IDENTITY = "scope_semantic_proposal"
-PROMPT_VERSION = "scope-event-target-system-v13"
+PROMPT_VERSION = "scope-event-target-system-v14"
 SCHEMA_VERSION = SCOPE_PROPOSAL_SCHEMA_VERSION
 HELPER_VERSION = "maiagent-structured-helper-scope-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-scope"
@@ -77,6 +78,7 @@ SCOPE_SEMANTIC_INSTRUCTIONS = (
     "Do not force a positive proposal or output IN_SCOPE_SUPPORT to satisfy a benchmark. A complete citation is a necessary mechanical condition, not independent proof of a semantic relation.",
     "Do not search, browse, use tools, retrieve external knowledge, or return a ScopeResult or diagnostic.",
     "Return exactly one JSON object with the supplied schema, no extra fields and no prose outside JSON.",
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
 )
 
 
@@ -130,7 +132,7 @@ class MaiAgentScopeProviderConfig:
 # membership, the citation check and the Scope decision. RC-61 (section A.45):
 # only the identified standard's own issuing body changes it; a national or
 # regional adoption by another body is not a change of it.
-MONITORED_STANDARD_PROMPT_VERSION = "scope-monitored-standard-v2"
+MONITORED_STANDARD_PROMPT_VERSION = "scope-monitored-standard-v3"
 MONITORED_STANDARD_SCHEMA_VERSION = "scope-monitored-standard-proposal-v1"
 
 MONITORED_STANDARD_INSTRUCTIONS = (
@@ -146,6 +148,7 @@ MONITORED_STANDARD_INSTRUCTIONS = (
     "Do not search, browse, use tools, RAG, or outside knowledge about standards, editions or dates.",
     "Do not decide Scope, Category, Taxonomy, Reportability, or write the formal report.",
     "Return JSON only with no Markdown, prose outside JSON, or extra fields.",
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
 )
 
 MONITORED_STANDARD_RESPONSE_SCHEMA: dict[str, Any] = {

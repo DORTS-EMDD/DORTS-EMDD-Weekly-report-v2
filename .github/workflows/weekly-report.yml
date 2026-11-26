@@ -278,6 +278,11 @@ jobs:
           python-version: "3.12"
       - name: Install project dependencies
         run: python -m pip install -r requirements.txt
+      # RC-88 (observation only): where does Google News RSS drop trailing
+      # query words? Per language, dates last over a past week, and whether a
+      # last OR term is still used with the dates first (about 29 requests).
+      - name: Probe Google News query length
+        run: python -m scripts.query_length_probe
       - name: Probe specialist rail media hosts
         run: python -m scripts.source_host_probe --dump
       # RC-87 (observation only): canonical declarations of the pages

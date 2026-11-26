@@ -18,6 +18,7 @@ from urllib.parse import quote, urlsplit
 from .contracts import EventIdentityGroupingRequest
 from .event_identity import grouping_response_schema
 from .maiagent_transport import (
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
     MaiAgentJsonHttpTransport,
     UrllibMaiAgentJsonTransport,
     load_shared_maiagent_values,
@@ -26,7 +27,7 @@ from .maiagent_transport import (
 
 
 TASK_IDENTITY = "event_identity_semantic_proposal"
-PROMPT_VERSION = "event-identity-grouping-v10"
+PROMPT_VERSION = "event-identity-grouping-v11"
 SCHEMA_VERSION = "event-identity-semantic-proposal-v1"
 # RC-31: a confirmation answer admits one-record groups (section A.25).
 CONFIRMATION_SCHEMA_VERSION = "event-identity-semantic-confirmation-v1"
@@ -57,6 +58,7 @@ EVENT_IDENTITY_INSTRUCTIONS = (
     "When the evidence does not establish that two records report the same occurrence, leave them apart. Similar topics, the same city, the same system or the same project are not sufficient.",
     "Do not search, browse, use tools, retrieve external knowledge, or infer from publishers, URLs or titles; none are supplied.",
     "Return exactly one JSON object with the supplied schema, no extra fields and no prose outside JSON.",
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
 )
 
 

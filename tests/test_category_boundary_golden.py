@@ -176,7 +176,7 @@ class CategoryBoundaryGoldenTests(unittest.TestCase):
         # the action definitions, and Python maps the action to the Category.
         from src.weekly_report.contracts import CategoryPrincipalAction
 
-        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v14")
+        self.assertEqual(CATEGORY_SEMANTIC_PROMPT_VERSION, "category-principal-action-v15")
         guidance = "\n".join(classifier_module._CATEGORY_GUIDANCE)
         for action in CategoryPrincipalAction:
             self.assertIn(f"{action.value}:", guidance)
@@ -277,7 +277,7 @@ class ScopeEventFocusContractTests(unittest.TestCase):
         # RC-65: Event Identity and Writer read only the focus (section A.14).
         from src.weekly_report import maiagent_scope_provider as scope_provider
 
-        self.assertEqual(scope_provider.PROMPT_VERSION, "scope-event-target-system-v13")
+        self.assertEqual(scope_provider.PROMPT_VERSION, "scope-event-target-system-v14")
         text = " ".join(scope_provider.SCOPE_SEMANTIC_INSTRUCTIONS)
         self.assertIn("must include the sentence or sentences that state the occurrence itself", text)
         self.assertIn("A lead summary, reactions, quotes or figures alone are not the event focus", text)

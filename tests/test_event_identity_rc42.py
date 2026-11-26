@@ -203,7 +203,7 @@ def test_the_instruction_states_the_announcer_rule_decided_by_the_user():
     )
     instructions = build_maiagent_event_identity_model_input(EventIdentityGroupingRequest("b", records))["instructions"]
     # v9 added this line; v10 (section A.36) keeps it unchanged.
-    assert PROMPT_VERSION == "event-identity-grouping-v10"
+    assert PROMPT_VERSION == "event-identity-grouping-v11"
     line = [item for item in instructions if item.startswith("Who announced or reported an occurrence")]
     assert len(line) == 1
     assert "does not by itself make it a different occurrence" in line[0]

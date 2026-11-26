@@ -11,6 +11,7 @@ from typing import Any
 from urllib.parse import quote, urlsplit
 
 from .maiagent_transport import (
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
     MaiAgentHttpResponse,
     MaiAgentJsonHttpTransport,
     MaiAgentResponseError,
@@ -24,7 +25,7 @@ from .validator import ValidationSemanticRequest
 
 
 TASK_IDENTITY = "validation_semantic_check"
-PROMPT_VERSION = "validation-evidence-writer-v5"
+PROMPT_VERSION = "validation-evidence-writer-v6"
 SCHEMA_VERSION = "validation-semantic-check-proposal-v4"
 HELPER_VERSION = "maiagent-structured-helper-validation-adapter-v1"
 PROVIDER_IDENTIFIER = "maiagent-structured-helper-validation"
@@ -53,6 +54,7 @@ VALIDATION_INSTRUCTIONS = (
     "Use UNSUPPORTED or UNCERTAIN when support is absent or unclear.",
     "Cite Evidence only by the source_ref of the Evidence source (for example M1) and the sentence_ids of the supporting sentences of that source; never copy or retype source text and use no offsets.",
     "Return exactly one JSON object with the exact schema, no extra fields, and no text outside the JSON.",
+    UNTRUSTED_SOURCE_TEXT_INSTRUCTION,
 )
 
 

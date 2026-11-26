@@ -152,8 +152,6 @@ def test_a_number_is_not_grounded_by_the_same_digits_in_another_unit_or_value(ev
         ("Ridership grew 20.4%.", "運量增加20%"),
         ("1,500 tonnes of steel", "1,500公噸鋼材"),
         ("연간 1160t이 필요하다", "年用量1,160噸"),
-        # The Writer states no currency: the number alone must match.
-        ("₹10,000 crore", "約1,000億"),
     ],
 )
 def test_a_grounded_amount_or_measure_in_any_source_language_passes(evidence, writer):
@@ -297,3 +295,11 @@ def test_a_cjk_range_lower_bound_takes_the_scale_it_leaves_out():
     assert _values("1천～2천명") == [[1_000.0], [2_000.0]]
     assert _values("2～3億円") == [[200_000_000.0], [300_000_000.0]]
     assert _grounded("사업비 2천～3천억원", "經費2,000億至3,000億韓元") == [True, True]
+
+
+def test_a_number_without_a_unit_is_not_grounded_by_an_amount_or_measure():
+    # RC-88 (user decision 2026-11-25, revises section A.23): a Writer number
+    # without a unit is grounded only by an Evidence number without a unit.
+    # Before RC-88 "約1,000億" was grounded by "₹10,000 crore" (value only).
+    assert _grounded("₹10,000 crore", "約1,000億") == [False]
+    assert _grounded("₹10,000 crore", "約1,000億印度盧比") == [True]

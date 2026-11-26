@@ -254,7 +254,7 @@ def test_the_provider_input_carries_the_correction_and_the_prompt_version_is_unc
     corrected = build_maiagent_scope_model_input(helper.requests[1])
     assert "correction" not in plain["scope_request"]
     assert corrected["scope_request"]["correction"]["violated_rule"] == "ENDPOINT_LABEL"
-    assert plain["prompt_version"] == corrected["prompt_version"] == PROMPT_VERSION == "scope-event-target-system-v13"
+    assert plain["prompt_version"] == corrected["prompt_version"] == PROMPT_VERSION == "scope-event-target-system-v14"
 
 
 def test_corrections_are_counted_apart_from_transport_retries():
