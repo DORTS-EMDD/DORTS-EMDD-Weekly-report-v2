@@ -90,6 +90,13 @@ DEFAULT_URLS = (
     "https://www.masstransitmag.com/rail/railroad-signals-ptc-control-systems-and-products/article/55420233/fortress-solutions-providing-wireless-network-integration-for-new-york-city-transits-fulton-liberty-line",
     "https://www.nettavisen.no/80-95-257456",
     "https://www.nab.no/80-143-38894",
+    # RC-89 (observation only): pages rejected as CANONICAL_OTHER_SITE under
+    # RC-86/87 (recall Runs 45558738725, 45641734970); which declaration kind
+    # (link rel=canonical, og:url, twitter:url) names the other host.
+    "https://mbiz.heraldcorp.com/article/10943384",
+    "https://mbiz.heraldcorp.com/article/10943388",
+    "https://biz.sbs.co.kr/article/20000347750",
+    "https://www.cp24.com/local/toronto/2026/11/19/female-pedestrian-dead-after-being-struck-by-eglinton-lrt-vehicle/",
 )
 
 FEEDS = (
