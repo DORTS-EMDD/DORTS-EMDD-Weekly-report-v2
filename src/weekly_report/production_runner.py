@@ -68,7 +68,7 @@ from .report_application import (
 from .report_service import FinalReportArtifact, ReportService
 from .report_workflow import build_report_workflow
 from .scope_classifier import ScopeClassifier
-from .search_executor import SearchExecutor
+from .search_executor import SEARCH_PACING_SECONDS, SEARCH_RATE_LIMIT_RETRY_SECONDS, SearchExecutor
 from .search_planner import SearchPlanner
 from .temporal_rule import TemporalRule
 from .writer import ReportWriter
@@ -339,6 +339,8 @@ class ProductionRunResult:
     search_failure_reason_distribution: Mapping[str, int] = field(default_factory=dict)
     search_failure_http_status_distribution: Mapping[str, int] = field(default_factory=dict)
     search_failure_details: tuple[SearchFailureDiagnostic, ...] = ()
+    # RC-88: requests whose first attempt was RATE_LIMIT and were retried once.
+    search_rate_limit_retries: int | None = None
     evidence_ready_count: int | None = None
     evidence_rejected_count: int | None = None
     evidence_reject_reason_distribution: Mapping[str, int] = field(default_factory=dict)
@@ -408,7 +410,7 @@ class ProductionRunResult:
             or self.search_failure_count < 0
         ):
             raise ValueError("search_failure_count must be a non-negative integer when present")
-        for field_name in ("evidence_ready_count", "evidence_rejected_count"):
+        for field_name in ("search_rate_limit_retries", "evidence_ready_count", "evidence_rejected_count"):
             value = getattr(self, field_name)
             if value is not None and (
                 isinstance(value, bool) or not isinstance(value, int) or value < 0
@@ -530,6 +532,8 @@ class ProductionRunResult:
             parts.append(f"failure_class={self.failure_class}")
         if self.diagnostic:
             parts.append(f"diagnostic={self.diagnostic}")
+        if self.search_rate_limit_retries is not None:
+            parts.append(f"search_rate_limit_retries={self.search_rate_limit_retries}")
         if self.search_failure_count is not None:
             parts.append(f"search_failure_count={self.search_failure_count}")
             # RC-76: Google News rate limiting is always shown, zero included, so
@@ -771,10 +775,15 @@ class ProductionRunner:
         # provider used only by the monthly monitored-standards check.
         from .standards_catalogue_provider import StandardsCatalogueProvider
 
-        executor = SearchExecutor({
-            SearchProviderId.GOOGLE_NEWS_RSS: provider,
-            SearchProviderId.STANDARDS_CATALOGUE: StandardsCatalogueProvider(),
-        })
+        # RC-88: 1 s between requests and one retry 60 s after a RATE_LIMIT.
+        executor = SearchExecutor(
+            {
+                SearchProviderId.GOOGLE_NEWS_RSS: provider,
+                SearchProviderId.STANDARDS_CATALOGUE: StandardsCatalogueProvider(),
+            },
+            pacing_seconds=SEARCH_PACING_SECONDS,
+            rate_limit_retry_seconds=SEARCH_RATE_LIMIT_RETRY_SECONDS,
+        )
 
         judge = build_maiagent_semantic_judge(
             model_identifier=PRODUCTION_METADATA_MODEL,
@@ -926,7 +935,9 @@ class ProductionRunner:
             )
         counts = _stage_counts(result)
         # Observation only: safe counts projected from the result already produced.
+        execution = getattr(result, "execution", None)
         evidence_fields = {
+            "search_rate_limit_retries": len(getattr(execution, "rate_limit_retried_item_ids", ()) or ()),
             **_evidence_projection(result),
             **_gap_projection(result),
             "selection_audit": _selection_audit(result, start, end),

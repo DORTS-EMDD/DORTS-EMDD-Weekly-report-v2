@@ -282,8 +282,10 @@ class GoogleNewsRssProvider(SearchProvider):
         encoding = item.provider_encoding
         q = item.query
         if item.search_window is not None:
-            # Google News date operators; "before" is exclusive.
-            q = f"{q} after:{item.search_window.start.isoformat()} before:{(item.search_window.end + timedelta(days=1)).isoformat()}"
+            # Google News date operators; "before" is exclusive. RC-88: they
+            # come first, because Google News drops trailing query words past
+            # its word limit (probe Runs 45645553592 and 45727969072).
+            q = f"after:{item.search_window.start.isoformat()} before:{(item.search_window.end + timedelta(days=1)).isoformat()} {q}"
         query = urlencode(
             (
                 ("q", q),

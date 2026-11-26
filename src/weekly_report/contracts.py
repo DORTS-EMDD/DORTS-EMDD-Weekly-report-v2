@@ -2264,6 +2264,10 @@ class SearchExecutionResult:
     unattempted_items: tuple[SearchPlanItem, ...] = ()
     infrastructure_failure: SearchInfrastructureFailure | None = None
     observations: tuple[SearchObservation, ...] = ()
+    # RC-88: plan items whose first attempt was RATE_LIMIT and that were sent
+    # once more after the delay (observation only; the attempt result is the
+    # retry's).
+    rate_limit_retried_item_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not isinstance(self.plan, SearchPlan):
@@ -2318,6 +2322,14 @@ class SearchExecutionResult:
             raise ValueError("SearchExecutionResult observations contain a foreign plan_item_id")
         if set(observation_ids) != set(plan_items):
             raise ValueError("SearchExecutionResult requires exactly one observation per plan item")
+        retried = tuple(self.rate_limit_retried_item_ids)
+        if any(not isinstance(item_id, str) for item_id in retried) or len(retried) != len(set(retried)):
+            raise ValueError("SearchExecutionResult rate-limit retries must be distinct plan item ids")
+        if not set(retried) <= set(attempt_ids):
+            raise ValueError("SearchExecutionResult rate-limit retries must be attempted plan items")
+        object.__setattr__(
+            self, "rate_limit_retried_item_ids", tuple(sorted(retried, key=lambda item_id: plan_order[item_id]))
+        )
         attempt_by_id = {result.plan_item_id: result for result in attempts}
         unattempted_id_set = set(unattempted_ids)
         for observation in observations:

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from time import sleep
+from collections.abc import Callable, Mapping
+import time
 from types import MappingProxyType
 
 from .debug_service import observe_progress
@@ -24,21 +24,38 @@ from .contracts import (
 )
 
 
+# RC-88 (user decision 2026-11-26): production spacing between Search requests
+# and the delay before the one retry of a rate-limited request.
+SEARCH_PACING_SECONDS = 1.0
+SEARCH_RATE_LIMIT_RETRY_SECONDS = 60.0
+
+
 class SearchExecutor:
-    """The mechanical owner of ordered, one-attempt-per-item execution."""
+    """The mechanical owner of ordered execution: one attempt per item, plus
+    one delayed retry of an attempt that ended RATE_LIMIT (RC-88)."""
 
     def __init__(
         self,
         dispatch: Mapping[SearchProviderId, SearchProvider],
         *,
         pacing_seconds: float = 0.0,
+        rate_limit_retry_seconds: float | None = None,
+        sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         if not isinstance(dispatch, Mapping):
             raise TypeError("SearchExecutor dispatch must be a mapping")
         if isinstance(pacing_seconds, bool) or float(pacing_seconds) < 0:
             raise ValueError("pacing_seconds must be non-negative")
+        if rate_limit_retry_seconds is not None and (
+            isinstance(rate_limit_retry_seconds, bool) or float(rate_limit_retry_seconds) < 0
+        ):
+            raise ValueError("rate_limit_retry_seconds must be non-negative or None")
+        if not callable(sleep):
+            raise TypeError("sleep must be callable")
         self._dispatch = MappingProxyType(dict(dispatch))
         self._pacing_seconds = float(pacing_seconds)
+        self._retry_seconds = None if rate_limit_retry_seconds is None else float(rate_limit_retry_seconds)
+        self._sleep = sleep
 
     @property
     def dispatch(self):
@@ -52,6 +69,8 @@ class SearchExecutor:
         observations: dict[str, SearchObservation] = {}
         infrastructure_failure: SearchInfrastructureFailure | None = None
         unattempted: tuple[SearchPlanItem, ...] = ()
+        retried: list[str] = []
+        sent = 0
 
         for index, item in enumerate(plan.items):
             provider = None
@@ -67,10 +86,23 @@ class SearchExecutor:
                 )
                 unattempted = tuple(plan.items[index:])
                 break
-            if self._pacing_seconds:
-                sleep(self._pacing_seconds)
             try:
+                # RC-88: the spacing comes before every request except the first.
+                if self._pacing_seconds and sent:
+                    self._sleep(self._pacing_seconds)
+                sent += 1
                 value = provider.execute(item)
+                if (
+                    self._retry_seconds is not None
+                    and isinstance(value, SearchAttemptResult)
+                    and value.status is SearchTerminalStatus.TECHNICAL_FAILURE
+                    and value.technical_failure_class is SearchTechnicalFailureClass.RATE_LIMIT
+                ):
+                    # RC-88: one identical request after the delay; its result
+                    # is final, and a second RATE_LIMIT stays a disclosed gap.
+                    retried.append(item.plan_item_id)
+                    self._sleep(self._retry_seconds)
+                    value = provider.execute(item)
             except Exception:
                 value = SearchAttemptResult(
                     item.plan_item_id,
@@ -106,6 +138,7 @@ class SearchExecutor:
             unattempted_items=unattempted,
             infrastructure_failure=infrastructure_failure,
             observations=tuple(observations.values()),
+            rate_limit_retried_item_ids=tuple(retried),
         )
 
     @staticmethod
@@ -144,4 +177,4 @@ class SearchExecutor:
         )
 
 
-__all__ = ["SearchExecutor"]
+__all__ = ["SEARCH_PACING_SECONDS", "SEARCH_RATE_LIMIT_RETRY_SECONDS", "SearchExecutor"]
