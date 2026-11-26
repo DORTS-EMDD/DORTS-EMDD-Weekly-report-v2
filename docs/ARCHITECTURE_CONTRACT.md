@@ -4352,7 +4352,7 @@ FAILURE_SERVICE_DISRUPTION_PRECEDES_SERVICE_CHANGE = YES, replacement transport 
 EVIDENCE_CANONICAL_SAME_SITE = host equal after removing leading www., m., mobile., amp. (RC-87)
 ```
 
-### A.70 RC-89 A self-first canonical declaration fits as before RC-86 (2026-11-26, user decision; not merged, pending decision)
+### A.70 RC-89 A self-first canonical declaration fits as before RC-86; catalogue record errors contained (2026-11-26, user decision)
 
 Root cause: RC-86 (section A.68 prefix rule included) rejects a page when any
 declaration names an unrelated resource on another site, also when the page's
@@ -4375,18 +4375,34 @@ read from the pages (source probe Run 45729522763):
 * **Result.** Herald, SBS and cp24 fit; the AOL copy and a Nettavisen-type page
   whose first declaration names the original stay `CANONICAL_OTHER_SITE`; the
   Amedia fix of RC-86 is kept. No page that d5bfbaa accepted is rejected.
-* **Conflicts with the stated conditions (not resolved by Python).** (1) The
-  "BBC" page is AOL.ca's syndicated copy whose canonical names bbc.com, a
-  republication like Nettavisen: it cannot pass without letting a canonical to
-  another news site pass. (2) Herald and cp24 have the same structure (own
-  og:url first, link rel=canonical on another host); only a registrable-domain
-  comparison (heraldcorp.com against ctvnews.ca) tells them apart, which the user
-  excluded, so under option C cp24 also fits, as it did on d5bfbaa.
+* **User decision (2026-11-26).** Option C is adopted as is. The "BBC" page
+  of Run 45641734970 is AOL.ca's syndicated copy whose canonical names bbc.com,
+  a republication like Nettavisen; it stays rejected, and no rule follows a
+  republication to its original article (the earlier condition that this page
+  pass rested on a wrong premise and is withdrawn). Herald and cp24 have the
+  same structure (own og:url first, link rel=canonical on another host); without
+  a registrable-domain comparison, which stays excluded, cp24 also fits, as it
+  did on d5bfbaa.
 * Tests: `tests/test_evidence_canonical_rc89.py` (synthetic Herald, SBS, cp24,
   AOL, Nettavisen and Amedia structures).
 
 ```text
 EVIDENCE_CANONICAL = a related first declaration fits (pre-RC-86); else RC-86/87 (RC-89)
+```
+
+**Standards catalogue record errors (RC-88 item 3, merged early with RC-89 by
+user decision, for the 2026-11-30 monthly check).** Root cause: `parse_record`
+let any exception other than `CatalogueRecordError` escape (lxml `ParserError`
+on a comment-only or maintenance page, `TypeError` on `"versions": null`,
+`AttributeError` or `KeyError` on a missing or mistyped field); the escaping
+exception stopped the remaining Search requests of the run. Now every malformed
+record page is a `CatalogueRecordError`, which the provider already reports as
+a disclosed `INVALID_RESPONSE` failure of that one request; the other requests
+continue. Parsing rules, record fields and Evidence are unchanged. Tests:
+`tests/test_standards_catalogue.py`.
+
+```text
+STANDARDS_CATALOGUE_RECORD_ERROR = any malformed record page is a disclosed INVALID_RESPONSE of that request (RC-89 with RC-88 item 3)
 ```
 
 ### Shared production workflow

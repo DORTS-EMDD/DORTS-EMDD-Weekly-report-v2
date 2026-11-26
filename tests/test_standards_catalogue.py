@@ -123,6 +123,32 @@ def test_an_unreadable_record_fails_closed(page):
         parse_record("iec_webstore", page, IEC_URL)
 
 
+_NULL_VERSIONS = {**_LIFECYCLES, "v3": {**_LIFECYCLES["v3"], "versions": None}}
+
+
+@pytest.mark.parametrize(
+    "page",
+    [
+        "<!-- maintenance -->",  # lxml: Document is empty (ParserError)
+        "   <!-- comment only -->   ",
+        _iec_page("IEC 61373:2026", "2026-07-17", "3.0", lifecycles=_NULL_VERSIONS),  # "versions": null (TypeError)
+        _iec_page("IEC 61373:2026", "2026-07-17", "3.0", lifecycles={"v3": "not an object"}),  # AttributeError
+        _iec_page("IEC 61373:2026", "2026-07-17", "3.0", lifecycles={"v3": {"main": {"reference": "IEC 61373:2026", "id": 68999, "publication_date": 20260717}}}),
+    ],
+)
+def test_every_malformed_record_is_a_record_error(page):
+    # RC-88: no other exception escapes parse_record.
+    with pytest.raises(CatalogueRecordError):
+        parse_record("iec_webstore", page, IEC_URL)
+
+
+@pytest.mark.parametrize("page", ["<!-- maintenance -->", _iec_page("IEC 61373:2026", "2026-07-17", "3.0", lifecycles=_NULL_VERSIONS)])
+def test_a_malformed_record_is_a_disclosed_failure_and_search_continues(page):
+    provider = StandardsCatalogueProvider(_transport({IEC_URL: (200, IEC_URL, page)}))
+    result = provider.execute(_item("iec_webstore:68999", SearchWindow(JULY.start, JULY.end)))
+    assert (result.status, result.technical_failure_class) == (SearchTerminalStatus.TECHNICAL_FAILURE, SearchTechnicalFailureClass.INVALID_RESPONSE)
+
+
 def test_record_urls_are_recognised_only_for_supported_sources():
     assert record_source(IEC_URL) is CatalogueSource.IEC_WEBSTORE
     assert record_source("https://standards.ieee.org/ieee/1474.1/6959/") is CatalogueSource.IEEE_SA

@@ -29,6 +29,7 @@ import json
 import re
 from urllib.parse import urlsplit
 
+from lxml import etree as lxml_etree
 from lxml import html as lxml_html
 
 
@@ -241,7 +242,16 @@ def parse_record(source: CatalogueSource | str, page: str, url: str) -> Catalogu
     source = CatalogueSource(source)
     if record_source(url) is not source:
         raise CatalogueRecordError("URL is not a record page of the declared source")
-    return _RECORD_PARSERS[source](page, url)
+    try:
+        return _RECORD_PARSERS[source](page, url)
+    except CatalogueRecordError:
+        raise
+    except (lxml_etree.LxmlError, TypeError, ValueError, AttributeError, KeyError, IndexError) as exc:
+        # RC-88: any other malformed page (a comment-only or maintenance page
+        # lxml cannot parse, "versions": null, a missing field) is a record
+        # error too, so it never escapes and stops the remaining Search
+        # requests; callers already turn it into a disclosed failure.
+        raise CatalogueRecordError(f"record page has an unexpected format ({type(exc).__name__})") from None
 
 
 def same_source_host(source: CatalogueSource | str, url: str) -> bool:
