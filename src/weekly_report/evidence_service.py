@@ -361,15 +361,22 @@ def _declared_canonical(
     resolved_url: str,
     redirect_chain: tuple[str, ...],
 ) -> tuple[str, str]:
-    """The page's canonical URL and, when the declarations do not fit, why (RC-86).
+    """The page's canonical URL and, when the declarations do not fit, why (RC-86, RC-89).
 
     A page may declare its canonical resource several times (``link
     rel=canonical``, ``og:url``, ``twitter:url``), for example a short and a
-    long address of the same article. The declarations fit when at least one
-    is related to the resolved page (the same resource, or a step of the
-    redirect chain) and none names an unrelated resource on another site,
-    which marks the page as a republication of that site's article. The
-    canonical URL is then the first related declaration in document order.
+    long address of the same article.
+
+    * RC-89: when the first declaration in document order is related to the
+      resolved page (the same resource, or a step of the redirect chain), the
+      page fits and that declaration is its canonical URL, exactly as before
+      RC-86; later declarations are not examined.
+    * Otherwise (RC-86) the declarations fit when a later one is related and
+      none names an unrelated resource on another site, which marks the page
+      as a republication of that site's article; hosts that differ only by a
+      leading www., m., mobile. or amp. label are the same site (RC-87). The
+      canonical URL is then the first related declaration.
+
     Returns ``("", "")`` without declarations, ``(url, "")`` when they fit, and
     otherwise the first declaration with ``CANONICAL_OTHER_SITE`` or
     ``CANONICAL_RESOURCE_MISMATCH``.
@@ -380,6 +387,8 @@ def _declared_canonical(
     ]
     if not declared:
         return "", ""
+    if _canonical_is_related(declared[0], resolved_url, redirect_chain):
+        return declared[0], ""
     resolved_site = _site_host(resolved_url)
     related = [url for url in declared if _canonical_is_related(url, resolved_url, redirect_chain)]
     other_site = [
