@@ -7,7 +7,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from scripts import query_length_probe as probe
 from src.weekly_report.google_news_rss_provider import RssTransportResponse
-from src.weekly_report.search_planner import _query_words
+from scripts.query_length_probe import _query_words
 
 LIMIT = 26  # simulated: Google keeps the first 26 words as the planner counts them
 
@@ -74,3 +74,12 @@ def test_zh_terms_are_split_by_script():
     assert probe._in_script("脱轨", "hans") and not probe._in_script("脱轨", "hant")
     assert probe._in_script("CBTC", "hant") and probe._in_script("CBTC", "hans")
     assert _query_words(probe._render(["a"], ['"b c"', "d"])) == 5
+
+
+def test_the_character_step_sends_one_query_per_band_and_language(capsys):
+    with patch.object(probe.rss, "_default_transport", side_effect=_transport):
+        assert probe.main(["--characters"], sleep=lambda seconds: None) == 0
+    lines = [line for line in capsys.readouterr().out.splitlines() if line.startswith("QUERY_CHARACTER_PROBE")]
+    assert len(lines) == 8
+    lengths = [int(line.split("characters=")[1].split()[0]) for line in lines]
+    assert all(185 <= n <= 200 for n in lengths[0::2]) and all(201 <= n <= 215 for n in lengths[1::2])

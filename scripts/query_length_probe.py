@@ -43,7 +43,11 @@ from urllib.parse import urlencode
 from src.weekly_report import google_news_rss_provider as rss
 from src.weekly_report.contracts import SearchWindow
 from src.weekly_report.region_registry import RegionRegistry
-from src.weekly_report.search_planner import SearchPlanner, _query_words
+from src.weekly_report.search_planner import SearchPlanner
+
+def _query_words(query: str) -> int:
+    return len(query.replace("(", " ").replace(")", " ").split())
+
 
 LIMIT_WINDOW = (date(2026, 11, 9), date(2026, 11, 15))
 PLAN_WINDOW = SearchWindow(date(2026, 11, 16), date(2026, 11, 22))
@@ -206,9 +210,55 @@ def _search(probe: Probe, case: Case, first, second, encoding):
     return kept_words, dropped_words
 
 
+CHARACTER_CASES = (
+    Case("en", "en", "united_kingdom", None, None, None),
+    Case("de", "de", "germany", None, None, None),
+    Case("fr", "fr", "france", None, None, None),
+    Case("he", "he", "israel", None, None, None),
+)
+# Run 45748861050: every query of up to 200 characters kept its trailing dates
+# and its last OR term, every longer one lost them (ja, ko, zh). The character
+# step checks the same bound in Latin and Hebrew script: dates last, the query
+# cut to the longest length in each band.
+CHARACTER_BANDS = ((185, 200), (201, 215))
+
+
+def _characters(probe: Probe, plan) -> None:
+    dates = _dates_operators(LIMIT_WINDOW)
+    for case in CHARACTER_CASES:
+        first, second, encoding = _groups(plan, case)
+        if not first or not second or encoding is None:
+            print(f"QUERY_CHARACTER_PROBE {case.label} SKIPPED")
+            continue
+        for low, high in CHARACTER_BANDS:
+            best = None
+            for modes in range(1, len(first) + 1):
+                for k in range(1, len(second) + 1):
+                    query = f"{_render(first[:modes], second[:k])} {dates}"
+                    if low <= len(query) <= high and (best is None or len(query) > len(best)):
+                        best = query
+            if best is None:
+                print(f"QUERY_CHARACTER_PROBE {case.label} band={low}-{high} NO_QUERY")
+                continue
+            status, results = probe.send(best, encoding)
+            slack = (LIMIT_WINDOW[0] - timedelta(days=1), LIMIT_WINDOW[1] + timedelta(days=1))
+            found = [_published(r) for r in results]
+            inside = sum(1 for d in found if d is not None and slack[0] <= d <= slack[1])
+            outside = sum(1 for d in found if d is not None and not slack[0] <= d <= slack[1])
+            verdict = "dropped" if outside else ("kept" if inside else "inconclusive")
+            print(
+                f"QUERY_CHARACTER_PROBE {case.label} characters={len(best)} words={_query_words(best)} "
+                f"status={status} items={len(found)} inside={inside} outside={outside} verdict={verdict}"
+            )
+
+
 def main(argv: list[str] | None = None, *, sleep=time.sleep) -> int:
     plan = SearchPlanner(RegionRegistry.from_file()).plan("selected", window=PLAN_WINDOW)
     probe = Probe(sleep)
+    if argv and argv[0] == "--characters":
+        _characters(probe, plan)
+        print(f"QUERY_LIMIT_SUMMARY requests={probe.requests}")
+        return 0
     for case in CASES:
         first, second, encoding = _groups(plan, case)
         if not first or not second or encoding is None:

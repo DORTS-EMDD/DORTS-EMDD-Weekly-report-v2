@@ -282,7 +282,7 @@ jobs:
       # query words? Per language, dates last over a past week, and whether a
       # last OR term is still used with the dates first (about 29 requests).
       - name: Probe Google News query length
-        run: python -m scripts.query_length_probe
+        run: python -m scripts.query_length_probe --characters
       - name: Probe specialist rail media hosts
         run: python -m scripts.source_host_probe --dump
       # RC-87 (observation only): canonical declarations of the pages
