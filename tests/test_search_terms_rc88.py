@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import re
 import json
 from datetime import date
 from pathlib import Path
@@ -25,13 +26,16 @@ def test_no_chinese_query_joins_two_forms_with_a_slash():
 def test_both_forms_are_separate_or_terms():
     zh = [item.query for item in PLAN.items if item.language_profile == "zh"]
     for traditional, simplified in (("號誌", "信号"), ("脫軌", "脱轨"), ("招標", "招标"), ("人工智慧", "人工智能")):
-        assert any(f"{traditional} OR {simplified}" in query for query in zh), traditional
+        # Each form is its own OR term (RC-88); packing may place them in different requests.
+        for form in (traditional, simplified):
+            assert any(re.search(rf"[( ]{re.escape(form)}[ )]", query) for query in zh), form
+        assert not any(f"{traditional}/{simplified}" in query for query in zh)
 
 
 def test_taiwan_and_hong_kong_request_counts():
     counts = {market: sum(1 for item in PLAN.items if item.market_id == market and item.language_profile == "zh")
               for market in ("taiwan", "hong_kong")}
-    assert counts == {"taiwan": 12, "hong_kong": 12}  # RC-85: 7 each; 11 with the split, 12 with 30-word queries
+    assert counts == {"taiwan": 40, "hong_kong": 40}  # RC-85: 7 each; 11 with the split; 40 with 155-character queries
 
 
 def test_a_slash_joined_term_is_rejected_by_the_registry():

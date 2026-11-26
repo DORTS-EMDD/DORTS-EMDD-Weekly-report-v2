@@ -4353,7 +4353,7 @@ FAILURE_SERVICE_DISRUPTION_PRECEDES_SERVICE_CHANGE = YES, replacement transport 
 EVIDENCE_CANONICAL_SAME_SITE = host equal after removing leading www., m., mobile., amp. (RC-87)
 ```
 
-### A.69 RC-88 External review fixes: Chinese term forms, query length, catalogue parsing, typeset hyphens, quantities, page size and untrusted source text (2026-11-25, user decisions)
+### A.69 RC-88 External review fixes: Chinese term forms, query length, catalogue parsing, typeset hyphens, quantities, page size, untrusted source text, Search 429 and unrecognised place names (2026-11-25..26, user decisions)
 
 An external review of c087ac0 (Gemini) was checked item by item; these items
 were confirmed and fixed. No Category, Reportability, Event Identity or Delivery
@@ -4370,32 +4370,36 @@ rule changes.
   `LanguageProfile` rejects a vocabulary term containing `/`. Plan: Taiwan and
   Hong Kong each 7 → 11 requests (technology +2, major incident +1, procurement
   +1) and the weekly plan 239 → 247 from the split alone (the query length
-  below then gives 292).
-* **Search: query length (item 2).** `request_url` appends `after:` and
-  `before:`, so a planned query of 31-32 words is sent with 33-34 words
-  (114 of 239 queries before RC-88). Measured with
-  `scripts/query_length_probe.py` (observation only, manual `source_probe` job;
-  Run 45645553592): five planned 32-word queries (en, de, fr, ja, ko) for the
-  week 2020-03-02..03-08, with the production transport and parser and without
-  the window filter. With the date operators last (34 words) every request
-  returned items from other years (9, 45, 10, 62 and 100 items; none in the
-  week, mostly 2026): the trailing operators were dropped. With the same words
-  and the dates first, the Japanese request returned 9 of 10 items inside the
-  week and the others none. In production the RC-12 publication-time filter then
-  removed most results of such a request, so it searched the period poorly. Fix:
-  SearchPlanner packs at most 30 planned words (`_MAX_QUERY_WORDS` = 32 minus
-  the 2 date operators), so the sent query is at most 32 words. Weekly plan
-  247 → 292 requests (technology 158, major incident 60, operations 30,
-  procurement 44; Taiwan and Hong Kong 12 each); the monthly monitored-standards
-  queries stay 90. Health probes (1, 10, 146, 151, 285, 292), RC-72 rule unchanged.
-  **Verification failed (Run 45727969072, branch c77f121):** with 30 planned
-  words and the date operators last (32 words), all four probes (en, de, fr, ja)
-  again returned no item inside the 2020 week (43, 20, 12 and 100 items from other
-  years); with the dates first, every returned item was inside the week (2, 3, 0
-  and 1 items). The word limit at which Google News drops trailing words is lower
-  than 32 as this planner counts words, so the 30-word bound does not keep the
-  dates. Not merged; the fix (date operators first, and the real word limit) is a
-  user decision.
+  below then gives 728).
+* **Search: query length (item 2; user decision 2026-11-26).** Google News
+  reads only the first 200 characters of `q` (Unicode code points), not a
+  number of words. Measured with `scripts/query_length_probe.py` (observation
+  only, manual `source_probe` job; Runs 45645553592, 45727969072, 45748861050
+  and 45760494080): with the date operators last, every query of up to 200
+  characters kept them (ja 200 characters with 34 words, ko 196 with 34 words,
+  zh 199) and every longer one lost them (ja 201, zh 205 and 207, en 207 and
+  more, de 319, fr 246); with the dates first, a term found only in particular
+  news of the week, placed as the last OR term, was used when it ended within
+  200 characters (ja, ko, zh) and absent past it. Before RC-88 the dates came
+  last: 197 of the 239 weekly queries lost them (the RC-12 publication-time
+  filter hid it), and in 146 the query alone was over 200 characters, so its
+  trailing terms were never searched. Fix:
+  * `GoogleNewsRssProvider.request_url` puts `after:` and `before:` first
+    (35 characters with the following space).
+  * SearchPlanner packs at most `_MAX_QUERY_CHARACTERS` = 200 - 35 - 10
+    (margin) = 155 characters per planned query, one bound for every language.
+  * When a mode group does not fit with the longest intent term (cs, fi, pl;
+    the English group is 135 characters), it is split into consecutive chunks
+    and each chunk is sent with all intent terms; every mode term still meets
+    every intent term, every configured term is sent as before, only the
+    grouping into requests changes.
+  * `rail_trade_press` keeps 2 requests and the same six sites; `site:railway.supply`
+    moved to the second template so both fit.
+  * Weekly plan 247 → 728 requests (technology 464, major incident 132,
+    operations 57, procurement 75; en 282, zh 80, fr 64, de 48, pl 42, fi 40,
+    cs 39); monthly monitored-standards queries stay 90. Health probes (1, 10,
+    364, 369, 721, 728), RC-72 rule unchanged. With the 1 s spacing below a run
+    spends about 12 minutes in Search pacing (239 requests: about 4).
 * **Standards catalogue (item 3).** Merged to main early with RC-89 (section
   A.70, user decision 2026-11-26), for the 2026-11-30..12-06 monthly check.
 * **Search 429 (user decision 2026-11-26).** `SearchExecutor` waits
@@ -4458,10 +4462,12 @@ rule changes.
   reading error of the reviewer; `geographic_reference.py` is unchanged.
 
 ```text
-SEARCH_CONFIGURATION_VERSION = search-discovery-v15 (RC-88, 292 weekly requests)
-SEARCH_QUERY_WORDS = at most 30 planned words, 32 with after:/before: (RC-88, measured)
+SEARCH_CONFIGURATION_VERSION = search-discovery-v15 (RC-88, 728 weekly requests)
+SEARCH_QUERY_LENGTH = Google News reads 200 characters; dates first; at most 155 planned characters (RC-88, measured)
+SEARCH_RATE_LIMIT = 1 s between requests; one retry 60 s after RATE_LIMIT, then a disclosed gap (RC-88)
+REGION_UNRECOGNIZED_VALUES = observation only, selection-audit-v5 (RC-88)
 SEARCH_TERM_FORMS = one written form per term; '/' rejected (RC-88)
-HEALTH_PROBE_ORDINALS = (1, 10, 146, 151, 285, 292) (RC-88)
+HEALTH_PROBE_ORDINALS = (1, 10, 364, 369, 721, 728) (RC-88)
 UNIT_GROUNDING = a Writer number without a unit needs an Evidence number without a unit (RC-88, revises A.23)
 EVIDENCE_FETCH_MAX_BYTES = 10 MiB, Content-Type checked before reading (RC-88)
 UNTRUSTED_SOURCE_TEXT_INSTRUCTION = in every MaiAgent task (RC-88)

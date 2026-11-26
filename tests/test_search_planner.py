@@ -169,12 +169,24 @@ class SearchPlannerTests(unittest.TestCase):
     def test_mode_terms_are_required_in_titles_and_trade_press_is_restricted(self) -> None:
         plan = SearchPlanner(self.production_registry).plan("selected")
         editions = [item for item in plan.items if item.query_family_id == "urban_rail_or_groups"]
-        self.assertTrue(editions and all("intitle:" in item.query for item in editions))
+        # Every single-word mode term is a title term; a multi-word mode term is a
+        # quoted phrase (RC-88: a split mode group may hold only phrases).
+        def mode_terms(query):
+            return query[1 : query.index(")")].split(" OR ")
+        self.assertTrue(editions and all(
+            all(term.startswith("intitle:") or term.startswith('"') for term in mode_terms(item.query)) for item in editions
+        ))
         # RC-14: English mode terms are unambiguous phrases, never bare
         # "metro"/"subway" (newspapers, "metro area", companies, sports).
         english = [item.query for item in editions if item.language_profile == "en"]
         self.assertTrue(english and all("intitle:metro" not in query and "intitle:subway" not in query for query in english))
-        self.assertTrue(all('"metro line"' in query for query in english))
+        # RC-88: a mode group may be split to fit 155 characters; every English
+        # edition and intent still searches the phrase in some request.
+        english_groups = {(item.market_id, item.intent) for item in editions if item.language_profile == "en"}
+        self.assertTrue(all(
+            any('"metro line"' in item.query for item in editions if (item.market_id, item.intent) == group)
+            for group in english_groups
+        ))
         self.assertFalse(any('intitle:"' in item.query for item in plan.items))
         self.assertTrue(any('"light rail"' in item.query for item in editions))
         trade = [item for item in plan.items if item.query_family_id == "rail_trade_press"]
@@ -197,7 +209,7 @@ class SearchPlannerTests(unittest.TestCase):
         # RC-12 brought 20 markets below 207 requests; RC-76 (27 markets, user
         # decision 2026-11-19) is 210; RC-77 (AI terms) is 221, locked exactly in
         # test_technology_vocabulary.
-        self.assertEqual(len(plan.items), 292)  # RC-88: zh forms split and 30-word queries (RC-85: 239)
+        self.assertEqual(len(plan.items), 728)  # RC-88: 155-character queries (RC-85: 239)
 
     def test_query_generation_is_bounded(self) -> None:
         source = copy.deepcopy(self.source)
