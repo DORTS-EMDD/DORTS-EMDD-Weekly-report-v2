@@ -255,7 +255,8 @@ def _characters(probe: Probe, plan) -> None:
 def main(argv: list[str] | None = None, *, sleep=time.sleep) -> int:
     plan = SearchPlanner(RegionRegistry.from_file()).plan("selected", window=PLAN_WINDOW)
     probe = Probe(sleep)
-    if argv and argv[0] == "--characters":
+    args = sys.argv[1:] if argv is None else argv
+    if args and args[0] == "--characters":
         _characters(probe, plan)
         print(f"QUERY_LIMIT_SUMMARY requests={probe.requests}")
         return 0

@@ -83,3 +83,12 @@ def test_the_character_step_sends_one_query_per_band_and_language(capsys):
     assert len(lines) == 8
     lengths = [int(line.split("characters=")[1].split()[0]) for line in lines]
     assert all(185 <= n <= 200 for n in lengths[0::2]) and all(201 <= n <= 215 for n in lengths[1::2])
+
+
+def test_the_command_line_flag_selects_the_character_step(capsys):
+    with patch.object(probe.rss, "_default_transport", side_effect=_transport), patch.object(
+        probe.sys, "argv", ["query_length_probe", "--characters"]
+    ):
+        assert probe.main(sleep=lambda seconds: None) == 0
+    out = capsys.readouterr().out
+    assert "QUERY_CHARACTER_PROBE" in out and "QUERY_LIMIT_PROBE" not in out
