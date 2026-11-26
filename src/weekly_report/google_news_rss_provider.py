@@ -284,7 +284,7 @@ class GoogleNewsRssProvider(SearchProvider):
         if item.search_window is not None:
             # Google News date operators; "before" is exclusive. RC-88: they
             # come first, because Google News drops trailing query words past
-            # its word limit (probe Runs 45645553592 and 45727969072).
+            # its first 200 characters (RC-88, probe Runs 45748861050, 45760494080).
             q = f"after:{item.search_window.start.isoformat()} before:{(item.search_window.end + timedelta(days=1)).isoformat()} {q}"
         query = urlencode(
             (

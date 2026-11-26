@@ -178,7 +178,7 @@ languages, synonyms, systems, and intents.
 RC-11 (`search-discovery-v4`, ARCHITECTURE_CONTRACT §A.5): the production
 family writes one request per supported market edition and intent entirely in
 that profile's governed vocabulary, `(mode terms OR …) (intent terms OR …)`,
-packing intent terms into as few requests as fit 32 words. Locality comes from
+packing intent terms into as few requests as fit 155 characters (RC-88: Google News reads 200, the dates come first). Locality comes from
 the provider edition (`hl`/`gl`/`ceid`), not from an English market name, and
 every request is bounded to the report period.
 
