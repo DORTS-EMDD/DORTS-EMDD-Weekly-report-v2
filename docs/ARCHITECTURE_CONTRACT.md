@@ -4375,12 +4375,15 @@ rule changes.
   reads only the first 200 characters of `q` (Unicode code points), not a
   number of words. Measured with `scripts/query_length_probe.py` (observation
   only, manual `source_probe` job; Runs 45645553592, 45727969072, 45748861050
-  and 45760494080): with the date operators last, every query of up to 200
+  45760494080 and 45762044194): with the date operators last, every query of up to 200
   characters kept them (ja 200 characters with 34 words, ko 196 with 34 words,
   zh 199) and every longer one lost them (ja 201, zh 205 and 207, en 207 and
   more, de 319, fr 246); with the dates first, a term found only in particular
   news of the week, placed as the last OR term, was used when it ended within
-  200 characters (ja, ko, zh) and absent past it. Before RC-88 the dates came
+  200 characters (ja, ko, zh) and absent past it. Run 45762044194 confirmed the
+  same bound in Latin and Hebrew script: en 198, de 200 and he 200 characters
+  (32 words) kept the dates, fr 211 lost them, and en 209, de 214 and he 215
+  were answered with an HTTP error. Before RC-88 the dates came
   last: 197 of the 239 weekly queries lost them (the RC-12 publication-time
   filter hid it), and in 146 the query alone was over 200 characters, so its
   trailing terms were never searched. Fix:
