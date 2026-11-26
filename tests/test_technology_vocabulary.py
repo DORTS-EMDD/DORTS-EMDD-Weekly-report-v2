@@ -16,7 +16,7 @@ import pytest
 from scripts.materialize_search_configuration import validate_configuration
 from src.weekly_report.contracts import DiscoveryIntent, MonitoredCheckMonth, SearchProviderId, SearchWindow
 from src.weekly_report.region_registry import RegionRegistry
-from src.weekly_report.search_planner import _MAX_QUERY_CHARACTERS, SearchPlanner
+from src.weekly_report.search_planner import SearchPlanner, _query_words
 from tests.test_ai_vocabulary_rc77 import RC77_TECHNOLOGY_TERMS
 
 CONCEPTS = ("CBTC", "ATO", "無人駕駛", "第三軌", "道岔", "狀態監測", "預測性維修")
@@ -161,7 +161,7 @@ def test_every_new_literal_reaches_every_supported_edition_of_its_profile(regist
         for literals in EXPECTED[profile_id].values():
             for literal in literals:
                 assert _quoted(literal) in queries, (market_id, profile_id, literal)
-    assert all(len(item.query) <= _MAX_QUERY_CHARACTERS for item in plan.items)
+    assert all(_query_words(item.query) <= 30 for item in plan.items)
     assert "da" not in {profile for _market, profile in editions}  # Denmark: no Google News edition
     assert ("finland", "fi") in editions  # RC-78: Finland's edition verified
 
@@ -176,9 +176,8 @@ def test_request_counts(registry, mode):
     # v12 (RC-77, AI terms): 221; en, zh and cs gain one technology request per market.
     # v13 (RC-78, Finland searched): 231.
     # v14 (RC-85, "metro train" in English procurement): 239; each English market gains one procurement request.
-    # v15 (RC-88): zh forms split (247); Google News reads 200 characters, queries of at most 155 (728).
-    assert len(weekly.items) == 728
-    assert counts == {"technology": 464, "major_incident": 132, "operations": 57, "procurement": 75}
+    assert len(weekly.items) == 292  # RC-88: zh forms split (247), 30-word queries (292)
+    assert counts == {"technology": 158, "major_incident": 60, "operations": 30, "procurement": 44}  # RC-88: zh split and 30-word queries
     november = MonitoredCheckMonth(date(2026, 11, 1), date(2026, 11, 30))
     monthly = SearchPlanner(registry).plan(mode, window=SearchWindow(date(2026, 11, 30), date(2026, 12, 6)),
                                            monitored_check=november)
@@ -186,4 +185,4 @@ def test_request_counts(registry, mode):
                  and item.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]
     catalogue = [item for item in monthly.items if item.provider_target is SearchProviderId.STANDARDS_CATALOGUE]
     assert len(monitored) == 90 and len(catalogue) == 10
-    assert len(monthly.items) == 728 + 90 + 10
+    assert len(monthly.items) == 292 + 90 + 10

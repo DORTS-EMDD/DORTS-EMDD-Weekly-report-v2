@@ -141,4 +141,4 @@ def test_the_date_operators_come_first():
     item = next(i for i in plan.items if i.provider_target is SearchProviderId.GOOGLE_NEWS_RSS)
     q = parse_qs(urlsplit(GoogleNewsRssProvider.request_url(item)).query)["q"][0]
     assert q == f"after:2026-11-16 before:2026-11-23 {item.query}"
-    assert len(q) <= 200  # Google News reads only the first 200 characters (RC-88)
+    # Google News reads the first 200 characters; with the dates first they always apply (RC-88).

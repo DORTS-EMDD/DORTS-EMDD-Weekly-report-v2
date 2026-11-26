@@ -4370,7 +4370,7 @@ rule changes.
   `LanguageProfile` rejects a vocabulary term containing `/`. Plan: Taiwan and
   Hong Kong each 7 → 11 requests (technology +2, major incident +1, procurement
   +1) and the weekly plan 239 → 247 from the split alone (the query length
-  below then gives 728).
+  below then gives 292).
 * **Search: query length (item 2; user decision 2026-11-26).** Google News
   reads only the first 200 characters of `q` (Unicode code points), not a
   number of words. Measured with `scripts/query_length_probe.py` (observation
@@ -4386,23 +4386,26 @@ rule changes.
   were answered with an HTTP error. Before RC-88 the dates came
   last: 197 of the 239 weekly queries lost them (the RC-12 publication-time
   filter hid it), and in 146 the query alone was over 200 characters, so its
-  trailing terms were never searched. Fix:
+  trailing terms were never searched. Fix (user decision 2026-11-26 evening,
+  option 3):
   * `GoogleNewsRssProvider.request_url` puts `after:` and `before:` first
-    (35 characters with the following space).
-  * SearchPlanner packs at most `_MAX_QUERY_CHARACTERS` = 200 - 35 - 10
-    (margin) = 155 characters per planned query, one bound for every language.
-  * When a mode group does not fit with the longest intent term (cs, fi, pl;
-    the English group is 135 characters), it is split into consecutive chunks
-    and each chunk is sent with all intent terms; every mode term still meets
-    every intent term, every configured term is sent as before, only the
-    grouping into requests changes.
-  * `rail_trade_press` keeps 2 requests and the same six sites; `site:railway.supply`
-    moved to the second template so both fit.
-  * Weekly plan 247 → 728 requests (technology 464, major incident 132,
-    operations 57, procurement 75; en 282, zh 80, fr 64, de 48, pl 42, fi 40,
-    cs 39); monthly monitored-standards queries stay 90. Health probes (1, 10,
-    364, 369, 721, 728), RC-72 rule unchanged. With the 1 s spacing below a run
-    spends about 12 minutes in Search pacing (239 requests: about 4).
+    (35 characters with the following space), so the date window always
+    applies.
+  * SearchPlanner keeps the word packing of at most 30 planned words: 292
+    weekly requests (technology 158, major incident 60, operations 30,
+    procurement 44; Taiwan and Hong Kong 12 each); the monthly
+    monitored-standards queries stay 90; health probes (1, 10, 146, 151, 285,
+    292), RC-72 rule unchanged. Known limit: in 229 of the 292 requests the
+    terms after character 200 are still not searched, as before RC-88.
+  * Not adopted: packing at most 155 characters (728 requests, every term
+    searched). Recall Run 45764691167 (main 4d3053d, 11-16..22) scored 16/25 on
+    gold v4 (15/25 and 14/25 before) but took 5 h 05 min (1 h 44 min before) and
+    reported 61 items from 1,418 candidates (18 and 13 before) under a 6-hour
+    job limit; main went back to 834b040 for 11-30 and the 155-character
+    version stays on branch `fix/external-review-rc88`.
+  * `rail_trade_press` keeps 2 requests and the same six sites;
+    `site:railway.supply` moved to the second template so it is within the
+    first 200 characters.
 * **Standards catalogue (item 3).** Merged to main early with RC-89 (section
   A.70, user decision 2026-11-26), for the 2026-11-30..12-06 monthly check.
 * **Search 429 (user decision 2026-11-26).** `SearchExecutor` waits
@@ -4465,12 +4468,12 @@ rule changes.
   reading error of the reviewer; `geographic_reference.py` is unchanged.
 
 ```text
-SEARCH_CONFIGURATION_VERSION = search-discovery-v15 (RC-88, 728 weekly requests)
-SEARCH_QUERY_LENGTH = Google News reads 200 characters; dates first; at most 155 planned characters (RC-88, measured)
+SEARCH_CONFIGURATION_VERSION = search-discovery-v15 (RC-88, 292 weekly requests)
+SEARCH_QUERY_LENGTH = Google News reads 200 characters (measured); dates first; at most 30 planned words (RC-88, option 3)
 SEARCH_RATE_LIMIT = 1 s between requests; one retry 60 s after RATE_LIMIT, then a disclosed gap (RC-88)
 REGION_UNRECOGNIZED_VALUES = observation only, selection-audit-v5 (RC-88)
 SEARCH_TERM_FORMS = one written form per term; '/' rejected (RC-88)
-HEALTH_PROBE_ORDINALS = (1, 10, 364, 369, 721, 728) (RC-88)
+HEALTH_PROBE_ORDINALS = (1, 10, 146, 151, 285, 292) (RC-88)
 UNIT_GROUNDING = a Writer number without a unit needs an Evidence number without a unit (RC-88, revises A.23)
 EVIDENCE_FETCH_MAX_BYTES = 10 MiB, Content-Type checked before reading (RC-88)
 UNTRUSTED_SOURCE_TEXT_INSTRUCTION = in every MaiAgent task (RC-88)

@@ -40,66 +40,19 @@ CATALOGUE_LOCALE = "und"
 def _encoding_key(item: SearchPlanItem) -> tuple[str, str, str]:
     encoding = item.provider_encoding
     return ("", "", "") if encoding is None else (encoding.hl, encoding.gl, encoding.ceid)
-# RC-88 (section A.69): Google News reads only the first 200 characters of a
-# query (code points of q; probe Runs 45645553592, 45727969072 and
-# 45748861050: every query of up to 200 characters kept its trailing date
-# operators and its last OR term, every longer one lost them, in en, de, fr,
-# ja, ko and zh alike; the word count did not decide it). The date operators
-# come first in GoogleNewsRssProvider.request_url (35 characters with their
-# space), and 10 characters are kept as margin, so a planned query has at
-# most 155 characters.
-_GOOGLE_QUERY_CHARACTERS = 200
-_DATE_OPERATOR_CHARACTERS = len("after:2026-01-01 before:2026-01-08 ")
-_QUERY_CHARACTER_MARGIN = 10
-_MAX_QUERY_CHARACTERS = _GOOGLE_QUERY_CHARACTERS - _DATE_OPERATOR_CHARACTERS - _QUERY_CHARACTER_MARGIN
+# RC-88 (section A.69, user decision 2026-11-26, option 3): planned queries
+# are packed to at most 30 words, as before. Google News reads only the first
+# 200 characters of q; the date operators now come first in
+# GoogleNewsRssProvider.request_url, so they always apply, while terms past
+# character 200 are still not searched (known; the 155-character packing of
+# 4d3053d searched them all but took 5 h 05 min in recall Run 45764691167).
+_GOOGLE_QUERY_WORDS = 32
+_DATE_OPERATOR_WORDS = 2
+_MAX_QUERY_WORDS = _GOOGLE_QUERY_WORDS - _DATE_OPERATOR_WORDS
 
 
-def _fits(query: str) -> bool:
-    return len(query) <= _MAX_QUERY_CHARACTERS
-
-
-def _greedy(terms: tuple[str, ...], fits) -> list[tuple[str, ...]]:
-    """Consecutive chunks of terms, each as long as still fits (order kept)."""
-
-    chunks: list[tuple[str, ...]] = []
-    chunk: list[str] = []
-    for term in terms:
-        if chunk and not fits(tuple(chunk + [term])):
-            chunks.append(tuple(chunk))
-            chunk = []
-        chunk.append(term)
-    if chunk:
-        chunks.append(tuple(chunk))
-    return chunks
-
-
-def _packed_queries(
-    render, mode_terms: tuple[str, ...], intent_terms: tuple[str, ...], uses_intent: bool, uses_mode: bool
-) -> list[str]:
-    """Pack governed terms into as few requests as fit the character bound.
-
-    The mode group is kept whole when it fits with the longest single intent
-    term; otherwise it is split into consecutive chunks that do (RC-88: a
-    Czech, Finnish or Polish mode group alone is longer than the bound). Each
-    mode chunk is then sent with the intent terms packed greedily. Every term
-    is sent exactly as before, in configuration order; only the grouping into
-    requests changes.
-    """
-
-    if not uses_intent:
-        queries = [render(mode_terms, intent_terms)]
-    else:
-        longest = (max(intent_terms, key=lambda term: len(render(mode_terms[:1], (term,)))),)
-        mode_chunks = (
-            _greedy(mode_terms, lambda modes: _fits(render(modes, longest))) if uses_mode and mode_terms else [mode_terms]
-        )
-        queries = []
-        for modes in mode_chunks:
-            for chunk in _greedy(intent_terms, lambda terms: _fits(render(modes, terms))):
-                queries.append(render(modes, chunk))
-    if not all(_fits(query) for query in queries):
-        raise ValueError("query family cannot fit the bounded query length")
-    return queries
+def _query_words(query: str) -> int:
+    return len(query.replace("(", " ").replace(")", " ").split())
 
 
 def _or_group(terms: tuple[str, ...], *, prefix: str = "") -> str:
@@ -333,11 +286,11 @@ class SearchPlanner:
                 raise ValueError("query family resolved no governed mode terms")
             queries = []
             for template in family.templates:
-                def render(modes: tuple[str, ...], chunk: tuple[str, ...]) -> str:
+                def render(chunk: tuple[str, ...]) -> str:
                     try:
                         query = template.format(
                             market=market.display_name,
-                            mode_terms=_or_group(modes, prefix="intitle:" if family.mode_terms_in_title else ""),
+                            mode_terms=mode_group,
                             intent_terms=_or_group(chunk),
                         )
                     except (KeyError, IndexError, ValueError) as exc:
@@ -346,9 +299,21 @@ class SearchPlanner:
                         raise ValueError("query family generated an empty query")
                     return " ".join(query.split())
 
-                queries.extend(
-                    _packed_queries(render, mode_terms, intent_terms, "{intent_terms}" in template, "{mode_terms}" in template)
-                )
+                # Search engines ignore words beyond a fixed query length, so
+                # intent terms are packed into as few requests as fit.
+                if "{intent_terms}" not in template:
+                    queries.append(render(intent_terms))
+                    continue
+                chunk: list[str] = []
+                for term in intent_terms:
+                    if chunk and _query_words(render(tuple(chunk + [term]))) > _MAX_QUERY_WORDS:
+                        queries.append(render(tuple(chunk)))
+                        chunk = []
+                    chunk.append(term)
+                if chunk:
+                    queries.append(render(tuple(chunk)))
+                if any(_query_words(query) > _MAX_QUERY_WORDS for query in queries):
+                    raise ValueError("query family cannot fit the bounded query length")
             if len(queries) > self._registry.planning_limits.max_concrete_requests_per_family:
                 raise ValueError("query family exceeds bounded concrete request limit")
             if len(queries) != len(set(queries)):
