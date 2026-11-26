@@ -4352,6 +4352,43 @@ FAILURE_SERVICE_DISRUPTION_PRECEDES_SERVICE_CHANGE = YES, replacement transport 
 EVIDENCE_CANONICAL_SAME_SITE = host equal after removing leading www., m., mobile., amp. (RC-87)
 ```
 
+### A.70 RC-89 A self-first canonical declaration fits as before RC-86 (2026-11-26, user decision; not merged, pending decision)
+
+Root cause: RC-86 (section A.68 prefix rule included) rejects a page when any
+declaration names an unrelated resource on another site, also when the page's
+first declaration is itself. The probe of Run 45558738725's pages found 6 pages
+that d5bfbaa accepted and RC-86/87 reject; recall Run 45641734970 rejected 3
+(two Herald pages and one AOL page) as `CANONICAL_OTHER_SITE`. Declarations
+read from the pages (source probe Run 45729522763):
+
+| Page | og:url | link rel=canonical | other |
+|---|---|---|---|
+| mbiz.heraldcorp.com (2) | the page | biz.heraldcorp.com | — |
+| cp24.com | the page | www.ctvnews.ca (another news brand) | — |
+| biz.sbs.co.kr | the page | the page | twitter:url the page and feedapi.cloud.sbs.co.kr |
+| AOL.ca copy of a BBC article (Run 45641734970) | (not probed) | bbc.com article, partner tracking query | — |
+
+* **Rule (option C).** When the first declaration in document order is related
+  to the resolved page, the page fits and that declaration is its canonical URL,
+  exactly as before RC-86. Otherwise the RC-86/87 rule applies (a later related
+  declaration fits unless a declaration names another site).
+* **Result.** Herald, SBS and cp24 fit; the AOL copy and a Nettavisen-type page
+  whose first declaration names the original stay `CANONICAL_OTHER_SITE`; the
+  Amedia fix of RC-86 is kept. No page that d5bfbaa accepted is rejected.
+* **Conflicts with the stated conditions (not resolved by Python).** (1) The
+  "BBC" page is AOL.ca's syndicated copy whose canonical names bbc.com, a
+  republication like Nettavisen: it cannot pass without letting a canonical to
+  another news site pass. (2) Herald and cp24 have the same structure (own
+  og:url first, link rel=canonical on another host); only a registrable-domain
+  comparison (heraldcorp.com against ctvnews.ca) tells them apart, which the user
+  excluded, so under option C cp24 also fits, as it did on d5bfbaa.
+* Tests: `tests/test_evidence_canonical_rc89.py` (synthetic Herald, SBS, cp24,
+  AOL, Nettavisen and Amedia structures).
+
+```text
+EVIDENCE_CANONICAL = a related first declaration fits (pre-RC-86); else RC-86/87 (RC-89)
+```
+
 ### Shared production workflow
 
 正式 application composition 的唯一 owner 為 `ReportApplication`，其唯一正式

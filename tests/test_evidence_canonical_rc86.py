@@ -74,7 +74,10 @@ class DeclaredCanonicalTests(unittest.TestCase):
         self.assertEqual(result.canonical_source_url, NAB_LONG)
 
     def test_a_republication_whose_canonical_names_another_site_is_rejected(self):
-        for og_url in (REPUBLISHED, None):
+        # RC-89: a page whose first declaration is itself fits as before RC-86
+        # (tests/test_evidence_canonical_rc89.py); here the first declaration
+        # names the other site's article.
+        for og_url in (ORIGINAL_ELSEWHERE, None):
             with self.subTest(og_url=og_url):
                 result = _evaluate(REPUBLISHED, _page(og_url=og_url, link_canonical=ORIGINAL_ELSEWHERE))
                 self.assertIs(result.state, EvidenceState.REJECTED)
@@ -97,7 +100,7 @@ class DeclaredCanonicalTests(unittest.TestCase):
         self.assertEqual(_declared_canonical((SHORT, LONG), LONG, ()), (LONG, ""))
         self.assertEqual(_declared_canonical(("/30-128-26544", LONG), SHORT, ()), (SHORT, ""))
         self.assertEqual(
-            _declared_canonical((REPUBLISHED, ORIGINAL_ELSEWHERE), REPUBLISHED, ()),
+            _declared_canonical((ORIGINAL_ELSEWHERE, REPUBLISHED), REPUBLISHED, ()),
             (ORIGINAL_ELSEWHERE, "CANONICAL_OTHER_SITE"),
         )
 
