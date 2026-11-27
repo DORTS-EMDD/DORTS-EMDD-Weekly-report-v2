@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from datetime import date
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -13,7 +14,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from weekly_report.contracts import RegionMode  # noqa: E402
+from weekly_report.contracts import DiscoveryIntent, RegionMode  # noqa: E402
 from weekly_report.production_runner import ProductionRunner  # noqa: E402
 from weekly_report.debug_service import execution_trace  # noqa: E402
 
@@ -32,29 +33,45 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="write the formal report as Markdown and PDF plus the run summary and selection audit",
     )
+    # RC-90 (section A.71): recall-test only. Search plans only the technology
+    # intent (its OR-group family and the trade press family); the result is a
+    # test, never a formal report, and is refused when live email is enabled.
+    parser.add_argument(
+        "--technology-test-mode",
+        action="store_true",
+        help="recall test only: search the technology intent and trade press, never a formal run",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     with execution_trace() as trace:
-        code = _main(argv)
+        code = _main(argv, trace)
         trace.outcome(code in (0, 2), partial=code == 2)
         return code
 
 
-def _main(argv: list[str] | None = None) -> int:
+def _main(argv: list[str] | None = None, trace=None) -> int:
     args = build_parser().parse_args(argv)
+    if args.technology_test_mode and os.environ.get("LIVE_EMAIL_SEND", "0").strip() != "0":
+        # RC-90: the technology test mode can never send the formal email.
+        print("status=CONFIGURATION_FAILURE failure_class=TechnologyTestModeWithLiveEmail "
+              "diagnostic=the technology test mode requires LIVE_EMAIL_SEND=0")
+        return 1
     try:
         runner = ProductionRunner.from_environment()
         result = runner.run(
             region_mode=args.region_mode,
             period_start=args.period_start,
             period_end=args.period_end,
+            **({"search_intents": (DiscoveryIntent.TECHNOLOGY,)} if args.technology_test_mode else {}),
         )
     except Exception as exc:
         print(f"status=CONFIGURATION_FAILURE failure_class={type(exc).__name__} diagnostic=production configuration unavailable")
         return 1
     print(result.summary())
+    if args.output_dir is not None:
+        _write_run_digest(args.output_dir, result, trace, args.technology_test_mode)
     if args.output_dir is not None and not _write_outputs(args.output_dir, result):
         return 1
     delivery = getattr(result, "delivery_result", None)
@@ -65,6 +82,24 @@ def _main(argv: list[str] | None = None) -> int:
         return 0
     # Artifact produced with disclosed technical gaps: not a complete success.
     return 2 if result.successful else 1
+
+
+def _write_run_digest(directory: Path, result, trace, technology_test_mode: bool) -> None:
+    """RC-90 (observation only): the concise digest the workflow prints last."""
+
+    from weekly_report.run_digest import FORMAL_MODE, TECHNOLOGY_TEST_MODE, build_run_digest
+
+    try:
+        text = build_run_digest(
+            result,
+            stage_elapsed_ms={} if trace is None else trace.stage_elapsed_ms(),
+            total_elapsed_ms=0 if trace is None else trace.elapsed_ms(),
+            run_mode=TECHNOLOGY_TEST_MODE if technology_test_mode else FORMAL_MODE,
+        )
+    except Exception as exc:  # noqa: BLE001 - observation must not change the outcome
+        text = f"run_digest=UNAVAILABLE failure_class={type(exc).__name__}\n"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "run_digest.txt").write_text(text, encoding="utf-8")
 
 
 def _write_outputs(directory: Path, result) -> bool:

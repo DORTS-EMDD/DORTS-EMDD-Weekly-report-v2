@@ -102,6 +102,33 @@ def _packed_queries(
     return queries
 
 
+# RC-90 (section A.71, the compact packing; RC-88 option 3 of 2644de9): at
+# most 30 planned words, the mode group kept whole, intent terms packed
+# greedily. The date operators still come first, so they always apply; terms
+# past character 200 of a long query are not searched (known and accepted for
+# the families that use it, to keep the run within its time budget).
+_GOOGLE_QUERY_WORDS = 32
+_DATE_OPERATOR_WORDS = 2
+_MAX_QUERY_WORDS = _GOOGLE_QUERY_WORDS - _DATE_OPERATOR_WORDS
+
+
+def _query_words(query: str) -> int:
+    return len(query.replace("(", " ").replace(")", " ").split())
+
+
+def _word_packed_queries(render, mode_terms: tuple[str, ...], intent_terms: tuple[str, ...], uses_intent: bool) -> list[str]:
+    """Pack intent terms into as few requests as fit 30 words (mode group whole)."""
+
+    if not uses_intent:
+        return [render(mode_terms, intent_terms)]
+    queries: list[str] = []
+    for chunk in _greedy(intent_terms, lambda terms: _query_words(render(mode_terms, terms)) <= _MAX_QUERY_WORDS):
+        queries.append(render(mode_terms, chunk))
+    if any(_query_words(query) > _MAX_QUERY_WORDS for query in queries):
+        raise ValueError("query family cannot fit the bounded query length")
+    return queries
+
+
 def _or_group(terms: tuple[str, ...], *, prefix: str = "") -> str:
     """Render governed terms as one OR group; multi-word terms are quoted."""
 
@@ -133,7 +160,7 @@ class SearchPlanner:
             raise TypeError("SearchPlanner window must be a SearchWindow")
         if monitored_check is not None and not isinstance(monitored_check, MonitoredCheckMonth):
             raise TypeError("SearchPlanner monitored_check must be a MonitoredCheckMonth")
-        selected_intents = self._canonical_intents(intents, monitored_check is not None)
+        selected_intents = self._canonical_intents(intents, monitored_check is not None, self._registry.planned_intents)
         # RC-59 (section A.43): the monitored-standards lane exists only in the
         # monthly check, and searches that whole calendar month.
         monitored_window = (
@@ -300,18 +327,24 @@ class SearchPlanner:
 
     @staticmethod
     def _canonical_intents(
-        intents: Iterable[DiscoveryIntent | str] | None, monitored_check_due: bool = False
+        intents: Iterable[DiscoveryIntent | str] | None,
+        monitored_check_due: bool = False,
+        planned: tuple[DiscoveryIntent, ...] = tuple(DiscoveryIntent),
     ) -> tuple[DiscoveryIntent, ...]:
+        # RC-90 (section A.71): only intents some query family plans exist in a
+        # plan; asking for another one (operations) is a configuration error.
         if intents is None:
             return tuple(
                 intent for intent in DiscoveryIntent
-                if monitored_check_due or intent is not DiscoveryIntent.MONITORED_STANDARDS
+                if intent in planned and (monitored_check_due or intent is not DiscoveryIntent.MONITORED_STANDARDS)
             )
         values = tuple(DiscoveryIntent(intent) for intent in intents)
         if not values:
             raise ValueError("SearchPlanner requires at least one discovery intent")
         if len(values) != len(set(values)):
             raise ValueError("SearchPlanner intents must be unique")
+        if any(intent not in planned for intent in values):
+            raise ValueError("SearchPlanner intent is not planned by any query family")
         if DiscoveryIntent.MONITORED_STANDARDS in values and not monitored_check_due:
             raise ValueError("the monitored-standards intent runs only in a monthly check")
         return tuple(intent for intent in DiscoveryIntent if intent in values)
@@ -346,9 +379,14 @@ class SearchPlanner:
                         raise ValueError("query family generated an empty query")
                     return " ".join(query.split())
 
-                queries.extend(
-                    _packed_queries(render, mode_terms, intent_terms, "{intent_terms}" in template, "{mode_terms}" in template)
-                )
+                if family.query_packing == "words":
+                    queries.extend(_word_packed_queries(render, mode_terms, intent_terms, "{intent_terms}" in template))
+                else:
+                    queries.extend(
+                        _packed_queries(
+                            render, mode_terms, intent_terms, "{intent_terms}" in template, "{mode_terms}" in template
+                        )
+                    )
             if len(queries) > self._registry.planning_limits.max_concrete_requests_per_family:
                 raise ValueError("query family exceeds bounded concrete request limit")
             if len(queries) != len(set(queries)):

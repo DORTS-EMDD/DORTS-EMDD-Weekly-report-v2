@@ -23,10 +23,16 @@ PLAN = SearchPlanner(REGISTRY).plan("selected", window=SearchWindow(date(2026, 1
 _TWO_GROUPS = re.compile(r"^\(([^()]*)\) \(([^()]*)\)$")
 
 
+CHARACTER_PACKED = {"urban_rail_or_groups", "rail_trade_press"}
+
+
 def test_the_bound():
     assert (_GOOGLE_QUERY_CHARACTERS, _DATE_OPERATOR_CHARACTERS, _MAX_QUERY_CHARACTERS) == (200, 35, 155)
-    assert all(len(item.query) <= 155 for item in PLAN.items)
-    assert len(PLAN.items) == 728
+    # RC-90: the bound holds for every character-packed family; the compact
+    # major-incident family (30 words) is locked in test_search_strategy_rc90.
+    assert all(len(item.query) <= 155 for item in PLAN.items if item.query_family_id in CHARACTER_PACKED)
+    assert {item.query_family_id for item in PLAN.items} == CHARACTER_PACKED | {"urban_rail_or_groups_compact"}
+    assert len(PLAN.items) == 599
 
 
 def _bare(term: str) -> str:
@@ -53,8 +59,8 @@ def test_every_mode_term_meets_every_intent_term():
 
 
 def test_the_configured_vocabulary_is_all_searched():
-    for market, language, intent in (("finland", "fi", "major_incident"), ("taiwan", "zh", "technology"),
-                                      ("united_kingdom", "en", "operations"), ("poland", "pl", "procurement")):
+    for market, language, intent in (("finland", "fi", "technology"), ("taiwan", "zh", "technology"),
+                                      ("united_kingdom", "en", "procurement"), ("poland", "pl", "procurement")):
         profile = REGISTRY.profile(language)
         family = next(f for f in REGISTRY.query_families if f.family_id == "urban_rail_or_groups")
         groups = ("urban_rail_terms", *family.vocabulary_groups[intent])

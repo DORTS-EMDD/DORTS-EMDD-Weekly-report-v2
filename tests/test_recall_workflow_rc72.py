@@ -49,7 +49,8 @@ def test_the_recall_job_runs_periods_in_order_and_independently():
 
 
 def test_the_recall_job_uses_the_shared_cli_health_check_and_period_artifact():
-    assert 'python main.py --region-mode "$REGION_MODE" --output-dir report-output' in RECALL
+    assert 'args=(--region-mode "$REGION_MODE" --output-dir report-output' in RECALL
+    assert 'python main.py "${args[@]}"' in RECALL
     assert '--period-start "$PERIOD_START" --period-end "$PERIOD_END"' in RECALL
     assert "PERIOD_START: ${{ matrix.start }}" in RECALL and "PERIOD_END: ${{ matrix.end }}" in RECALL
     assert "python -m scripts.google_news_health_check" in RECALL

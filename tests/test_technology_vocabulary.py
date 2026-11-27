@@ -177,8 +177,10 @@ def test_request_counts(registry, mode):
     # v13 (RC-78, Finland searched): 231.
     # v14 (RC-85, "metro train" in English procurement): 239; each English market gains one procurement request.
     # v15 (RC-88): zh forms split (247); Google News reads 200 characters, queries of at most 155 (728).
-    assert len(weekly.items) == 728
-    assert counts == {"technology": 464, "major_incident": 132, "operations": 57, "procurement": 75}
+    # v15 as amended by RC-90 (user decision 2026-11-27): operations not planned, the major-incident
+    # lane in the compact 30-word packing (599).
+    assert len(weekly.items) == 599
+    assert counts == {"technology": 464, "major_incident": 60, "procurement": 75}
     november = MonitoredCheckMonth(date(2026, 11, 1), date(2026, 11, 30))
     monthly = SearchPlanner(registry).plan(mode, window=SearchWindow(date(2026, 11, 30), date(2026, 12, 6)),
                                            monitored_check=november)
@@ -186,4 +188,4 @@ def test_request_counts(registry, mode):
                  and item.provider_target is SearchProviderId.GOOGLE_NEWS_RSS]
     catalogue = [item for item in monthly.items if item.provider_target is SearchProviderId.STANDARDS_CATALOGUE]
     assert len(monitored) == 90 and len(catalogue) == 10
-    assert len(monthly.items) == 728 + 90 + 10
+    assert len(monthly.items) == 599 + 90 + 10

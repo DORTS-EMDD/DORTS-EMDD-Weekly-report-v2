@@ -182,6 +182,13 @@ packing intent terms into as few requests as fit 155 characters (RC-88: Google N
 the provider edition (`hl`/`gl`/`ceid`), not from an English market name, and
 every request is bounded to the report period.
 
+RC-90 (ARCHITECTURE_CONTRACT §A.71, user decision 2026-11-27): the
+`operations` vocabulary below stays governed but no query family plans it; the
+`major_incident` vocabulary is sent by the compact family
+`urban_rail_or_groups_compact` (at most 30 planned words, the mode group whole,
+dates first; terms past character 200 are not searched); `technology` and
+`procurement` keep the 155-character packing. Weekly plan: 599 requests.
+
 RC-12 (`search-discovery-v5`, ARCHITECTURE_CONTRACT §A.6): the governed mode
 terms must appear in the article title (`intitle:`), only the specific intent
 groups are discovery terms, results the provider dates outside the report

@@ -49,8 +49,10 @@ class SearchPlannerTests(unittest.TestCase):
         keys = [(item.market_id, item.intent.value, item.language_profile, item.query_family_id, item.provider_target, item.query) for item in first.items]
         self.assertEqual(keys, sorted(keys))
         # RC-59: the monitored-standards lane is planned only in the monthly check.
+        # RC-90: operations is planned by no query family (user decision 2026-11-27).
         self.assertEqual(
-            {item.intent for item in first.items}, set(DiscoveryIntent) - {DiscoveryIntent.MONITORED_STANDARDS}
+            {item.intent for item in first.items},
+            set(DiscoveryIntent) - {DiscoveryIntent.MONITORED_STANDARDS, DiscoveryIntent.OPERATIONS},
         )
         with self.assertRaises(FrozenInstanceError):
             first.items += (first.items[0],)
@@ -77,7 +79,8 @@ class SearchPlannerTests(unittest.TestCase):
         # RC-11: every supported edition is planned, in its own vocabulary,
         # within the 32-word query bound, and far below one request per term.
         self.assertEqual({(item.market_id, item.language_profile) for item in plan.items}, supported)
-        self.assertTrue(all(len(item.query) <= _MAX_QUERY_CHARACTERS for item in plan.items))
+        self.assertTrue(all(len(item.query) <= _MAX_QUERY_CHARACTERS for item in plan.items
+                            if item.query_family_id != "urban_rail_or_groups_compact"))
         per_term = sum(
             len(self.registry.profile(profile_id).intent_vocabulary["technology"][group])
             for _market, profile_id in supported
@@ -205,11 +208,12 @@ class SearchPlannerTests(unittest.TestCase):
         )
         # The query is deliberately broad: no intent vocabulary is added.
         self.assertTrue(all(item.query.startswith('(metro OR subway OR tram OR "light rail" OR monorail) (site:') for item in trade))
-        self.assertTrue(all(len(item.query) <= _MAX_QUERY_CHARACTERS for item in plan.items))
+        self.assertTrue(all(len(item.query) <= _MAX_QUERY_CHARACTERS for item in plan.items
+                            if item.query_family_id != "urban_rail_or_groups_compact"))
         # RC-12 brought 20 markets below 207 requests; RC-76 (27 markets, user
         # decision 2026-11-19) is 210; RC-77 (AI terms) is 221, locked exactly in
         # test_technology_vocabulary.
-        self.assertEqual(len(plan.items), 728)  # RC-88: 155-character queries (RC-85: 239)
+        self.assertEqual(len(plan.items), 599)  # RC-90 (RC-88: 728; RC-85: 239)
 
     def test_query_generation_is_bounded(self) -> None:
         source = copy.deepcopy(self.source)

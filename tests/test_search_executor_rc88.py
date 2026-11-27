@@ -138,7 +138,8 @@ def test_the_date_operators_come_first():
     plan = SearchPlanner(RegionRegistry.from_file()).plan(
         "selected", window=SearchWindow(date(2026, 11, 16), date(2026, 11, 22))
     )
-    item = next(i for i in plan.items if i.provider_target is SearchProviderId.GOOGLE_NEWS_RSS)
-    q = parse_qs(urlsplit(GoogleNewsRssProvider.request_url(item)).query)["q"][0]
-    assert q == f"after:2026-11-16 before:2026-11-23 {item.query}"
-    assert len(q) <= 200  # Google News reads only the first 200 characters (RC-88)
+    for item in plan.items:
+        q = parse_qs(urlsplit(GoogleNewsRssProvider.request_url(item)).query)["q"][0]
+        assert q == f"after:2026-11-16 before:2026-11-23 {item.query}"
+        if item.query_family_id != "urban_rail_or_groups_compact":
+            assert len(q) <= 200  # Google News reads only the first 200 characters (RC-88)

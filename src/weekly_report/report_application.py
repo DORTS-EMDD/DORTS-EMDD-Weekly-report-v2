@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+import contextvars
 from dataclasses import dataclass, replace
 from datetime import date
 from enum import StrEnum
+from functools import partial
 import time
-from typing import Any
+from typing import Any, TypeVar
 
 from .candidate_normalizer import CandidateNormalizationError, CandidateNormalizer
 from .debug_service import observe_stage
@@ -60,6 +64,39 @@ from .report_service import (
 from .writer import ReportWriter, WriterReportBlock
 from .validator import ValidationResult, Validator
 from .delivery import DeliveryReceipt, DeliveryService
+
+
+_Item = TypeVar("_Item")
+
+# RC-90 (section A.71): Evidence and Scope evaluate candidates with this many
+# workers. Each candidate's owner call is unchanged; only when it runs changes.
+# Results are taken in the candidates' original order, so every result, gap,
+# observation and exception is exactly what the serial loop produced.
+CANDIDATE_STAGE_WORKERS = 2
+
+
+@contextmanager
+def _in_candidate_order(
+    function: Callable[[_Item], Any], items: Sequence[_Item], workers: int
+) -> Iterator[list[tuple[_Item, Callable[[], Any]]]]:
+    """Pair each item with a call that returns (or raises) its outcome, in input order.
+
+    With one worker the call runs the owner synchronously, as before RC-90.
+    With more, at most ``workers`` owner calls run at once; on leaving the
+    block, calls not yet started are cancelled and running ones finish, so an
+    exception taken from the list stops the stage as the serial loop did.
+    """
+
+    if workers == 1:
+        yield [(item, partial(function, item)) for item in items]
+        return
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="candidate-stage") as pool:
+        futures = [(item, pool.submit(contextvars.copy_context().run, function, item)) for item in items]
+        try:
+            yield [(item, future.result) for item, future in futures]
+        finally:
+            for _item, future in futures:
+                future.cancel()
 
 
 class SearchRuntimeAcceptance(StrEnum):
@@ -611,6 +648,7 @@ class ReportApplication:
         *,
         sleep: Callable[[float], None] | None = None,
         link_resolution_retry_wait_seconds: int = LINK_RESOLUTION_RETRY_WAIT_SECONDS,
+        candidate_stage_workers: int = CANDIDATE_STAGE_WORKERS,
     ) -> None:
         if not isinstance(registry, RegionRegistry):
             raise TypeError("ReportApplication requires a RegionRegistry")
@@ -674,6 +712,13 @@ class ReportApplication:
             raise ValueError("link_resolution_retry_wait_seconds must be a non-negative integer")
         self._sleep = time.sleep if sleep is None else sleep
         self._link_retry_wait_seconds = link_resolution_retry_wait_seconds
+        if (
+            isinstance(candidate_stage_workers, bool)
+            or not isinstance(candidate_stage_workers, int)
+            or candidate_stage_workers < 1
+        ):
+            raise ValueError("candidate_stage_workers must be a positive integer")
+        self._candidate_stage_workers = candidate_stage_workers
 
     @property
     def registry(self) -> RegionRegistry:
@@ -848,15 +893,21 @@ class ReportApplication:
             if normalized_candidate.candidate.candidate_id in evidence_by_id
             and evidence_by_id[normalized_candidate.candidate.candidate_id].state is EvidenceState.READY
         )
-        with observe_stage("Scope", len(ready_pairs)) as observation:
+        def classify_scope(pair: tuple[NormalizedCandidate, EvidenceResult]) -> ScopeResult:
+            normalized_candidate, evidence = pair
+            return self._scope_classifier.classify(
+                evidence,
+                candidate_title=normalized_candidate.candidate.title,
+                monitored_check=monitored_check,
+            )
+
+        with observe_stage("Scope", len(ready_pairs)) as observation, _in_candidate_order(
+            classify_scope, ready_pairs, self._candidate_stage_workers
+        ) as scope_outcomes:
             scope_results: list[ScopeResult] = []
-            for normalized_candidate, evidence in ready_pairs:
+            for (normalized_candidate, evidence), scope_outcome in scope_outcomes:
                 try:
-                    scope = self._scope_classifier.classify(
-                        evidence,
-                        candidate_title=normalized_candidate.candidate.title,
-                        monitored_check=monitored_check,
-                    )
+                    scope = scope_outcome()
                 except (SemanticProviderTechnicalFailure, ProposalContractViolation) as failure:
                     # RC-9: a proposal the owner cannot validate is a disclosed
                     # technical gap, never OUT_OF_SCOPE.
@@ -998,10 +1049,25 @@ class ReportApplication:
         link_failures: set[str],
         observation,
     ) -> None:
-        for normalized_candidate in candidates:
+        with _in_candidate_order(
+            lambda candidate: self._evidence_service.evaluate(candidate.candidate),
+            tuple(candidates),
+            self._candidate_stage_workers,
+        ) as outcomes:
+            self._collect_evidence(outcomes, results, gaps, link_failures, observation)
+
+    @staticmethod
+    def _collect_evidence(
+        outcomes: list[tuple[NormalizedCandidate, Callable[[], Any]]],
+        results: dict[str, EvidenceResult],
+        gaps: dict[str, TechnicalGap],
+        link_failures: set[str],
+        observation,
+    ) -> None:
+        for normalized_candidate, outcome in outcomes:
             candidate_id = normalized_candidate.candidate.candidate_id
             try:
-                evidence = self._evidence_service.evaluate(normalized_candidate.candidate)
+                evidence = outcome()
             except (SemanticProviderTechnicalFailure, EvidenceAcquisitionTechnicalFailure) as failure:
                 # RC-82: a link that could not be resolved for a transient
                 # reason is a disclosed technical gap, not an Evidence rejection.
@@ -1371,6 +1437,7 @@ def build_report_application(
     delivery: DeliveryService | None = None,
     delivery_recipient: str | None = None,
     sleep: Callable[[float], None] | None = None,
+    candidate_stage_workers: int = CANDIDATE_STAGE_WORKERS,
 ) -> ReportApplication:
     """Construct a formal shared application with its complete downstream workflow."""
 
@@ -1403,10 +1470,12 @@ def build_report_application(
         delivery,
         delivery_recipient,
         sleep=sleep,
+        candidate_stage_workers=candidate_stage_workers,
     )
 
 
 __all__ = [
+    "CANDIDATE_STAGE_WORKERS",
     "LINK_RESOLUTION_GATE_MIN_FAILED",
     "LINK_RESOLUTION_GATE_MIN_RATIO",
     "LINK_RESOLUTION_RETRY_WAIT_SECONDS",

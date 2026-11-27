@@ -60,9 +60,10 @@ def test_bare_ai_is_not_used_where_it_is_a_common_word():
 def test_plan_size_and_query_bound():
     plan = SearchPlanner(REGISTRY).plan("selected")
     counts = Counter(item.intent.value for item in plan.items)
-    assert len(plan.items) == 728  # RC-88: 155-character queries (RC-85 239, RC-78 231, RC-77 221)
+    assert len(plan.items) == 599  # RC-90 (RC-88 728, RC-85 239, RC-78 231, RC-77 221)
     assert counts["technology"] == 464
-    assert all(len(item.query) <= _MAX_QUERY_CHARACTERS for item in plan.items)
+    assert all(len(item.query) <= _MAX_QUERY_CHARACTERS for item in plan.items
+               if item.query_family_id != "urban_rail_or_groups_compact")
 
 
 def test_every_rc77_term_reaches_every_supported_edition_of_its_profile():

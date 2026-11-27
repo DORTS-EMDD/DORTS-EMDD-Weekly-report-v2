@@ -59,6 +59,11 @@ on:
         required: false
         default: false
         type: boolean
+      recall_technology_only:
+        description: "Recall test only (RC-90): search only the technology intent and trade press. A test mode, never a formal run"
+        required: false
+        default: false
+        type: boolean
       delivery_check:
         description: "RC-55 live check instead of a report: l1-l2 (ledger), l3 (one email to the sending account)"
         required: true
@@ -172,6 +177,11 @@ jobs:
           path: report-output/
           if-no-files-found: warn
           retention-days: 90
+      - name: Concise run digest (RC-90, printed last)
+        # Observation only: section counts, technology titles, stage times and
+        # Search 429 counts, at the end of the log and in the job summary.
+        if: ${{ !cancelled() && steps.cli.outcome != 'skipped' }}
+        run: python -m scripts.print_run_digest report-output --step-summary "$GITHUB_STEP_SUMMARY"
 
   recall-plan:
     # Orchestration only: validates recall_periods and builds the matrix.
@@ -227,9 +237,11 @@ jobs:
       - name: Run shared production CLI for this period
         id: cli
         run: |
+          args=(--region-mode "$REGION_MODE" --output-dir report-output --period-start "$PERIOD_START" --period-end "$PERIOD_END")
+          # RC-90: the recall-only technology test mode (never a formal run).
+          if [ "$TECHNOLOGY_ONLY" = "true" ]; then args+=(--technology-test-mode); fi
           code=0
-          python main.py --region-mode "$REGION_MODE" --output-dir report-output \
-            --period-start "$PERIOD_START" --period-end "$PERIOD_END" || code=$?
+          python main.py "${args[@]}" || code=$?
           if [ -f report-output/run_summary.txt ]; then
             { echo '```'; cat report-output/run_summary.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -242,6 +254,7 @@ jobs:
         env:
           PERIOD_START: ${{ matrix.start }}
           PERIOD_END: ${{ matrix.end }}
+          TECHNOLOGY_ONLY: ${{ inputs.recall_technology_only == true && 'true' || 'false' }}
           REGION_MODE: ${{ inputs.region_mode || 'selected' }}
           MAIAGENT_API_BASE: ${{ secrets.MAIAGENT_API_BASE }}
           MAIAGENT_API_KEY: ${{ secrets.MAIAGENT_API_KEY }}
@@ -264,6 +277,10 @@ jobs:
           path: report-output/
           if-no-files-found: warn
           retention-days: 30
+      - name: Concise run digest with the v4 recall score (RC-90, printed last)
+        # Observation only; Claude Code reads only this block of the log.
+        if: ${{ !cancelled() && steps.cli.outcome != 'skipped' }}
+        run: python -m scripts.print_run_digest report-output --gold acceptance/gold/recall_v1.json --step-summary "$GITHUB_STEP_SUMMARY"
 
   source-probe:
     # Observation only: prints fetch status, the production structural

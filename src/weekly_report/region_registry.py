@@ -129,6 +129,7 @@ class RegionRegistry:
                 market_ids=_tuple_strings(item.get("market_ids", ()), "query family market ids"),
                 intents=_tuple_strings(item.get("intents", ()), "query family intents"),
                 mode_terms_in_title=item.get("mode_terms_in_title", False),
+                query_packing=item.get("query_packing", "characters"),
             )
             for item in value.get("query_families", ())
         )
@@ -300,6 +301,21 @@ class RegionRegistry:
             raise ValueError("provider profile bindings must exactly cover evaluation population")
 
     @property
+    def planned_intents(self) -> tuple[DiscoveryIntent, ...]:
+        """Discovery intents some query family plans, in canonical order.
+
+        RC-90 (section A.71): the query families are the only place that says
+        which intents are searched; an intent no family names (operations,
+        user decision 2026-11-27) keeps its governed vocabulary but is not
+        planned. A family without an intent list covers every intent.
+        """
+
+        covered = set()
+        for family in self.query_families:
+            covered.update(family.intents or (intent.value for intent in DiscoveryIntent))
+        return tuple(intent for intent in DiscoveryIntent if intent.value in covered)
+
+    @property
     def selected_profile_ids(self) -> tuple[str, ...]:
         return tuple(profile.profile_id for profile in self.profiles)
 
@@ -398,6 +414,7 @@ class RegionRegistry:
                     **({"market_ids": list(family.market_ids)} if family.market_ids else {}),
                     **({"intents": list(family.intents)} if family.intents else {}),
                     **({"mode_terms_in_title": True} if family.mode_terms_in_title else {}),
+                    **({"query_packing": family.query_packing} if family.query_packing != "characters" else {}),
                 }
                 for family in self.query_families
             ],

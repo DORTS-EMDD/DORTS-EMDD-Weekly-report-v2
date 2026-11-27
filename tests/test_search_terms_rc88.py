@@ -35,7 +35,9 @@ def test_both_forms_are_separate_or_terms():
 def test_taiwan_and_hong_kong_request_counts():
     counts = {market: sum(1 for item in PLAN.items if item.market_id == market and item.language_profile == "zh")
               for market in ("taiwan", "hong_kong")}
-    assert counts == {"taiwan": 40, "hong_kong": 40}  # RC-85: 7 each; 11 with the split; 40 with 155-character queries
+    # RC-85: 7 each; 11 with the split; 40 with 155-character queries; RC-90: 39
+    # (operations 2 not planned, major incident 4 -> 3 in the compact packing).
+    assert counts == {"taiwan": 39, "hong_kong": 39}
 
 
 def test_a_slash_joined_term_is_rejected_by_the_registry():

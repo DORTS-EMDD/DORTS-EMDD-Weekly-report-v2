@@ -1912,6 +1912,9 @@ class MarketConfig:
             raise ValueError("market profile mappings must be disjoint")
 
 
+QUERY_PACKINGS = ("characters", "words")
+
+
 @dataclass(frozen=True, slots=True)
 class QueryFamilyConfig:
     """Bounded deterministic query composition configuration."""
@@ -1926,10 +1929,18 @@ class QueryFamilyConfig:
     market_ids: tuple[str, ...] = ()
     intents: tuple[str, ...] = ()
     mode_terms_in_title: bool = False
+    # RC-90 (section A.71): how OR-group terms are packed into requests.
+    # "characters" (RC-88): every planned query fits the 155 characters
+    # Google News reads after the date operators, so every term is searched.
+    # "words": the compact packing of at most 30 planned words (RC-88 option
+    # 3); terms past character 200 of a long query are not searched (known).
+    query_packing: str = "characters"
 
     def __post_init__(self) -> None:
         if not isinstance(self.family_id, str) or not self.family_id.strip():
             raise ValueError("query family requires family_id")
+        if self.query_packing not in QUERY_PACKINGS:
+            raise ValueError("query family query_packing must be characters or words")
         market_ids = tuple(self.market_ids)
         if any(not isinstance(value, str) or not value.strip() for value in market_ids) or len(market_ids) != len(set(market_ids)):
             raise ValueError("query family market_ids must be unique non-empty strings")

@@ -510,7 +510,10 @@ class ShellIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, patch.object(main, "ProductionRunner", FakeRunner):
             self.assertEqual(main.main(["--output-dir", directory]), 0)
             written = sorted(path.name for path in Path(directory).iterdir())
-            self.assertEqual(written, ["run_summary.txt", "weekly-report-0123.md", "weekly-report-0123.pdf"])
+            # RC-90: the concise run digest is written beside the run summary.
+            self.assertEqual(
+                written, ["run_digest.txt", "run_summary.txt", "weekly-report-0123.md", "weekly-report-0123.pdf"]
+            )
             self.assertTrue((Path(directory) / "weekly-report-0123.pdf").read_bytes().startswith(b"%PDF"))
 
     def test_streamlit_and_workflow_are_thin_shared_shells(self):

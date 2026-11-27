@@ -3981,8 +3981,26 @@
         "monitored_standards": ["monitored_standard_ids"]
       },
       "provider_target": "google_news_rss",
-      "intents": ["technology", "major_incident", "operations", "procurement"],
+      "intents": ["technology", "procurement"],
       "mode_terms_in_title": true
+    },
+    {
+      "family_id": "urban_rail_or_groups_compact",
+      "templates": [
+        "{mode_terms} {intent_terms}"
+      ],
+      "anchor_terms": [],
+      "vocabulary_groups": {
+        "technology": ["technology_terms", "new_material_terms"],
+        "major_incident": ["accident_terms", "technical_failure_terms"],
+        "operations": ["opening_service_terms"],
+        "procurement": ["award_terms", "tender_terms"],
+        "monitored_standards": ["monitored_standard_ids"]
+      },
+      "provider_target": "google_news_rss",
+      "intents": ["major_incident"],
+      "mode_terms_in_title": true,
+      "query_packing": "words"
     },
     {
       "family_id": "rail_trade_press",

@@ -207,12 +207,26 @@ class ExecutionTrace:
         self._enabled = True
         self._outcome = "COMPLETED"
         self._statuses = dict.fromkeys(STAGES, "NOT_REACHED")
+        # RC-90 (observation only): how long each completed or failed stage
+        # took, for the concise run digest. Never read by any decision.
+        self._stage_elapsed_ms: dict[str, int] = {}
         values = os.environ if environ is None else environ
         self._github = {
             key: value if isinstance(value, str) and re.fullmatch(r"[0-9]{1,24}", value) else None
             for key, value in (("github_run_id", values.get("GITHUB_RUN_ID")),
                                ("github_run_attempt", values.get("GITHUB_RUN_ATTEMPT")))
         }
+
+    def stage_elapsed_ms(self) -> dict[str, int]:
+        """RC-90: elapsed milliseconds of each finished stage, in pipeline order."""
+
+        order = {stage: index for index, stage in enumerate(STAGES)}
+        return dict(sorted(self._stage_elapsed_ms.items(), key=lambda item: order.get(item[0], len(order))))
+
+    def elapsed_ms(self) -> int:
+        """RC-90: elapsed milliseconds since this execution started."""
+
+        return max(0, int((self._clock() - self._started) * 1000))
 
     def outcome(self, successful: bool, report_id: str | None = None, *, partial: bool = False) -> None:
         """COMPLETED, PARTIAL (artifact with disclosed technical gaps), or FAILED."""
@@ -259,6 +273,8 @@ class ExecutionTrace:
             # Never advertise a COMPLETED checkpoint that the sink did not accept.
             self._sequence += 1
             self._statuses = statuses
+            if event in {"STAGE_COMPLETED", "STAGE_FAILED"}:
+                self._stage_elapsed_ms[stage] = self._stage_elapsed_ms.get(stage, 0) + record["elapsed_ms"]
         except Exception:
             # Debug has no continuation authority. No retry or alternate sink.
             self._enabled = False

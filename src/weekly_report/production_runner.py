@@ -24,6 +24,7 @@ from .debug_service import event_identity_projection, evidence_projection, execu
 from .selection_audit import SELECTION_AUDIT_VERSION, build_selection_audit
 from .classifier import Classifier
 from .contracts import (
+    DiscoveryIntent,
     SemanticProviderConfigurationFailure,
     EvidenceResult,
     EvidenceState,
@@ -77,12 +78,12 @@ from .validator import Validator
 
 PRODUCTION_METADATA_MODEL = "GPT-OSS-120B"
 # Six probes spread across the weekly plan as (1, 10, N/2, N/2+5, N-7, N): the
-# 728-request plan of RC-88 (search-discovery-v15: the Traditional and
-# Simplified Chinese forms as separate terms, and planned queries of at most
-# 155 characters because Google News reads 200 with the dates first; RC-85 had
-# 239, RC-78 231, RC-77 221, RC-76 210). The monthly monitored-standards requests of RC-59 are
-# not in the health-check plan.
-HEALTH_PROBE_ORDINALS = (1, 10, 364, 369, 721, 728)
+# 599-request plan of RC-90 (search-discovery-v15 as amended by RC-90:
+# technology and procurement in the 155-character packing of RC-88, the
+# major-incident lane in the compact 30-word packing, operations not planned;
+# RC-88 alone had 728, RC-85 239, RC-78 231, RC-77 221, RC-76 210). The
+# monthly monitored-standards requests of RC-59 are not in the health-check plan.
+HEALTH_PROBE_ORDINALS = (1, 10, 299, 304, 592, 599)
 # RC-72 (section A.53, user decision 2026-11-19): at least four of the six
 # probes succeed and every failure is Google News rate limiting (HTTP 429);
 # otherwise wait 45 minutes and run the whole set once more.
@@ -859,10 +860,20 @@ class ProductionRunner:
         region_mode: RegionMode | str = RegionMode.SELECTED,
         period_start: date | str | None = None,
         period_end: date | str | None = None,
+        search_intents: tuple[DiscoveryIntent, ...] | None = None,
     ) -> ProductionRunResult:
+        """Run one report; ``search_intents`` is only for the recall test mode.
+
+        RC-90 (section A.71): the formal run plans every intent the query
+        families plan. Restricting the intents (the technology-only recall test
+        mode) is a test, never a formal run; main.py refuses it when live email
+        sending is enabled.
+        """
+
         with execution_trace() as trace:
             result = self._run(
-                region_mode=region_mode, period_start=period_start, period_end=period_end
+                region_mode=region_mode, period_start=period_start, period_end=period_end,
+                search_intents=search_intents,
             )
             trace.outcome(
                 result.successful,
@@ -877,6 +888,7 @@ class ProductionRunner:
         region_mode: RegionMode | str = RegionMode.SELECTED,
         period_start: date | str | None = None,
         period_end: date | str | None = None,
+        search_intents: tuple[DiscoveryIntent, ...] | None = None,
     ) -> ProductionRunResult:
         mode = RegionMode(region_mode)
         default_start, default_end = default_period()
@@ -887,7 +899,10 @@ class ProductionRunner:
         if self._diagnostic_collector is not None:
             self._diagnostic_collector.clear()
         try:
-            result = self._application.run(mode, period_start=start, period_end=end)
+            if search_intents is None:
+                result = self._application.run(mode, period_start=start, period_end=end)
+            else:
+                result = self._application.run(mode, search_intents, period_start=start, period_end=end)
         except SemanticProviderConfigurationFailure as exc:
             return ProductionRunResult(
                 ProductionRunStatus.CONFIGURATION_FAILURE,

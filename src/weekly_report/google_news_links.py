@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 import json
 import re
+import threading
 import time
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit
@@ -35,6 +36,13 @@ _USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Weekly-report-v2-Eviden
 # resolution request (a connection error or timeout, HTTP 429 or 5xx) is
 # retried once after this wait; any other non-200 status is not retried.
 LINK_RETRY_DELAY_SECONDS = 5.0
+
+# RC-90 (section A.71): Evidence runs with two workers, but Google News link
+# resolution stays serial (one resolution at a time per resolver) and paced:
+# a resolution that needs Google starts at least this long after the previous
+# one started, so the request rate stays bounded and cannot approach the
+# RC-83 link-resolution gate because of the parallel Evidence stage.
+LINK_RESOLUTION_MIN_INTERVAL_SECONDS = 2.0
 
 # (method, url, headers, body, timeout) -> (status, text)
 LinkTransport = Callable[[str, str, dict[str, str], bytes | None, float], tuple[int, str]]
@@ -170,11 +178,19 @@ class GoogleNewsLinkResolver:
         timeout_seconds: float = 10.0,
         retry_delay_seconds: float = LINK_RETRY_DELAY_SECONDS,
         sleep: Callable[[float], None] = time.sleep,
+        min_interval_seconds: float = LINK_RESOLUTION_MIN_INTERVAL_SECONDS,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._transport = transport or _default_transport
         self._timeout = float(timeout_seconds)
         self._retry_delay = float(retry_delay_seconds)
         self._sleep = sleep
+        self._min_interval = float(min_interval_seconds)
+        if self._min_interval < 0:
+            raise ValueError("min_interval_seconds must not be negative")
+        self._clock = clock
+        self._lock = threading.Lock()
+        self._last_started: float | None = None
 
     def _request(self, step: str, method: str, url: str, headers: dict[str, str], body: bytes | None) -> tuple[int, str, int]:
         """One resolution request, retried once on a transient failure (RC-82).
@@ -214,6 +230,16 @@ class GoogleNewsLinkResolver:
         legacy = decode_legacy_article_id(article_id)
         if legacy is not None:
             return LinkResolution(url, legacy, "LEGACY_ID_DECODE", 0)
+        # RC-90: one resolution through Google at a time, paced (see above).
+        with self._lock:
+            if self._last_started is not None:
+                wait = self._last_started + self._min_interval - self._clock()
+                if wait > 0:
+                    self._sleep(wait)
+            self._last_started = self._clock()
+            return self._resolve_through_google(url, article_id)
+
+    def _resolve_through_google(self, url: str, article_id: str) -> LinkResolution:
         step = "ARTICLE_PAGE"
         status, page, sent = self._request(
             step,
@@ -287,6 +313,7 @@ def same_publisher(publisher_url: str, resolved_url: str) -> bool | None:
 __all__ = [
     "GOOGLE_NEWS_HOST",
     "GoogleNewsLinkResolver",
+    "LINK_RESOLUTION_MIN_INTERVAL_SECONDS",
     "LINK_RETRY_DELAY_SECONDS",
     "LinkResolution",
     "LinkResolutionError",

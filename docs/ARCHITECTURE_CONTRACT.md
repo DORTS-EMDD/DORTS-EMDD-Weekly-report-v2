@@ -4474,6 +4474,12 @@ HEALTH_PROBE_ORDINALS = (1, 10, 364, 369, 721, 728) (RC-88)
 UNIT_GROUNDING = a Writer number without a unit needs an Evidence number without a unit (RC-88, revises A.23)
 EVIDENCE_FETCH_MAX_BYTES = 10 MiB, Content-Type checked before reading (RC-88)
 UNTRUSTED_SOURCE_TEXT_INSTRUCTION = in every MaiAgent task (RC-88)
+```
+
+RC-90 (section A.71) amends this plan: technology and procurement keep the
+155-character packing, the major-incident lane uses the compact 30-word
+packing, operations is not planned; 599 weekly requests, health probes (1, 10,
+299, 304, 592, 599).
 
 ### A.70 RC-89 A self-first canonical declaration fits as before RC-86; catalogue record errors contained (2026-11-26, user decision)
 
@@ -4526,6 +4532,106 @@ continue. Parsing rules, record fields and Evidence are unchanged. Tests:
 
 ```text
 STANDARDS_CATALOGUE_RECORD_ERROR = any malformed record page is a disclosed INVALID_RESPONSE of that request (RC-89 with RC-88 item 3)
+```
+
+### A.71 RC-90 Search strategy v15, parallel Evidence and Scope, technology test mode, run digest (2026-11-27, user decision; strategy delegated to Claude)
+
+The user decided the principle and delegated the strategy (2026-11-27): new
+technology (技術新知) is what the weekly report is for; the other categories
+fill it out. The formal run should take at most 150 minutes. Measured on the
+same period 2026-11-16..22 (recall Runs 45641734970 on f7f7248, 239 requests,
+and 45764691167 on 4d3053d, 728 requests): 103 and 305 minutes; 13 and 61
+report items, of which 1 and 5 in 技術新知; v4 score 14/25 and 16/25. In the
+728-request run Search took 27.6 minutes, Evidence 136.6 (1,418 candidates,
+5.8 s each), Scope 66.1 (744, 5.3 s each), Event Identity 29.9 and Category to
+Validator 44.0: the time follows the candidate count, and Evidence and Scope
+are 66% of it. The operations intent produced no report item in either run;
+its 113 candidates were 4% of the 2.6 hours of candidate work. Four gold items
+of v4 (#30, #32, #50, #53) were found only by the major-incident intent.
+
+* **Search plan v15 (amends RC-88 section A.69; changes the section F rule that
+  formal planning retains all five intents, user decision 2026-11-27).**
+  * `technology`: the full 155-character packing of 4d3053d (every term
+    searched, dates first): 462 requests, plus the 2 `rail_trade_press`
+    requests (same six sites).
+  * `operations`: planned by no query family. The intent ID and its governed
+    vocabulary stay in the configuration; asking SearchPlanner for it is a
+    configuration error. Operations Category events still arrive through the
+    other intents (Search intent is not Category; section L is unchanged).
+  * `procurement`: the full 155-character packing, 75 requests.
+  * `major_incident`: family `urban_rail_or_groups_compact`, the compact
+    packing of RC-88 option 3 (2644de9): the mode group whole, intent terms
+    packed to at most 30 planned words, dates first. 60 requests; terms past
+    character 200 of a request are not searched (56% of the mode-term and
+    intent-term pairs are), known and accepted for the time budget. Same
+    vocabulary groups as before (accident and technical-failure terms).
+  * `monitored_standards`: unchanged (RC-59/60; the monthly check adds 90
+    Google News requests and 10 catalogue records, 699 that week).
+  * One owner: the query families in `search_configuration.json` say which
+    intents are planned (`RegionRegistry.planned_intents`) and how each family
+    packs (`query_packing`: `characters`, the default, or `words`). SearchPlanner
+    is still the only plan owner. Weekly plan 599 requests (technology 464,
+    procurement 75, major incident 60); health probes (1, 10, 299, 304, 592,
+    599), RC-72 rule unchanged; Search pacing and the 429 retry (RC-88) unchanged.
+  * Options considered (estimated from the 728-request run's per-candidate
+    costs by intent; "compact" = the 30-word packing, "workers" = item 2):
+
+    | Option | technology / procurement / major incident | weekly requests | 2 workers | 3 workers |
+    | --- | --- | --- | --- | --- |
+    | A complete | 464 full / 75 full / 132 full | 671 | ~190 min | ~158 min |
+    | **B (chosen)** | 464 full / 75 full / 60 compact | 599 | **~170 min** | ~141 min |
+    | C both compact | 464 full / 44 compact / 60 compact | 568 | ~162 min | ~135 min |
+    | D no incident lane | 464 full / 75 full / none | 539 | ~146 min | ~122 min |
+
+    B keeps procurement whole before the incident lane (the stated priority
+    procurement > major_incident) and keeps an incident lane at all, which the
+    v4 pass condition depends on; D is the only option estimated within 150
+    minutes with two workers but drops the four incident-only gold items (v4
+    about 12/25). **The 150-minute target is not reached with two workers by
+    any option that keeps the incident lane**; reported to the user before
+    deciding (pending: B with three workers, D, or a longer run).
+* **Parallel Evidence and Scope (item 2).** ReportApplication evaluates
+  Evidence and Scope with `CANDIDATE_STAGE_WORKERS` = 2 bounded workers
+  (`_in_candidate_order`). Each candidate's owner call (EvidenceService.evaluate,
+  ScopeClassifier.classify) is unchanged and decides exactly as before; only
+  when it runs changes. Outcomes are taken in the candidates' original order in
+  the orchestrating thread, so every result, technical gap, observation,
+  correction record and exception equals the serial run; on an unexpected
+  exception the calls not yet started are cancelled and the stage stops at the
+  same candidate as the serial loop. The RC-83 retry of failed links runs the
+  same way. Google News link resolution stays serial: `GoogleNewsLinkResolver`
+  resolves through Google one link at a time and starts a resolution at least
+  `LINK_RESOLUTION_MIN_INTERVAL_SECONDS` (2 s) after the previous one started
+  (offline legacy IDs are not paced), so the parallel stage cannot raise the
+  request rate toward the RC-83 gate (20 links and 30%). Search stays
+  sequential (section C); Event Identity and the later stages are unchanged.
+  Tests: `tests/test_search_strategy_rc90.py` (serial and parallel runs equal,
+  bounded concurrency, order, exception, link serialization and pacing).
+* **Technology test mode (item 3; a test, not a formal run).** `main.py
+  --technology-test-mode` plans only the technology intent (its OR-group family
+  and `rail_trade_press`); the workflow passes it only from the recall-test job
+  (input `recall_technology_only`). main.py refuses it unless
+  `LIVE_EMAIL_SEND=0`; the recall job never has delivery secrets. Its report is
+  a measurement and is never delivered.
+* **Concise run digest (item 4; observation only).** main.py writes
+  `run_digest.txt` from the finished result and the same RunTrace (the trace now
+  also keeps each finished stage's elapsed time, observation only): status,
+  period, mode, the item count of each formal section, the 技術新知 titles, the
+  minutes of each stage and in total, and Search 429 counts (retried, still
+  failed). The last step of the production and recall-test jobs prints it
+  between `===== RUN DIGEST =====` markers and adds it to the job summary
+  (`scripts/print_run_digest.py`); the recall job appends the v4 score
+  (`recall_score`, one line plus one line per gold item). It decides nothing.
+
+```text
+SEARCH_CONFIGURATION_VERSION = search-discovery-v15 as amended by RC-90 (599 weekly requests)
+SEARCH_PLANNED_INTENTS = technology, major_incident, procurement (+ monitored_standards in the monthly check); operations not planned (RC-90, user decision)
+SEARCH_QUERY_PACKING = characters (155, every term) for technology and procurement; words (30) for major_incident (RC-90)
+HEALTH_PROBE_ORDINALS = (1, 10, 299, 304, 592, 599) (RC-90)
+CANDIDATE_STAGE_WORKERS = 2 for Evidence and Scope, results in candidate order (RC-90)
+LINK_RESOLUTION = serial, at least 2 s between resolution starts (RC-90)
+TECHNOLOGY_TEST_MODE = recall test only, LIVE_EMAIL_SEND=0 required (RC-90)
+RUN_DIGEST = observation only, printed last in production and recall jobs (RC-90)
 ```
 
 ### Shared production workflow
@@ -4894,7 +5000,10 @@ not invalidate executable planning for other markets. It remains configured and
 cannot be substituted or silently removed.
 
 Every enabled intent must retain at least one executable SearchPlanItem. Formal
-production planning retains all five required intents. A plan with no
+production planning retains every intent a query family plans: technology,
+major_incident and procurement, and monitored_standards in the monthly check
+(RC-90, section A.71, user decision 2026-11-27: operations is planned by no
+query family). A plan with no
 executable items fails before execution; it is not a successful zero-result
 Search.
 
@@ -4948,6 +5057,10 @@ monitored_standards -> monitored standards
 * operations
 * procurement
 * monitored_standards（RC-58，§A.42：以監控清單的標準編號搜尋該批標準的動態；RC-59，§A.43：只在每月檢查的那一期規劃，搜尋整個月份）
+
+RC-90（§A.71，使用者決定 2026-11-27）：`operations` 不再由任何 query family
+規劃（ID 與詞彙保留於設定）；正式執行啟用的 intent 為 technology、
+major_incident、procurement，及每月檢查那一期的 monitored_standards。
 
 每個啟用 intent 至少：
 

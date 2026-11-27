@@ -9,6 +9,7 @@ run stops after Evidence as a TECHNICAL_FAILURE: no report, nothing delivered.
 from __future__ import annotations
 
 from datetime import date
+import threading
 from unittest import TestCase
 
 from src.weekly_report.contracts import (
@@ -77,21 +78,29 @@ class LinkEvidenceService(FormalEvidenceService):
         self.fail_retry = fail_retry
         self.semantic_gaps = semantic_gaps
         self.calls: list[str] = []
+        # RC-90: Evidence runs with two workers; the bookkeeping is shared.
+        self._lock = threading.Lock()
 
     def evaluate(self, candidate):
-        self.calls.append(candidate.candidate_id)
+        with self._lock:
+            self.calls.append(candidate.candidate_id)
+            seen = self.calls.count(candidate.candidate_id)
         if candidate.title.startswith("news "):
             index = int(candidate.title.split()[1])
-            seen = self.calls.count(candidate.candidate_id)
             if seen == 1 and index < self.fail_first:
                 raise EvidenceAcquisitionTechnicalFailure("LINK_RESOLUTION_BATCHEXECUTE_HTTP_429", attempts=2)
             if seen == 2 and index < self.fail_retry:
                 raise EvidenceAcquisitionTechnicalFailure("LINK_RESOLUTION_BATCHEXECUTE_HTTP_429", attempts=2)
             if self.fail_first <= index < self.fail_first + self.semantic_gaps:
                 raise SemanticProviderTechnicalFailure("TIMEOUT", attempts=2, transient=True)
-        ready = super().evaluate(candidate)
-        self.calls.pop()  # FormalEvidenceService records the call too
-        return ready
+        return FormalEvidenceService.evaluate(_Untracked(), candidate)
+
+
+class _Untracked:
+    """FormalEvidenceService's result without recording the call twice."""
+
+    def __init__(self) -> None:
+        self.calls: list = []
 
 
 def _application(provider, evidence, sleeps, *, formal=False):
