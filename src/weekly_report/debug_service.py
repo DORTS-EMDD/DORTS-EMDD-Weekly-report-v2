@@ -17,6 +17,7 @@ from enum import Enum
 import json
 import os
 import re
+import threading
 from time import monotonic
 from typing import Any
 from urllib.parse import urlsplit
@@ -210,6 +211,10 @@ class ExecutionTrace:
         # RC-90 (observation only): how long each completed or failed stage
         # took, for the concise run digest. Never read by any decision.
         self._stage_elapsed_ms: dict[str, int] = {}
+        # RC-90: MaiAgent HTTP attempts by stage and outcome (observation only;
+        # Evidence and Scope workers record concurrently).
+        self._maiagent_attempts: dict[str, dict[str, int]] = {}
+        self._maiagent_lock = threading.Lock()
         values = os.environ if environ is None else environ
         self._github = {
             key: value if isinstance(value, str) and re.fullmatch(r"[0-9]{1,24}", value) else None
@@ -222,6 +227,19 @@ class ExecutionTrace:
 
         order = {stage: index for index, stage in enumerate(STAGES)}
         return dict(sorted(self._stage_elapsed_ms.items(), key=lambda item: order.get(item[0], len(order))))
+
+    def record_maiagent_attempt(self, stage: str, outcome: str) -> None:
+        with self._maiagent_lock:
+            counts = self._maiagent_attempts.setdefault(stage, {})
+            counts[outcome] = counts.get(outcome, 0) + 1
+
+    def maiagent_attempts(self) -> dict[str, dict[str, int]]:
+        """RC-90: MaiAgent HTTP attempts per stage and outcome (OK or a failure class)."""
+
+        order = {stage: index for index, stage in enumerate(STAGES)}
+        with self._maiagent_lock:
+            items = [(stage, dict(sorted(counts.items()))) for stage, counts in self._maiagent_attempts.items()]
+        return dict(sorted(items, key=lambda item: order.get(item[0], len(order))))
 
     def elapsed_ms(self) -> int:
         """RC-90: elapsed milliseconds since this execution started."""
@@ -552,6 +570,28 @@ def observe_progress(stage: str, values: Any) -> None:
     observation = _STAGE.get()
     if observation is not None and observation.stage == stage:
         observation.observe(values)
+
+
+_MAIAGENT_OUTCOME = re.compile(r"[A-Z][A-Z0-9_]{0,40}")
+
+
+def observe_maiagent_attempt(outcome: str) -> None:
+    """RC-90 (observation only): count one MaiAgent HTTP attempt for the digest.
+
+    The attempt is attributed to the stage being observed (Evidence and Scope
+    workers carry it in their copied context). Never raises, decides nothing.
+    """
+
+    try:
+        trace = _ACTIVE.get()
+        if trace is None:
+            return
+        observation = _STAGE.get()
+        stage = observation.stage if observation is not None else "Other"
+        token = outcome if isinstance(outcome, str) and _MAIAGENT_OUTCOME.fullmatch(outcome) else "OTHER"
+        trace.record_maiagent_attempt(stage, token)
+    except Exception:
+        return
 
 
 @contextmanager

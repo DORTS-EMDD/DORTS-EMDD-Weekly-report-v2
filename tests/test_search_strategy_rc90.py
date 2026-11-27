@@ -3,7 +3,7 @@
 1. Search plan v15 as amended: technology in the full 155-character packing of
    RC-88, procurement the same, the major-incident lane in the compact 30-word
    packing, operations planned by no query family (599 weekly requests).
-2. Evidence and Scope run with two workers; results are taken in the
+2. Evidence and Scope run with three workers (user decision 2026-11-27); results are taken in the
    candidates' original order, so the output equals the serial run. Google News
    link resolution stays serial and paced.
 3. The recall-only technology test mode plans technology and the trade press only.
@@ -175,8 +175,10 @@ def test_main_passes_only_the_technology_intent_in_the_test_mode(monkeypatch, tm
 # --- 2. Bounded parallel Evidence and Scope ----------------------------------------------------
 
 
-def test_two_workers_by_default():
-    assert CANDIDATE_STAGE_WORKERS == 2
+def test_three_workers_by_default():
+    # User decision 2026-11-27: three workers (back to two if MaiAgent rate
+    # limiting or site blocking clearly increases).
+    assert CANDIDATE_STAGE_WORKERS == 3
 
 
 @pytest.mark.parametrize("workers", [1, 2, 3])
@@ -295,9 +297,10 @@ def _run(workers):
     return app.run("selected"), evidence, scope
 
 
-def test_parallel_and_serial_runs_produce_the_same_result():
+@pytest.mark.parametrize("workers", [2, CANDIDATE_STAGE_WORKERS])
+def test_parallel_and_serial_runs_produce_the_same_result(workers):
     serial, serial_evidence, _ = _run(1)
-    parallel, parallel_evidence, parallel_scope = _run(2)
+    parallel, parallel_evidence, parallel_scope = _run(workers)
     assert len(serial.evidence_results) > 20 and serial.scope_results and serial.technical_gaps
     for field in (
         "evidence_results", "technical_gaps", "scope_results", "temporal_results", "event_identity_records",
@@ -307,13 +310,13 @@ def test_parallel_and_serial_runs_produce_the_same_result():
         assert getattr(parallel, field) == getattr(serial, field), field
     # The gaps keep the candidates' original order and their stages.
     assert [gap.stage for gap in parallel.technical_gaps] == [gap.stage for gap in serial.technical_gaps]
-    assert serial_evidence.peak == 1 and parallel_evidence.peak <= 2 and parallel_scope.peak <= 2
+    assert serial_evidence.peak == 1 and parallel_evidence.peak <= workers and parallel_scope.peak <= workers
 
 
 def test_the_parallel_run_is_deterministic():
-    first, _, _ = _run(2)
+    first, _, _ = _run(CANDIDATE_STAGE_WORKERS)
     for _ in range(3):
-        again, _, _ = _run(2)
+        again, _, _ = _run(CANDIDATE_STAGE_WORKERS)
         assert again.evidence_results == first.evidence_results
         assert again.technical_gaps == first.technical_gaps
         assert again.scope_results == first.scope_results
@@ -409,7 +412,14 @@ def _digest_result():
         period_start=date(2026, 11, 16), period_end=date(2026, 11, 22),
         final_report=report, search_rate_limit_retries=11,
         search_failure_class_distribution={"RATE_LIMIT": 2},
-        stage_counts={"search_plan": 599, "evidence_results": 1200, "technical_gaps": 30},
+        stage_counts={"search_plan": 599, "evidence_results": 1200, "technical_gaps": 30,
+                      "technical_gaps_evidence": 12, "technical_gaps_scope": 18, "validation_failed": 2},
+        search_failure_count=3,
+        evidence_http_status_distribution={"403": 39, "404": 1, "429": 2},
+        technical_gap_signature_distribution={
+            "Evidence:SUBJECT:TRANSIENT_FAILURE_AFTER_RETRY:LINK_RESOLUTION_ARTICLE_PAGE_HTTP_429": 10,
+            "Scope:SUBJECT:PROPOSAL_CONTRACT_VIOLATION:ENDPOINT_LABEL": 8,
+        },
     )
 
 
@@ -418,6 +428,7 @@ def test_the_digest_lists_sections_titles_stage_times_and_rate_limits():
 
     text = build_run_digest(
         _digest_result(), stage_elapsed_ms={"Search": 1_380_000, "Evidence": 3_600_000}, total_elapsed_ms=8_400_000,
+        maiagent_attempts={"Evidence": {"OK": 900, "HTTP_429": 3, "TIMEOUT": 1}, "Scope": {"OK": 500}},
     )
     lines = text.splitlines()
     assert lines[0] == DIGEST_BEGIN and lines[-1] == DIGEST_END
@@ -426,7 +437,10 @@ def test_the_digest_lists_sections_titles_stage_times_and_rate_limits():
     assert "  1. 新號誌試驗" in lines and "  2. 車載軌道檢測" in lines
     assert "stage_minutes: Search=23.0 Evidence=60.0 total=140.0" in lines
     assert "search_429: retried=11 failed_after_retry=2" in lines
-    assert len(lines) <= 12
+    assert "maiagent: attempts=1404 ok=1400 failed=HTTP_429=3,TIMEOUT=1 by_stage=Evidence=904,Scope=500" in lines
+    assert "stage_errors: evidence=12,scope=18,search_failures=3,validation_failed=2" in lines
+    assert "site_blocking: evidence_http_403=39 evidence_http_429=2 link_resolution_429_gaps=10" in lines
+    assert len(lines) <= 16
 
 
 def test_the_trace_records_stage_durations_for_the_digest():
@@ -462,3 +476,33 @@ def test_the_printer_appends_the_v4_score_inside_the_digest(tmp_path):
     score = next(line for line in lines if line.startswith("recall_v4: "))
     assert score.startswith("recall_v4: accuracy=") and "/25 " in score
     assert digest_text(tmp_path / "missing").splitlines()[1].startswith("run_digest=UNAVAILABLE")
+
+
+def test_maiagent_attempts_are_counted_by_stage_and_outcome():
+    from src.weekly_report.debug_service import ExecutionTrace, execution_trace, observe_stage
+    from src.weekly_report.maiagent_transport import MaiAgentHttpResponse, request_maiagent_proposal
+
+    replies = iter([MaiAgentHttpResponse(429, b""), MaiAgentHttpResponse(200, b'{"content": "{\\"ok\\": 1}"}')])
+    trace = ExecutionTrace(sink=lambda line: None)
+    with execution_trace(trace):
+        with observe_stage("Scope", 1):
+            request_maiagent_proposal(lambda *a, **k: next(replies), "https://maiagent.example/x",
+                                      headers={}, body=b"{}", timeout_seconds=1)
+        # Outside any stage, and never raising when no trace is active.
+        with pytest.raises(Exception):
+            request_maiagent_proposal(lambda *a, **k: MaiAgentHttpResponse(400, b""), "https://maiagent.example/x",
+                                      headers={}, body=b"{}", timeout_seconds=1)
+    assert trace.maiagent_attempts() == {"Scope": {"HTTP_429": 1, "OK": 1}, "Other": {"HTTP_400": 1}}
+    request_maiagent_proposal(lambda *a, **k: MaiAgentHttpResponse(200, b'{"content": "{\\"ok\\": 1}"}'),
+                              "https://maiagent.example/x", headers={}, body=b"{}", timeout_seconds=1)
+
+
+def test_maiagent_attempts_from_parallel_workers_are_all_counted():
+    from src.weekly_report.debug_service import ExecutionTrace, execution_trace, observe_maiagent_attempt, observe_stage
+
+    trace = ExecutionTrace(sink=lambda line: None)
+    with execution_trace(trace), observe_stage("Evidence", 300):
+        with _in_candidate_order(lambda _: observe_maiagent_attempt("OK"), list(range(300)), 3) as outcomes:
+            for _, outcome in outcomes:
+                outcome()
+    assert trace.maiagent_attempts() == {"Evidence": {"OK": 300}}

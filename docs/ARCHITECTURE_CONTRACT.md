@@ -4587,11 +4587,14 @@ of v4 (#30, #32, #50, #53) were found only by the major-incident intent.
     procurement > major_incident) and keeps an incident lane at all, which the
     v4 pass condition depends on; D is the only option estimated within 150
     minutes with two workers but drops the four incident-only gold items (v4
-    about 12/25). **The 150-minute target is not reached with two workers by
-    any option that keeps the incident lane**; reported to the user before
-    deciding (pending: B with three workers, D, or a longer run).
-* **Parallel Evidence and Scope (item 2).** ReportApplication evaluates
-  Evidence and Scope with `CANDIDATE_STAGE_WORKERS` = 2 bounded workers
+    about 12/25). The 150-minute target is not reached with two workers by
+    any option that keeps the incident lane; this was reported first, and the
+    user decided (2026-11-27): **plan B with three workers**. Recall acceptance
+    on 2026-11-16..22: run time at most 180 minutes, at least 4 items in 技術新知,
+    v4 at least 14/25, compared with Run 45641734970.
+* **Parallel Evidence and Scope (item 2; three workers by user decision
+  2026-11-27).** ReportApplication evaluates
+  Evidence and Scope with `CANDIDATE_STAGE_WORKERS` = 3 bounded workers
   (`_in_candidate_order`). Each candidate's owner call (EvidenceService.evaluate,
   ScopeClassifier.classify) is unchanged and decides exactly as before; only
   when it runs changes. Outcomes are taken in the candidates' original order in
@@ -4605,6 +4608,9 @@ of v4 (#30, #32, #50, #53) were found only by the major-incident intent.
   (offline legacy IDs are not paced), so the parallel stage cannot raise the
   request rate toward the RC-83 gate (20 links and 30%). Search stays
   sequential (section C); Event Identity and the later stages are unchanged.
+  User decision: if three workers clearly increase MaiAgent rate limiting or
+  site blocking (the digest's `maiagent` and `site_blocking` lines), go back
+  to two workers and change nothing else.
   Tests: `tests/test_search_strategy_rc90.py` (serial and parallel runs equal,
   bounded concurrency, order, exception, link serialization and pacing).
 * **Technology test mode (item 3; a test, not a formal run).** `main.py
@@ -4617,8 +4623,12 @@ of v4 (#30, #32, #50, #53) were found only by the major-incident intent.
   `run_digest.txt` from the finished result and the same RunTrace (the trace now
   also keeps each finished stage's elapsed time, observation only): status,
   period, mode, the item count of each formal section, the 技術新知 titles, the
-  minutes of each stage and in total, and Search 429 counts (retried, still
-  failed). The last step of the production and recall-test jobs prints it
+  minutes of each stage and in total, Search 429 counts (retried, still
+  failed), MaiAgent HTTP attempts by stage and by failure class (counted in
+  `request_maiagent_proposal`, the one MaiAgent call path, attributed to the
+  stage being observed), errors per stage (disclosed technical gaps, Search
+  failures, Validation FAILs) and site blocking (Evidence pages answering 403
+  or 429, link resolutions still 429 after their retry). The last step of the production and recall-test jobs prints it
   between `===== RUN DIGEST =====` markers and adds it to the job summary
   (`scripts/print_run_digest.py`); the recall job appends the v4 score
   (`recall_score`, one line plus one line per gold item). It decides nothing.
@@ -4628,7 +4638,7 @@ SEARCH_CONFIGURATION_VERSION = search-discovery-v15 as amended by RC-90 (599 wee
 SEARCH_PLANNED_INTENTS = technology, major_incident, procurement (+ monitored_standards in the monthly check); operations not planned (RC-90, user decision)
 SEARCH_QUERY_PACKING = characters (155, every term) for technology and procurement; words (30) for major_incident (RC-90)
 HEALTH_PROBE_ORDINALS = (1, 10, 299, 304, 592, 599) (RC-90)
-CANDIDATE_STAGE_WORKERS = 2 for Evidence and Scope, results in candidate order (RC-90)
+CANDIDATE_STAGE_WORKERS = 3 for Evidence and Scope, results in candidate order (RC-90, user decision; 2 if rate limiting or blocking clearly increases)
 LINK_RESOLUTION = serial, at least 2 s between resolution starts (RC-90)
 TECHNOLOGY_TEST_MODE = recall test only, LIVE_EMAIL_SEND=0 required (RC-90)
 RUN_DIGEST = observation only, printed last in production and recall jobs (RC-90)

@@ -221,6 +221,8 @@ def request_maiagent_proposal(
         SemanticProviderTechnicalFailure,
     )
 
+    from .debug_service import observe_maiagent_attempt
+
     attempts = 0
     while True:
         attempts += 1
@@ -236,17 +238,24 @@ def request_maiagent_proposal(
                 failure_class = "INVALID_TRANSPORT_RESPONSE"
             elif status == 200:
                 try:
-                    return parse_maiagent_response(response.body)
+                    parsed = parse_maiagent_response(response.body)
                 except MaiAgentResponseError:
                     failure_class = "UNPARSEABLE_RESPONSE"
+                else:
+                    observe_maiagent_attempt("OK")
+                    return parsed
             elif status in MAIAGENT_CONFIGURATION_HTTP_STATUSES:
+                observe_maiagent_attempt(f"HTTP_{status}")
                 raise SemanticProviderConfigurationFailure(f"HTTP_{status}", task=task)
             elif status in MAIAGENT_TRANSIENT_HTTP_STATUSES:
                 failure_class = f"HTTP_{status}"
             else:
+                observe_maiagent_attempt(f"HTTP_{status}")
                 raise SemanticProviderTechnicalFailure(
                     f"HTTP_{status}", attempts=attempts, transient=False, task=task
                 )
+        # RC-90 (observation only): one failed attempt, retried or final.
+        observe_maiagent_attempt(failure_class)
         if attempts >= MAIAGENT_MAX_ATTEMPTS:
             raise SemanticProviderTechnicalFailure(
                 failure_class, attempts=attempts, transient=True, task=task

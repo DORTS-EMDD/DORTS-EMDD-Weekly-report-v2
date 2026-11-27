@@ -78,7 +78,7 @@ class LinkEvidenceService(FormalEvidenceService):
         self.fail_retry = fail_retry
         self.semantic_gaps = semantic_gaps
         self.calls: list[str] = []
-        # RC-90: Evidence runs with two workers; the bookkeeping is shared.
+        # RC-90: Evidence runs with parallel workers; the bookkeeping is shared.
         self._lock = threading.Lock()
 
     def evaluate(self, candidate):

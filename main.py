@@ -95,6 +95,7 @@ def _write_run_digest(directory: Path, result, trace, technology_test_mode: bool
             stage_elapsed_ms={} if trace is None else trace.stage_elapsed_ms(),
             total_elapsed_ms=0 if trace is None else trace.elapsed_ms(),
             run_mode=TECHNOLOGY_TEST_MODE if technology_test_mode else FORMAL_MODE,
+            maiagent_attempts={} if trace is None else trace.maiagent_attempts(),
         )
     except Exception as exc:  # noqa: BLE001 - observation must not change the outcome
         text = f"run_digest=UNAVAILABLE failure_class={type(exc).__name__}\n"

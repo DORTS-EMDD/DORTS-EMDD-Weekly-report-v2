@@ -37,7 +37,7 @@ _USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Weekly-report-v2-Eviden
 # retried once after this wait; any other non-200 status is not retried.
 LINK_RETRY_DELAY_SECONDS = 5.0
 
-# RC-90 (section A.71): Evidence runs with two workers, but Google News link
+# RC-90 (section A.71): Evidence runs with parallel workers (3), but Google News link
 # resolution stays serial (one resolution at a time per resolver) and paced:
 # a resolution that needs Google starts at least this long after the previous
 # one started, so the request rate stays bounded and cannot approach the

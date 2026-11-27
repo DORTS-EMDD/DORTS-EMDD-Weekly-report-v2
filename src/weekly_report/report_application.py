@@ -69,10 +69,12 @@ from .delivery import DeliveryReceipt, DeliveryService
 _Item = TypeVar("_Item")
 
 # RC-90 (section A.71): Evidence and Scope evaluate candidates with this many
-# workers. Each candidate's owner call is unchanged; only when it runs changes.
-# Results are taken in the candidates' original order, so every result, gap,
-# observation and exception is exactly what the serial loop produced.
-CANDIDATE_STAGE_WORKERS = 2
+# workers (user decision 2026-11-27: 3; back to 2 if MaiAgent rate limiting or
+# site blocking clearly increases). Each candidate's owner call is unchanged;
+# only when it runs changes. Results are taken in the candidates' original
+# order, so every result, gap, observation and exception is exactly what the
+# serial loop produced.
+CANDIDATE_STAGE_WORKERS = 3
 
 
 @contextmanager
